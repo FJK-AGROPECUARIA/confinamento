@@ -94,6 +94,14 @@ tr.grp td span{float:right;font-variant-numeric:tabular-nums}
 .stat div{flex:1 1 90px;background:var(--chip);border-radius:10px;padding:8px 12px}
 .stat small{display:block;font-size:.72rem;color:var(--muted);text-transform:uppercase;letter-spacing:.05em}
 .stat b{font-family:var(--display);font-stretch:condensed;font-size:1.4rem}
+.aviso{margin:0;font-weight:600;font-size:.9rem}
+input.cell{width:6em}
+input.cell.duv{border-color:var(--bad);color:var(--bad);font-weight:700}
+button.mini{padding:4px 10px;font-size:.95rem}
+td.acoes{white-space:nowrap;text-align:right}
+.filebtn.lima{background:var(--lima);border-color:var(--lima)}
+select.mini{width:auto;padding:4px 6px;font-size:1rem}
+details summary{cursor:pointer}
 </style>
 </head>
 <body>
@@ -104,9 +112,53 @@ tr.grp td span{float:right;font-variant-numeric:tabular-nums}
 </header>
 <div class="wrap">
   <nav class="tabs" role="tablist">
-    <button id="tabTrato" role="tab" aria-selected="true">Trato</button>
+    <button id="tabPrev" role="tab" aria-selected="false">Previsto</button>
+    <button id="tabTrato" role="tab" aria-selected="true">Tratar</button>
     <button id="tabHist" role="tab" aria-selected="false">Histórico</button>
   </nav>
+
+<div id="viewPrev" hidden>
+  <section class="panel">
+    <div class="curhead"><h2>Previsto por trato</h2><span class="note num" id="pvTot"></span></div>
+    <div>
+      <label for="pvTrato">Trato</label>
+      <select class="trato" id="pvTrato">
+        <option value="1">Trato 1</option><option value="2">Trato 2</option><option value="3">Trato 3</option><option value="4">Trato 4</option><option value="5">Trato 5</option>
+      </select>
+    </div>
+    <p class="aviso bad" id="pvAviso" hidden></p>
+    <div class="tablebox"><table>
+      <thead><tr><th>Curral</th><th>Previsto (kg)</th></tr></thead>
+      <tbody id="tbPrev"></tbody>
+    </table></div>
+    <p class="note">A ordem é a do cadastro. Deixe em branco o curral que não recebe nesse trato. "?" quer dizer que a foto não deu para ler: corrija antes de tratar.</p>
+    <div id="editBox" hidden>
+      <label for="lista">Um curral por linha: nome e quantidade (só deste trato)</label>
+      <textarea id="lista" placeholder="C-10 1000&#10;C-3 600"></textarea>
+      <div class="row" style="margin-top:10px"><button id="btnSalvarLista" class="primary">Salvar lista</button><button id="btnCancLista">Cancelar</button></div>
+    </div>
+    <div class="ocr" id="ocrBox" hidden></div>
+    <div id="revBox" hidden>
+      <div class="tablebox"><table>
+        <thead><tr><th>Curral</th><th>Trato</th><th>Previsto</th><th></th></tr></thead>
+        <tbody id="tbRev"></tbody>
+      </table></div>
+      <div class="row" style="margin-top:10px"><button class="primary" id="btnAplicarRev">Atualizar previsto</button><button id="btnCancRev">Cancelar</button></div>
+    </div>
+    <div class="row" id="listaBtns">
+      <label class="filebtn lima" for="foto" style="margin:0;text-transform:none;letter-spacing:0;color:var(--fg);font-size:1rem">Ler lista por foto<input id="foto" type="file" accept="image/*" multiple></label>
+      <button id="btnEditar">Editar em texto</button>
+    </div>
+    <p class="note">Pode escolher várias fotos de uma vez. Só são lidas as colunas Curral, Trato e Previsto. Curral repetido no mesmo trato entra uma vez só.</p>
+  </section>
+
+  <section class="panel">
+    <div class="curhead"><h2>Cadastro de currais</h2><span class="note num" id="cadN"></span></div>
+    <div class="tablebox"><table><tbody id="tbCad"></tbody></table></div>
+    <div class="row"><input type="text" id="novoCurral" placeholder="ex.: C-11" autocomplete="off" autocapitalize="characters" style="flex:2 1 140px;width:auto"><button class="lima" id="btnCadastrar">Cadastrar</button></div>
+    <p class="note">Esta é a ordem do trato. Use ↑ ↓ para mudar a ordem. Curral novo entra no fim da lista.</p>
+  </section>
+</div>
 
 <div id="viewTrato">
   <section class="panel" id="painel">
@@ -138,22 +190,13 @@ tr.grp td span{float:right;font-variant-numeric:tabular-nums}
   </section>
 
   <section class="panel">
-    <div class="curhead"><h2 id="tituloCurrais">Currais e previsto</h2><span class="note num" id="totais"></span></div>
+    <div class="curhead"><h2 id="tituloCurrais">Currais</h2><span class="note num" id="totais"></span></div>
+    <p class="aviso bad" id="trAviso" hidden></p>
     <div class="tablebox"><table>
       <thead><tr><th>Curral</th><th>Previsto</th><th>Fornec.</th><th>Dif.</th></tr></thead>
       <tbody id="tbCur"></tbody>
     </table></div>
-    <p class="note">Toque no nome do curral para tratar ele agora. Cada trato guarda sua própria lista com o previsto do último dia; mude só o que for diferente.</p>
-    <div id="editBox" hidden>
-      <label for="lista">Um curral por linha: nome e quantidade</label>
-      <textarea id="lista" placeholder="C10 1000&#10;C11 600"></textarea>
-      <div class="row" style="margin-top:10px"><button id="btnSalvarLista" class="primary">Salvar lista</button><button id="btnCancLista">Cancelar</button></div>
-    </div>
-    <div class="ocr" id="ocrBox" hidden></div>
-    <div class="row" id="listaBtns">
-      <button id="btnEditar">Editar lista</button>
-      <label class="filebtn" for="foto" style="margin:0;text-transform:none;letter-spacing:0;color:var(--fg);font-size:1rem">Ler lista por foto<input id="foto" type="file" accept="image/*"></label>
-    </div>
+    <p class="note">Toque no nome do curral para tratar ele agora. Para mudar o previsto ou os currais, use a aba Previsto.</p>
   </section>
 
   <section class="panel">
@@ -214,34 +257,40 @@ tr.grp td span{float:right;font-variant-numeric:tabular-nums}
   <section class="panel">
     <h2>Nuvem (Google Planilha)</h2>
     <p class="note" id="nuvemInfo"></p>
-    <div><label for="apiUrl">Link do Google Script (termina em /exec)</label>
-      <input type="text" id="apiUrl" inputmode="url" autocomplete="off" placeholder="https://script.google.com/macros/s/…/exec"></div>
-    <div class="row"><button class="lima" id="btnSalvarApi">Salvar link</button><button id="btnEnviar">Enviar agora</button></div>
-    <button id="btnPuxar">Buscar tratos da nuvem</button>
-    <p class="note">Cada curral registrado vai para a planilha assim que o celular tiver sinal. Sem sinal, fica guardado aqui e sobe depois sozinho. "Buscar tratos da nuvem" traz o que outros celulares lançaram.</p>
+    <div class="row"><button class="lima" id="btnEnviar">Enviar agora</button><button id="btnPuxar">Buscar tratos da nuvem</button></div>
+    <p class="note">Cada curral registrado e cada mudança no previsto vão para a planilha sozinhos sempre que o celular tiver internet. Sem sinal, ficam guardados aqui e sobem depois. "Buscar tratos da nuvem" traz o que outros celulares lançaram.</p>
+    <details>
+      <summary class="note">Link do Google Script</summary>
+      <div style="margin-top:8px"><label for="apiUrl">Link (termina em /exec)</label>
+        <input type="text" id="apiUrl" inputmode="url" autocomplete="off" placeholder="https://script.google.com/macros/s/…/exec"></div>
+      <button id="btnSalvarApi" style="margin-top:8px">Salvar link</button>
+    </details>
   </section>
 
   <section class="panel">
-    <h2>Banco de dados do celular</h2>
+    <h2>Backup</h2>
+    <p class="note" id="bkInfo"></p>
+    <button class="lima" id="btnBackupNuvem">Fazer backup agora</button>
+    <p class="note">Todo dia às 21:00 é feito um backup automático: a planilha é copiada para a pasta "Trato FJK - Backups" no Google Drive. Use o botão para fazer na hora que quiser.</p>
     <p class="note num" id="dbInfo"></p>
     <div class="row">
-      <button id="btnBackup">Salvar cópia de segurança</button>
+      <button id="btnBackup">Baixar cópia no celular</button>
       <label class="filebtn" for="restaurar" style="margin:0;text-transform:none;letter-spacing:0;color:var(--fg);font-size:1rem">Restaurar cópia<input id="restaurar" type="file" accept=".json,application/json"></label>
     </div>
-    <p class="note">A cópia de segurança é um arquivo com todos os tratos. Guarde no Drive ou mande para você no WhatsApp. Serve para passar os dados para outro celular.</p>
     <button class="danger" id="hApagar">Apagar os registros filtrados</button>
     <div class="confirm" id="confApagar" hidden>
       <div id="confApagarTxt"></div>
       <div class="row"><button class="danger" id="hApagarSim">Apagar</button><button id="hApagarNao">Cancelar</button></div>
     </div>
   </section>
+  <p class="note" id="versao" style="text-align:center"></p>
 </div>
   <textarea id="copiaFallback" hidden readonly></textarea>
 </div>
 <div class="toast" id="toast" hidden></div>
-
 <script>
 'use strict';
+const APP_VERSAO='6 (19/10/2026)';
 const KEY='trato-confinamento-v1';
 const $=id=>document.getElementById(id);
 const fmt=n=>(n==null||isNaN(n))?'—':Math.round(n).toLocaleString('pt-BR');
@@ -251,7 +300,9 @@ const p2=n=>String(n).padStart(2,'0');
 const diaKey=d=>`${d.getFullYear()}-${p2(d.getMonth()+1)}-${p2(d.getDate())}`;
 const diaBR=k=>{const [y,m,d]=k.split('-');return `${d}/${m}/${y}`;};
 const hojeKey=()=>diaKey(new Date());
-const EXEMPLO=[['C10',1000],['C11',600],['C12',800],['C13',750],['C14',900]].map(([n,p])=>({nome:n,prev:p}));
+/* Currais iniciais, nesta ordem */
+const INICIAIS=['C-10','C-3','C-4','C-7','C-9','P-COCAL-1','P-CARRAPICHO-1','P-MANGUEIRA-1','P-REPRESA-1','P-DIVISA-1','P-MOD-1','P-MOD-2','P-MOD-3','P-MOD-4','P-MOD-5','P-MOD-6'];
+const HORA_BACKUP=21;
 let S, HIST=[];
 /* ====== CONFIGURAÇÃO: link do Apps Script (termina em /exec). Também pode ser colado no app, aba Histórico ====== */
 const API_PADRAO='https://script.google.com/macros/s/AKfycbwmYRx78ILhsO2Icvz7BHEQTXlVzVbVnGcHlQmpLDfw2MgyOv3SFcj7PdTzbrQ66M6n/exec';
@@ -272,6 +323,12 @@ function dbPutMany(rs){return tx('readwrite',s=>{rs.forEach(r=>s.put(r));});}
 function dbDelMany(ids){return tx('readwrite',s=>{ids.forEach(id=>s.delete(id));});}
 function dbAddMany(rs){return tx('readwrite',s=>{rs.forEach(r=>s.add(r));});}
 
+/* ---------- Nomes de curral ---------- */
+const chave=s=>String(s).toUpperCase().normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/[^A-Z0-9]/g,'');
+const fuzzy=s=>chave(s).replace(/O/g,'0').replace(/[IL]/g,'1');
+function acharCadastro(nome){const f=fuzzy(nome);if(!f)return null;return S.cadastro.find(n=>fuzzy(n)===f)||null;}
+const nomeLimpo=s=>String(s).toUpperCase().normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/\s+/g,'-').replace(/[^A-Z0-9-]/g,'').replace(/-+/g,'-').replace(/^-|-$/g,'');
+
 function loadState(){
   let s=null;try{s=JSON.parse(localStorage.getItem(KEY));}catch(e){}
   return s||{};
@@ -283,29 +340,45 @@ async function iniciar(){
   // versão antiga: converte para o banco novo
   if(!S.v){
     const antigos=S.registros||[];
-    S={v:2,listas:{'1':S.currais||EXEMPLO.map(x=>({...x}))},tratoSel:1,atual:S.atual||0,ini:S.ini||'',fim:S.fim||'',exemplo:!S.currais};
+    S={v:2,listas:S.currais?{'1':S.currais}:{},tratoSel:1,atual:S.atual||0,ini:S.ini||'',fim:S.fim||'',exemplo:!S.currais};
     if(antigos.length&&DB){
       const novos=antigos.map(r=>({ts:r.ts||Date.now(),dia:diaKey(new Date(r.ts||Date.now())),trato:1,curral:r.curral,prev:r.prev,ini:r.ini,fim:r.fim,forn:r.forn,hora:r.hora}));
       await dbAddMany(novos);HIST=await dbAll();
     }
-    save();
   }
+  // versão 3: cadastro de currais (ordem fixa) + previsto por trato
+  if(!S.cadastro){
+    S.cadastro=INICIAIS.slice();S.prev={};
+    if(!S.exemplo&&S.listas){
+      for(const [k,arr] of Object.entries(S.listas)){
+        S.prev[k]={};
+        (arr||[]).forEach(x=>{let n=acharCadastro(x.nome);if(!n){n=nomeLimpo(x.nome);S.cadastro.push(n);}S.prev[k][n]=x.prev;});
+      }
+    }
+    delete S.listas;S.v=3;S.atual=0;S.atualNome=null;S.ini=S.ini||'';S.fim='';
+  }
+  if(!S.prev)S.prev={};
+  if(!S.tratoSel)S.tratoSel=1;
+  save();
   if(!S.aparelho){S.aparelho=Math.random().toString(36).slice(2,8);save();}
   const semUid=HIST.filter(r=>!r.uid);
   if(semUid.length){semUid.forEach((r,i)=>{r.uid=`${S.aparelho}-${r.ts}-${i}`;r.enviado=false;});try{await dbPutMany(semUid);}catch(e){}}
   try{navigator.storage&&navigator.storage.persist&&navigator.storage.persist();}catch(e){}
   $('tratoSel').value=String(S.tratoSel);
+  $('pvTrato').value=String(S.pvTrato||S.tratoSel);
   $('apiUrl').value=apiUrl();
+  $('versao').textContent=`Versão ${APP_VERSAO}`;
   render();
   sincronizar();
+  checarBackup();
 }
 
 function toast(t){const el=$('toast');el.textContent=t;el.hidden=false;clearTimeout(toast.t);toast.t=setTimeout(()=>el.hidden=true,2600);}
-function lista(){
-  const k=String(S.tratoSel);
-  if(!S.listas[k]){const ult=S.listas[S.ultimaLista]||Object.values(S.listas)[0]||EXEMPLO;S.listas[k]=ult.map(x=>({...x}));save();}
-  return S.listas[k];
-}
+/* Lista do trato = currais do cadastro (na ordem) que têm previsto maior que zero nesse trato */
+function mapaPrev(k){k=String(k);if(!S.prev[k])S.prev[k]={};return S.prev[k];}
+function lista(k){const m=(S.prev&&S.prev[String(k||S.tratoSel)])||{};return S.cadastro.filter(n=>typeof m[n]==='number'&&m[n]>0).map(n=>({nome:n,prev:m[n]}));}
+function duvidas(k){const m=(S.prev&&S.prev[String(k||S.tratoSel)])||{};return S.cadastro.filter(n=>m[n]==='?');}
+function setAtual(i){S.atual=i;const c=lista()[i];S.atualNome=c?c.nome:null;}
 const regsAtuais=()=>HIST.filter(r=>r.dia===hojeKey()&&r.trato===S.tratoSel).sort((a,b)=>a.ts-b.ts);
 const fornecidoDe=(nome,regs)=>regs.filter(r=>r.curral===nome).reduce((a,r)=>a+r.forn,0);
 const feito=(nome,regs)=>regs.some(r=>r.curral===nome);
@@ -315,21 +388,23 @@ const horaDe=r=>r.hora||new Date(r.ts).toLocaleTimeString('pt-BR',{hour:'2-digit
 function render(){
   $('hoje').textContent=new Date().toLocaleDateString('pt-BR',{weekday:'short',day:'2-digit',month:'2-digit',year:'numeric'});
   const L=lista(),regs=regsAtuais();
-  if(S.atual>L.length)S.atual=0;
+  if(S.atualNome!=null){const i=L.findIndex(x=>x.nome===S.atualNome);if(i>=0)S.atual=i;}
+  if(S.atual>L.length)S.atual=L.length;
   const c=L[S.atual];
-  $('curNome').textContent=c?c.nome:'Trato completo';
+  $('curNome').textContent=c?c.nome:(L.length?'Trato completo':'Sem previsto');
   $('curPrev').textContent=c?fmt(c.prev):'—';
   if(document.activeElement!==$('ini'))$('ini').value=S.ini;
   if(document.activeElement!==$('fim'))$('fim').value=S.fim;
   calc();
   let tp=0,tf=0;
   $('tituloCurrais').textContent=`Currais — Trato ${S.tratoSel}`;
-  $('tbCur').innerHTML=L.map((x,i)=>{
+  $('tbCur').innerHTML=L.length?L.map((x,i)=>{
     const f=fornecidoDe(x.nome,regs),fz=feito(x.nome,regs);tp+=x.prev;tf+=f;const d=f-x.prev;
-    return `<tr class="${i===S.atual?'cur':''}"><td class="c" data-i="${i}">${esc(x.nome)}</td>
-      <td><input class="cell" type="number" inputmode="numeric" id="prev-${i}" data-p="${i}" value="${x.prev}" aria-label="Previsto ${esc(x.nome)}"></td>
+    return `<tr class="${i===S.atual?'cur':''}"><td class="c" data-i="${i}">${esc(x.nome)}</td><td>${fmt(x.prev)}</td>
       <td>${fz?fmt(f):(i===S.atual?'<span class="pill">agora</span>':'—')}</td><td class="${fz?classeDesv(d,x.prev):''}">${fz?sgn(d):''}</td></tr>`;
-  }).join('');
+  }).join(''):`<tr><td colspan="4" class="note" style="text-align:left">Nenhum previsto no Trato ${S.tratoSel}. Lance na aba Previsto.</td></tr>`;
+  const dv=duvidas();
+  $('trAviso').hidden=!dv.length;$('trAviso').textContent=dv.length?`Previsto com "?" (fora da lista até corrigir): ${dv.join(', ')}`:'';
   $('totais').textContent=`${fmt(tf)} de ${fmt(tp)} kg`;
   $('tituloReg').textContent=`Registros — Trato ${S.tratoSel} de hoje`;
   $('nReg').textContent=regs.length?`${regs.length} curral(is)`:'';
@@ -341,6 +416,7 @@ function render(){
   $('btnProximo').hidden=S.tratoSel>=5;
   $('btnProximo').textContent=`Ir para o Trato ${S.tratoSel+1}`;
   if(!$('viewHist').hidden)renderHist();
+  if(!$('viewPrev').hidden)renderPrev();
   statusNuvem();
 }
 
@@ -357,8 +433,8 @@ function calc(){
 $('ini').addEventListener('input',e=>{S.ini=e.target.value;save();calc();});
 $('fim').addEventListener('input',e=>{S.fim=e.target.value;save();calc();});
 $('tratoSel').addEventListener('change',e=>{
-  S.ultimaLista=String(S.tratoSel);S.tratoSel=+e.target.value;S.fim='';
-  const L=lista(),regs=regsAtuais();S.atual=Math.max(0,L.findIndex(x=>!feito(x.nome,regs)));
+  S.tratoSel=+e.target.value;S.fim='';
+  const L=lista(),regs=regsAtuais();setAtual(Math.max(0,L.findIndex(x=>!feito(x.nome,regs))));
   save();render();toast(`Trato ${S.tratoSel}`);
 });
 $('btnProximo').onclick=()=>{if(S.tratoSel>=5)return;$('tratoSel').value=String(S.tratoSel+1);$('tratoSel').dispatchEvent(new Event('change'));window.scrollTo({top:0,behavior:'smooth'});};
@@ -377,27 +453,65 @@ $('btnReg').onclick=async()=>{
   const regs=regsAtuais();
   let nx=L.findIndex((x,i)=>i>S.atual&&!feito(x.nome,regs));
   if(nx<0)nx=L.findIndex(x=>!feito(x.nome,regs));
-  S.atual=nx<0?L.length:nx;
+  setAtual(nx<0?L.length:nx);
   save();render();sincronizar();
   window.scrollTo({top:0,behavior:'smooth'});
 };
 
-$('tbCur').addEventListener('click',e=>{const td=e.target.closest('td[data-i]');if(!td)return;S.atual=+td.dataset.i;S.fim='';save();render();window.scrollTo({top:0,behavior:'smooth'});});
-$('tbCur').addEventListener('change',e=>{
-  const i=e.target.dataset.p;if(i==null)return;const v=parseFloat(e.target.value);const L=lista();
-  if(isNaN(v)||v<0){e.target.value=L[i].prev;toast('Digite uma quantidade válida');return;}
-  L[i].prev=v;S.exemplo=false;save();render();toast(`${L[i].nome}: previsto ${fmt(v)} kg no Trato ${S.tratoSel}`);
-});
+$('tbCur').addEventListener('click',e=>{const td=e.target.closest('td[data-i]');if(!td)return;setAtual(+td.dataset.i);S.fim='';save();render();window.scrollTo({top:0,behavior:'smooth'});});
 
 $('btnDesfazer').onclick=async()=>{
   const regs=regsAtuais();const r=regs[regs.length-1];if(!r)return;
   try{await dbDel(r.id);}catch(e){toast('Erro ao apagar');return;}
   HIST=HIST.filter(x=>x!==r);
   if(r.enviado){S.apagarNuvem=(S.apagarNuvem||[]).concat(r.uid);sincronizar();}
-  S.atual=Math.max(0,lista().findIndex(x=>x.nome===r.curral));
+  setAtual(Math.max(0,lista().findIndex(x=>x.nome===r.curral)));
   S.ini=String(r.ini);S.fim=String(r.fim);save();render();toast(`Registro do ${r.curral} desfeito`);
 };
 
+/* ---------- Aba Previsto ---------- */
+let prevTimer;
+function marcarPrev(){S.prevPend=true;S.prevTs=Date.now();save();clearTimeout(prevTimer);prevTimer=setTimeout(()=>sincronizar(),2000);}
+const valPrev=v=>v==null?'':(v==='?'?'?':String(v));
+function renderPrev(){
+  const k=$('pvTrato').value,m=(S.prev[k])||{};
+  let tot=0,n=0;
+  $('tbPrev').innerHTML=S.cadastro.map((c,i)=>{const v=m[c];if(typeof v==='number'&&v>0){tot+=v;n++;}
+    return `<tr><td class="c">${esc(c)}</td><td><input class="cell${v==='?'?' duv':''}" type="text" inputmode="decimal" data-n="${i}" value="${esc(valPrev(v))}" placeholder="—" aria-label="Previsto ${esc(c)}"></td></tr>`;}).join('');
+  $('pvTot').textContent=`${n} curral(is) · ${fmt(tot)} kg`;
+  const dv=duvidas(k);
+  $('pvAviso').hidden=!dv.length;$('pvAviso').textContent=dv.length?`${dv.length} curral(is) com "?": corrija o número.`:'';
+  $('cadN').textContent=`${S.cadastro.length} currais`;
+  $('tbCad').innerHTML=S.cadastro.map((c,i)=>`<tr><td class="c" style="cursor:default">${i+1}. ${esc(c)}</td><td class="acoes">
+    <button class="mini" data-a="up" data-i="${i}" ${i===0?'disabled':''} aria-label="Subir ${esc(c)}">↑</button>
+    <button class="mini" data-a="dn" data-i="${i}" ${i===S.cadastro.length-1?'disabled':''} aria-label="Descer ${esc(c)}">↓</button>
+    <button class="mini danger" data-a="rm" data-i="${i}" aria-label="Tirar ${esc(c)}">✕</button></td></tr>`).join('');
+}
+$('pvTrato').addEventListener('change',()=>{S.pvTrato=+$('pvTrato').value;save();fecharEdicao();renderPrev();});
+$('tbPrev').addEventListener('change',e=>{
+  const i=e.target.dataset.n;if(i==null)return;const nome=S.cadastro[i];const k=$('pvTrato').value;const m=mapaPrev(k);
+  const t=e.target.value.trim();
+  if(t===''){delete m[nome];}
+  else if(t==='?'){m[nome]='?';}
+  else{const v=parseNum(t);if(isNaN(v)||v<0){e.target.value=valPrev(m[nome]);toast('Digite uma quantidade válida');return;}m[nome]=v;}
+  marcarPrev();render();renderPrev();toast(`${nome}: ${t===''?'sem previsto':'previsto '+(t==='?'?'?':fmt(m[nome])+' kg')} no Trato ${k}`);
+});
+$('tbCad').addEventListener('click',e=>{
+  const b=e.target.closest('button[data-a]');if(!b)return;const i=+b.dataset.i,C=S.cadastro,n=C[i];
+  if(b.dataset.a==='up'&&i>0){[C[i-1],C[i]]=[C[i],C[i-1]];}
+  else if(b.dataset.a==='dn'&&i<C.length-1){[C[i+1],C[i]]=[C[i],C[i+1]];}
+  else if(b.dataset.a==='rm'){
+    if(!confirm(`Tirar o ${n} do cadastro? O previsto dele em todos os tratos também sai. Os registros já feitos continuam no histórico.`))return;
+    C.splice(i,1);Object.values(S.prev).forEach(m=>{delete m[n];});
+  }else return;
+  marcarPrev();render();renderPrev();
+});
+$('btnCadastrar').onclick=()=>{
+  const n=nomeLimpo($('novoCurral').value);if(!n){toast('Digite o nome do curral');return;}
+  const ja=acharCadastro(n);if(ja){toast(`${ja} já está cadastrado`);return;}
+  S.cadastro.push(n);$('novoCurral').value='';marcarPrev();render();renderPrev();toast(`${n} cadastrado no fim da lista`);
+};
+$('novoCurral').addEventListener('keydown',e=>{if(e.key==='Enter')$('btnCadastrar').click();});
 /* ---------- Mensagem WhatsApp ---------- */
 function grupos(regs){
   const m=new Map();regs.slice().sort((a,b)=>a.ts-b.ts).forEach(r=>{const k=r.dia+'|'+r.trato;if(!m.has(k))m.set(k,[]);m.get(k).push(r);});
@@ -531,13 +645,14 @@ $('btnExcel').onclick=()=>exportar(regsAtuais());
 $('btnShareExcel').onclick=()=>compartilhar(regsAtuais());
 
 /* ---------- Abas ---------- */
-function aba(h){
-  $('viewTrato').hidden=h;$('viewHist').hidden=!h;
-  $('tabTrato').setAttribute('aria-selected',String(!h));$('tabHist').setAttribute('aria-selected',String(h));
-  if(h)renderHist();window.scrollTo({top:0});
+function aba(qual){
+  $('viewPrev').hidden=qual!=='prev';$('viewTrato').hidden=qual!=='trato';$('viewHist').hidden=qual!=='hist';
+  $('tabPrev').setAttribute('aria-selected',String(qual==='prev'));$('tabTrato').setAttribute('aria-selected',String(qual==='trato'));$('tabHist').setAttribute('aria-selected',String(qual==='hist'));
+  if(qual==='hist')renderHist();if(qual==='prev')renderPrev();window.scrollTo({top:0});
 }
-$('tabTrato').onclick=()=>aba(false);
-$('tabHist').onclick=()=>aba(true);
+$('tabPrev').onclick=()=>aba('prev');
+$('tabTrato').onclick=()=>aba('trato');
+$('tabHist').onclick=()=>aba('hist');
 
 /* ---------- Histórico ---------- */
 function filtrados(){
@@ -564,6 +679,7 @@ function renderHist(){
   const nd=dias.length;
   $('dbInfo').textContent=`${HIST.length.toLocaleString('pt-BR')} registros guardados neste celular, de ${nd} dia(s).`;
   $('confApagar').hidden=true;
+  infoBackup();
   statusNuvem();
 }
 $('fDia').addEventListener('change',renderHist);
@@ -574,7 +690,7 @@ $('hExcel').onclick=()=>exportar(filtrados());
 $('hShare').onclick=()=>compartilhar(filtrados());
 $('hApagar').onclick=()=>{
   const regs=filtrados(),d=$('fDia').value,t=$('fTrato').value;
-  $('confApagarTxt').textContent=`Apagar ${regs.length} registro(s) de ${d?diaBR(d):'todos os dias'}, ${t?'Trato '+t:'todos os tratos'}? Apaga também na planilha da nuvem. Isso não tem volta; exporte antes se precisar.`;
+  $('confApagarTxt').textContent=`Apagar ${regs.length} registro(s) de ${d?diaBR(d):'todos os dias'}, ${t?'Trato '+t:'todos os tratos'}? Apaga também na planilha da nuvem. Isso não tem volta; faça um backup antes se precisar.`;
   $('confApagar').hidden=false;
 };
 $('hApagarNao').onclick=()=>{$('confApagar').hidden=true;};
@@ -585,7 +701,7 @@ $('hApagarSim').onclick=async()=>{
   HIST=HIST.filter(r=>!ids.has(r.id));toast(`${ids.size} registro(s) apagado(s)`);render();renderHist();sincronizar();
 };
 $('btnBackup').onclick=()=>{
-  const dados={app:'trato-confinamento',versao:2,gerado:new Date().toISOString(),listas:S.listas,registros:HIST.map(({id,enviado,...r})=>r)};
+  const dados={app:'trato-confinamento',versao:3,gerado:new Date().toISOString(),cadastro:S.cadastro,prev:S.prev,registros:HIST.map(({id,enviado,...r})=>r)};
   baixar(new Blob([JSON.stringify(dados)],{type:'application/json'}),`Trato_backup_${hojeKey()}.json`);toast('Cópia salva em Downloads');
 };
 $('restaurar').addEventListener('change',async e=>{
@@ -595,15 +711,15 @@ $('restaurar').addEventListener('change',async e=>{
     const tem=new Set(HIST.map(r=>r.ts+'|'+r.curral));const temU=new Set(HIST.map(r=>r.uid));
     const novos=d.registros.filter(r=>r&&r.ts&&r.curral&&!tem.has(r.ts+'|'+r.curral)&&!(r.uid&&temU.has(r.uid))).map((r,i)=>({uid:r.uid||`${S.aparelho}-${r.ts}-r${i}`,enviado:false,ts:r.ts,dia:r.dia||diaKey(new Date(r.ts)),trato:+r.trato||1,hora:r.hora,curral:String(r.curral),prev:+r.prev||0,ini:+r.ini||0,fim:+r.fim||0,forn:+r.forn||0}));
     if(novos.length)await dbAddMany(novos);
-    if(d.listas&&!Object.keys(S.listas).length)S.listas=d.listas;
+    if(Array.isArray(d.cadastro)&&d.prev&&!Object.values(S.prev).some(m=>Object.keys(m).length)){S.cadastro=d.cadastro;S.prev=d.prev;marcarPrev();}
     HIST=await dbAll();save();render();renderHist();sincronizar();toast(`${novos.length} registro(s) restaurado(s)`);
   }catch(err){toast('Esse arquivo não é uma cópia de segurança do app');}
 });
 
 /* ---------- Nuvem (Google Apps Script + Planilha) ---------- */
-let sincronizando=false;
+let sincronizando=false,ultPuxaPrev=0;
 function statusNuvem(){
-  const el=$('nuvem'),pend=HIST.filter(r=>!r.enviado).length+((S&&S.apagarNuvem)||[]).length;
+  const el=$('nuvem'),pend=HIST.filter(r=>!r.enviado).length+((S&&S.apagarNuvem)||[]).length+(S&&S.prevPend?1:0);
   let t,c;
   if(!apiUrl()){t='Nuvem: não ligada';c='var(--muted)';}
   else if(sincronizando){t='Nuvem: enviando…';c='var(--muted)';}
@@ -620,10 +736,27 @@ async function postApi(dados){
   const j=await r.json();if(!j.ok)throw new Error(j.erro||'Resposta inválida');return j;
 }
 const limpo=r=>({uid:r.uid,ts:r.ts,dia:r.dia,trato:r.trato,hora:horaDe(r),curral:r.curral,prev:r.prev,forn:r.forn,ini:r.ini,fim:r.fim,aparelho:S.aparelho});
+async function enviarPrevisto(){
+  if(!S.prevPend)return;
+  const ts=S.prevTs||Date.now();
+  await postApi({acao:'previsto',cadastro:S.cadastro,prev:S.prev,ts,aparelho:S.aparelho});
+  if((S.prevTs||0)<=ts){S.prevPend=false;save();}
+}
+/* Traz o previsto que outro celular mudou (o mais novo vale) */
+async function puxarPrevisto(forcar){
+  if(S.prevPend)return;
+  if(!forcar&&Date.now()-ultPuxaPrev<5*60000)return;
+  ultPuxaPrev=Date.now();
+  const r=await fetch(apiUrl()+'?acao=previsto',{cache:'no-store'});const j=await r.json();
+  if(j&&j.ok&&j.dados&&Array.isArray(j.dados.cadastro)&&+j.dados.ts>(S.prevTs||0)){
+    S.cadastro=j.dados.cadastro;S.prev=j.dados.prev||{};S.prevTs=+j.dados.ts;save();render();
+  }
+}
 async function sincronizar(avisar){
   if(!apiUrl()||sincronizando){statusNuvem();return;}
   if(!navigator.onLine){statusNuvem();if(avisar)toast('Sem sinal. Os dados sobem quando tiver internet.');return;}
   sincronizando=true;statusNuvem();
+  let erro=null;
   try{
     if(S.apagarNuvem&&S.apagarNuvem.length){const lista=S.apagarNuvem.slice();await postApi({acao:'apagar',uids:lista});
       S.apagarNuvem=S.apagarNuvem.filter(u=>!lista.includes(u));save();}
@@ -633,9 +766,12 @@ async function sincronizar(avisar){
       const ok=new Set(j.uids||[]);const feitos=lote.filter(r=>ok.has(r.uid));feitos.forEach(r=>r.enviado=true);
       if(feitos.length)await dbPutMany(feitos);
     }
-    if(avisar)toast('Tudo salvo na nuvem');
-  }catch(e){if(avisar)toast('Não consegui enviar: '+(e.message||e));}
+    await enviarPrevisto();
+  }catch(e){erro=e;}
+  try{await puxarPrevisto(avisar);}catch(e){}
+  if(avisar)toast(erro?'Não consegui enviar: '+(erro.message||erro):'Tudo salvo na nuvem');
   sincronizando=false;statusNuvem();
+  if(S.backupPend)fazerBackup(false);
 }
 async function puxarNuvem(){
   if(!apiUrl()){toast('Cole o link do Google Script primeiro');return;}
@@ -646,6 +782,7 @@ async function puxarNuvem(){
     const tem=new Set(HIST.map(x=>x.uid));
     const novos=(j.registros||[]).filter(x=>x&&x.uid&&!tem.has(x.uid)).map(x=>({uid:String(x.uid),enviado:true,ts:+x.ts,dia:String(x.dia),trato:+x.trato||1,hora:x.hora,curral:String(x.curral),prev:+x.prev||0,forn:+x.forn||0,ini:+x.ini||0,fim:+x.fim||0}));
     if(novos.length){await dbAddMany(novos);HIST=await dbAll();}
+    try{await puxarPrevisto(true);}catch(e){}
     render();renderHist();toast(novos.length?`${novos.length} lançamento(s) trazido(s) da nuvem`:'Nada novo na nuvem');
   }catch(e){toast('Não consegui buscar: '+(e.message||e));}
   $('btnPuxar').disabled=false;$('btnPuxar').textContent='Buscar tratos da nuvem';
@@ -657,36 +794,106 @@ $('btnSalvarApi').onclick=()=>{
 };
 $('btnEnviar').onclick=()=>sincronizar(true);
 $('btnPuxar').onclick=puxarNuvem;
-window.addEventListener('online',()=>sincronizar());
+window.addEventListener('online',()=>{sincronizar();checarBackup();});
 setInterval(()=>sincronizar(),60000);
 
-/* ---------- Lista de currais ---------- */
-function abrirEdicao(txt){$('lista').value=txt;$('editBox').hidden=false;$('listaBtns').hidden=true;$('lista').focus();}
-$('btnEditar').onclick=()=>abrirEdicao(lista().map(c=>`${c.nome} ${c.prev}`).join('\n'));
-$('btnCancLista').onclick=()=>{$('editBox').hidden=true;$('listaBtns').hidden=false;$('ocrBox').hidden=true;};
-function parseNum(s){s=s.replace(/\s/g,'');if(/^\d{1,3}([.,]\d{3})+$/.test(s))return parseFloat(s.replace(/[.,]/g,''));return parseFloat(s.replace(',','.'));}
-function parseLinhaFoto(l){const r=parseLinha(l);return r&&/^[A-Z]{0,6}\d{1,4}[A-Z]?$/.test(r.nome)&&r.prev>=10?r:null;}
+/* ---------- Backup (todo dia às 21:00 e no botão) ---------- */
+function infoBackup(){
+  const el=$('bkInfo');if(!el)return;
+  el.textContent=S.ultBackupHora?`Último backup feito por este celular: ${S.ultBackupHora}.`:'Este celular ainda não fez backup.';
+  if(S.backupPend)el.textContent+=' Tem backup esperando sinal de internet.';
+}
+let fazendoBackup=false;
+async function fazerBackup(manual){
+  if(fazendoBackup)return;
+  if(!apiUrl()){if(manual)toast('Ligue a nuvem primeiro');return;}
+  if(!navigator.onLine){S.backupPend=true;save();infoBackup();if(manual)toast('Sem sinal. O backup é feito quando tiver internet.');return;}
+  fazendoBackup=true;$('btnBackupNuvem').disabled=true;$('btnBackupNuvem').textContent='Fazendo backup…';
+  try{
+    await sincronizar();
+    S.prevPend=true;S.prevTs=S.prevTs||Date.now();await enviarPrevisto();
+    const j=await postApi({acao:'backup',manual:!!manual,aparelho:S.aparelho});
+    S.backupPend=false;S.ultBackup=hojeKey();S.ultBackupHora=new Date().toLocaleString('pt-BR',{day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'});save();
+    if(manual)toast(j.arquivo?`Backup feito: ${j.arquivo}`:'Backup feito na nuvem');
+  }catch(e){S.backupPend=true;save();if(manual)toast('Não consegui fazer o backup: '+(e.message||e));}
+  fazendoBackup=false;$('btnBackupNuvem').disabled=false;$('btnBackupNuvem').textContent='Fazer backup agora';
+  infoBackup();statusNuvem();
+}
+function checarBackup(){if(!S)return;const d=new Date();if(d.getHours()>=HORA_BACKUP&&S.ultBackup!==hojeKey())fazerBackup(false);}
+setInterval(checarBackup,60000);
+$('btnBackupNuvem').onclick=()=>fazerBackup(true);
+
+/* ---------- Lista em texto ---------- */
+function fecharEdicao(){$('editBox').hidden=true;$('revBox').hidden=true;$('listaBtns').hidden=false;$('ocrBox').hidden=true;}
+function abrirEdicao(txt){$('lista').value=txt;$('editBox').hidden=false;$('revBox').hidden=true;$('listaBtns').hidden=true;$('lista').focus();}
+$('btnEditar').onclick=()=>{const m=S.prev[$('pvTrato').value]||{};abrirEdicao(S.cadastro.filter(n=>m[n]!=null).map(n=>`${n} ${m[n]}`).join('\n'));};
+$('btnCancLista').onclick=fecharEdicao;
+function parseNum(s){s=String(s).replace(/\s/g,'');if(/^\d{1,3}([.,]\d{3})+$/.test(s))return parseFloat(s.replace(/[.,]/g,''));return parseFloat(s.replace(',','.'));}
 function parseLinha(l){
-  l=l.replace(/[|_—–]/g,' ').replace(/\s+/g,' ').trim();
-  const m=l.match(/^(.+?)[\s;:,\t=\/-]+(\d{1,3}(?:[.,]\d{3})+|\d+(?:[.,]\d+)?)\s*(kg|kgs|quilos)?\.?$/i);
+  l=l.replace(/[|_—–]/g,' ').replace(/\s+/g,' ').trim();if(!l)return null;
+  const m=l.match(/^(.+?)(?:[\s;:,\t=\/]+(\?|\d{1,3}(?:[.,]\d{3})+|\d+(?:[.,]\d+)?)\s*(?:kg|kgs|quilos)?\.?)?$/i);
   if(!m)return null;
-  let nome=m[1].trim().replace(/^curral\s*/i,'').replace(/\s+/g,'').toUpperCase().replace(/[^A-Z0-9-]/g,'').replace(/^([A-Z]+)-(?=\d)/,'$1');
-  if(!nome)return null;
-  const L=lista();
-  if(/^\d+$/.test(nome)&&L.length&&/^[A-Z]+/.test(L[0].nome)){nome=L[0].nome.match(/^[A-Z]+/)[0]+nome;}
-  const prev=parseNum(m[2]);if(isNaN(prev))return null;
+  const nome=nomeLimpo(m[1].replace(/^curral\s*/i,''));if(!nome)return null;
+  const prev=m[2]==null?null:(m[2]==='?'?'?':parseNum(m[2]));
+  if(typeof prev==='number'&&isNaN(prev))return null;
   return {nome,prev};
 }
 $('btnSalvarLista').onclick=()=>{
   const linhas=$('lista').value.split('\n').map(l=>l.trim()).filter(Boolean);
   const arr=linhas.map(parseLinha);const ruins=linhas.filter((l,i)=>!arr[i]);
-  if(!arr.length||ruins.length){toast(ruins.length?`Confira: "${ruins[0]}" precisa de nome e quantidade`:'Lista vazia');return;}
-  S.listas[String(S.tratoSel)]=arr;S.exemplo=false;
-  const regs=regsAtuais();S.atual=Math.max(0,arr.findIndex(x=>!feito(x.nome,regs)));
-  $('editBox').hidden=true;$('listaBtns').hidden=false;$('ocrBox').hidden=true;save();render();toast(`${arr.length} currais salvos no Trato ${S.tratoSel}`);
+  if(ruins.length){toast(`Confira: "${ruins[0]}" precisa de nome e quantidade`);return;}
+  const k=$('pvTrato').value,m={},novos=[];
+  arr.forEach(x=>{let n=acharCadastro(x.nome);if(!n){n=x.nome;S.cadastro.push(n);novos.push(n);}if(x.prev!=null)m[n]=x.prev;});
+  S.prev[k]=m;marcarPrev();fecharEdicao();render();renderPrev();
+  toast(`Trato ${k}: ${Object.keys(m).length} currais salvos${novos.length?` (${novos.length} cadastrado(s) no fim)`:''}`);
 };
 
-/* ---------- Foto (leitura de texto) ---------- */
+/* ---------- Foto: lê só Curral, Trato e Previsto ---------- */
+const ehNum=t=>/^(\d{1,3}([.,]\d{3})+|\d+([.,]\d+)?)$/.test(t);
+const tokensDe=l=>l.toUpperCase().normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/[|;]/g,' ').replace(/KG\b/g,' ').split(/\s+/).filter(Boolean);
+function cabecalho(tk){
+  const ci=tk.findIndex(t=>/^CURRA/.test(t));
+  const cols=tk.slice(ci+1).filter(t=>/[A-Z]/.test(t)&&!/^\(.*\)$/.test(t));
+  return {cols,iTrato:cols.findIndex(t=>/^TRATO/.test(t)),iPrev:cols.findIndex(t=>/^PREV/.test(t))};
+}
+function acharCurralNaLinha(tk){
+  for(let i=0;i<tk.length;i++){
+    if(ehNum(tk[i]))continue;
+    for(let len=Math.min(4,tk.length-i);len>=1;len--){const n=acharCadastro(tk.slice(i,i+len).join(''));if(n)return {nome:n,i,len};}
+  }
+  return null;
+}
+function lerTabela(texto,tratoPadrao){
+  let hdr=null,ctx=tratoPadrao;const itens=[],ign=[];
+  for(const l of String(texto).split('\n')){
+    const tk=tokensDe(l);if(!tk.length)continue;
+    const up=tk.join(' ');
+    const cur=acharCurralNaLinha(tk);
+    if(!cur){
+      if(/CURRA/.test(up)&&/PREV/.test(up)){hdr=cabecalho(tk);continue;}
+      const mt=up.match(/TRATO\s*[:\-N°º]*\s*([1-5])\b/);if(mt){ctx=+mt[1];continue;}
+      if(/^[A-Z]{1,3}-?\d{1,3}$/.test(tk[0])&&tk.slice(1).some(ehNum))ign.push(tk[0]);
+      continue;
+    }
+    const resto=tk.slice(0,cur.i).concat(tk.slice(cur.i+cur.len));
+    let trato=null,prev='?';
+    if(hdr&&hdr.iPrev>=0){
+      // alinha as colunas pelo cabeçalho (colunas que faltam no fim da linha não atrapalham)
+      const dep=tk.slice(cur.i+cur.len);
+      const tv=hdr.iTrato>=0?dep[hdr.iTrato]:null;
+      if(tv&&/^[1-5]$/.test(tv))trato=+tv;
+      const pv=dep[hdr.iPrev];
+      if(pv&&ehNum(pv))prev=parseNum(pv);
+    }else{
+      const mt=resto.join(' ').match(/(?:TRATO|^T|\sT)\s*-?\s*([1-5])\b/);if(mt)trato=+mt[1];
+      const kg=resto.filter(ehNum).map(parseNum).filter(v=>v>=10);if(kg.length===1)prev=kg[0];
+    }
+    if(typeof prev==='number'&&(isNaN(prev)||prev<=0))prev='?';
+    itens.push({nome:cur.nome,trato:trato||ctx,prev});
+  }
+  return {itens,ign};
+}
+const nota=r=>r.itens.length?r.itens.filter(x=>x.prev!=='?').length/r.itens.length:0;
 function carregarScript(src){return new Promise((ok,err)=>{const s=document.createElement('script');s.src=src;s.onload=ok;s.onerror=err;document.head.appendChild(s);});}
 async function fotoBase64(file){
   const img=await createImageBitmap(file);const r=Math.min(1,1600/Math.max(img.width,img.height));
@@ -702,41 +909,87 @@ async function prepararImagem(file){
   for(let i=0;i<p.length;i+=4){const g=.3*p[i]+.59*p[i+1]+.11*p[i+2];const v=g>150?255:g<90?0:(g-90)*4.25;p[i]=p[i+1]=p[i+2]=v;}
   cx.putImageData(d,0,0);return cv;
 }
-$('foto').addEventListener('change',async e=>{
-  const file=e.target.files[0];e.target.value='';if(!file)return;
-  const box=$('ocrBox');box.hidden=false;box.textContent='Lendo a foto…';
-  try{
-    if(apiUrl()&&navigator.onLine){
-      try{
-        box.textContent='Enviando a foto para o Google ler…';
-        const b64=await fotoBase64(file);
-        const j=await postApi({acao:'foto',imagem:b64});
-        const achadosG=String(j.texto||'').split('\n').map(parseLinhaFoto).filter(Boolean);
-        if(achadosG.length){box.textContent=`Encontrei ${achadosG.length} currais. Confira os números abaixo antes de salvar.`;abrirEdicao(achadosG.map(x=>`${x.nome} ${x.prev}`).join('\n'));return;}
-      }catch(err){/* continua com o leitor do celular */}
-    }
-    if(!window.Tesseract){
-      box.textContent='Carregando o leitor de foto (precisa de internet na primeira vez)…';
-      await carregarScript('https://cdn.jsdelivr.net/npm/tesseract.js@5.1.1/dist/tesseract.min.js');
-    }
-    const cv=await prepararImagem(file);
-    const worker=await Tesseract.createWorker('eng',1,{logger:m=>{if(m.status==='recognizing text')box.textContent=`Lendo a foto… ${Math.round(m.progress*100)}%`;}});
-    await worker.setParameters({tessedit_pageseg_mode:'6'});
-    const {data}=await worker.recognize(cv);await worker.terminate();
-    const achados=data.text.split('\n').map(parseLinhaFoto).filter(Boolean);
-    if(!achados.length){box.textContent='Não consegui achar curral e quantidade nessa foto. Tente uma foto mais de perto, reta e com boa luz, ou digite a lista.';return;}
-    box.textContent=`Encontrei ${achados.length} currais. Confira os números abaixo antes de salvar.`;
-    abrirEdicao(achados.map(x=>`${x.nome} ${x.prev}`).join('\n'));
-  }catch(err){
-    box.textContent=navigator.onLine?'Não foi possível ler a foto. Tente de novo ou digite a lista.':'Sem internet: o leitor de foto precisa ser baixado uma vez com internet. Depois funciona sem sinal.';
+async function lerComTesseract(file,box,rot){
+  if(!window.Tesseract){
+    box.textContent=`${rot}: carregando o leitor de foto (precisa de internet na primeira vez)…`;
+    await carregarScript('https://cdn.jsdelivr.net/npm/tesseract.js@5.1.1/dist/tesseract.min.js');
   }
+  const cv=await prepararImagem(file);
+  const worker=await Tesseract.createWorker('eng',1,{logger:m=>{if(m.status==='recognizing text')box.textContent=`${rot}: lendo… ${Math.round(m.progress*100)}%`;}});
+  await worker.setParameters({tessedit_pageseg_mode:'6'});
+  const {data}=await worker.recognize(cv);await worker.terminate();
+  return data.text;
+}
+async function lerUmaFoto(file,box,rot,trato){
+  let melhor=null;
+  if(apiUrl()&&navigator.onLine){
+    try{box.textContent=`${rot}: enviando para o Google ler…`;const j=await postApi({acao:'foto',imagem:await fotoBase64(file)});melhor=lerTabela(j.texto||'',trato);}catch(e){}
+  }
+  if(!melhor||!melhor.itens.length||nota(melhor)<.7){
+    try{const t=lerTabela(await lerComTesseract(file,box,rot),trato);
+      if(!melhor||nota(t)*t.itens.length>nota(melhor)*melhor.itens.length||(!melhor.itens.length&&t.itens.length))melhor=t;}catch(e){}
+  }
+  return melhor||{itens:[],ign:[]};
+}
+let REV=[];
+function renderRev(){
+  $('tbRev').innerHTML=REV.map((x,i)=>`<tr><td class="c" style="cursor:default">${esc(x.nome)}</td>
+    <td><select class="mini" data-t="${i}">${[1,2,3,4,5].map(t=>`<option value="${t}" ${t===x.trato?'selected':''}>${t}</option>`).join('')}</select></td>
+    <td><input class="cell${x.prev==='?'?' duv':''}" type="text" inputmode="decimal" data-v="${i}" value="${esc(valPrev(x.prev))}"></td>
+    <td><button class="mini" data-x="${i}" aria-label="Tirar ${esc(x.nome)}">✕</button></td></tr>`).join('');
+}
+$('tbRev').addEventListener('change',e=>{
+  const t=e.target;
+  if(t.dataset.t!=null)REV[t.dataset.t].trato=+t.value;
+  if(t.dataset.v!=null){const s=t.value.trim();const v=s==='?'||s===''?'?':parseNum(s);REV[t.dataset.v].prev=(typeof v==='number'&&(isNaN(v)||v<0))?'?':v;t.classList.toggle('duv',REV[t.dataset.v].prev==='?');}
+});
+$('tbRev').addEventListener('click',e=>{const b=e.target.closest('button[data-x]');if(!b)return;REV.splice(+b.dataset.x,1);renderRev();});
+$('btnCancRev').onclick=()=>{REV=[];fecharEdicao();};
+$('btnAplicarRev').onclick=()=>{
+  if(!REV.length){fecharEdicao();return;}
+  const tr=new Set();REV.forEach(x=>{mapaPrev(x.trato)[x.nome]=x.prev;tr.add(x.trato);});
+  const q=REV.filter(x=>x.prev==='?').length,n=REV.length;REV=[];
+  marcarPrev();fecharEdicao();render();renderPrev();
+  toast(`${n} previsto(s) atualizado(s) no(s) Trato(s) ${[...tr].sort().join(', ')}${q?` · ${q} com "?"`:''}`);
+};
+$('foto').addEventListener('change',async e=>{
+  const files=[...e.target.files];e.target.value='';if(!files.length)return;
+  const box=$('ocrBox');box.hidden=false;$('editBox').hidden=true;$('revBox').hidden=true;$('listaBtns').hidden=true;
+  const trato=+$('pvTrato').value;const mapa=new Map();let rep=0;const ign=new Set();
+  try{
+    for(let i=0;i<files.length;i++){
+      const r=await lerUmaFoto(files[i],box,files.length>1?`Foto ${i+1} de ${files.length}`:'Foto',trato);
+      r.ign.forEach(x=>ign.add(x));
+      r.itens.forEach(x=>{const k=x.nome+'|'+x.trato;const a=mapa.get(k);
+        if(!a)mapa.set(k,x);else{rep++;if(a.prev==='?'&&x.prev!=='?')a.prev=x.prev;}});
+    }
+  }catch(err){}
+  REV=[...mapa.values()].sort((a,b)=>a.trato-b.trato||S.cadastro.indexOf(a.nome)-S.cadastro.indexOf(b.nome));
+  if(!REV.length){
+    box.textContent=navigator.onLine?'Não consegui achar curral cadastrado e quantidade nessas fotos. Tente fotos mais de perto, retas e com boa luz, ou use Editar em texto.':'Sem internet: o leitor de foto precisa ser baixado uma vez com internet. Depois funciona sem sinal.';
+    $('listaBtns').hidden=false;return;
+  }
+  const q=REV.filter(x=>x.prev==='?').length;
+  box.textContent=`Li ${files.length} foto(s): ${REV.length} curral(is)`+(rep?`, ${rep} repetido(s) desconsiderado(s)`:'')+(q?`, ${q} com "?" (não deu para ler)`:'')+
+    (ign.size?`. Não cadastrados (ignorados): ${[...ign].join(', ')}`:'')+'. Confira e toque em Atualizar previsto.';
+  renderRev();$('revBox').hidden=false;
 });
 
-
 try{navigator.wakeLock&&navigator.wakeLock.request('screen').catch(()=>{});}catch(e){}
-document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible'){try{navigator.wakeLock&&navigator.wakeLock.request('screen').catch(()=>{});}catch(e){} if(S){render();sincronizar();}}});
+document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible'){try{navigator.wakeLock&&navigator.wakeLock.request('screen').catch(()=>{});}catch(e){} if(S){render();sincronizar();checarBackup();}}});
 iniciar();
-if('serviceWorker' in navigator){navigator.serviceWorker.register('sw.js').catch(()=>{});}
+
+/* ---------- Atualização automática do app ---------- */
+if('serviceWorker' in navigator){
+  const tinha=!!navigator.serviceWorker.controller;let recarregou=false;
+  navigator.serviceWorker.addEventListener('controllerchange',()=>{if(!tinha||recarregou)return;recarregou=true;location.reload();});
+  navigator.serviceWorker.register('sw.js',{updateViaCache:'none'}).then(reg=>{
+    const ver=()=>{if(navigator.onLine)reg.update().catch(()=>{});};
+    setInterval(ver,10*60000);
+    document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')ver();});
+    window.addEventListener('online',ver);
+  }).catch(()=>{});
+}
 </script>
 </body>
 </html>

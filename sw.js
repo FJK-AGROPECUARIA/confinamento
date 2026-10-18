@@ -1,8 +1,8 @@
-const CACHE='trato-v5';
+const CACHE='trato-v6';
 const RUNTIME='trato-runtime-v1';
 const FILES=['./','./index.html','./manifest.json','./icone-192.png','./icone-512.png'];
 
-self.addEventListener('install',e=>{e.waitUntil(caches.open(CACHE).then(c=>c.addAll(FILES)));self.skipWaiting();});
+self.addEventListener('install',e=>{e.waitUntil(caches.open(CACHE).then(c=>c.addAll(FILES.map(f=>new Request(f,{cache:'reload'})))));self.skipWaiting();});
 self.addEventListener('activate',e=>{
   e.waitUntil(caches.keys().then(k=>Promise.all(k.filter(x=>x!==CACHE&&x!==RUNTIME).map(x=>caches.delete(x)))));
   self.clients.claim();
@@ -21,8 +21,10 @@ self.addEventListener('fetch',e=>{
 
   if(url.origin!==location.origin)return; // Google Script (nuvem) vai direto, sem cache
 
-  // App: usa a versão da internet quando tem sinal, senão a guardada
-  e.respondWith(fetch(req).then(res=>{
-    const cp=res.clone();caches.open(CACHE).then(c=>c.put(req,cp));return res;
+  // App: sempre tenta a versão mais nova da internet; sem sinal, usa a guardada
+  const novo=new Request(req.url,{cache:'no-cache',credentials:'same-origin'});
+  e.respondWith(fetch(novo).then(res=>{
+    if(res.ok){const cp=res.clone();caches.open(CACHE).then(c=>c.put(req,cp));}
+    return res;
   }).catch(()=>caches.match(req,{ignoreSearch:true}).then(r=>r||caches.match('./index.html'))));
 });
