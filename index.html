@@ -234,6 +234,26 @@ input.big.sel{border-color:var(--accent);border-width:3px;background:#fff}
 .curBox2 .cbCur{cursor:pointer}
 .curBox2 .seta{font-style:normal;font-size:.7rem;margin-left:4px;color:var(--led)}
 .curBox2 .cbPrev b{min-width:5ch}
+/* tela inicial */
+.inicio{display:none;flex-direction:column;gap:14px;padding-top:10px}
+body.naInicio .inicio{display:flex}
+body.naInicio .wrap>nav.tabs,body.naInicio #viewPrev,body.naInicio #viewTrato,body.naInicio #viewHist{display:none!important}
+button.grande{font-size:1.5rem;padding:26px 14px;border-radius:16px;font-weight:700}
+button.gExec{background:#1f8f4e;border-color:#1f8f4e;color:#fff}
+button.gVer{background:var(--accent);border-color:var(--accent);color:#fff}
+.faixaVer{display:flex;align-items:center;justify-content:space-between;gap:8px;background:#e8eef7;border:2px solid var(--accent);border-radius:10px;padding:8px 12px;font-weight:600;color:var(--accent)}
+/* modo visualização: esconde tudo que altera dados */
+body.somenteVer #escolhaCur,body.somenteVer .led,body.somenteVer .res,body.somenteVer #btnReg,body.somenteVer #painel>p.note,
+body.somenteVer #painel div:has(>.campoX),body.somenteVer #btnDesfazer,body.somenteVer #listaBtns,body.somenteVer #btnLimparPrev,
+body.somenteVer #btnCadastrar,body.somenteVer #btnRemoverCurral,body.somenteVer #tbPrev td.acoes,body.somenteVer #tbPrev td.alca,
+body.somenteVer #hApagar,body.somenteVer #selBar,body.somenteVer label[for=restaurar],body.somenteVer details,body.somenteVer #btnEnviar,
+body.somenteVer #editBox,body.somenteVer #revBox,body.somenteVer #ocrBox,body.somenteVer .curBox2 .seta{display:none!important}
+body.somenteVer button.editq{pointer-events:none}
+/* seleção para apagar */
+.selBar{border:2px solid var(--bad);border-radius:10px;padding:10px;display:flex;flex-direction:column;gap:8px}
+tr.selrow td{cursor:pointer}
+tr.marcado td{background:#fde8e8}
+.chk{font-size:1.15rem}
 </style>
 </head>
 <body>
@@ -243,6 +263,12 @@ input.big.sel{border-color:var(--accent);border-width:3px;background:#fff}
   <div class="sub"><span id="hoje"></span> · <span id="nuvem" class="nuvem">Nuvem: …</span></div>
 </header>
 <div class="wrap">
+  <div class="inicio" id="inicio">
+    <button class="grande gExec" id="btnModoExec">▶ Executar trato</button>
+    <button class="grande gVer" id="btnModoVer">👁 Visualizar</button>
+    <p class="note">Visualizar é só para acompanhar as informações, sem alterar nada. Atualiza sozinho com internet.</p>
+  </div>
+  <div class="faixaVer" id="faixaVer" hidden><span>👁 Modo visualização · atualiza sozinho</span><button class="mini" id="btnSairVer">Sair</button></div>
   <nav class="tabs" role="tablist">
     <button id="tabPrev" role="tab" aria-selected="false">Previsto</button>
     <button id="tabTrato" role="tab" aria-selected="true">Tratar</button>
@@ -367,6 +393,12 @@ input.big.sel{border-color:var(--accent);border-width:3px;background:#fff}
       <thead><tr><th>Curral</th><th>Hora</th><th>Previsto</th><th>Fornec.</th><th>Dif.</th></tr></thead>
       <tbody id="tbHist"></tbody>
     </table></div>
+    <div class="selBar" id="selBar" hidden>
+      <div class="note" id="selInfo">Toque nos registros que quer apagar.</div>
+      <div class="row"><button id="selTodos">Selecionar todos</button><button id="selCanc">Cancelar</button></div>
+      <button class="dangerfill" id="selApagar" disabled>Apagar selecionados</button>
+    </div>
+    <button class="danger" id="hApagar">Apagar registros…</button>
     <div class="row">
       <button class="wa" id="hWa">Enviar no WhatsApp</button>
       <button id="hCopiar">Copiar lista</button>
@@ -400,11 +432,6 @@ input.big.sel{border-color:var(--accent);border-width:3px;background:#fff}
       <button id="btnBackup">Baixar cópia no celular</button>
       <label class="filebtn" for="restaurar" style="margin:0;text-transform:none;letter-spacing:0;color:var(--fg);font-size:1rem">Restaurar cópia<input id="restaurar" type="file" accept=".json,application/json"></label>
     </div>
-    <button class="danger" id="hApagar">Apagar os registros filtrados</button>
-    <div class="confirm" id="confApagar" hidden>
-      <div id="confApagarTxt"></div>
-      <div class="row"><button class="danger" id="hApagarSim">Apagar</button><button id="hApagarNao">Cancelar</button></div>
-    </div>
   </section>
   <p class="note" id="versao" style="text-align:center"></p>
 </div>
@@ -433,7 +460,7 @@ input.big.sel{border-color:var(--accent);border-width:3px;background:#fff}
 <div class="toast" id="toast" hidden></div>
 <script>
 'use strict';
-const APP_VERSAO='43';
+const APP_VERSAO='44';
 const APP_DATA='17/10/2026';
 const KEY='trato-confinamento-v1';
 const $=id=>document.getElementById(id);
@@ -447,7 +474,8 @@ const hojeKey=()=>diaKey(new Date());
 /* Currais iniciais, nesta ordem */
 const INICIAIS=['C-10','C-3','C-4','C-7','C-9','P-COCAL-1','P-CARRAPICHO-1','P-MANGUEIRA-1','P-REPRESA-1','P-DIVISA-1','P-MOD-1','P-MOD-2','P-MOD-3','P-MOD-4','P-MOD-5','P-MOD-6'];
 const HORA_BACKUP=21;
-let S, HIST=[];
+let S, HIST=[], modoVer=false;
+function bloqueado(){if(modoVer){toast('Modo visualização: só para ver');return true;}return false;}
 /* ====== CONFIGURAÇÃO: link do Apps Script (termina em /exec). Também pode ser colado no app, aba Histórico ====== */
 const API_PADRAO='https://script.google.com/macros/s/AKfycbwmYRx78ILhsO2Icvz7BHEQTXlVzVbVnGcHlQmpLDfw2MgyOv3SFcj7PdTzbrQ66M6n/exec';
 /* ================================================================================================================ */
@@ -566,6 +594,7 @@ function render(){
   $('hoje').textContent=new Date().toLocaleDateString('pt-BR',{weekday:'short',day:'2-digit',month:'2-digit',year:'numeric'});
   const L=lista(),regs=regsAtuais();
   if(S.atualNome!=null){const i=L.findIndex(x=>x.nome===S.atualNome);if(i>=0)S.atual=i;}
+  if(modoVer){const i=L.findIndex(x=>!feito(x.nome,regs));S.atual=i<0?L.length:i;}
   if(S.atual>L.length)S.atual=L.length;
   const c=L[S.atual];
   $('curNome').textContent=c?c.nome:(L.length?'Trato completo':'-');
@@ -630,6 +659,7 @@ $('btnProximo').onclick=()=>irTrato(S.tratoSel+1);
 $('btnAnterior').onclick=()=>irTrato(S.tratoSel-1);
 
 $('btnReg').onclick=async()=>{
+  if(bloqueado())return;
   const L=lista(),c=L[S.atual];const ini=parseFloat(S.ini),fim=parseFloat(S.fim);
   if(!c||isNaN(ini)||isNaN(fim)||fim>=ini)return;
   $('btnReg').disabled=true;
@@ -652,7 +682,7 @@ function mostrarEscolha(){
   const L=lista(),regs=regsAtuais();
   $('escolhaCur').innerHTML=L.length?L.map((x,i)=>`<button data-i="${i}" class="${i===S.atual?'atual':''} ${feito(x.nome,regs)?'feito':''}">${feito(x.nome,regs)?'✓ ':''}${esc(x.nome)}<small>${fmt(x.prev)} kg</small></button>`).join(''):'<p class="note">Sem previsto neste trato.</p>';
 }
-$('btnTrocar').onclick=()=>{const e=$('escolhaCur');e.hidden=!e.hidden;if(!e.hidden)mostrarEscolha();document.querySelector('.curBox2 .seta').textContent=e.hidden?'▼':'▲';};
+$('btnTrocar').onclick=()=>{if(modoVer)return;const e=$('escolhaCur');e.hidden=!e.hidden;if(!e.hidden)mostrarEscolha();document.querySelector('.curBox2 .seta').textContent=e.hidden?'▼':'▲';};
 $('escolhaCur').addEventListener('click',e=>{const b=e.target.closest('button[data-i]');if(!b)return;
   setAtual(+b.dataset.i);S.fim='';save();$('escolhaCur').hidden=true;document.querySelector('.curBox2 .seta').textContent='▼';render();toast(`Tratando ${lista()[S.atual].nome}`);});
 /* Calendário do próprio app: tocou no dia, já muda (sem precisar confirmar) */
@@ -682,7 +712,7 @@ $('cal').addEventListener('click',e=>{const b=e.target.closest('button');if(!b||
   else if(c==='hoje')escolherData(hojeKey());
   else if(c==='fechar')$('cal').hidden=true;});
 $('btnHoje').onclick=()=>{S.dataManual=null;S.fim='';const L=lista(),regs=regsAtuais();setAtual(Math.max(0,L.findIndex(x=>!feito(x.nome,regs))));save();render();toast('Voltou para a data de hoje');};
-$('tbCur').addEventListener('click',e=>{const td=e.target.closest('td[data-i]');if(!td)return;setAtual(+td.dataset.i);S.fim='';save();render();window.scrollTo({top:0,behavior:'smooth'});});
+$('tbCur').addEventListener('click',e=>{if(modoVer)return;const td=e.target.closest('td[data-i]');if(!td)return;setAtual(+td.dataset.i);S.fim='';save();render();window.scrollTo({top:0,behavior:'smooth'});});
 
 $('btnDesfazer').onclick=async()=>{
   const regs=regsAtuais();const r=regs[regs.length-1];if(!r)return;
@@ -742,6 +772,7 @@ function aplicarPrev(i,t){
   resumoPrev();return true;
 }
 function abrirTeclado(i){
+  if(bloqueado())return;
   if(tecIdx!=null&&tecIdx!==i&&!aplicarPrev(tecIdx,tecBuf))return;
   document.querySelectorAll('#tbPrev input.sel').forEach(x=>x.classList.remove('sel'));
   const x=campoPrev(i);if(!x){fecharTeclado();return;}
@@ -758,6 +789,7 @@ function fecharTeclado(){
 /* Teclado do app para a balança: OK fecha (espera o curral terminar para digitar o final) */
 let balCampo=null,balBuf='',balNovo=false;
 function abrirBal(id){
+  if(bloqueado())return;
   if(typeof fecharTeclado==='function'&&tecIdx!=null)fecharTeclado();
   ['ini','fim'].forEach(c=>$(c).classList.remove('sel'));
   balCampo=id;balBuf=$(id).value;balNovo=true;$(id).classList.add('sel');
@@ -801,7 +833,7 @@ $('btnLimparPrev').onclick=()=>{
   S.prev[k]={};marcarPrev();render();renderPrev();toast(`Previsto do Trato ${k} limpo`);
 };
 $('tbPrev').addEventListener('click',e=>{
-  const b=e.target.closest('button[data-a]');if(!b)return;const i=+b.dataset.i,C=S.cadastro,n=C[i];
+  const b=e.target.closest('button[data-a]');if(!b)return;if(bloqueado())return;const i=+b.dataset.i,C=S.cadastro,n=C[i];
   if(b.dataset.a==='ed'){
     const novo=nomeLimpo(prompt(`Novo nome para o ${n}:`,n)||'');if(!novo||novo===n)return;
     const ja=acharCadastro(novo);if(ja&&ja!==n){toast(`${ja} já está cadastrado`);return;}
@@ -992,12 +1024,13 @@ function renderHist(){
   $('tbHist').innerHTML=regs.length?grupos(regs).reverse().map(g=>{
     const gp=g.rs.reduce((a,r)=>a+r.prev,0),gf=g.rs.reduce((a,r)=>a+r.forn,0);
     return `<tr class="grp"><td colspan="5">${diaBR(g.dia)} · Trato ${g.trato}<span>${fmt(gf)} kg (${sgn(gf-gp)})</span></td></tr>`+
-      g.rs.map(r=>`<tr><td class="c">${esc(r.curral)}</td><td>${horaDe(r)}</td><td>${fmt(r.prev)}</td><td><button class="editq" data-uid="${esc(r.uid)}" aria-label="Editar quantidade do ${esc(r.curral)}"><b>${fmt(r.forn)}</b> ✎</button></td><td class="${classeDesv(r.forn-r.prev,r.prev)}">${sgn(r.forn-r.prev)}</td></tr>`).join('');
+      g.rs.map(r=>`<tr class="${selModo?'selrow':''} ${selModo&&sel.has(r.uid)?'marcado':''}" ${selModo?`data-sel="${esc(r.uid)}"`:''}><td class="c">${selModo?`<span class="chk">${sel.has(r.uid)?'☑':'☐'}</span> `:''}${esc(r.curral)}</td><td>${horaDe(r)}</td><td>${fmt(r.prev)}</td><td><button class="editq" data-uid="${esc(r.uid)}" aria-label="Editar quantidade do ${esc(r.curral)}"><b>${fmt(r.forn)}</b> ✎</button></td><td class="${classeDesv(r.forn-r.prev,r.prev)}">${sgn(r.forn-r.prev)}</td></tr>`).join('');
   }).join(''):`<tr><td colspan="5" class="note" style="text-align:left">Nenhum registro para esse filtro.</td></tr>`;
   ['hWa','hCopiar','hExcel','hShare','hApagar'].forEach(id=>$(id).disabled=!regs.length);
+  $('hApagar').hidden=selModo;$('selBar').hidden=!selModo;
+  if(selModo){$('selInfo').textContent=sel.size?`${sel.size} registro(s) selecionado(s).`:'Toque nos registros que quer apagar.';$('selApagar').disabled=!sel.size;$('selApagar').textContent=sel.size?`Apagar selecionados (${sel.size})`:'Apagar selecionados';}
   const nd=dias.length;
   $('dbInfo').textContent=`${HIST.length.toLocaleString('pt-BR')} registros guardados neste celular, de ${nd} dia(s).`;
-  $('confApagar').hidden=true;
   infoBackup();
   statusNuvem();
 }
@@ -1007,17 +1040,21 @@ $('hCopiar').onclick=()=>copiar(mensagem(filtrados()),'Lista copiada');
 $('hWa').onclick=()=>whats(mensagem(filtrados()));
 $('hExcel').onclick=()=>exportar(filtrados());
 $('hShare').onclick=()=>compartilhar(filtrados());
-$('hApagar').onclick=()=>{
-  const regs=filtrados(),d=$('fDia').value,t=$('fTrato').value;
-  $('confApagarTxt').textContent=`Apagar ${regs.length} registro(s) de ${d?diaBR(d):'todos os dias'}, ${t?'Trato '+t:'todos os tratos'}? Apaga também na planilha da nuvem. Isso não tem volta; faça um backup antes se precisar.`;
-  $('confApagar').hidden=false;
-};
-$('hApagarNao').onclick=()=>{$('confApagar').hidden=true;};
-$('hApagarSim').onclick=async()=>{
-  const regs=filtrados();const ids=new Set(regs.map(r=>r.id));
-  try{await dbDelMany([...ids]);}catch(e){toast('Erro ao apagar');return;}
+/* Apagar: escolhe os registros (um curral, um trato, ou todos do filtro) e pede a senha */
+let selModo=false;const sel=new Set();
+$('hApagar').onclick=()=>{if(bloqueado())return;selModo=true;sel.clear();renderHist();toast('Toque nos registros que quer apagar');};
+$('selCanc').onclick=()=>{selModo=false;sel.clear();renderHist();};
+$('selTodos').onclick=()=>{const f=filtrados();const todos=f.every(r=>sel.has(r.uid));f.forEach(r=>todos?sel.delete(r.uid):sel.add(r.uid));renderHist();};
+$('tbHist').addEventListener('click',e=>{if(!selModo)return;const tr=e.target.closest('tr[data-sel]');if(!tr)return;e.preventDefault();e.stopPropagation();const u=tr.dataset.sel;sel.has(u)?sel.delete(u):sel.add(u);renderHist();},true);
+$('selApagar').onclick=async()=>{
+  if(!sel.size)return;
+  const senha=prompt(`Apagar ${sel.size} registro(s), aqui e na planilha. Digite a senha:`);if(senha==null)return;
+  if(senha.trim()!=='1010'){toast('Senha incorreta');return;}
+  const regs=HIST.filter(r=>sel.has(r.uid));const ids=regs.map(r=>r.id);
+  try{await dbDelMany(ids);}catch(e){toast('Erro ao apagar');return;}
   const nu=regs.filter(r=>r.enviado).map(r=>r.uid);if(nu.length)S.apagarNuvem=(S.apagarNuvem||[]).concat(nu);save();
-  HIST=HIST.filter(r=>!ids.has(r.id));toast(`${ids.size} registro(s) apagado(s)`);render();renderHist();sincronizar();
+  const ap=new Set(ids);HIST=HIST.filter(r=>!ap.has(r.id));selModo=false;sel.clear();
+  toast(`${regs.length} registro(s) apagado(s)`);render();renderHist();sincronizar();
 };
 $('btnBackup').onclick=()=>{
   const dados={app:'trato-confinamento',versao:3,gerado:new Date().toISOString(),cadastro:S.cadastro,prev:S.prev,registros:HIST.map(({id,enviado,...r})=>r)};
@@ -1037,6 +1074,7 @@ $('restaurar').addEventListener('change',async e=>{
 
 /* ---------- Editar a quantidade realizada (só a quantidade; os pesos da balança ficam como foram registrados) ---------- */
 async function editarQtd(uid){
+  if(bloqueado()||selModo)return;
   const r=HIST.find(x=>x.uid===uid);if(!r)return;
   const t=prompt(`Quantidade realizada no ${r.curral} (Trato ${r.trato}, ${diaBR(r.dia)}), em kg:`,String(Math.round(r.forn)));
   if(t==null)return;const v=parseNum(t);
@@ -1531,6 +1569,15 @@ document.addEventListener('visibilitychange',()=>{if(document.visibilityState===
 /* sem zoom: funciona como aplicativo */
 ['gesturestart','gesturechange'].forEach(ev=>document.addEventListener(ev,e=>e.preventDefault(),{passive:false}));
 document.addEventListener('touchmove',e=>{if(e.scale!==undefined&&e.scale!==1)e.preventDefault();},{passive:false});
+/* ---------- Tela inicial: Executar trato ou só Visualizar ---------- */
+document.body.classList.add('naInicio');
+$('btnModoExec').onclick=()=>{modoVer=false;document.body.classList.remove('naInicio','somenteVer');$('faixaVer').hidden=true;aba('trato');};
+$('btnModoVer').onclick=()=>{modoVer=true;document.body.classList.remove('naInicio');document.body.classList.add('somenteVer');$('faixaVer').hidden=false;
+  if(typeof fecharTeclado==='function')fecharTeclado();if(balCampo)fecharBal();aba('trato');render();
+  if(navigator.onLine){puxarRegistros(true).catch(()=>{});puxarPrevisto(true).catch(()=>{});}};
+$('btnSairVer').onclick=()=>{location.reload();};
+// no modo visualização, busca o que os outros lançam a cada 15 segundos
+setInterval(()=>{if(modoVer&&navigator.onLine&&document.visibilityState==='visible'){puxarRegistros(true).catch(()=>{});puxarPrevisto(true).catch(()=>{});}},15000);
 iniciar();
 
 /* ---------- Atualização automática do app ---------- */
