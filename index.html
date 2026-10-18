@@ -224,6 +224,10 @@ input[type=number]{-moz-appearance:textfield}
 .tecAcoes1 button.tecOk{font-size:1.5rem;padding:16px 0}
 input.big.sel{border-color:var(--accent);border-width:3px;background:#fff}
 #ini,#fim{cursor:pointer;caret-color:transparent}
+.linhaTrato select.trato,select.trato{background-color:var(--surface);border:2px solid var(--lima)}
+.linhaTrato label{border:2px solid var(--lima);border-radius:10px;padding:7px 10px;background:none;line-height:1.2}
+.linhaTrato label{padding:7px 8px;font-size:1rem}
+.linhaTrato select.trato{width:7rem}
 </style>
 </head>
 <body>
@@ -424,7 +428,7 @@ input.big.sel{border-color:var(--accent);border-width:3px;background:#fff}
 <div class="toast" id="toast" hidden></div>
 <script>
 'use strict';
-const APP_VERSAO='38';
+const APP_VERSAO='39';
 const APP_DATA='17/10/2026';
 const KEY='trato-confinamento-v1';
 const $=id=>document.getElementById(id);
