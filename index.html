@@ -341,8 +341,6 @@ table.trat th:nth-child(3),#tbHist th:nth-child(3),table:has(#tbHist) th:nth-chi
 table.trat th:nth-child(4),table:has(#tbHist) th:nth-child(4){width:23%}
 table.trat th:nth-child(5),table:has(#tbHist) th:nth-child(5){width:14%}
 /* câmera dentro do app: várias fotos seguidas */
-#listaBtns{display:flex;flex-direction:column;gap:8px}
-#btnCamera{width:100%;font-size:1.1rem}
 .camBox{position:fixed;inset:0;z-index:20;background:#000;display:flex;flex-direction:column}
 .camBox video{flex:1 1 auto;width:100%;min-height:0;object-fit:cover;background:#000}
 .camFlash{position:absolute;inset:0;background:#fff;opacity:0;pointer-events:none;transition:opacity .25s}
@@ -358,10 +356,12 @@ table.trat th:nth-child(5),table:has(#tbHist) th:nth-child(5){width:14%}
 .camOk:disabled{opacity:.4}
 .camDisparo{width:76px;height:76px;border-radius:50%;background:#fff;border:6px solid #9aa4ae;padding:0}
 .camDisparo:active{transform:scale(.92)}
-body.somenteVer #btnCamera{display:none!important}
+body.somenteVer #btnLerFoto{display:none!important}
 #tbPrev button.edNome{margin-left:8px;padding:2px 8px;vertical-align:middle;font-size:.9rem;min-height:0}
 table:has(#tbHist) th:nth-child(2),table:has(#tbCur) th:nth-child(2){text-align:left!important}
 table:has(#tbHist) td.c{text-align:left}
+.eiCaixa .verdeLbl{display:block;text-align:left;background:var(--lima);border-color:var(--lima);color:var(--fg);font-size:1.25rem;font-weight:700;padding:14px;margin:0;text-transform:none;letter-spacing:0}
+.eiCaixa .verdeLbl small{display:block;font-size:.85rem;font-weight:500;opacity:.85}
 </style>
 </head>
 <body>
@@ -393,12 +393,9 @@ table:has(#tbHist) td.c{text-align:left}
       </select>
     </div>
     <p class="aviso bad" id="pvAviso" hidden></p>
-    <div id="listaBtns">
-      <button class="verde" id="btnCamera">📷 Tirar fotos da lista</button>
-      <div class="row">
-        <label class="filebtn lima" for="foto" style="margin:0;text-transform:none;letter-spacing:0;color:var(--fg);font-size:1rem">🖼 Fotos da galeria<input id="foto" type="file" accept="image/*" multiple></label>
-        <button id="btnEditar">Editar em texto</button>
-      </div>
+    <div class="row" id="listaBtns">
+      <button class="lima" id="btnLerFoto">Ler lista por foto</button>
+      <button id="btnEditar">Editar em texto</button>
     </div>
     <div class="filaFotos" id="filaFotos" hidden>
       <p id="ffInfo"></p>
@@ -603,6 +600,14 @@ table:has(#tbHist) td.c{text-align:left}
     <button id="bkCanc">Cancelar</button>
   </div>
 </div>
+<div class="escolhaImg" id="escolhaFoto" hidden>
+  <div class="eiCaixa">
+    <h2>Ler lista por foto</h2>
+    <button class="verde" id="efCamera">📷 Câmera<small>tira várias fotos seguidas e lê todas de uma vez</small></button>
+    <label class="filebtn verdeLbl" for="foto">🖼 Fototeca / Galeria<small>escolhe fotos já tiradas</small><input id="foto" type="file" accept="image/*" multiple></label>
+    <button id="efCanc">Cancelar</button>
+  </div>
+</div>
 <div class="camBox" id="camBox" hidden>
   <video id="camVideo" playsinline autoplay muted></video>
   <div class="camFlash" id="camFlash"></div>
@@ -617,7 +622,7 @@ table:has(#tbHist) td.c{text-align:left}
 <div class="toast" id="toast" hidden></div>
 <script>
 'use strict';
-const APP_VERSAO='69';
+const APP_VERSAO='70';
 const APP_DATA='17/10/2026';
 const KEY='trato-confinamento-v1';
 const $=id=>document.getElementById(id);
@@ -1900,7 +1905,11 @@ async function abrirCamera(){
 function fecharCamera(){try{camStream&&camStream.getTracks().forEach(t=>t.stop());}catch(e){}camStream=null;$('camVideo').srcObject=null;$('camBox').hidden=true;}
 function atualizarCam(){const n=camFotos.length;$('camOk').disabled=!n;$('camOk').textContent=`Ler ${n}`;
   $('camInfo').textContent=n?`${n} foto${n>1?'s':''} tirada${n>1?'s':''} · pode tirar mais`:'Enquadre a lista e toque no botão branco';}
-$('btnCamera').onclick=()=>{if(bloqueado())return;abrirCamera();};
+$('btnLerFoto').onclick=()=>{if(bloqueado())return;$('escolhaFoto').hidden=false;};
+$('efCamera').onclick=()=>{$('escolhaFoto').hidden=true;abrirCamera();};
+$('efCanc').onclick=()=>{$('escolhaFoto').hidden=true;};
+$('escolhaFoto').addEventListener('click',e=>{if(e.target.id==='escolhaFoto')$('escolhaFoto').hidden=true;});
+$('foto').addEventListener('click',()=>{setTimeout(()=>{$('escolhaFoto').hidden=true;},300);});
 $('camDisparo').onclick=()=>{const v=$('camVideo');if(!v.videoWidth)return;
   const c=document.createElement('canvas');c.width=v.videoWidth;c.height=v.videoHeight;c.getContext('2d').drawImage(v,0,0);
   const f=$('camFlash');f.classList.add('on');setTimeout(()=>f.classList.remove('on'),60);
