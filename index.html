@@ -200,6 +200,18 @@ input[type=number]{-moz-appearance:textfield}
 .curBox .cbPrev b{width:auto;min-width:5.2ch}
 .curBox .cbCur{padding:10px 12px}
 .curBox .cbCur b{overflow:hidden}
+.curBox2{display:flex;gap:8px;align-items:stretch}
+.curBox2>div{background:var(--accent);color:#fff;border-radius:12px;padding:10px 12px;display:flex;flex-direction:column;justify-content:center;min-width:0}
+.curBox2 .cbCur{flex:1 1 auto}
+.curBox2 .cbPrev{flex:0 0 auto;text-align:right}
+.curBox2 span{font-size:.75rem;text-transform:uppercase;letter-spacing:.08em;color:#c9d3df}
+.curBox2 b{font-family:var(--display);font-stretch:condensed;font-weight:700;font-size:2.3rem;line-height:1.05;white-space:nowrap}
+.curBox2 .cbCur b{overflow:hidden}
+.curBox2 .cbPrev b{color:var(--led);font-size:2.1rem;min-width:6ch;display:inline-block;text-align:right}
+.trocar2{margin-top:6px;font-size:.85rem;padding:4px 10px}
+.linhaTrato{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.linhaTrato label{margin:0;font-family:var(--display);font-stretch:condensed;font-size:1.5rem;font-weight:700;color:var(--fg);letter-spacing:.06em}
+.linhaTrato select.trato{width:auto;flex:0 0 auto;min-width:9.5rem;font-size:1.3rem;padding:6px 12px}
 </style>
 </head>
 <body>
@@ -262,18 +274,18 @@ input[type=number]{-moz-appearance:textfield}
   <section class="panel" id="painel">
     <div class="dataLinha" id="dataLinha"><button class="dataBox" id="dataEsc" aria-label="Data do trato">—</button><button class="mini lima" id="btnHoje" hidden>Voltar para hoje</button></div>
     <div class="cal" id="cal" hidden></div>
-    <div>
-      <label for="tratoSel">Qual trato</label>
+    <div class="linhaTrato">
+      <label for="tratoSel">Executar</label>
       <select class="trato" id="tratoSel">
         <option value="1">Trato 1</option><option value="2">Trato 2</option><option value="3">Trato 3</option><option value="4">Trato 4</option><option value="5">Trato 5</option>
       </select>
     </div>
     <div>
-      <div class="curBox">
+      <div class="curBox2">
         <div class="cbCur"><span>Curral atual</span><b id="curNome">—</b></div>
-        <button class="trocar" id="btnTrocar">Trocar<br>curral ▾</button>
         <div class="cbPrev"><span>Previsto</span><b class="num" id="curPrev">—</b></div>
       </div>
+      <button class="mini trocar2" id="btnTrocar">Trocar curral ▾</button>
     </div>
     <div class="escolha" id="escolhaCur" hidden></div>
     <div>
@@ -390,7 +402,7 @@ input[type=number]{-moz-appearance:textfield}
 <div class="toast" id="toast" hidden></div>
 <script>
 'use strict';
-const APP_VERSAO='35';
+const APP_VERSAO='36';
 const APP_DATA='17/10/2026';
 const KEY='trato-confinamento-v1';
 const $=id=>document.getElementById(id);
