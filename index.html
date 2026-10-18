@@ -292,7 +292,7 @@ tr.arrastando td{background:var(--lima-claro)}
 <div class="toast" id="toast" hidden></div>
 <script>
 'use strict';
-const APP_VERSAO='10';
+const APP_VERSAO='11';
 const APP_DATA='17/10/2026';
 const KEY='trato-confinamento-v1';
 const $=id=>document.getElementById(id);
@@ -492,12 +492,12 @@ function renderPrev(){
   const k=$('pvTrato').value,m=(S.prev[k])||{};
   let tot=0,n=0;
   $('tbPrev').innerHTML=S.cadastro.map((c,i)=>{const v=m[c];if(typeof v==='number'&&v>0){tot+=v;n++;}
-    return `<tr><td class="alca" title="Arraste para mudar a ordem" aria-label="Arrastar ${esc(c)}">☰</td><td class="c" style="cursor:default">${esc(c)}</td><td><input class="cell${v==='?'?' duv':''}" type="text" inputmode="decimal" data-n="${i}" value="${esc(valPrev(v))}" placeholder="—" aria-label="Previsto ${esc(c)}"></td></tr>`;}).join('');
+    return `<tr><td class="alca" title="Arraste para mudar a ordem" aria-label="Arrastar ${esc(c)}">☰</td><td class="c" style="cursor:default">${esc(c)}</td><td><input class="cell${v==='?'?' duv':''}" type="text" inputmode="decimal" enterkeyhint="next" data-n="${i}" value="${esc(valPrev(v))}" placeholder="—" aria-label="Previsto ${esc(c)}"></td></tr>`;}).join('');
   $('pvTot').textContent=`${n} curral(is) · ${fmt(tot)} kg`;
   const dv=duvidas(k);
   $('pvAviso').hidden=!dv.length;$('pvAviso').textContent=dv.length?`${dv.length} curral(is) com "?": corrija o número.`:'';
   $('cadN').textContent=`${S.cadastro.length} currais`;
-  $('tbCad').innerHTML=S.cadastro.map((c,i)=>`<tr><td class="alca" title="Arraste para mudar a ordem" aria-label="Arrastar ${esc(c)}">☰</td><td class="c" style="cursor:default">${i+1}. ${esc(c)}</td><td class="acoes">
+  $('tbCad').innerHTML=S.cadastro.map((c,i)=>`<tr><td class="alca" title="Arraste para mudar a ordem" aria-label="Arrastar ${esc(c)}">☰</td><td class="c" style="cursor:default">${esc(c)}</td><td class="acoes">
     <button class="mini" data-a="up" data-i="${i}" ${i===0?'disabled':''} aria-label="Subir ${esc(c)}">↑</button>
     <button class="mini" data-a="dn" data-i="${i}" ${i===S.cadastro.length-1?'disabled':''} aria-label="Descer ${esc(c)}">↓</button>
     <button class="mini danger" data-a="rm" data-i="${i}" aria-label="Tirar ${esc(c)}">✕</button></td></tr>`).join('');
@@ -509,8 +509,14 @@ $('tbPrev').addEventListener('change',e=>{
   if(t===''){delete m[nome];}
   else if(t==='?'){m[nome]='?';}
   else{const v=parseNum(t);if(isNaN(v)||v<0){e.target.value=valPrev(m[nome]);toast('Digite uma quantidade válida');return;}m[nome]=v;}
-  marcarPrev();render();renderPrev();toast(`${nome}: ${t===''?'sem previsto':'previsto '+(t==='?'?'?':fmt(m[nome])+' kg')} no Trato ${k}`);
+  const tocouOutro=Date.now()-ultimoToque<700; // tocou em outro lugar da tela (não no ✓ do teclado)
+  marcarPrev();render();renderPrev();
+  // tocou no ✓ (Concluído) do teclado: já abre o próximo curral
+  if(!tocouOutro)irParaPrev(+i+1);
 });
+let ultimoToque=0;document.addEventListener('pointerdown',()=>{ultimoToque=Date.now();},true);
+function irParaPrev(i){const x=document.querySelector(`#tbPrev input[data-n="${i}"]`);if(!x)return;x.focus();try{x.select();}catch(e){}x.scrollIntoView({block:'center',behavior:'smooth'});}
+$('tbPrev').addEventListener('keydown',e=>{if(e.key==='Enter'&&e.target.dataset.n!=null){e.preventDefault();e.target.blur();}});
 $('tbCad').addEventListener('click',e=>{
   const b=e.target.closest('button[data-a]');if(!b)return;const i=+b.dataset.i,C=S.cadastro,n=C[i];
   if(b.dataset.a==='up'&&i>0){[C[i-1],C[i]]=[C[i],C[i-1]];}
@@ -986,7 +992,18 @@ function linhasPorPosicao(words){
   ws.sort((a,b)=>a.yc-b.yc);const rows=[];
   for(const w of ws){let r=null,best=1e9;for(const x of rows){const d=Math.abs(x.yc-w.yc);if(d<best){best=d;r=x;}}
     if(r&&best<=hm*.75){r.ws.push(w);r.yc=(r.yc*(r.ws.length-1)+w.yc)/r.ws.length;}else rows.push({yc:w.yc,ws:[w]});}
-  return rows.sort((a,b)=>a.yc-b.yc).map(r=>r.ws.sort((a,b)=>a.x-b.x));
+  rows.sort((a,b)=>a.yc-b.yc);
+  // linha só com números (desalinhada) vai para o curral mais próximo que ficou sem número
+  const temCur=r=>!!acharCurralNaLinha(r.ws),temNum=r=>r.ws.some(w=>{const n=numDe(w);return n&&n.v>=30;});
+  const curs=rows.filter(temCur);
+  if(curs.length){
+    const esp=curs.length>1?(curs[curs.length-1].yc-curs[0].yc)/(curs.length-1):hm*3;
+    rows.filter(r=>!temCur(r)&&temNum(r)).forEach(r=>{
+      let alvo=null,d=1e9;curs.forEach(c=>{const x=Math.abs(c.yc-r.yc);if(x<d&&!temNum(c)){d=x;alvo=c;}});
+      if(alvo&&d<esp*.7){alvo.ws=alvo.ws.concat(r.ws);r.ws=[];}
+    });
+  }
+  return rows.filter(r=>r.ws.length).map(r=>r.ws.sort((a,b)=>a.x-b.x));
 }
 function acharCurralNaLinha(ws){
   for(let i=0;i<ws.length;i++){
