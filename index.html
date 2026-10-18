@@ -657,7 +657,7 @@ tr.gClic{cursor:pointer}
 <div class="toast" id="toast" hidden></div>
 <script>
 'use strict';
-const APP_VERSAO='2';
+const APP_VERSAO='3';
 const APP_DATA='17/10/2026';
 const KEY='confinamento-completo-v1';
 const $=id=>document.getElementById(id);
@@ -700,7 +700,14 @@ const dbAdd=r=>tx('readwrite',s=>s.add(r));
 const dbDel=id=>tx('readwrite',s=>s.delete(id));
 function dbPutMany(rs){return tx('readwrite',s=>{rs.forEach(r=>s.put(r));});}
 function dbDelMany(ids){return tx('readwrite',s=>{ids.forEach(id=>s.delete(id));});}
-function dbAddMany(rs){return tx('readwrite',s=>{rs.forEach(r=>s.add(r));});}
+/* grava um de cada vez (fila) e nunca repete o mesmo trato (uid) */
+let dbFila=Promise.resolve();
+function dbAddMany(rs){const p=dbFila.then(async()=>{const tem=new Set((await dbAll()).map(r=>r.uid).filter(Boolean)),vis=new Set();
+  const n=rs.filter(r=>{if(!r.uid)return true;if(tem.has(r.uid)||vis.has(r.uid))return false;vis.add(r.uid);return true;});
+  if(n.length)await tx('readwrite',s=>{n.forEach(r=>s.add(r));});});dbFila=p.catch(()=>{});return p;}
+/* apaga trato repetido (mesmo uid) que tenha ficado no celular */
+async function limparRepetidos(){try{const all=(await dbAll()).sort((a,b)=>a.id-b.id),vis=new Set(),del=[];
+  all.forEach(r=>{if(!r.uid)return;if(vis.has(r.uid))del.push(r.id);else vis.add(r.uid);});if(del.length){await dbDelMany(del);}return del.length;}catch(e){return 0;}}
 
 /* ---------- Nomes de curral ---------- */
 const chave=s=>String(s).toUpperCase().normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/[^A-Z0-9]/g,'');
@@ -729,7 +736,7 @@ function voltarExec(){if(!EXEC_GUARDADO)return;Object.assign(S,EXEC_GUARDADO);EX
 function save(){try{localStorage.setItem(KEY,JSON.stringify(EXEC_GUARDADO?Object.assign({},S,EXEC_GUARDADO):S));}catch(e){}if(typeof agendarAoVivo==='function')agendarAoVivo();}
 async function iniciar(){
   S=loadState();
-  try{await dbOpen();HIST=await dbAll();}catch(e){toast('Não foi possível abrir o banco de dados do celular');HIST=[];}
+  try{await dbOpen();await limparRepetidos();HIST=await dbAll();}catch(e){toast('Não foi possível abrir o banco de dados do celular');HIST=[];}
   // versão antiga: converte para o banco novo
   if(!S.v){
     const antigos=S.registros||[];
