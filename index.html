@@ -475,7 +475,7 @@ button.verde{background:#1f8f4e;border-color:#1f8f4e;color:#fff;font-size:1.1rem
 <div class="toast" id="toast" hidden></div>
 <script>
 'use strict';
-const APP_VERSAO='50';
+const APP_VERSAO='51';
 const APP_DATA='17/10/2026';
 const KEY='trato-confinamento-v1';
 const $=id=>document.getElementById(id);
@@ -529,7 +529,12 @@ function loadState(){
   let s=null;try{s=JSON.parse(localStorage.getItem(KEY));}catch(e){}
   return s||{};
 }
-function save(){try{localStorage.setItem(KEY,JSON.stringify(S));}catch(e){}}
+/* Modo visualização mexe só numa cópia: trato, data, curral e balança de quem executa ficam guardados */
+const CAMPOS_EXEC=['tratoSel','atual','atualNome','ini','fim','pvTrato','dataManual','diaAberto'];
+let EXEC_GUARDADO=null;
+function guardarExec(){EXEC_GUARDADO={};CAMPOS_EXEC.forEach(k=>EXEC_GUARDADO[k]=S[k]);}
+function voltarExec(){if(!EXEC_GUARDADO)return;Object.assign(S,EXEC_GUARDADO);EXEC_GUARDADO=null;save();}
+function save(){try{localStorage.setItem(KEY,JSON.stringify(EXEC_GUARDADO?Object.assign({},S,EXEC_GUARDADO):S));}catch(e){}}
 async function iniciar(){
   S=loadState();
   try{await dbOpen();HIST=await dbAll();}catch(e){toast('Não foi possível abrir o banco de dados do celular');HIST=[];}
@@ -587,7 +592,7 @@ function escolherTratoDoDia(){
   if(alvo==null)alvo=novoDia?1:S.tratoSel;
   const mudou=alvo!==S.tratoSel||novoDia;
   S.diaAberto=hj;S.tratoSel=alvo;
-  if(mudou){S.fim='';const L=lista(),regs=regsAtuais();setAtual(Math.max(0,L.findIndex(x=>!feito(x.nome,regs))));}
+  if(mudou){S.ini='';S.fim='';const L=lista(),regs=regsAtuais();setAtual(Math.max(0,L.findIndex(x=>!feito(x.nome,regs))));}
   save();return mudou;
 }
 function setAtual(i){S.atual=i;const c=lista()[i];S.atualNome=c?c.nome:null;}
@@ -666,7 +671,7 @@ function mostrarX(){document.querySelectorAll('.limparX').forEach(b=>{b.hidden=!
 $('fim').addEventListener('input',e=>{S.fim=e.target.value;save();calc();});
 $('tratoSel').addEventListener('change',e=>{
   $('escolhaCur').hidden=true;
-  S.tratoSel=+e.target.value;S.fim='';
+  S.tratoSel=+e.target.value;S.ini='';S.fim='';
   const L=lista(),regs=regsAtuais();setAtual(Math.max(0,L.findIndex(x=>!feito(x.nome,regs))));
   save();render();toast(`Trato ${S.tratoSel}`);
 });
@@ -1676,13 +1681,16 @@ document.addEventListener('touchmove',e=>{if(e.scale!==undefined&&e.scale!==1)e.
 /* ---------- Tela inicial: Executar trato ou só Visualizar ---------- */
 document.body.classList.add('naInicio');
 $('btnModoExec').onclick=()=>{modoVer=false;document.body.classList.remove('naInicio','somenteVer');$('faixaVer').hidden=true;aba('trato');};
-$('btnModoVer').onclick=()=>{modoVer=true;document.body.classList.remove('naInicio');document.body.classList.add('somenteVer');$('faixaVer').hidden=false;
-  if(typeof fecharTeclado==='function')fecharTeclado();if(balCampo)fecharBal();aba('trato');render();
+$('btnModoVer').onclick=()=>{if(typeof fecharTeclado==='function')fecharTeclado();if(balCampo)fecharBal();
+  guardarExec();modoVer=true;document.body.classList.remove('naInicio');document.body.classList.add('somenteVer');$('faixaVer').hidden=false;
+  S.dataManual=null;S.ini='';S.fim='';escolherTratoDoDia();$('tratoSel').value=String(S.tratoSel);$('pvTrato').value=String(S.tratoSel);S.pvTrato=S.tratoSel;
+  $('ini').value='';$('fim').value='';aba('trato');render();renderPrev();
   if(navigator.onLine){puxarRegistros(true).catch(()=>{});puxarPrevisto(true).catch(()=>{});}};
 function voltarInicio(){
   if(typeof fecharTeclado==='function')fecharTeclado();if(typeof balCampo!=='undefined'&&balCampo)fecharBal();
   if(selModo){selModo=false;sel.clear();}
-  modoVer=false;document.body.classList.remove('somenteVer');document.body.classList.add('naInicio');$('faixaVer').hidden=true;$('cal').hidden=true;window.scrollTo({top:0});
+  const eraVer=modoVer;modoVer=false;document.body.classList.remove('somenteVer');document.body.classList.add('naInicio');$('faixaVer').hidden=true;$('cal').hidden=true;window.scrollTo({top:0});
+  if(eraVer){voltarExec();$('tratoSel').value=String(S.tratoSel);$('pvTrato').value=String(S.pvTrato||S.tratoSel);$('ini').value=S.ini||'';$('fim').value=S.fim||'';mostrarX();render();renderPrev();}
 }
 $('btnSairVer').onclick=voltarInicio;
 $('btnVoltarIni').onclick=voltarInicio;
