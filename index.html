@@ -292,7 +292,7 @@ tr.arrastando td{background:var(--lima-claro)}
 <div class="toast" id="toast" hidden></div>
 <script>
 'use strict';
-const APP_VERSAO='8';
+const APP_VERSAO='9';
 const APP_DATA='17/10/2026';
 const KEY='trato-confinamento-v1';
 const $=id=>document.getElementById(id);
@@ -1012,7 +1012,7 @@ function lerTabela(linhas,tratoPadrao){
     let trato=null,prev='?',pv=null;
     const it=nums.findIndex(n=>n.int&&n.v>=1&&n.v<=5);
     if(it>=0){trato=nums[it].v;pv=nums[it+1]||null;}
-    else{pv=nums.find(n=>n.v>=10)||null;}
+    else{const cand=nums.filter(n=>n.v>=30);pv=cand.length===1?cand[0]:null;} // sem trato: só aceita se tiver um número só
     if(pv&&!isNaN(pv.v)&&pv.c>=CONF_MIN&&pv.v>=30&&pv.v<=30000)prev=pv.v;
     itens.push({nome:cur.nome,trato:trato||ctx,prev,temTrato:it>=0});
   }
