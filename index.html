@@ -292,7 +292,7 @@ tr.arrastando td{background:var(--lima-claro)}
 <div class="toast" id="toast" hidden></div>
 <script>
 'use strict';
-const APP_VERSAO='9';
+const APP_VERSAO='10';
 const APP_DATA='17/10/2026';
 const KEY='trato-confinamento-v1';
 const $=id=>document.getElementById(id);
@@ -879,6 +879,7 @@ function carregarOCR(){
     if(window.Tesseract)return ok();
     const sc=document.createElement('script');sc.src=OCRF.js;sc.crossOrigin='anonymous';sc.onload=ok;sc.onerror=()=>falha(new Error('leitor'));document.head.appendChild(sc);
   }).then(()=>Tesseract.createWorker('eng',1,{workerPath:OCRF.worker,langPath:OCRF.lang,
+    logger:m=>{const b=window.__ocrBox;if(b&&!b.hidden&&m&&/loading|initializ/.test(m.status||''))b.textContent=`Preparando o leitor de foto (só na 1ª vez, precisa de internet)… ${Math.round((m.progress||0)*100)}%`;},
     corePath:OCRF.core+(simd?'tesseract-core-simd-lstm.wasm.js':'tesseract-core-lstm.wasm.js')}))
     .then(async w=>{await w.setParameters({tessedit_pageseg_mode:'6',preserve_interword_spaces:'1',
       tessedit_char_whitelist:'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-.,:/()? '});return w;});
@@ -945,21 +946,21 @@ function inkParaCanvas(ink,W,H){
 }
 async function tratarFoto(file,extraGiro){
   let img;try{img=await createImageBitmap(file,{imageOrientation:'from-image'});}catch(e){img=await createImageBitmap(file);}
-  const alvo=2000,esc=Math.min(2.5,alvo/Math.max(img.width,img.height));
+  const alvo=2600,esc=Math.min(3,alvo/Math.max(img.width,img.height));
   let cv=document.createElement('canvas');cv.width=Math.round(img.width*esc);cv.height=Math.round(img.height*esc);
   cv.getContext('2d').drawImage(img,0,0,cv.width,cv.height);
-  // 1) fundo uniforme e ângulo
-  let W=cv.width,H=cv.height,g=normalizarFundo(cv),lim=otsu(g);
-  const ink0=new Uint8Array(W*H);for(let i=0;i<W*H;i++)ink0[i]=g[i]<Math.min(lim,200)?1:0;
+  // 1) fundo uniforme (tira sombra, reflexo e manchas) e ângulo
+  let W=cv.width,H=cv.height,g=normalizarFundo(cv);
+  const LIM=195; // com o fundo levado a branco, tudo um pouco mais escuro é escrita (pega texto cinza-claro)
+  const ink0=new Uint8Array(W*H);for(let i=0;i<W*H;i++)ink0[i]=g[i]<LIM?1:0;
   const ang=anguloTexto(ink0,W,H);
   // 2) gira a imagem já sem sombra
   const tmp=document.createElement('canvas');tmp.width=W;tmp.height=H;const tc=tmp.getContext('2d'),td=tc.createImageData(W,H);
   for(let i=0;i<W*H;i++){td.data[i*4]=td.data[i*4+1]=td.data[i*4+2]=g[i];td.data[i*4+3]=255;}tc.putImageData(td,0,0);
   const reto=girar(tmp,-ang+(extraGiro||0));
-  // 3) preto e branco, tira pontinhos e linhas da tabela
-  W=reto.width;H=reto.height;const rd=reto.getContext('2d').getImageData(0,0,W,H).data,g2=new Uint8ClampedArray(W*H);
-  for(let i=0;i<W*H;i++)g2[i]=rd[i*4];
-  const lim2=Math.min(otsu(g2),200),ink=new Uint8Array(W*H);for(let i=0;i<W*H;i++)ink[i]=g2[i]<lim2?1:0;
+  // 3) preto e branco, tira faixas escuras, pontinhos e linhas da tabela
+  W=reto.width;H=reto.height;const rd=reto.getContext('2d').getImageData(0,0,W,H).data;
+  const ink=new Uint8Array(W*H);for(let i=0;i<W*H;i++)ink[i]=rd[i*4]<LIM?1:0;
   tirarFaixasEscuras(ink,W,H);tirarPontinhos(ink,W,H);tirarLinhasTabela(ink,W,H);
   return {cv:inkParaCanvas(ink,W,H),ang:Math.round(ang)};
 }
@@ -1024,7 +1025,8 @@ function lerTabela(linhas,tratoPadrao){
 const nota=r=>r.itens.length?r.itens.filter(x=>x.prev!=='?').length/r.itens.length:0;
 async function lerLocal(file,box,rot,trato){
   box.textContent=`${rot}: tratando a imagem…`;
-  const w=await Promise.race([carregarOCR(),new Promise((_,f)=>setTimeout(()=>f(new Error('demorou')),45000))]);
+  window.__ocrBox=box;
+  const w=await Promise.race([carregarOCR(),new Promise((_,f)=>setTimeout(()=>f(new Error('demorou')),240000))]);
   let melhor=null;
   for(const giro of [0,180]){
     const t=await tratarFoto(file,giro);
@@ -1041,9 +1043,29 @@ async function lerLocal(file,box,rot,trato){
   }
   return melhor;
 }
+// O Google às vezes devolve coluna por coluna: primeiro currais (e trato), depois os números de cada linha
+function lerSequencial(texto,tratoPadrao){
+  const ls=String(texto).split('\n').map(l=>l.trim()).filter(Boolean);
+  const curs=[];let nums=[],coletando=false,parar=false,ctx=tratoPadrao;
+  for(const l of ls){
+    const ws=linhasDoTexto(l,85)[0]||[];const up=semAcento(l);
+    const cur=acharCurralNaLinha(ws);
+    if(cur){curs.push({nome:cur.nome,trato:null});continue;}
+    if(/TOTAL/.test(up)){if(coletando)parar=true;continue;}
+    const mt=up.match(/^TRATO\s*[:\-]?\s*([1-5])$/);if(mt){ctx=+mt[1];continue;}
+    if(ws.length===1){const n=numDe(ws[0]);if(!n)continue;
+      if(n.int&&n.v>=1&&n.v<=5&&curs.length&&curs[curs.length-1].trato==null&&!coletando){curs[curs.length-1].trato=n.v;continue;}
+      if(curs.length&&!parar){coletando=true;if(n.v>=30)nums.push(n);}
+    }
+  }
+  const N=curs.length,itens=curs.map(c=>({nome:c.nome,trato:c.trato||ctx,prev:'?'}));
+  for(const k of [1,2,3])if(N&&nums.length===k*N){itens.forEach((x,i)=>{const n=nums[i*k];if(n.c>=CONF_MIN&&n.v<=30000)x.prev=n.v;});break;}
+  return {itens,ign:[]};
+}
 async function lerGoogle(file,trato){
   const j=await postApi({acao:'foto',imagem:await fotoBase64(file)});
-  return lerTabela(linhasDoTexto(j.texto||'',85),trato);
+  const a=lerTabela(linhasDoTexto(j.texto||'',85),trato),b=lerSequencial(j.texto||'',trato);
+  return nota(b)*b.itens.length>nota(a)*a.itens.length?b:a;
 }
 // junta a leitura do celular com a do Google: número diferente = dúvida "?"
 function juntarLeituras(a,b){
