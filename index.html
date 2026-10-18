@@ -164,6 +164,9 @@ input[type=number]{-moz-appearance:textfield}
 .somaLinha span{color:var(--muted);font-size:.85rem;margin-left:6px}
 .somaLinha small{display:block;color:var(--muted);font-size:.8rem;margin-top:2px}
 .linhas button{flex:1 1 0;padding:8px 4px;font-size:.82rem;white-space:nowrap}
+.dataLinha input[type=date]{flex:1 1 auto;width:auto;min-height:44px;background:var(--bg);border:2px solid var(--line);border-radius:10px;padding:8px 12px;font-size:1.05rem;font-weight:600;color:var(--fg);-webkit-appearance:none;appearance:none}
+.dataLinha.manual{background:none;border:0;padding:0}
+.dataLinha.manual input[type=date]{background:#fff4e0;border-color:var(--warn);color:var(--warn)}
 </style>
 </head>
 <body>
@@ -224,8 +227,7 @@ input[type=number]{-moz-appearance:textfield}
 
 <div id="viewTrato">
   <section class="panel" id="painel">
-    <div class="dataLinha" id="dataLinha"><span id="dataInfo"></span><button class="mini" id="btnMudarData">Mudar data</button><button class="mini lima" id="btnHoje" hidden>Voltar para hoje</button>
-      <input type="date" id="dataEsc" hidden></div>
+    <div class="dataLinha" id="dataLinha"><input type="date" id="dataEsc" aria-label="Data do trato"><button class="mini lima" id="btnHoje" hidden>Voltar para hoje</button></div>
     <div>
       <label for="tratoSel">Qual trato</label>
       <select class="trato" id="tratoSel">
@@ -351,7 +353,7 @@ input[type=number]{-moz-appearance:textfield}
 <div class="toast" id="toast" hidden></div>
 <script>
 'use strict';
-const APP_VERSAO='28';
+const APP_VERSAO='29';
 const APP_DATA='17/10/2026';
 const KEY='trato-confinamento-v1';
 const $=id=>document.getElementById(id);
@@ -476,8 +478,8 @@ const horaDe=r=>r.hora||new Date(r.ts).toLocaleTimeString('pt-BR',{hour:'2-digit
 
 function render(){
   const man=!!S.dataManual;
-  $('dataInfo').innerHTML=man?`Lançando em <b>${diaBR(S.dataManual)}</b>`:`Data: <b>hoje, ${diaBR(hojeKey()).slice(0,5)}</b>`;
-  $('dataLinha').classList.toggle('manual',man);$('btnHoje').hidden=!man;$('btnMudarData').textContent=man?'Outra data':'Mudar data';
+  if(document.activeElement!==$('dataEsc')){$('dataEsc').value=diaAtivo();$('dataEsc').max=hojeKey();}
+  $('dataLinha').classList.toggle('manual',man);$('btnHoje').hidden=!man;
   $('hoje').textContent=new Date().toLocaleDateString('pt-BR',{weekday:'short',day:'2-digit',month:'2-digit',year:'numeric'});
   const L=lista(),regs=regsAtuais();
   if(S.atualNome!=null){const i=L.findIndex(x=>x.nome===S.atualNome);if(i>=0)S.atual=i;}
@@ -565,9 +567,8 @@ function mostrarEscolha(){
 $('btnTrocar').onclick=()=>{const e=$('escolhaCur');e.hidden=!e.hidden;if(!e.hidden)mostrarEscolha();};
 $('escolhaCur').addEventListener('click',e=>{const b=e.target.closest('button[data-i]');if(!b)return;
   setAtual(+b.dataset.i);S.fim='';save();$('escolhaCur').hidden=true;render();toast(`Tratando ${lista()[S.atual].nome}`);});
-$('btnMudarData').onclick=()=>{const d=$('dataEsc');d.max=hojeKey();d.value=diaAtivo();d.hidden=false;try{d.showPicker&&d.showPicker();}catch(e){}d.focus();};
-$('dataEsc').addEventListener('change',e=>{const v=e.target.value;e.target.hidden=true;if(!v)return;
-  if(v>hojeKey()){toast('Não dá para lançar em data futura');return;}
+$('dataEsc').addEventListener('change',e=>{const v=e.target.value;if(!v){e.target.value=diaAtivo();return;}
+  if(v>hojeKey()){toast('Não dá para lançar em data futura');e.target.value=diaAtivo();return;}
   S.dataManual=v===hojeKey()?null:v;S.fim='';const L=lista(),regs=regsAtuais();setAtual(Math.max(0,L.findIndex(x=>!feito(x.nome,regs))));save();render();
   toast(S.dataManual?`Lançamentos agora vão para ${diaBR(v)}`:'Voltou para hoje');});
 $('btnHoje').onclick=()=>{S.dataManual=null;S.fim='';const L=lista(),regs=regsAtuais();setAtual(Math.max(0,L.findIndex(x=>!feito(x.nome,regs))));save();render();toast('Voltou para a data de hoje');};
