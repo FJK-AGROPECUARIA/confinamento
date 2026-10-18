@@ -133,7 +133,6 @@ tr.arrastando td{background:var(--lima-claro)}
       <thead><tr><th></th><th>Curral</th><th>Previsto (kg)</th></tr></thead>
       <tbody id="tbPrev"></tbody>
     </table></div>
-    <p class="note">Arraste pelo ☰ para mudar a ordem (fica salva para os próximos tratos; a foto nunca muda a ordem). Deixe em branco o curral que não recebe nesse trato. "?" quer dizer que a foto não deu para ler: corrija antes de tratar.</p>
     <div id="editBox" hidden>
       <label for="lista">Um curral por linha: nome e quantidade (só deste trato)</label>
       <textarea id="lista" placeholder="C-10 1000&#10;C-3 600"></textarea>
@@ -151,7 +150,7 @@ tr.arrastando td{background:var(--lima-claro)}
       <label class="filebtn lima" for="foto" style="margin:0;text-transform:none;letter-spacing:0;color:var(--fg);font-size:1rem">Ler lista por foto<input id="foto" type="file" accept="image/*" multiple></label>
       <button id="btnEditar">Editar em texto</button>
     </div>
-    <p class="note">Pode escolher várias fotos de uma vez. Só são lidas as colunas Curral, Trato e Previsto. Curral repetido no mesmo trato entra uma vez só.</p>
+    <button class="danger" id="btnLimparPrev">Limpar previsto deste trato</button>
   </section>
 
   <section class="panel">
@@ -292,7 +291,7 @@ tr.arrastando td{background:var(--lima-claro)}
 <div class="toast" id="toast" hidden></div>
 <script>
 'use strict';
-const APP_VERSAO='11';
+const APP_VERSAO='12';
 const APP_DATA='17/10/2026';
 const KEY='trato-confinamento-v1';
 const $=id=>document.getElementById(id);
@@ -494,6 +493,7 @@ function renderPrev(){
   $('tbPrev').innerHTML=S.cadastro.map((c,i)=>{const v=m[c];if(typeof v==='number'&&v>0){tot+=v;n++;}
     return `<tr><td class="alca" title="Arraste para mudar a ordem" aria-label="Arrastar ${esc(c)}">☰</td><td class="c" style="cursor:default">${esc(c)}</td><td><input class="cell${v==='?'?' duv':''}" type="text" inputmode="decimal" enterkeyhint="next" data-n="${i}" value="${esc(valPrev(v))}" placeholder="—" aria-label="Previsto ${esc(c)}"></td></tr>`;}).join('');
   $('pvTot').textContent=`${n} curral(is) · ${fmt(tot)} kg`;
+  $('btnLimparPrev').textContent=`Limpar previsto do Trato ${k}`;$('btnLimparPrev').disabled=!Object.keys(m).length;
   const dv=duvidas(k);
   $('pvAviso').hidden=!dv.length;$('pvAviso').textContent=dv.length?`${dv.length} curral(is) com "?": corrija o número.`:'';
   $('cadN').textContent=`${S.cadastro.length} currais`;
@@ -517,6 +517,12 @@ $('tbPrev').addEventListener('change',e=>{
 let ultimoToque=0;document.addEventListener('pointerdown',()=>{ultimoToque=Date.now();},true);
 function irParaPrev(i){const x=document.querySelector(`#tbPrev input[data-n="${i}"]`);if(!x)return;x.focus();try{x.select();}catch(e){}x.scrollIntoView({block:'center',behavior:'smooth'});}
 $('tbPrev').addEventListener('keydown',e=>{if(e.key==='Enter'&&e.target.dataset.n!=null){e.preventDefault();e.target.blur();}});
+$('btnLimparPrev').onclick=()=>{
+  const k=$('pvTrato').value,m=S.prev[k]||{},n=Object.keys(m).length;
+  if(!n){toast(`O Trato ${k} já está vazio`);return;}
+  if(!confirm(`Limpar todo o previsto do Trato ${k} (${n} curral(is))? Os currais cadastrados e a ordem continuam.`))return;
+  S.prev[k]={};marcarPrev();render();renderPrev();toast(`Previsto do Trato ${k} limpo`);
+};
 $('tbCad').addEventListener('click',e=>{
   const b=e.target.closest('button[data-a]');if(!b)return;const i=+b.dataset.i,C=S.cadastro,n=C[i];
   if(b.dataset.a==='up'&&i>0){[C[i-1],C[i]]=[C[i],C[i-1]];}
