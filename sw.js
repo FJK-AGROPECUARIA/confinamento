@@ -1,4 +1,4 @@
-const CACHE='trato-v39';
+const CACHE='trato-v40';
 const RUNTIME='trato-runtime-v1';
 const FILES=['./','./index.html','./manifest.json','./icone-192.png','./icone-512.png'];
 
