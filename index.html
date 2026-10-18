@@ -292,7 +292,7 @@ tr.arrastando td{background:var(--lima-claro)}
 <div class="toast" id="toast" hidden></div>
 <script>
 'use strict';
-const APP_VERSAO='7';
+const APP_VERSAO='8';
 const APP_DATA='17/10/2026';
 const KEY='trato-confinamento-v1';
 const $=id=>document.getElementById(id);
@@ -881,7 +881,7 @@ function carregarOCR(){
   }).then(()=>Tesseract.createWorker('eng',1,{workerPath:OCRF.worker,langPath:OCRF.lang,
     corePath:OCRF.core+(simd?'tesseract-core-simd-lstm.wasm.js':'tesseract-core-lstm.wasm.js')}))
     .then(async w=>{await w.setParameters({tessedit_pageseg_mode:'6',preserve_interword_spaces:'1',
-      tessedit_char_whitelist:'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-.,:/()?'});return w;});
+      tessedit_char_whitelist:'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-.,:/()? '});return w;});
   ocrPronto.catch(()=>{ocrPronto=null;});
   return ocrPronto;
 }
@@ -1013,9 +1013,12 @@ function lerTabela(linhas,tratoPadrao){
     const it=nums.findIndex(n=>n.int&&n.v>=1&&n.v<=5);
     if(it>=0){trato=nums[it].v;pv=nums[it+1]||null;}
     else{pv=nums.find(n=>n.v>=10)||null;}
-    if(pv&&!isNaN(pv.v)&&pv.c>=CONF_MIN&&pv.v>0&&pv.v<=30000)prev=pv.v;
-    itens.push({nome:cur.nome,trato:trato||ctx,prev});
+    if(pv&&!isNaN(pv.v)&&pv.c>=CONF_MIN&&pv.v>=30&&pv.v<=30000)prev=pv.v;
+    itens.push({nome:cur.nome,trato:trato||ctx,prev,temTrato:it>=0});
   }
+  // se a maioria das linhas tem a coluna Trato e esta não tem, o número é duvidoso
+  const comT=itens.filter(x=>x.temTrato).length;
+  itens.forEach(x=>{if(!x.temTrato&&comT>itens.length/2)x.prev='?';delete x.temTrato;});
   return {itens,ign};
 }
 const nota=r=>r.itens.length?r.itens.filter(x=>x.prev!=='?').length/r.itens.length:0;
