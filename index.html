@@ -340,6 +340,26 @@ body.somenteVer .avisoJa{display:none!important}
 table.trat th:nth-child(3),#tbHist th:nth-child(3),table:has(#tbHist) th:nth-child(3){width:21%}
 table.trat th:nth-child(4),table:has(#tbHist) th:nth-child(4){width:23%}
 table.trat th:nth-child(5),table:has(#tbHist) th:nth-child(5){width:14%}
+/* câmera dentro do app: várias fotos seguidas */
+#listaBtns{display:flex;flex-direction:column;gap:8px}
+#btnCamera{width:100%;font-size:1.1rem}
+.camBox{position:fixed;inset:0;z-index:20;background:#000;display:flex;flex-direction:column}
+.camBox video{flex:1 1 auto;width:100%;min-height:0;object-fit:cover;background:#000}
+.camFlash{position:absolute;inset:0;background:#fff;opacity:0;pointer-events:none;transition:opacity .25s}
+.camFlash.on{opacity:.8;transition:none}
+.camTopo{position:absolute;top:0;left:0;right:0;padding:calc(12px + env(safe-area-inset-top,0px)) 16px 12px;text-align:center;color:#fff;font-weight:700;background:linear-gradient(rgba(0,0,0,.6),transparent)}
+.camMinis{position:absolute;left:0;right:0;bottom:calc(110px + env(safe-area-inset-bottom,0px));display:flex;gap:6px;padding:0 12px;overflow-x:auto}
+.camMinis img{width:54px;height:54px;object-fit:cover;border-radius:8px;border:2px solid #fff;flex:0 0 auto}
+.camBarra{display:flex;align-items:center;justify-content:space-between;padding:14px 18px calc(18px + env(safe-area-inset-bottom,0px));background:#000}
+.camBarra button{min-height:0}
+.camCanc,.camOk{width:96px;padding:12px 6px;border-radius:12px;font-weight:700;font-size:1rem}
+.camCanc{background:transparent;border:2px solid #fff;color:#fff}
+.camOk{background:#1f8f4e;border:2px solid #1f8f4e;color:#fff}
+.camOk:disabled{opacity:.4}
+.camDisparo{width:76px;height:76px;border-radius:50%;background:#fff;border:6px solid #9aa4ae;padding:0}
+.camDisparo:active{transform:scale(.92)}
+body.somenteVer #btnCamera{display:none!important}
+#tbPrev button.edNome{margin-left:8px;padding:2px 8px;vertical-align:middle;font-size:.9rem;min-height:0}
 </style>
 </head>
 <body>
@@ -371,9 +391,12 @@ table.trat th:nth-child(5),table:has(#tbHist) th:nth-child(5){width:14%}
       </select>
     </div>
     <p class="aviso bad" id="pvAviso" hidden></p>
-    <div class="row" id="listaBtns">
-      <label class="filebtn lima" for="foto" style="margin:0;text-transform:none;letter-spacing:0;color:var(--fg);font-size:1rem">Ler lista por foto<input id="foto" type="file" accept="image/*" multiple></label>
-      <button id="btnEditar">Editar em texto</button>
+    <div id="listaBtns">
+      <button class="verde" id="btnCamera">📷 Tirar fotos da lista</button>
+      <div class="row">
+        <label class="filebtn lima" for="foto" style="margin:0;text-transform:none;letter-spacing:0;color:var(--fg);font-size:1rem">🖼 Fotos da galeria<input id="foto" type="file" accept="image/*" multiple></label>
+        <button id="btnEditar">Editar em texto</button>
+      </div>
     </div>
     <div class="filaFotos" id="filaFotos" hidden>
       <p id="ffInfo"></p>
@@ -578,10 +601,21 @@ table.trat th:nth-child(5),table:has(#tbHist) th:nth-child(5){width:14%}
     <button id="bkCanc">Cancelar</button>
   </div>
 </div>
+<div class="camBox" id="camBox" hidden>
+  <video id="camVideo" playsinline autoplay muted></video>
+  <div class="camFlash" id="camFlash"></div>
+  <div class="camTopo"><span id="camInfo">Enquadre a lista e toque no botão branco</span></div>
+  <div class="camMinis" id="camMinis"></div>
+  <div class="camBarra">
+    <button class="camCanc" id="camCanc">Cancelar</button>
+    <button class="camDisparo" id="camDisparo" aria-label="Tirar foto"></button>
+    <button class="camOk" id="camOk" disabled>Ler 0</button>
+  </div>
+</div>
 <div class="toast" id="toast" hidden></div>
 <script>
 'use strict';
-const APP_VERSAO='67';
+const APP_VERSAO='68';
 const APP_DATA='17/10/2026';
 const KEY='trato-confinamento-v1';
 const $=id=>document.getElementById(id);
@@ -879,7 +913,7 @@ function renderPrev(){
   const k=$('pvTrato').value,m=(S.prev[k])||{};
   let tot=0,n=0;
   $('tbPrev').innerHTML=S.cadastro.map((c,i)=>{const v=m[c];if(typeof v==='number'&&v>0){tot+=v;n++;}
-    return `<tr${linhaSel!=='T'&&linhaDe(c)!==linhaSel?' hidden':''}><td class="alca" title="Arraste para mudar a ordem" aria-label="Arrastar ${esc(c)}">☰</td><td class="c" style="cursor:default">${esc(c)}</td><td><input class="cell${v==='?'?' duv':''}" type="text" readonly tabindex="-1" inputmode="none" data-n="${i}" value="${esc(valPrev(v))}" placeholder="—" aria-label="Previsto ${esc(c)}"></td><td class="acoes"><button class="mini" tabindex="-1" data-a="ed" data-i="${i}" aria-label="Editar ${esc(c)}">✎</button>${modoRemover?`<button class="mini danger" tabindex="-1" data-a="rm" data-i="${i}" aria-label="Excluir ${esc(c)}">✕</button>`:''}</td></tr>`;}).join('');
+    return `<tr${linhaSel!=='T'&&linhaDe(c)!==linhaSel?' hidden':''}><td class="alca" title="Arraste para mudar a ordem" aria-label="Arrastar ${esc(c)}">☰</td><td class="c" style="cursor:default">${esc(c)}<button class="mini edNome" tabindex="-1" data-a="ed" data-i="${i}" aria-label="Editar nome ${esc(c)}">✎</button></td><td><input class="cell${v==='?'?' duv':''}" type="text" readonly tabindex="-1" inputmode="none" data-n="${i}" value="${esc(valPrev(v))}" placeholder="—" aria-label="Previsto ${esc(c)}"></td><td class="acoes">${modoRemover?`<button class="mini danger" tabindex="-1" data-a="rm" data-i="${i}" aria-label="Excluir ${esc(c)}">✕</button>`:''}</td></tr>`;}).join('');
   $('pvTot').title=`${S.cadastro.length} currais cadastrados`;
   resumoPrev();
   if(tecIdx!=null){const x=campoPrev(tecIdx);if(x){x.classList.add('sel');x.value=tecBuf;}}
@@ -902,7 +936,8 @@ function resumoPrev(){
   S.cadastro.forEach(c=>{const v=m[c];if(typeof v==='number'&&v>0){tot+=v;n++;}});
   $('pvTot').textContent=`${n} curral(is) · ${fmt(tot)} kg`;
   somaLinhas();
-  $('btnLimparPrev').textContent=`Limpar previsto do Trato ${k}`;$('btnLimparPrev').disabled=!Object.keys(m).length;
+  {const loc=linhaSel==='C'?' do Confinamento':linhaSel==='P'?' do Pasto':'';$('btnLimparPrev').textContent=`Limpar previsto${loc} do Trato ${k}`;
+   $('btnLimparPrev').disabled=!Object.keys(m).some(c=>linhaSel==='T'||linhaDe(c)===linhaSel);}
   const dv=duvidas(k);
   $('pvAviso').hidden=!dv.length;$('pvAviso').textContent=dv.length?`${dv.length} curral(is) com "?": corrija o número.`:'';
 }
@@ -975,11 +1010,14 @@ $('teclado').addEventListener('pointerdown',e=>{const b=e.target.closest('button
 document.addEventListener('keydown',e=>{if(tecIdx==null)return;
   if(/^[0-9]$/.test(e.key))teclar(e.key);else if(e.key==='Backspace')teclar('del');else if(e.key==='Enter'||e.key==='Tab'){e.preventDefault();teclar('ok');}else if(e.key==='Escape')teclar('fechar');else if(e.key==='?')teclar('?');});
 document.addEventListener('pointerdown',e=>{if(tecIdx!=null&&!e.target.closest('#teclado,#tbPrev input'))fecharTeclado();},true);
+const nomeLocal=()=>linhaSel==='C'?'do Confinamento':linhaSel==='P'?'do Pasto':'';
 $('btnLimparPrev').onclick=()=>{
-  const k=$('pvTrato').value,m=S.prev[k]||{},n=Object.keys(m).length;
-  if(!n){toast(`O Trato ${k} já está vazio`);return;}
-  if(!confirm(`Limpar todo o previsto do Trato ${k} (${n} curral(is))? Os currais cadastrados e a ordem continuam.`))return;
-  S.prev[k]={};marcarPrev();render();renderPrev();toast(`Previsto do Trato ${k} limpo`);
+  const k=$('pvTrato').value,m=S.prev[k]||{};
+  const alvo=Object.keys(m).filter(c=>linhaSel==='T'||linhaDe(c)===linhaSel),n=alvo.length,loc=nomeLocal();
+  if(!n){toast(`Nada para limpar${loc?' '+loc:''} no Trato ${k}`);return;}
+  if(!confirm(`Limpar o previsto ${loc?loc+' ':'(todos os currais) '}do Trato ${k}? São ${n} curral(is).\nOs currais cadastrados e a ordem continuam.`))return;
+  if(linhaSel==='T')S.prev[k]={};else{const nv=Object.assign({},m);alvo.forEach(c=>delete nv[c]);S.prev[k]=nv;}
+  marcarPrev();render();renderPrev();toast(`Previsto ${loc?loc+' ':''}do Trato ${k} limpo`);
 };
 $('tbPrev').addEventListener('click',e=>{
   const b=e.target.closest('button[data-a]');if(!b)return;if(bloqueado())return;const i=+b.dataset.i,C=S.cadastro,n=C[i];
@@ -1235,9 +1273,12 @@ function aba(qual){
   if(typeof fecharTeclado==='function')fecharTeclado();
   if(typeof fecharBal==='function'&&balCampo)fecharBal();
   if(qual!=='prev'&&typeof modoOrdem==='function')modoOrdem(false);
+  if(typeof camStream!=='undefined'&&camStream)fecharCamera();
   $('viewPrev').hidden=qual!=='prev';$('viewTrato').hidden=qual!=='trato';$('viewHist').hidden=qual!=='hist';
   if(qual==='hist'&&$('viewHist').dataset.aberta!=='1'){$('fDia').value='hoje';$('hCal').hidden=true;localSel='T';}
   $('viewHist').dataset.aberta=qual==='hist'?'1':'';
+  if(qual==='prev'&&$('viewPrev').dataset.aberta!=='1')linhaSel='T'; // filtro do Previsto volta para Todos
+  $('viewPrev').dataset.aberta=qual==='prev'?'1':'';
   if(qual==='trato')caberTabela($('tbCur'));if(qual==='hist')caberTabela($('tbHist'));
   $('tabPrev').setAttribute('aria-selected',String(qual==='prev'));$('tabTrato').setAttribute('aria-selected',String(qual==='trato'));$('tabHist').setAttribute('aria-selected',String(qual==='hist'));
   if(qual==='hist')renderHist();if(qual==='prev')renderPrev();window.scrollTo({top:0});
@@ -1844,6 +1885,27 @@ function mostrarFila(){const f=$('filaFotos');
   $('ffMinis').innerHTML=FILA.map((x,i)=>`<div class="ffMini"><img src="${URL.createObjectURL(x)}" alt="Foto ${i+1}"><button data-ff="${i}" aria-label="Tirar foto ${i+1}">✕</button></div>`).join('');
   $('ffInfo').textContent=FILA.length===1?'1 foto pronta. Quer tirar mais?':`${FILA.length} fotos prontas. Quer tirar mais?`;
   $('ffLer').textContent=`✓ Ler ${FILA.length} foto${FILA.length>1?'s':''}`;}
+/* Câmera dentro do app: tira várias fotos seguidas e lê todas de uma vez */
+let camStream=null,camFotos=[];
+async function abrirCamera(){
+  if(!navigator.mediaDevices||!navigator.mediaDevices.getUserMedia){$('foto').click();return;}
+  try{
+    camStream=await navigator.mediaDevices.getUserMedia({audio:false,video:{facingMode:{ideal:'environment'},width:{ideal:3840},height:{ideal:2160}}});
+  }catch(e){toast('Não consegui abrir a câmera. Libere a câmera para o app ou use Fotos da galeria.');return;}
+  camFotos=[];$('camMinis').innerHTML='';atualizarCam();
+  const v=$('camVideo');v.srcObject=camStream;$('camBox').hidden=false;try{await v.play();}catch(e){}
+}
+function fecharCamera(){try{camStream&&camStream.getTracks().forEach(t=>t.stop());}catch(e){}camStream=null;$('camVideo').srcObject=null;$('camBox').hidden=true;}
+function atualizarCam(){const n=camFotos.length;$('camOk').disabled=!n;$('camOk').textContent=`Ler ${n}`;
+  $('camInfo').textContent=n?`${n} foto${n>1?'s':''} tirada${n>1?'s':''} · pode tirar mais`:'Enquadre a lista e toque no botão branco';}
+$('btnCamera').onclick=()=>{if(bloqueado())return;abrirCamera();};
+$('camDisparo').onclick=()=>{const v=$('camVideo');if(!v.videoWidth)return;
+  const c=document.createElement('canvas');c.width=v.videoWidth;c.height=v.videoHeight;c.getContext('2d').drawImage(v,0,0);
+  const f=$('camFlash');f.classList.add('on');setTimeout(()=>f.classList.remove('on'),60);
+  c.toBlob(b=>{if(!b)return;const file=new File([b],`lista_${camFotos.length+1}.jpg`,{type:'image/jpeg'});camFotos.push(file);
+    const im=document.createElement('img');im.src=URL.createObjectURL(b);$('camMinis').appendChild(im);$('camMinis').scrollLeft=1e6;atualizarCam();},'image/jpeg',0.92);};
+$('camCanc').onclick=()=>{fecharCamera();camFotos=[];};
+$('camOk').onclick=()=>{const f=camFotos.concat(FILA);camFotos=[];FILA=[];fecharCamera();mostrarFila();if(f.length)lerFotos(f);};
 ['foto','foto2'].forEach(id=>$(id).addEventListener('change',e=>{
   const files=[...e.target.files];e.target.value='';if(!files.length)return;
   if(id==='foto'&&files.length>1&&!FILA.length){lerFotos(files);return;} // escolheu várias da galeria: lê direto
@@ -2007,7 +2069,7 @@ Promise.resolve(iniciar()).catch(()=>{}).then(()=>{
    Depois de atualizar, volta sozinho para onde estava (sem pedir senha de novo). */
 function podeAtualizar(){
   if(document.body.classList.contains('naInicio')||modoVer)return !!$('tecSenha').hidden;
-  return !balCampo&&tecIdx==null&&!S.ini&&!S.fim&&!FILA.length&&$('revBox').hidden&&$('editBox').hidden;}
+  return !balCampo&&tecIdx==null&&!S.ini&&!S.fim&&!FILA.length&&!camStream&&$('revBox').hidden&&$('editBox').hidden;}
 let atualizarPend=false;
 function recarregarQuandoPuder(){
   if(!podeAtualizar()){if(!atualizarPend){atualizarPend=true;const t=setInterval(()=>{if(podeAtualizar()){clearInterval(t);recarregarQuandoPuder();}},5000);}return;}
