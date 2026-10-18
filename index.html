@@ -433,7 +433,7 @@ input.big.sel{border-color:var(--accent);border-width:3px;background:#fff}
 <div class="toast" id="toast" hidden></div>
 <script>
 'use strict';
-const APP_VERSAO='42';
+const APP_VERSAO='43';
 const APP_DATA='17/10/2026';
 const KEY='trato-confinamento-v1';
 const $=id=>document.getElementById(id);
@@ -1086,6 +1086,22 @@ async function puxarPrevisto(forcar){
     S.cadastro=j.dados.cadastro;S.prev=j.dados.prev||{};S.prevTs=+j.dados.ts;padronizarNomes();save();render();
   }
 }
+/* Traz sozinho os tratos que outros celulares lançaram (últimos 7 dias), a cada 2 minutos com internet */
+let ultPuxaReg=0;
+async function puxarRegistros(forcar){
+  if(!forcar&&Date.now()-ultPuxaReg<2*60000)return;
+  ultPuxaReg=Date.now();
+  const d=new Date();d.setDate(d.getDate()-7);
+  const r=await fetch(apiUrl()+'?acao=listar&desde='+diaKey(d),{cache:'no-store'});const j=await r.json();if(!j||!j.ok)return;
+  const porUid=new Map(HIST.map(x=>[x.uid,x]));const pendEd=new Set((S.editarNuvem||[]).map(x=>x.uid));const apag=new Set(S.apagarNuvem||[]);
+  const novos=[],mudados=[];
+  (j.registros||[]).forEach(x=>{if(!x||!x.uid||apag.has(String(x.uid)))return;const u=String(x.uid),y=porUid.get(u);
+    if(!y)novos.push({uid:u,enviado:true,ts:+x.ts,dia:String(x.dia),trato:+x.trato||1,hora:x.hora,curral:String(x.curral),prev:+x.prev||0,forn:+x.forn||0,ini:+x.ini||0,fim:+x.fim||0});
+    else if(y.enviado&&!pendEd.has(u)&&Math.abs((+x.forn||0)-y.forn)>0.5){y.forn=+x.forn||0;mudados.push(y);}});
+  if(novos.length)await dbAddMany(novos);
+  if(mudados.length)await dbPutMany(mudados);
+  if(novos.length||mudados.length){HIST=await dbAll();render();if(!$('viewHist').hidden)renderHist();}
+}
 async function sincronizar(avisar){
   if(!apiUrl()||sincronizando){statusNuvem();return;}
   if(!navigator.onLine){statusNuvem();if(avisar)toast('Sem sinal. Os dados sobem quando tiver internet.');return;}
@@ -1105,6 +1121,7 @@ async function sincronizar(avisar){
     await enviarPrevisto();
   }catch(e){erro=e;}
   try{await puxarPrevisto(avisar);}catch(e){}
+  try{await puxarRegistros(avisar);}catch(e){}
   if(avisar)toast(erro?'Não consegui enviar: '+(erro.message||erro):'Tudo salvo na nuvem');
   sincronizando=false;statusNuvem();
   if(S.backupPend)fazerBackup(false);
