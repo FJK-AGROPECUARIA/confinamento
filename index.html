@@ -102,6 +102,8 @@ td.acoes{white-space:nowrap;text-align:right}
 .filebtn.lima{background:var(--lima);border-color:var(--lima)}
 select.mini{width:auto;padding:4px 6px;font-size:1rem}
 details summary{cursor:pointer}
+.alca{touch-action:none;cursor:grab;user-select:none;-webkit-user-select:none;font-size:1.3rem;color:var(--muted);width:2.2em;text-align:center!important;padding:8px 2px}
+tr.arrastando td{background:var(--lima-claro)}
 </style>
 </head>
 <body>
@@ -128,10 +130,10 @@ details summary{cursor:pointer}
     </div>
     <p class="aviso bad" id="pvAviso" hidden></p>
     <div class="tablebox"><table>
-      <thead><tr><th>Curral</th><th>Previsto (kg)</th></tr></thead>
+      <thead><tr><th></th><th>Curral</th><th>Previsto (kg)</th></tr></thead>
       <tbody id="tbPrev"></tbody>
     </table></div>
-    <p class="note">A ordem é a do cadastro. Deixe em branco o curral que não recebe nesse trato. "?" quer dizer que a foto não deu para ler: corrija antes de tratar.</p>
+    <p class="note">Arraste pelo ☰ para mudar a ordem (fica salva para os próximos tratos; a foto nunca muda a ordem). Deixe em branco o curral que não recebe nesse trato. "?" quer dizer que a foto não deu para ler: corrija antes de tratar.</p>
     <div id="editBox" hidden>
       <label for="lista">Um curral por linha: nome e quantidade (só deste trato)</label>
       <textarea id="lista" placeholder="C-10 1000&#10;C-3 600"></textarea>
@@ -156,7 +158,7 @@ details summary{cursor:pointer}
     <div class="curhead"><h2>Cadastro de currais</h2><span class="note num" id="cadN"></span></div>
     <div class="tablebox"><table><tbody id="tbCad"></tbody></table></div>
     <div class="row"><input type="text" id="novoCurral" placeholder="ex.: C-11" autocomplete="off" autocapitalize="characters" style="flex:2 1 140px;width:auto"><button class="lima" id="btnCadastrar">Cadastrar</button></div>
-    <p class="note">Esta é a ordem do trato. Use ↑ ↓ para mudar a ordem. Curral novo entra no fim da lista.</p>
+    <p class="note">Esta é a ordem do trato. Arraste pelo ☰ ou use ↑ ↓ para mudar a ordem. Curral novo entra no fim da lista.</p>
   </section>
 </div>
 
@@ -290,7 +292,8 @@ details summary{cursor:pointer}
 <div class="toast" id="toast" hidden></div>
 <script>
 'use strict';
-const APP_VERSAO='6.1 (17/10/2026)';
+const APP_VERSAO='7';
+const APP_DATA='17/10/2026';
 const KEY='trato-confinamento-v1';
 const $=id=>document.getElementById(id);
 const fmt=n=>(n==null||isNaN(n))?'—':Math.round(n).toLocaleString('pt-BR');
@@ -327,7 +330,16 @@ function dbAddMany(rs){return tx('readwrite',s=>{rs.forEach(r=>s.add(r));});}
 const chave=s=>String(s).toUpperCase().normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/[^A-Z0-9]/g,'');
 const fuzzy=s=>chave(s).replace(/O/g,'0').replace(/[IL]/g,'1');
 function acharCadastro(nome){const f=fuzzy(nome);if(!f)return null;return S.cadastro.find(n=>fuzzy(n)===f)||null;}
-const nomeLimpo=s=>String(s).toUpperCase().normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/\s+/g,'-').replace(/[^A-Z0-9-]/g,'').replace(/-+/g,'-').replace(/^-|-$/g,'');
+const nomeLimpo=s=>String(s).toUpperCase().normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/\s+/g,'-').replace(/[^A-Z0-9-]/g,'').replace(/-+/g,'-').replace(/^-|-$/g,'').replace(/^C(\d+)$/,'C-$1');
+// C10 vira C-10 no cadastro e no previsto (sem mudar a ordem)
+function padronizarNomes(){
+  if(!S.cadastro)return;const novo=[],ren={};
+  S.cadastro.forEach(n=>{const m=nomeLimpo(n);if(m!==n)ren[n]=m;if(!novo.includes(m))novo.push(m);});
+  if(!Object.keys(ren).length)return;
+  S.cadastro=novo;Object.values(S.prev||{}).forEach(mp=>{Object.entries(ren).forEach(([a,b])=>{if(a in mp){if(!(b in mp))mp[b]=mp[a];delete mp[a];}});});
+  if(S.atualNome&&ren[S.atualNome])S.atualNome=ren[S.atualNome];
+  S.prevPend=true;S.prevTs=Date.now();
+}
 
 function loadState(){
   let s=null;try{s=JSON.parse(localStorage.getItem(KEY));}catch(e){}
@@ -358,6 +370,7 @@ async function iniciar(){
     delete S.listas;S.v=3;S.atual=0;S.atualNome=null;S.ini=S.ini||'';S.fim='';
   }
   if(!S.prev)S.prev={};
+  padronizarNomes();
   if(!S.tratoSel)S.tratoSel=1;
   save();
   if(!S.aparelho){S.aparelho=Math.random().toString(36).slice(2,8);save();}
@@ -367,10 +380,11 @@ async function iniciar(){
   $('tratoSel').value=String(S.tratoSel);
   $('pvTrato').value=String(S.pvTrato||S.tratoSel);
   $('apiUrl').value=apiUrl();
-  $('versao').textContent=`Versão ${APP_VERSAO}`;
+  $('versao').textContent=`Versão ${APP_VERSAO} · ${APP_DATA}`;
   render();
   sincronizar();
   checarBackup();
+  prepararLeitorOffline();
 }
 
 function toast(t){const el=$('toast');el.textContent=t;el.hidden=false;clearTimeout(toast.t);toast.t=setTimeout(()=>el.hidden=true,2600);}
@@ -474,15 +488,16 @@ let prevTimer;
 function marcarPrev(){S.prevPend=true;S.prevTs=Date.now();save();clearTimeout(prevTimer);prevTimer=setTimeout(()=>sincronizar(),2000);}
 const valPrev=v=>v==null?'':(v==='?'?'?':String(v));
 function renderPrev(){
+  if($('tbPrev').contains(document.activeElement))return; // não atrapalha quem está digitando
   const k=$('pvTrato').value,m=(S.prev[k])||{};
   let tot=0,n=0;
   $('tbPrev').innerHTML=S.cadastro.map((c,i)=>{const v=m[c];if(typeof v==='number'&&v>0){tot+=v;n++;}
-    return `<tr><td class="c">${esc(c)}</td><td><input class="cell${v==='?'?' duv':''}" type="text" inputmode="decimal" data-n="${i}" value="${esc(valPrev(v))}" placeholder="—" aria-label="Previsto ${esc(c)}"></td></tr>`;}).join('');
+    return `<tr><td class="alca" title="Arraste para mudar a ordem" aria-label="Arrastar ${esc(c)}">☰</td><td class="c" style="cursor:default">${esc(c)}</td><td><input class="cell${v==='?'?' duv':''}" type="text" inputmode="decimal" data-n="${i}" value="${esc(valPrev(v))}" placeholder="—" aria-label="Previsto ${esc(c)}"></td></tr>`;}).join('');
   $('pvTot').textContent=`${n} curral(is) · ${fmt(tot)} kg`;
   const dv=duvidas(k);
   $('pvAviso').hidden=!dv.length;$('pvAviso').textContent=dv.length?`${dv.length} curral(is) com "?": corrija o número.`:'';
   $('cadN').textContent=`${S.cadastro.length} currais`;
-  $('tbCad').innerHTML=S.cadastro.map((c,i)=>`<tr><td class="c" style="cursor:default">${i+1}. ${esc(c)}</td><td class="acoes">
+  $('tbCad').innerHTML=S.cadastro.map((c,i)=>`<tr><td class="alca" title="Arraste para mudar a ordem" aria-label="Arrastar ${esc(c)}">☰</td><td class="c" style="cursor:default">${i+1}. ${esc(c)}</td><td class="acoes">
     <button class="mini" data-a="up" data-i="${i}" ${i===0?'disabled':''} aria-label="Subir ${esc(c)}">↑</button>
     <button class="mini" data-a="dn" data-i="${i}" ${i===S.cadastro.length-1?'disabled':''} aria-label="Descer ${esc(c)}">↓</button>
     <button class="mini danger" data-a="rm" data-i="${i}" aria-label="Tirar ${esc(c)}">✕</button></td></tr>`).join('');
@@ -749,7 +764,7 @@ async function puxarPrevisto(forcar){
   ultPuxaPrev=Date.now();
   const r=await fetch(apiUrl()+'?acao=previsto',{cache:'no-store'});const j=await r.json();
   if(j&&j.ok&&j.dados&&Array.isArray(j.dados.cadastro)&&+j.dados.ts>(S.prevTs||0)){
-    S.cadastro=j.dados.cadastro;S.prev=j.dados.prev||{};S.prevTs=+j.dados.ts;save();render();
+    S.cadastro=j.dados.cadastro;S.prev=j.dados.prev||{};S.prevTs=+j.dados.ts;padronizarNomes();save();render();
   }
 }
 async function sincronizar(avisar){
@@ -794,7 +809,7 @@ $('btnSalvarApi').onclick=()=>{
 };
 $('btnEnviar').onclick=()=>sincronizar(true);
 $('btnPuxar').onclick=puxarNuvem;
-window.addEventListener('online',()=>{sincronizar();checarBackup();});
+window.addEventListener('online',()=>{sincronizar();checarBackup();prepararLeitorOffline();checarVersao();});
 setInterval(()=>sincronizar(),60000);
 
 /* ---------- Backup (todo dia às 21:00 e no botão) ---------- */
@@ -828,7 +843,10 @@ function fecharEdicao(){$('editBox').hidden=true;$('revBox').hidden=true;$('list
 function abrirEdicao(txt){$('lista').value=txt;$('editBox').hidden=false;$('revBox').hidden=true;$('listaBtns').hidden=true;$('lista').focus();}
 $('btnEditar').onclick=()=>{const m=S.prev[$('pvTrato').value]||{};abrirEdicao(S.cadastro.filter(n=>m[n]!=null).map(n=>`${n} ${m[n]}`).join('\n'));};
 $('btnCancLista').onclick=fecharEdicao;
-function parseNum(s){s=String(s).replace(/\s/g,'');if(/^\d{1,3}([.,]\d{3})+$/.test(s))return parseFloat(s.replace(/[.,]/g,''));return parseFloat(s.replace(',','.'));}
+// "795,00" vira 795 (despreza o que vem depois da vírgula); "1.720,00" vira 1720
+function parseNum(s){s=String(s).replace(/\s/g,'');const neg=s.startsWith('-');s=s.replace(/^-/,'');
+  const m=s.match(/^(.*\d)[.,](\d{1,2})$/);if(m)s=m[1];
+  const v=/^\d{1,3}([.,]\d{3})+$/.test(s)?parseFloat(s.replace(/[.,]/g,'')):parseFloat(s.replace(',','.'));return neg?-v:v;}
 function parseLinha(l){
   l=l.replace(/[|_—–]/g,' ').replace(/\s+/g,' ').trim();if(!l)return null;
   const m=l.match(/^(.+?)(?:[\s;:,\t=\/]+(\?|\d{1,3}(?:[.,]\d{3})+|\d+(?:[.,]\d+)?)\s*(?:kg|kgs|quilos)?\.?)?$/i);
@@ -848,92 +866,210 @@ $('btnSalvarLista').onclick=()=>{
   toast(`Trato ${k}: ${Object.keys(m).length} currais salvos${novos.length?` (${novos.length} cadastrado(s) no fim)`:''}`);
 };
 
-/* ---------- Foto: lê só Curral, Trato e Previsto ---------- */
-const ehNum=t=>/^(\d{1,3}([.,]\d{3})+|\d+([.,]\d+)?)$/.test(t);
-const tokensDe=l=>l.toUpperCase().normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/[|;]/g,' ').replace(/KG\b/g,' ').split(/\s+/).filter(Boolean);
-function cabecalho(tk){
-  const ci=tk.findIndex(t=>/^CURRA/.test(t));
-  const cols=tk.slice(ci+1).filter(t=>/[A-Z]/.test(t)&&!/^\(.*\)$/.test(t));
-  return {cols,iTrato:cols.findIndex(t=>/^TRATO/.test(t)),iPrev:cols.findIndex(t=>/^PREV/.test(t))};
+/* ---------- Foto: lê só Curral, Trato e Previsto (funciona sem internet) ---------- */
+// Leitor no próprio celular (mesmos arquivos do app de localização). O celular guarda depois do 1º uso com internet.
+const CDN='https://cdn.jsdelivr.net/npm/';
+const OCRF={js:CDN+'tesseract.js@5.1.1/dist/tesseract.min.js',worker:CDN+'tesseract.js@5.1.1/dist/worker.min.js',
+  core:CDN+'tesseract.js-core@5.1.1/',lang:CDN+'@tesseract.js-data/eng@1.0.0/4.0.0_best_int'};
+let ocrPronto=null;
+function carregarOCR(){
+  if(ocrPronto)return ocrPronto;
+  const simd=(()=>{try{return WebAssembly.validate(new Uint8Array([0,97,115,109,1,0,0,0,1,5,1,96,0,1,123,3,2,1,0,10,10,1,8,0,65,0,253,15,253,98,11]));}catch(e){return false;}})();
+  ocrPronto=new Promise((ok,falha)=>{
+    if(window.Tesseract)return ok();
+    const sc=document.createElement('script');sc.src=OCRF.js;sc.crossOrigin='anonymous';sc.onload=ok;sc.onerror=()=>falha(new Error('leitor'));document.head.appendChild(sc);
+  }).then(()=>Tesseract.createWorker('eng',1,{workerPath:OCRF.worker,langPath:OCRF.lang,
+    corePath:OCRF.core+(simd?'tesseract-core-simd-lstm.wasm.js':'tesseract-core-lstm.wasm.js')}))
+    .then(async w=>{await w.setParameters({tessedit_pageseg_mode:'6',preserve_interword_spaces:'1',
+      tessedit_char_whitelist:'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-.,:/()?'});return w;});
+  ocrPronto.catch(()=>{ocrPronto=null;});
+  return ocrPronto;
 }
-function acharCurralNaLinha(tk){
-  for(let i=0;i<tk.length;i++){
-    if(ehNum(tk[i]))continue;
-    for(let len=Math.min(4,tk.length-i);len>=1;len--){const n=acharCadastro(tk.slice(i,i+len).join(''));if(n)return {nome:n,i,len};}
+// Baixa o leitor uma vez quando tiver internet, para a foto funcionar depois sem sinal
+function prepararLeitorOffline(){
+  if(S.leitorOk||!navigator.onLine)return;
+  setTimeout(()=>{if(!navigator.onLine)return;carregarOCR().then(()=>{S.leitorOk=1;save();}).catch(()=>{});},8000);
+}
+
+/* Tratamento da imagem: reto, sem sombra/sujeira, preto e branco, sem as linhas da tabela */
+function otsu(g){const h=new Float64Array(256);for(let i=0;i<g.length;i++)h[g[i]]++;let tot=g.length,s=0;for(let i=0;i<256;i++)s+=i*h[i];
+  let wB=0,sB=0,mv=-1,lim=128;for(let i=0;i<256;i++){wB+=h[i];if(!wB||wB===tot)continue;sB+=i*h[i];const mB=sB/wB,mF=(s-sB)/(tot-wB),v=wB*(tot-wB)*(mB-mF)*(mB-mF);if(v>mv){mv=v;lim=i;}}return lim;}
+function girar(cv,graus){
+  if(!graus)return cv;
+  const a=graus*Math.PI/180,c=Math.abs(Math.cos(a)),s=Math.abs(Math.sin(a));
+  const o=document.createElement('canvas');o.width=Math.ceil(cv.width*c+cv.height*s);o.height=Math.ceil(cv.width*s+cv.height*c);
+  const x=o.getContext('2d');x.fillStyle='#fff';x.fillRect(0,0,o.width,o.height);x.translate(o.width/2,o.height/2);x.rotate(a);x.drawImage(cv,-cv.width/2,-cv.height/2);
+  return o;
+}
+// tira sombra e manchas: divide cada ponto pelo "fundo" claro da região
+function normalizarFundo(cv){
+  const W=cv.width,H=cv.height,cx=cv.getContext('2d'),d=cx.getImageData(0,0,W,H),p=d.data,N=W*H,g=new Uint8ClampedArray(N);
+  for(let i=0;i<N;i++)g[i]=.3*p[i*4]+.59*p[i*4+1]+.11*p[i*4+2];
+  const B=24,gw=Math.ceil(W/B),gh=Math.ceil(H/B),bg=new Float32Array(gw*gh);
+  for(let by=0;by<gh;by++)for(let bx=0;bx<gw;bx++){const v=[];for(let y=by*B;y<Math.min(H,by*B+B);y+=3)for(let x=bx*B;x<Math.min(W,bx*B+B);x+=3)v.push(g[y*W+x]);v.sort((a,b)=>a-b);bg[by*gw+bx]=v[Math.floor(v.length*.9)]||255;}
+  for(let k=0;k<2;k++){const t=bg.slice();for(let y=0;y<gh;y++)for(let x=0;x<gw;x++){let s=0,n=0;for(let dy=-1;dy<=1;dy++)for(let dx=-1;dx<=1;dx++){const yy=y+dy,xx=x+dx;if(yy>=0&&yy<gh&&xx>=0&&xx<gw){s+=Math.max(t[yy*gw+xx],t[y*gw+x]*.85);n++;}}bg[y*gw+x]=s/n;}}
+  for(let y=0;y<H;y++)for(let x=0;x<W;x++){
+    const fx=Math.min(gw-1.001,Math.max(0,x/B-.5)),fy=Math.min(gh-1.001,Math.max(0,y/B-.5)),x0=fx|0,y0=fy|0,ax=fx-x0,ay=fy-y0,x1=Math.min(gw-1,x0+1),y1=Math.min(gh-1,y0+1);
+    const b=(bg[y0*gw+x0]*(1-ax)+bg[y0*gw+x1]*ax)*(1-ay)+(bg[y1*gw+x0]*(1-ax)+bg[y1*gw+x1]*ax)*ay;
+    g[y*W+x]=Math.min(255,g[y*W+x]/Math.max(40,b)*255);
+  }
+  return g;
+}
+// acha o ângulo das linhas de texto (até 25° torto, e foto deitada 90°)
+function anguloTexto(ink,W,H){
+  const pts=[];for(let y=0;y<H;y+=2)for(let x=0;x<W;x+=2)if(ink[y*W+x])pts.push(x,y);
+  if(pts.length<200)return 0;
+  const nota=a=>{const r=a*Math.PI/180,c=Math.cos(r),s=Math.sin(r),D=Math.ceil(W+H),h=new Float32Array(D*2/3+4);
+    for(let i=0;i<pts.length;i+=2){const v=((pts[i+1]*c-pts[i]*s)+W)/3|0;if(v>=0&&v<h.length)h[v]++;}let q=0;for(let i=0;i<h.length;i++)q+=h[i]*h[i];return q;};
+  let melhor=0,mv=-1;
+  for(const base of [0,90])for(let a=base-25;a<=base+25;a+=1){const v=nota(a);if(v>mv){mv=v;melhor=a;}}
+  const b0=melhor;for(let a=b0-1;a<=b0+1;a+=.2){const v=nota(a);if(v>mv){mv=v;melhor=a;}}
+  return melhor;
+}
+function tirarLinhasTabela(ink,W,H){
+  const minH=Math.max(50,W*.18),minV=Math.max(50,H*.12);
+  for(let y=0;y<H;y++){let x=0;while(x<W){if(!ink[y*W+x]){x++;continue;}let e=x;while(e<W&&(ink[y*W+e]||(e+1<W&&ink[y*W+e+1])))e++;if(e-x>=minH)for(let k=x;k<e;k++)ink[y*W+k]=0;x=e+1;}}
+  for(let x=0;x<W;x++){let y=0;while(y<H){if(!ink[y*W+x]){y++;continue;}let e=y;while(e<H&&(ink[e*W+x]||(e+1<H&&ink[(e+1)*W+x])))e++;if(e-y>=minV)for(let k=y;k<e;k++)ink[k*W+x]=0;y=e+1;}}
+}
+function tirarFaixasEscuras(ink,W,H){
+  for(let y=0;y<H;y++){let n=0;for(let x=0;x<W;x++)n+=ink[y*W+x];if(n>W*.55)for(let x=0;x<W;x++)ink[y*W+x]=0;}
+  for(let x=0;x<W;x++){let n=0;for(let y=0;y<H;y++)n+=ink[y*W+x];if(n>H*.55)for(let y=0;y<H;y++)ink[y*W+x]=0;}
+}
+function tirarPontinhos(ink,W,H){
+  const o=ink.slice();
+  for(let y=1;y<H-1;y++)for(let x=1;x<W-1;x++){const i=y*W+x;if(!o[i])continue;let n=0;for(let dy=-1;dy<=1;dy++)for(let dx=-1;dx<=1;dx++)if((dy||dx)&&o[i+dy*W+dx])n++;if(n<2)ink[i]=0;}
+}
+function inkParaCanvas(ink,W,H){
+  const cv=document.createElement('canvas');cv.width=W+40;cv.height=H+40;const cx=cv.getContext('2d');cx.fillStyle='#fff';cx.fillRect(0,0,cv.width,cv.height);
+  const d=cx.createImageData(W,H);for(let i=0;i<W*H;i++){const v=ink[i]?0:255;d.data[i*4]=d.data[i*4+1]=d.data[i*4+2]=v;d.data[i*4+3]=255;}cx.putImageData(d,20,20);return cv;
+}
+async function tratarFoto(file,extraGiro){
+  let img;try{img=await createImageBitmap(file,{imageOrientation:'from-image'});}catch(e){img=await createImageBitmap(file);}
+  const alvo=2000,esc=Math.min(2.5,alvo/Math.max(img.width,img.height));
+  let cv=document.createElement('canvas');cv.width=Math.round(img.width*esc);cv.height=Math.round(img.height*esc);
+  cv.getContext('2d').drawImage(img,0,0,cv.width,cv.height);
+  // 1) fundo uniforme e ângulo
+  let W=cv.width,H=cv.height,g=normalizarFundo(cv),lim=otsu(g);
+  const ink0=new Uint8Array(W*H);for(let i=0;i<W*H;i++)ink0[i]=g[i]<Math.min(lim,200)?1:0;
+  const ang=anguloTexto(ink0,W,H);
+  // 2) gira a imagem já sem sombra
+  const tmp=document.createElement('canvas');tmp.width=W;tmp.height=H;const tc=tmp.getContext('2d'),td=tc.createImageData(W,H);
+  for(let i=0;i<W*H;i++){td.data[i*4]=td.data[i*4+1]=td.data[i*4+2]=g[i];td.data[i*4+3]=255;}tc.putImageData(td,0,0);
+  const reto=girar(tmp,-ang+(extraGiro||0));
+  // 3) preto e branco, tira pontinhos e linhas da tabela
+  W=reto.width;H=reto.height;const rd=reto.getContext('2d').getImageData(0,0,W,H).data,g2=new Uint8ClampedArray(W*H);
+  for(let i=0;i<W*H;i++)g2[i]=rd[i*4];
+  const lim2=Math.min(otsu(g2),200),ink=new Uint8Array(W*H);for(let i=0;i<W*H;i++)ink[i]=g2[i]<lim2?1:0;
+  tirarFaixasEscuras(ink,W,H);tirarPontinhos(ink,W,H);tirarLinhasTabela(ink,W,H);
+  return {cv:inkParaCanvas(ink,W,H),ang:Math.round(ang)};
+}
+
+/* Leitura da tabela: cada linha vira lista de palavras {t: texto, c: confiança 0-100} */
+const semAcento=s=>String(s).toUpperCase().normalize('NFD').replace(/[̀-ͯ]/g,'');
+const ehNum=t=>/^-?(\d{1,3}([.,]\d{3})+([.,]\d{1,2})?|\d+([.,]\d{1,2})?)$/.test(t);
+// número lido com letra parecida (O→0, I/l→1, S→5, B→8): corrige, mas com menos confiança
+function numDe(w){
+  if(!w)return null;let t=semAcento(w.t).replace(/KG$/,'').replace(/[^0-9A-Z.,\-]/g,'');
+  if(ehNum(t))return {v:parseNum(t),c:w.c,int:/^\d+$/.test(t)};
+  if(/^-?[0-9OISBL.,]+$/.test(t)&&/\d/.test(t)&&t.replace(/[^0-9]/g,'').length>=t.replace(/[.,\-]/g,'').length/2){
+    const f=t.replace(/O/g,'0').replace(/[IL]/g,'1').replace(/S/g,'5').replace(/B/g,'8');if(ehNum(f))return {v:parseNum(f),c:w.c-25,int:/^\d+$/.test(f)};}
+  if(/^[IL|]$/.test(t))return {v:1,c:w.c-30,int:true}; // "1" lido como I ou l
+  return null;
+}
+function linhasDoTexto(texto,conf){return String(texto).split('\n').map(l=>l.replace(/[|;]/g,' ').split(/\s+/).filter(Boolean).map(t=>({t,c:conf})));}
+// monta as linhas da tabela pela posição das palavras na foto (não depende do leitor separar as linhas)
+function linhasPorPosicao(words){
+  const ws=words.filter(w=>w.text&&w.text.trim()).map(w=>({t:w.text.trim(),c:w.confidence,x:w.bbox.x0,yc:(w.bbox.y0+w.bbox.y1)/2,h:w.bbox.y1-w.bbox.y0}));
+  if(!ws.length)return [];
+  const hs=ws.map(w=>w.h).sort((a,b)=>a-b),hm=hs[hs.length>>1]||20;
+  ws.sort((a,b)=>a.yc-b.yc);const rows=[];
+  for(const w of ws){let r=null,best=1e9;for(const x of rows){const d=Math.abs(x.yc-w.yc);if(d<best){best=d;r=x;}}
+    if(r&&best<=hm*.75){r.ws.push(w);r.yc=(r.yc*(r.ws.length-1)+w.yc)/r.ws.length;}else rows.push({yc:w.yc,ws:[w]});}
+  return rows.sort((a,b)=>a.yc-b.yc).map(r=>r.ws.sort((a,b)=>a.x-b.x));
+}
+function acharCurralNaLinha(ws){
+  for(let i=0;i<ws.length;i++){
+    if(ehNum(ws[i].t))continue;
+    for(let len=Math.min(4,ws.length-i);len>=1;len--){const n=acharCadastro(ws.slice(i,i+len).map(w=>w.t).join(''));if(n)return {nome:n,i,len};}
   }
   return null;
 }
-function lerTabela(texto,tratoPadrao){
-  let hdr=null,ctx=tratoPadrao;const itens=[],ign=[];
-  for(const l of String(texto).split('\n')){
-    const tk=tokensDe(l);if(!tk.length)continue;
-    const up=tk.join(' ');
-    const cur=acharCurralNaLinha(tk);
+const CONF_MIN=60; // abaixo disso o número fica "?"
+// Regra: Curral ... Trato (1 a 5) e logo depois o Previsto. Ração e outras palavras no meio são ignoradas.
+function lerTabela(linhas,tratoPadrao){
+  let ctx=tratoPadrao;const itens=[],ign=[];
+  for(const ws of linhas){
+    if(!ws.length)continue;
+    const up=ws.map(w=>semAcento(w.t)).join(' ');
+    const cur=acharCurralNaLinha(ws);
     if(!cur){
-      if(/CURRA/.test(up)&&/PREV/.test(up)){hdr=cabecalho(tk);continue;}
+      if(/CURRA|PREVIST|REALIZ/.test(up))continue;
       const mt=up.match(/TRATO\s*[:\-N°º]*\s*([1-5])\b/);if(mt){ctx=+mt[1];continue;}
-      if(/^[A-Z]{1,3}-?\d{1,3}$/.test(tk[0])&&tk.slice(1).some(ehNum))ign.push(tk[0]);
+      const t0=semAcento(ws[0].t);if(/^[A-Z]{1,3}-?\d{1,3}$/.test(t0)&&ws.slice(1).some(w=>ehNum(w.t)))ign.push(t0);
       continue;
     }
-    const resto=tk.slice(0,cur.i).concat(tk.slice(cur.i+cur.len));
-    let trato=null,prev='?';
-    if(hdr&&hdr.iPrev>=0){
-      // alinha as colunas pelo cabeçalho (colunas que faltam no fim da linha não atrapalham)
-      const dep=tk.slice(cur.i+cur.len);
-      const tv=hdr.iTrato>=0?dep[hdr.iTrato]:null;
-      if(tv&&/^[1-5]$/.test(tv))trato=+tv;
-      const pv=dep[hdr.iPrev];
-      if(pv&&ehNum(pv))prev=parseNum(pv);
-    }else{
-      const mt=resto.join(' ').match(/(?:TRATO|^T|\sT)\s*-?\s*([1-5])\b/);if(mt)trato=+mt[1];
-      const kg=resto.filter(ehNum).map(parseNum).filter(v=>v>=10);if(kg.length===1)prev=kg[0];
-    }
-    if(typeof prev==='number'&&(isNaN(prev)||prev<=0))prev='?';
+    const nums=ws.slice(cur.i+cur.len).map(numDe).filter(Boolean);
+    let trato=null,prev='?',pv=null;
+    const it=nums.findIndex(n=>n.int&&n.v>=1&&n.v<=5);
+    if(it>=0){trato=nums[it].v;pv=nums[it+1]||null;}
+    else{pv=nums.find(n=>n.v>=10)||null;}
+    if(pv&&!isNaN(pv.v)&&pv.c>=CONF_MIN&&pv.v>0&&pv.v<=30000)prev=pv.v;
     itens.push({nome:cur.nome,trato:trato||ctx,prev});
   }
   return {itens,ign};
 }
 const nota=r=>r.itens.length?r.itens.filter(x=>x.prev!=='?').length/r.itens.length:0;
-function carregarScript(src){return new Promise((ok,err)=>{const s=document.createElement('script');s.src=src;s.onload=ok;s.onerror=err;document.head.appendChild(s);});}
+async function lerLocal(file,box,rot,trato){
+  box.textContent=`${rot}: tratando a imagem…`;
+  const w=await Promise.race([carregarOCR(),new Promise((_,f)=>setTimeout(()=>f(new Error('demorou')),45000))]);
+  let melhor=null;
+  for(const giro of [0,180]){
+    const t=await tratarFoto(file,giro);
+    for(const psm of ['11','6']){
+      box.textContent=`${rot}: lendo no celular…`;
+      await w.setParameters({tessedit_pageseg_mode:psm});
+      const {data}=await w.recognize(t.cv);
+      const linhas=(data.words&&data.words.length)?linhasPorPosicao(data.words):linhasDoTexto(data.text,70);
+      const r=lerTabela(linhas,trato);
+      if(!melhor||nota(r)*r.itens.length>nota(melhor)*melhor.itens.length||(r.itens.length&&!melhor.itens.length))melhor=r;
+      if(r.itens.length&&nota(r)>=.8)return melhor;
+    }
+    if(melhor&&melhor.itens.length)break; // achou currais: não precisa virar a foto
+  }
+  return melhor;
+}
+async function lerGoogle(file,trato){
+  const j=await postApi({acao:'foto',imagem:await fotoBase64(file)});
+  return lerTabela(linhasDoTexto(j.texto||'',85),trato);
+}
+// junta a leitura do celular com a do Google: número diferente = dúvida "?"
+function juntarLeituras(a,b){
+  if(!a)return b||{itens:[],ign:[]};if(!b)return a;
+  const m=new Map();a.itens.forEach(x=>m.set(x.nome+'|'+x.trato,{...x}));
+  b.itens.forEach(x=>{const k=x.nome+'|'+x.trato,y=m.get(k);
+    if(!y)m.set(k,{...x});
+    else if(y.prev==='?')y.prev=x.prev;
+    else if(x.prev!=='?'&&Math.abs(x.prev-y.prev)>0.5)y.prev='?';});
+  return {itens:[...m.values()],ign:[...new Set(a.ign.concat(b.ign))]};
+}
+async function lerUmaFoto(file,box,rot,trato){
+  const google=(apiUrl()&&navigator.onLine)?lerGoogle(file,trato).catch(()=>null):Promise.resolve(null);
+  let local=null,erroLocal=null;
+  try{local=await lerLocal(file,box,rot,trato);}catch(e){erroLocal=e;}
+  if(navigator.onLine)box.textContent=`${rot}: conferindo com o Google…`;
+  const g=await google;
+  if(!local&&!g&&erroLocal)throw erroLocal;
+  return juntarLeituras(local,g);
+}
 async function fotoBase64(file){
-  const img=await createImageBitmap(file);const r=Math.min(1,1600/Math.max(img.width,img.height));
+  let img;try{img=await createImageBitmap(file,{imageOrientation:'from-image'});}catch(e){img=await createImageBitmap(file);}
+  const r=Math.min(1,1600/Math.max(img.width,img.height));
   const cv=document.createElement('canvas');cv.width=Math.round(img.width*r);cv.height=Math.round(img.height*r);
   cv.getContext('2d').drawImage(img,0,0,cv.width,cv.height);return cv.toDataURL('image/jpeg',.85).split(',')[1];
 }
-async function prepararImagem(file){
-  const img=await createImageBitmap(file);
-  const alvo=2000,esc=Math.min(2.5,alvo/Math.max(img.width,img.height));
-  const cv=document.createElement('canvas');cv.width=Math.round(img.width*esc);cv.height=Math.round(img.height*esc);
-  const cx=cv.getContext('2d');cx.drawImage(img,0,0,cv.width,cv.height);
-  const d=cx.getImageData(0,0,cv.width,cv.height),p=d.data;
-  for(let i=0;i<p.length;i+=4){const g=.3*p[i]+.59*p[i+1]+.11*p[i+2];const v=g>150?255:g<90?0:(g-90)*4.25;p[i]=p[i+1]=p[i+2]=v;}
-  cx.putImageData(d,0,0);return cv;
-}
-async function lerComTesseract(file,box,rot){
-  if(!window.Tesseract){
-    box.textContent=`${rot}: carregando o leitor de foto (precisa de internet na primeira vez)…`;
-    await carregarScript('https://cdn.jsdelivr.net/npm/tesseract.js@5.1.1/dist/tesseract.min.js');
-  }
-  const cv=await prepararImagem(file);
-  const worker=await Tesseract.createWorker('eng',1,{logger:m=>{if(m.status==='recognizing text')box.textContent=`${rot}: lendo… ${Math.round(m.progress*100)}%`;}});
-  await worker.setParameters({tessedit_pageseg_mode:'6'});
-  const {data}=await worker.recognize(cv);await worker.terminate();
-  return data.text;
-}
-async function lerUmaFoto(file,box,rot,trato){
-  let melhor=null;
-  if(apiUrl()&&navigator.onLine){
-    try{box.textContent=`${rot}: enviando para o Google ler…`;const j=await postApi({acao:'foto',imagem:await fotoBase64(file)});melhor=lerTabela(j.texto||'',trato);}catch(e){}
-  }
-  if(!melhor||!melhor.itens.length||nota(melhor)<.7){
-    try{const t=lerTabela(await lerComTesseract(file,box,rot),trato);
-      if(!melhor||nota(t)*t.itens.length>nota(melhor)*melhor.itens.length||(!melhor.itens.length&&t.itens.length))melhor=t;}catch(e){}
-  }
-  return melhor||{itens:[],ign:[]};
-}
 let REV=[];
 function renderRev(){
-  $('tbRev').innerHTML=REV.map((x,i)=>`<tr><td class="c" style="cursor:default">${esc(x.nome)}</td>
+  $('tbRev').innerHTML=REV.map((x,i)=>`<tr><td class="c" style="cursor:default">${esc(x.nome)}${x.obs?`<br><small class="note">${esc(x.obs)}</small>`:''}</td>
     <td><select class="mini" data-t="${i}">${[1,2,3,4,5].map(t=>`<option value="${t}" ${t===x.trato?'selected':''}>${t}</option>`).join('')}</select></td>
     <td><input class="cell${x.prev==='?'?' duv':''}" type="text" inputmode="decimal" data-v="${i}" value="${esc(valPrev(x.prev))}"></td>
     <td><button class="mini" data-x="${i}" aria-label="Tirar ${esc(x.nome)}">✕</button></td></tr>`).join('');
@@ -955,31 +1091,64 @@ $('btnAplicarRev').onclick=()=>{
 $('foto').addEventListener('change',async e=>{
   const files=[...e.target.files];e.target.value='';if(!files.length)return;
   const box=$('ocrBox');box.hidden=false;$('editBox').hidden=true;$('revBox').hidden=true;$('listaBtns').hidden=true;
-  const trato=+$('pvTrato').value;const mapa=new Map();let rep=0;const ign=new Set();
-  try{
-    for(let i=0;i<files.length;i++){
+  const trato=+$('pvTrato').value;const mapa=new Map();let rep=0,falhas=0;const ign=new Set();
+  for(let i=0;i<files.length;i++){
+    try{
       const r=await lerUmaFoto(files[i],box,files.length>1?`Foto ${i+1} de ${files.length}`:'Foto',trato);
       r.ign.forEach(x=>ign.add(x));
       r.itens.forEach(x=>{const k=x.nome+'|'+x.trato;const a=mapa.get(k);
         if(!a)mapa.set(k,x);else{rep++;if(a.prev==='?'&&x.prev!=='?')a.prev=x.prev;}});
-    }
-  }catch(err){}
+    }catch(err){falhas++;}
+  }
+  // número muito diferente do previsto atual também fica em dúvida
+  mapa.forEach(x=>{const ant=(S.prev[String(x.trato)]||{})[x.nome];
+    if(typeof x.prev==='number'&&typeof ant==='number'&&ant>0&&(x.prev>ant*3||x.prev<ant/3)){x.obs=`lido ${fmt(x.prev)}, antes ${fmt(ant)}: confira`;x.prev='?';}});
   REV=[...mapa.values()].sort((a,b)=>a.trato-b.trato||S.cadastro.indexOf(a.nome)-S.cadastro.indexOf(b.nome));
   if(!REV.length){
-    box.textContent=navigator.onLine?'Não consegui achar curral cadastrado e quantidade nessas fotos. Tente fotos mais de perto, retas e com boa luz, ou use Editar em texto.':'Sem internet: o leitor de foto precisa ser baixado uma vez com internet. Depois funciona sem sinal.';
+    box.textContent=falhas&&!navigator.onLine&&!S.leitorOk?'Sem internet e o leitor de foto ainda não foi baixado neste celular. Abra o app uma vez com internet e espere alguns segundos; depois funciona sem sinal.':
+      'Não achei curral cadastrado com quantidade nessas fotos. Tente fotos mais de perto, com a folha inteira e boa luz, ou use Editar em texto.';
     $('listaBtns').hidden=false;return;
   }
   const q=REV.filter(x=>x.prev==='?').length;
-  box.textContent=`Li ${files.length} foto(s): ${REV.length} curral(is)`+(rep?`, ${rep} repetido(s) desconsiderado(s)`:'')+(q?`, ${q} com "?" (não deu para ler)`:'')+
-    (ign.size?`. Não cadastrados (ignorados): ${[...ign].join(', ')}`:'')+'. Confira e toque em Atualizar previsto.';
+  box.textContent=`Li ${files.length} foto(s): ${REV.length} curral(is)`+(rep?`, ${rep} repetido(s) desconsiderado(s)`:'')+(q?`, ${q} com "?" (dúvida: confira)`:'')+
+    (falhas?`, ${falhas} foto(s) não deu para ler`:'')+(ign.size?`. Não cadastrados (ignorados): ${[...ign].join(', ')}`:'')+'. A ordem do cadastro não muda. Confira e toque em Atualizar previsto.';
   renderRev();$('revBox').hidden=false;
 });
+
+/* ---------- Arrastar para mudar a ordem (fica salvo) ---------- */
+function arrastavel(tbody,mover){
+  let dr=null;
+  tbody.addEventListener('pointerdown',e=>{const h=e.target.closest('.alca');if(!h)return;e.preventDefault();const tr=h.closest('tr');
+    dr={tr,de:[...tbody.children].indexOf(tr)};tr.classList.add('arrastando');try{h.setPointerCapture(e.pointerId);}catch(x){}});
+  tbody.addEventListener('pointermove',e=>{if(!dr)return;e.preventDefault();const y=e.clientY;
+    for(const r of tbody.children){if(r===dr.tr)continue;const b=r.getBoundingClientRect();
+      if(y>b.top&&y<b.bottom){if(y<b.top+b.height/2)tbody.insertBefore(dr.tr,r);else tbody.insertBefore(dr.tr,r.nextSibling);break;}}
+    if(y<70)window.scrollBy(0,-14);else if(y>innerHeight-70)window.scrollBy(0,14);});
+  const fim=()=>{if(!dr)return;const para=[...tbody.children].indexOf(dr.tr),de=dr.de;dr.tr.classList.remove('arrastando');dr=null;if(para!==de)mover(de,para);};
+  tbody.addEventListener('pointerup',fim);tbody.addEventListener('pointercancel',fim);
+}
+function moverCurral(de,para){
+  const [n]=S.cadastro.splice(de,1);S.cadastro.splice(para,0,n);marcarPrev();render();renderPrev();toast(`${n} agora é o ${para+1}º da lista`);
+}
+arrastavel($('tbPrev'),moverCurral);
+arrastavel($('tbCad'),moverCurral);
 
 try{navigator.wakeLock&&navigator.wakeLock.request('screen').catch(()=>{});}catch(e){}
 document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible'){try{navigator.wakeLock&&navigator.wakeLock.request('screen').catch(()=>{});}catch(e){} if(S){render();sincronizar();checarBackup();}}});
 iniciar();
 
 /* ---------- Atualização automática do app ---------- */
+// Quando colocarmos melhoria: troque APP_VERSAO aqui, o número em versao.json e o CACHE do sw.js
+async function checarVersao(){
+  if(!navigator.onLine)return;
+  try{
+    const v=String((await (await fetch('versao.json?t='+Date.now(),{cache:'no-store'})).json()).versao||'');
+    let ja='';try{ja=sessionStorage.getItem('recarregadoPara')||'';}catch(e){}
+    if(v&&v!==APP_VERSAO&&ja!==v){try{sessionStorage.setItem('recarregadoPara',v);}catch(e){}location.reload();}
+  }catch(e){}
+}
+setTimeout(checarVersao,3000);setInterval(checarVersao,10*60000);
+document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')checarVersao();});
 if('serviceWorker' in navigator){
   const tinha=!!navigator.serviceWorker.controller;let recarregou=false;
   navigator.serviceWorker.addEventListener('controllerchange',()=>{if(!tinha||recarregou)return;recarregou=true;location.reload();});
