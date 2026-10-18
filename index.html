@@ -257,6 +257,9 @@ tr.marcado td{background:#fde8e8}
 .tituloLinha{position:relative}
 .voltarIni{position:absolute;left:0;top:50%;transform:translateY(-50%);border:0;background:none;font-size:1.6rem;line-height:1;padding:6px 12px;color:var(--fg)}
 body.naInicio .voltarIni{visibility:hidden}
+body.somenteVer table:has(#tbPrev) th:first-child,body.somenteVer table:has(#tbPrev) th:last-child{display:none}
+body.somenteVer table:has(#tbPrev) th:nth-child(3),body.somenteVer #tbPrev td:last-child{text-align:right}
+body.somenteVer #tbPrev input.cell{width:5.5em;pointer-events:none;background:transparent;border-color:transparent;font-weight:700;font-size:1.05rem}
 </style>
 </head>
 <body>
@@ -463,7 +466,7 @@ body.naInicio .voltarIni{visibility:hidden}
 <div class="toast" id="toast" hidden></div>
 <script>
 'use strict';
-const APP_VERSAO='45';
+const APP_VERSAO='46';
 const APP_DATA='17/10/2026';
 const KEY='trato-confinamento-v1';
 const $=id=>document.getElementById(id);
