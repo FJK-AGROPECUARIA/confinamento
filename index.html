@@ -272,9 +272,9 @@ body.somenteVer #tbPrev input.cell{width:5.5em;pointer-events:none;background:tr
   <div class="inicio" id="inicio">
     <button class="grande gExec" id="btnModoExec">▶ Executar tratos</button>
     <button class="grande gVer" id="btnModoVer">👁 Visualizar</button>
-    <p class="note">Visualizar é só para acompanhar as informações, sem alterar nada. Atualiza sozinho com internet.</p>
+    <p class="note">Visualizar é só para acompanhar as informações, sem alterar nada. Atualiza automaticamente com internet.</p>
   </div>
-  <div class="faixaVer" id="faixaVer" hidden><span>👁 Modo visualização · atualiza sozinho</span><button class="mini" id="btnSairVer">Sair</button></div>
+  <div class="faixaVer" id="faixaVer" hidden><span>👁 Modo visualização · atualiza automaticamente</span><button class="mini" id="btnSairVer">Sair</button></div>
   <nav class="tabs" role="tablist">
     <button id="tabPrev" role="tab" aria-selected="false">Previsto</button>
     <button id="tabTrato" role="tab" aria-selected="true">Tratar</button>
@@ -466,7 +466,7 @@ body.somenteVer #tbPrev input.cell{width:5.5em;pointer-events:none;background:tr
 <div class="toast" id="toast" hidden></div>
 <script>
 'use strict';
-const APP_VERSAO='46';
+const APP_VERSAO='47';
 const APP_DATA='17/10/2026';
 const KEY='trato-confinamento-v1';
 const $=id=>document.getElementById(id);
