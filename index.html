@@ -212,6 +212,13 @@ input[type=number]{-moz-appearance:textfield}
 .linhaTrato{display:flex;align-items:center;justify-content:space-between;gap:10px}
 .linhaTrato label{margin:0;font-family:var(--display);font-stretch:condensed;font-size:1.5rem;font-weight:700;color:var(--fg);letter-spacing:.06em}
 .linhaTrato select.trato{width:auto;flex:0 0 auto;min-width:9.5rem;font-size:1.3rem;padding:6px 12px}
+.linhaTrato{justify-content:flex-start}
+.linhaTrato label{font-size:1.25rem;letter-spacing:.04em}
+.linhaTrato label{white-space:nowrap;font-size:1.15rem}
+.linhaTrato select.trato{min-width:0;width:8.5rem;font-size:1.2rem}
+.linhaTrato{gap:8px}
+.linhaTrato label{font-size:1.05rem;letter-spacing:.02em}
+.linhaTrato select.trato{width:7.6rem;padding:6px 8px}
 </style>
 </head>
 <body>
@@ -275,7 +282,7 @@ input[type=number]{-moz-appearance:textfield}
     <div class="dataLinha" id="dataLinha"><button class="dataBox" id="dataEsc" aria-label="Data do trato">—</button><button class="mini lima" id="btnHoje" hidden>Voltar para hoje</button></div>
     <div class="cal" id="cal" hidden></div>
     <div class="linhaTrato">
-      <label for="tratoSel">Executar</label>
+      <label for="tratoSel">Selecionar trato:</label>
       <select class="trato" id="tratoSel">
         <option value="1">Trato 1</option><option value="2">Trato 2</option><option value="3">Trato 3</option><option value="4">Trato 4</option><option value="5">Trato 5</option>
       </select>
@@ -402,7 +409,7 @@ input[type=number]{-moz-appearance:textfield}
 <div class="toast" id="toast" hidden></div>
 <script>
 'use strict';
-const APP_VERSAO='36';
+const APP_VERSAO='37';
 const APP_DATA='17/10/2026';
 const KEY='trato-confinamento-v1';
 const $=id=>document.getElementById(id);
