@@ -136,6 +136,7 @@ body.comteclado .wrap{padding-bottom:420px}
 button.dangerfill{background:var(--bad);border-color:var(--bad);color:#fff}
 #tbPrev input.cell{width:4.6em}
 #tbPrev td.acoes button.mini{padding:4px 7px;margin-left:2px}
+button.dangerfill.ativo{background:#fff;color:var(--bad)}
 </style>
 </head>
 <body>
@@ -330,7 +331,7 @@ button.dangerfill{background:var(--bad);border-color:var(--bad);color:#fff}
 <div class="toast" id="toast" hidden></div>
 <script>
 'use strict';
-const APP_VERSAO='20';
+const APP_VERSAO='21';
 const APP_DATA='17/10/2026';
 const KEY='trato-confinamento-v1';
 const $=id=>document.getElementById(id);
@@ -544,7 +545,7 @@ function renderPrev(){
   const k=$('pvTrato').value,m=(S.prev[k])||{};
   let tot=0,n=0;
   $('tbPrev').innerHTML=S.cadastro.map((c,i)=>{const v=m[c];if(typeof v==='number'&&v>0){tot+=v;n++;}
-    return `<tr><td class="alca" title="Arraste para mudar a ordem" aria-label="Arrastar ${esc(c)}">☰</td><td class="c" style="cursor:default">${esc(c)}</td><td><input class="cell${v==='?'?' duv':''}" type="text" readonly tabindex="-1" inputmode="none" data-n="${i}" value="${esc(valPrev(v))}" placeholder="—" aria-label="Previsto ${esc(c)}"></td><td class="acoes"><button class="mini" tabindex="-1" data-a="ed" data-i="${i}" aria-label="Editar ${esc(c)}">✎</button><button class="mini danger" tabindex="-1" data-a="rm" data-i="${i}" aria-label="Excluir ${esc(c)}">✕</button></td></tr>`;}).join('');
+    return `<tr><td class="alca" title="Arraste para mudar a ordem" aria-label="Arrastar ${esc(c)}">☰</td><td class="c" style="cursor:default">${esc(c)}</td><td><input class="cell${v==='?'?' duv':''}" type="text" readonly tabindex="-1" inputmode="none" data-n="${i}" value="${esc(valPrev(v))}" placeholder="—" aria-label="Previsto ${esc(c)}"></td><td class="acoes"><button class="mini" tabindex="-1" data-a="ed" data-i="${i}" aria-label="Editar ${esc(c)}">✎</button>${modoRemover?`<button class="mini danger" tabindex="-1" data-a="rm" data-i="${i}" aria-label="Excluir ${esc(c)}">✕</button>`:''}</td></tr>`;}).join('');
   $('pvTot').title=`${S.cadastro.length} currais cadastrados`;
   resumoPrev();
   if(tecIdx!=null){const x=campoPrev(tecIdx);if(x){x.classList.add('sel');x.value=tecBuf;}}
@@ -627,13 +628,13 @@ $('btnCadastrar').onclick=()=>{
   const ja=acharCadastro(n);if(ja){toast(`${ja} já está cadastrado`);return;}
   S.cadastro.push(n);$('novoCurral').value='';marcarPrev();render();renderPrev();toast(`${n} cadastrado no fim da lista`);
 };
+let modoRemover=false;
 $('btnRemoverCurral').onclick=()=>{
-  let t=$('novoCurral').value.trim();
-  if(!t)t=prompt('Qual curral remover? (ex.: C-11)')||'';
-  const n=acharCadastro(nomeLimpo(t));if(!t)return;if(!n){toast('Curral não encontrado no cadastro');return;}
-  if(!confirm(`Remover o ${n}? O previsto dele em todos os tratos também sai. Os registros já feitos continuam no histórico.`))return;
-  S.cadastro.splice(S.cadastro.indexOf(n),1);Object.values(S.prev).forEach(m=>{delete m[n];});
-  $('novoCurral').value='';marcarPrev();render();renderPrev();toast(`${n} removido`);
+  modoRemover=!modoRemover;
+  $('btnRemoverCurral').textContent=modoRemover?'✓ Concluir remoção':'− Remover curral';
+  $('btnRemoverCurral').classList.toggle('ativo',modoRemover);
+  renderPrev();
+  if(modoRemover){toast('Toque no ✕ do curral que quer remover');$('tbPrev').scrollIntoView({block:'start',behavior:'smooth'});}
 };
 $('novoCurral').addEventListener('keydown',e=>{if(e.key==='Enter')$('btnCadastrar').click();});
 /* ---------- Mensagem WhatsApp ---------- */
@@ -770,6 +771,7 @@ $('btnShareExcel').onclick=()=>compartilhar(regsAtuais());
 
 /* ---------- Abas ---------- */
 function aba(qual){
+  if(typeof modoRemover!=='undefined'&&modoRemover&&qual!=='prev')$('btnRemoverCurral').click();
   if(typeof fecharTeclado==='function')fecharTeclado();
   $('viewPrev').hidden=qual!=='prev';$('viewTrato').hidden=qual!=='trato';$('viewHist').hidden=qual!=='hist';
   $('tabPrev').setAttribute('aria-selected',String(qual==='prev'));$('tabTrato').setAttribute('aria-selected',String(qual==='trato'));$('tabHist').setAttribute('aria-selected',String(qual==='hist'));
