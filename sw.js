@@ -1,6 +1,6 @@
-const CACHE='confinamento-v1';
+const CACHE='confinamento-v2';
 const RUNTIME='confinamento-runtime-v1';
-const FILES=['./','./index.html','./manifest.json','./icone-192.png','./icone-512.png'];
+const FILES=['./','./index.html','./manifest.json','./icone-192.png','./icone-512.png','./gestao.js'];
 
 self.addEventListener('install',e=>{e.waitUntil(caches.open(CACHE).then(c=>c.addAll(FILES.map(f=>new Request(f,{cache:'reload'})))));self.skipWaiting();});
 self.addEventListener('activate',e=>{
