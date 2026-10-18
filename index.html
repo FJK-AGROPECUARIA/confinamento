@@ -379,7 +379,7 @@ input[type=number]{-moz-appearance:textfield}
 <div class="toast" id="toast" hidden></div>
 <script>
 'use strict';
-const APP_VERSAO='32';
+const APP_VERSAO='33';
 const APP_DATA='17/10/2026';
 const KEY='trato-confinamento-v1';
 const $=id=>document.getElementById(id);
@@ -513,7 +513,7 @@ function render(){
   if(S.atualNome!=null){const i=L.findIndex(x=>x.nome===S.atualNome);if(i>=0)S.atual=i;}
   if(S.atual>L.length)S.atual=L.length;
   const c=L[S.atual];
-  $('curNome').textContent=c?c.nome:(L.length?'Trato completo':'Sem previsto');
+  $('curNome').textContent=c?c.nome:(L.length?'Trato completo':'-');
   $('curPrev').textContent=c?fmt(c.prev):'—';
   if(document.activeElement!==$('ini'))$('ini').value=S.ini;
   if(document.activeElement!==$('fim'))$('fim').value=S.fim;
