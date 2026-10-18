@@ -143,6 +143,10 @@ button.dangerfill.ativo{background:#fff;color:var(--bad)}
 .escolha button small{display:block;font-family:var(--body);font-size:.72rem;color:var(--muted);font-weight:500;margin-top:2px}
 .escolha button.feito{background:var(--chip);color:var(--ok)}
 .escolha button.atual{border-color:var(--accent);border-width:3px}
+table.trat{font-size:.84rem}
+table.trat td,table.trat th{padding:7px 3px}
+table.trat td.c{font-size:1.02rem;white-space:nowrap}
+table.trat button.editq{font-size:.84rem}
 </style>
 </head>
 <body>
@@ -231,18 +235,9 @@ button.dangerfill.ativo{background:#fff;color:var(--bad)}
   <section class="panel">
     <div class="curhead"><h2 id="tituloCurrais">Currais</h2><span class="note num" id="totais"></span></div>
     <p class="aviso bad" id="trAviso" hidden></p>
-    <div class="tablebox"><table>
-      <thead><tr><th>Curral</th><th>Previsto</th><th>Fornec.</th><th>Dif.</th></tr></thead>
+    <div class="tablebox"><table class="trat">
+      <thead><tr><th>Curral</th><th>Prev.</th><th>Início</th><th>Final</th><th>Realiz.</th><th>Dif.</th></tr></thead>
       <tbody id="tbCur"></tbody>
-    </table></div>
-    <p class="note">Toque no nome do curral para tratar ele agora. Para mudar o previsto ou os currais, use a aba Previsto.</p>
-  </section>
-
-  <section class="panel">
-    <div class="curhead"><h2 id="tituloReg">Registros</h2><span class="note num" id="nReg"></span></div>
-    <div class="tablebox"><table>
-      <thead><tr><th>Hora</th><th>Curral</th><th>Início</th><th>Final</th><th>Fornec.</th></tr></thead>
-      <tbody id="tbReg"></tbody>
     </table></div>
     <button id="btnDesfazer">Desfazer último</button>
   </section>
@@ -338,7 +333,7 @@ button.dangerfill.ativo{background:#fff;color:var(--bad)}
 <div class="toast" id="toast" hidden></div>
 <script>
 'use strict';
-const APP_VERSAO='22';
+const APP_VERSAO='23';
 const APP_DATA='17/10/2026';
 const KEY='trato-confinamento-v1';
 const $=id=>document.getElementById(id);
@@ -471,18 +466,21 @@ function render(){
   calc();
   let tp=0,tf=0;
   $('tituloCurrais').textContent=`Currais — Trato ${S.tratoSel}`;
-  $('tbCur').innerHTML=L.length?L.map((x,i)=>{
-    const f=fornecidoDe(x.nome,regs),fz=feito(x.nome,regs);tp+=x.prev;tf+=f;const d=f-x.prev;
-    return `<tr class="${i===S.atual?'cur':''}"><td class="c" data-i="${i}">${esc(x.nome)}</td><td>${fmt(x.prev)}</td>
-      <td>${fz?fmt(f):(i===S.atual?'<span class="pill">agora</span>':'—')}</td><td class="${fz?classeDesv(d,x.prev):''}">${fz?sgn(d):''}</td></tr>`;
-  }).join(''):`<tr><td colspan="4" class="note" style="text-align:left">Nenhum previsto no Trato ${S.tratoSel}. Lance na aba Previsto.</td></tr>`;
+  // uma tabela só, na ordem do cadastro: Curral, Previsto, Início, Final, Realizado, Diferença
+  const linha=(nome,prev,i)=>{
+    const rs=regs.filter(r=>r.curral===nome),fz=rs.length>0,f=rs.reduce((a,r)=>a+r.forn,0);
+    if(prev!=null)tp+=prev;tf+=f;const d=f-(prev||0),ult=rs[rs.length-1];
+    const real=!fz?(i===S.atual?'<span class="pill">agora</span>':'—'):
+      (rs.length===1?`<button class="editq" data-uid="${esc(ult.uid)}" aria-label="Editar quantidade do ${esc(nome)}"><b>${fmt(f)}</b>✎</button>`:`<b>${fmt(f)}</b>`);
+    return `<tr class="${i===S.atual?'cur':''}"><td class="c" ${i!=null?`data-i="${i}"`:''}>${esc(nome)}</td><td>${prev!=null?fmt(prev):'—'}</td>
+      <td>${fz?fmt(rs[0].ini):''}</td><td>${fz?fmt(ult.fim):''}</td><td>${real}</td><td class="${fz&&prev?classeDesv(d,prev):''}">${fz&&prev!=null?sgn(d):''}</td></tr>`;
+  };
+  const extras=[...new Set(regs.map(r=>r.curral))].filter(n=>!L.some(x=>x.nome===n)); // tratado mas fora da lista atual
+  $('tbCur').innerHTML=(L.length||extras.length)?L.map((x,i)=>linha(x.nome,x.prev,i)).join('')+extras.map(n=>linha(n,(regs.find(r=>r.curral===n)||{}).prev,null)).join(''):
+    `<tr><td colspan="6" class="note" style="text-align:left">Nenhum previsto no Trato ${S.tratoSel}. Lance na aba Previsto.</td></tr>`;
   const dv=duvidas();
   $('trAviso').hidden=!dv.length;$('trAviso').textContent=dv.length?`Previsto com "?" (fora da lista até corrigir): ${dv.join(', ')}`:'';
   $('totais').textContent=`${fmt(tf)} de ${fmt(tp)} kg`;
-  $('tituloReg').textContent=`Registros — Trato ${S.tratoSel} de hoje`;
-  $('nReg').textContent=regs.length?`${regs.length} curral(is)`:'';
-  $('tbReg').innerHTML=regs.length?regs.map(r=>`<tr><td>${horaDe(r)}</td><td class="c">${esc(r.curral)}</td><td>${fmt(r.ini)}</td><td>${fmt(r.fim)}</td><td><button class="editq" data-uid="${esc(r.uid)}" aria-label="Editar quantidade do ${esc(r.curral)}"><b>${fmt(r.forn)}</b> ✎</button></td></tr>`).join(''):
-    `<tr><td colspan="5" class="note" style="text-align:left">Nenhum curral registrado neste trato hoje.</td></tr>`;
   const tem=regs.length>0;
   ['btnDesfazer','btnWa','btnCopiarMsg','btnExcel','btnShareExcel'].forEach(id=>$(id).disabled=!tem);
   $('msg').textContent=tem?mensagem(regs):'A mensagem do WhatsApp aparece aqui depois do primeiro registro.';
