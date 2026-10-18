@@ -219,6 +219,11 @@ input[type=number]{-moz-appearance:textfield}
 .linhaTrato{gap:8px}
 .linhaTrato label{font-size:1.05rem;letter-spacing:.02em}
 .linhaTrato select.trato{width:7.6rem;padding:6px 8px}
+.teclado button.tecOk{background:#1f8f4e;color:#fff;border-color:#1f8f4e}
+.tecAcoes1{margin-top:6px;display:grid}
+.tecAcoes1 button.tecOk{font-size:1.5rem;padding:16px 0}
+input.big.sel{border-color:var(--accent);border-width:3px;background:#fff}
+#ini,#fim{cursor:pointer;caret-color:transparent}
 </style>
 </head>
 <body>
@@ -297,12 +302,12 @@ input[type=number]{-moz-appearance:textfield}
     <div class="escolha" id="escolhaCur" hidden></div>
     <div>
       <label for="ini">Balança no início (kg)</label>
-      <div class="campoX"><input class="big num" id="ini" type="number" inputmode="numeric"><button class="limparX" data-campo="ini" aria-label="Limpar balança no início" tabindex="-1">✕</button></div>
+      <div class="campoX"><input class="big num" id="ini" type="text" readonly inputmode="none"><button class="limparX" data-campo="ini" aria-label="Limpar balança no início" tabindex="-1">✕</button></div>
     </div>
     <div class="led"><span>Parar com balança em</span><b id="alvo">—</b></div>
     <div>
       <label for="fim">Balança no final (kg)</label>
-      <div class="campoX"><input class="big num" id="fim" type="number" inputmode="numeric"><button class="limparX" data-campo="fim" aria-label="Limpar balança no final" tabindex="-1">✕</button></div>
+      <div class="campoX"><input class="big num" id="fim" type="text" readonly inputmode="none"><button class="limparX" data-campo="fim" aria-label="Limpar balança no final" tabindex="-1">✕</button></div>
     </div>
     <div class="res">
       <div><small>Fornecido</small><b class="num" id="forn">—</b></div>
@@ -406,10 +411,20 @@ input[type=number]{-moz-appearance:textfield}
   </div>
   <div class="tecAcoes"><button data-k="up" class="tecSec">▲</button><button data-k="fechar" class="tecSec">Fechar</button><button data-k="ok" class="tecOk">Próximo ▼</button></div>
 </div>
+<div class="teclado" id="tecBal" hidden>
+  <div class="tecTopo"><span id="balNome"></span><b id="balValor">—</b></div>
+  <div class="tecGrade">
+    <button data-b="1">1</button><button data-b="2">2</button><button data-b="3">3</button>
+    <button data-b="4">4</button><button data-b="5">5</button><button data-b="6">6</button>
+    <button data-b="7">7</button><button data-b="8">8</button><button data-b="9">9</button>
+    <button data-b="limpar" class="tecSec">Limpar</button><button data-b="0">0</button><button data-b="del" class="tecSec">⌫</button>
+  </div>
+  <div class="tecAcoes1"><button data-b="ok" class="tecOk">OK</button></div>
+</div>
 <div class="toast" id="toast" hidden></div>
 <script>
 'use strict';
-const APP_VERSAO='37';
+const APP_VERSAO='38';
 const APP_DATA='17/10/2026';
 const KEY='trato-confinamento-v1';
 const $=id=>document.getElementById(id);
@@ -591,7 +606,7 @@ function calc(){
 }
 
 $('ini').addEventListener('input',e=>{S.ini=e.target.value;save();calc();});
-document.querySelectorAll('.limparX').forEach(b=>{b.addEventListener('pointerdown',e=>e.preventDefault());b.onclick=()=>{const id=b.dataset.campo,x=$(id);x.value='';S[id]='';save();calc();mostrarX();x.focus();};});
+document.querySelectorAll('.limparX').forEach(b=>{b.addEventListener('pointerdown',e=>e.preventDefault());b.onclick=()=>{const id=b.dataset.campo,x=$(id);x.value='';S[id]='';save();calc();mostrarX();abrirBal(id);balNovo=false;};});
 function mostrarX(){document.querySelectorAll('.limparX').forEach(b=>{b.hidden=!$(b.dataset.campo).value;});}
 ['ini','fim'].forEach(id=>$(id).addEventListener('input',mostrarX));
 $('fim').addEventListener('input',e=>{S.fim=e.target.value;save();calc();});
@@ -731,6 +746,28 @@ function fecharTeclado(){
   document.querySelectorAll('#tbPrev input.sel').forEach(x=>x.classList.remove('sel'));
   tecIdx=null;$('teclado').hidden=true;document.body.classList.remove('comteclado');
 }
+/* Teclado do app para a balança: OK fecha (espera o curral terminar para digitar o final) */
+let balCampo=null,balBuf='',balNovo=false;
+function abrirBal(id){
+  if(typeof fecharTeclado==='function'&&tecIdx!=null)fecharTeclado();
+  ['ini','fim'].forEach(c=>$(c).classList.remove('sel'));
+  balCampo=id;balBuf=$(id).value;balNovo=true;$(id).classList.add('sel');
+  $('balNome').textContent=id==='ini'?'Balança no início':'Balança no final';$('balValor').textContent=balBuf||'—';
+  $('tecBal').hidden=false;document.body.classList.add('comteclado');
+  requestAnimationFrame(()=>{const r=$(id).getBoundingClientRect(),vis=innerHeight-$('tecBal').offsetHeight;window.scrollBy({top:r.top-80,behavior:'smooth'});});
+}
+function fecharBal(){if(balCampo)$(balCampo).classList.remove('sel');balCampo=null;$('tecBal').hidden=true;document.body.classList.remove('comteclado');save();calc();mostrarX();}
+function teclarBal(k){
+  if(!balCampo)return;
+  if(k==='ok'){fecharBal();return;}
+  if(balNovo&&k!=='del'&&k!=='limpar')balBuf='';balNovo=false; // começar a digitar substitui o número antigo
+  if(k==='del')balBuf=balBuf.slice(0,-1);else if(k==='limpar')balBuf='';else if(balBuf.length<6)balBuf=(balBuf==='0'?'':balBuf)+k;
+  $(balCampo).value=balBuf;S[balCampo]=balBuf;$('balValor').textContent=balBuf||'—';calc();mostrarX();
+}
+['ini','fim'].forEach(id=>$(id).addEventListener('click',e=>{e.preventDefault();$(id).blur();abrirBal(id);}));
+$('tecBal').addEventListener('pointerdown',e=>{const b=e.target.closest('button[data-b]');if(!b)return;e.preventDefault();teclarBal(b.dataset.b);});
+document.addEventListener('pointerdown',e=>{if(balCampo&&!e.target.closest('#tecBal,#ini,#fim,.limparX'))fecharBal();},true);
+document.addEventListener('keydown',e=>{if(!balCampo)return;if(/^[0-9]$/.test(e.key))teclarBal(e.key);else if(e.key==='Backspace')teclarBal('del');else if(e.key==='Enter'||e.key==='Escape'){e.preventDefault();teclarBal('ok');}});
 function teclar(k){
   if(tecIdx==null)return;
   if(k==='ok'){if(!aplicarPrev(tecIdx,tecBuf))return;const prox=tecIdx+1;tecIdx=null;if(campoPrev(prox))abrirTeclado(prox);else fecharTeclado();return;}
@@ -918,6 +955,7 @@ $('btnShareExcel').onclick=()=>compartilhar(regsAtuais());
 function aba(qual){
   if(typeof modoRemover!=='undefined'&&modoRemover&&qual!=='prev')$('btnRemoverCurral').click();
   if(typeof fecharTeclado==='function')fecharTeclado();
+  if(typeof fecharBal==='function'&&balCampo)fecharBal();
   $('viewPrev').hidden=qual!=='prev';$('viewTrato').hidden=qual!=='trato';$('viewHist').hidden=qual!=='hist';
   $('tabPrev').setAttribute('aria-selected',String(qual==='prev'));$('tabTrato').setAttribute('aria-selected',String(qual==='trato'));$('tabHist').setAttribute('aria-selected',String(qual==='hist'));
   if(qual==='hist')renderHist();if(qual==='prev')renderPrev();window.scrollTo({top:0});
