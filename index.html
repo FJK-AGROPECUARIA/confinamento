@@ -137,6 +137,12 @@ button.dangerfill{background:var(--bad);border-color:var(--bad);color:#fff}
 #tbPrev input.cell{width:4.6em}
 #tbPrev td.acoes button.mini{padding:4px 7px;margin-left:2px}
 button.dangerfill.ativo{background:#fff;color:var(--bad)}
+.trocar{margin-top:6px;font-size:.85rem;padding:4px 10px}
+.escolha{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
+.escolha button{padding:10px 4px;font-family:var(--display);font-stretch:condensed;font-size:1.05rem;line-height:1.1}
+.escolha button small{display:block;font-family:var(--body);font-size:.72rem;color:var(--muted);font-weight:500;margin-top:2px}
+.escolha button.feito{background:var(--chip);color:var(--ok)}
+.escolha button.atual{border-color:var(--accent);border-width:3px}
 </style>
 </head>
 <body>
@@ -200,9 +206,10 @@ button.dangerfill.ativo{background:#fff;color:var(--bad)}
       </select>
     </div>
     <div class="curhead">
-      <div><h2>Curral atual</h2><div class="curname" id="curNome">—</div></div>
+      <div><h2>Curral atual</h2><div class="curname" id="curNome">—</div><button class="mini trocar" id="btnTrocar">Trocar curral ▾</button></div>
       <div class="prev"><span>Previsto</span><b class="num" id="curPrev">—</b></div>
     </div>
+    <div class="escolha" id="escolhaCur" hidden></div>
     <div>
       <label for="ini">Balança agora (início, kg)</label>
       <input class="big num" id="ini" type="number" inputmode="numeric" placeholder="ex.: 5000">
@@ -331,7 +338,7 @@ button.dangerfill.ativo{background:#fff;color:var(--bad)}
 <div class="toast" id="toast" hidden></div>
 <script>
 'use strict';
-const APP_VERSAO='21';
+const APP_VERSAO='22';
 const APP_DATA='17/10/2026';
 const KEY='trato-confinamento-v1';
 const $=id=>document.getElementById(id);
@@ -499,6 +506,7 @@ function calc(){
 $('ini').addEventListener('input',e=>{S.ini=e.target.value;save();calc();});
 $('fim').addEventListener('input',e=>{S.fim=e.target.value;save();calc();});
 $('tratoSel').addEventListener('change',e=>{
+  $('escolhaCur').hidden=true;
   S.tratoSel=+e.target.value;S.fim='';
   const L=lista(),regs=regsAtuais();setAtual(Math.max(0,L.findIndex(x=>!feito(x.nome,regs))));
   save();render();toast(`Trato ${S.tratoSel}`);
@@ -526,6 +534,13 @@ $('btnReg').onclick=async()=>{
   window.scrollTo({top:0,behavior:'smooth'});
 };
 
+function mostrarEscolha(){
+  const L=lista(),regs=regsAtuais();
+  $('escolhaCur').innerHTML=L.length?L.map((x,i)=>`<button data-i="${i}" class="${i===S.atual?'atual':''} ${feito(x.nome,regs)?'feito':''}">${feito(x.nome,regs)?'✓ ':''}${esc(x.nome)}<small>${fmt(x.prev)} kg</small></button>`).join(''):'<p class="note">Sem previsto neste trato.</p>';
+}
+$('btnTrocar').onclick=()=>{const e=$('escolhaCur');e.hidden=!e.hidden;if(!e.hidden)mostrarEscolha();};
+$('escolhaCur').addEventListener('click',e=>{const b=e.target.closest('button[data-i]');if(!b)return;
+  setAtual(+b.dataset.i);S.fim='';save();$('escolhaCur').hidden=true;render();toast(`Tratando ${lista()[S.atual].nome}`);});
 $('tbCur').addEventListener('click',e=>{const td=e.target.closest('td[data-i]');if(!td)return;setAtual(+td.dataset.i);S.fim='';save();render();window.scrollTo({top:0,behavior:'smooth'});});
 
 $('btnDesfazer').onclick=async()=>{
