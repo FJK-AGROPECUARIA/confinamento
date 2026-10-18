@@ -231,6 +231,9 @@ input.big.sel{border-color:var(--accent);border-width:3px;background:#fff}
 .linhaTrato select.trato{background-color:var(--lima);color:var(--fg);font-weight:700}
 .linhaTrato label{background:var(--bg);border:2px solid var(--line)}
 .dataBox{text-align:center}
+.curBox2 .cbCur{cursor:pointer}
+.curBox2 .seta{font-style:normal;font-size:.7rem;margin-left:4px;color:var(--led)}
+.curBox2 .cbPrev b{min-width:5ch}
 </style>
 </head>
 <body>
@@ -301,10 +304,9 @@ input.big.sel{border-color:var(--accent);border-width:3px;background:#fff}
     </div>
     <div>
       <div class="curBox2">
-        <div class="cbCur"><span>Curral atual</span><b id="curNome">—</b></div>
+        <div class="cbCur" id="btnTrocar" role="button" aria-label="Trocar curral"><span>Curral atual <i class="seta">▼</i></span><b id="curNome">—</b></div>
         <div class="cbPrev"><span>Previsto</span><b class="num" id="curPrev">—</b></div>
       </div>
-      <button class="mini trocar2" id="btnTrocar">Trocar curral ▾</button>
     </div>
     <div class="escolha" id="escolhaCur" hidden></div>
     <div>
@@ -431,7 +433,7 @@ input.big.sel{border-color:var(--accent);border-width:3px;background:#fff}
 <div class="toast" id="toast" hidden></div>
 <script>
 'use strict';
-const APP_VERSAO='41';
+const APP_VERSAO='42';
 const APP_DATA='17/10/2026';
 const KEY='trato-confinamento-v1';
 const $=id=>document.getElementById(id);
@@ -650,9 +652,9 @@ function mostrarEscolha(){
   const L=lista(),regs=regsAtuais();
   $('escolhaCur').innerHTML=L.length?L.map((x,i)=>`<button data-i="${i}" class="${i===S.atual?'atual':''} ${feito(x.nome,regs)?'feito':''}">${feito(x.nome,regs)?'✓ ':''}${esc(x.nome)}<small>${fmt(x.prev)} kg</small></button>`).join(''):'<p class="note">Sem previsto neste trato.</p>';
 }
-$('btnTrocar').onclick=()=>{const e=$('escolhaCur');e.hidden=!e.hidden;if(!e.hidden)mostrarEscolha();};
+$('btnTrocar').onclick=()=>{const e=$('escolhaCur');e.hidden=!e.hidden;if(!e.hidden)mostrarEscolha();document.querySelector('.curBox2 .seta').textContent=e.hidden?'▼':'▲';};
 $('escolhaCur').addEventListener('click',e=>{const b=e.target.closest('button[data-i]');if(!b)return;
-  setAtual(+b.dataset.i);S.fim='';save();$('escolhaCur').hidden=true;render();toast(`Tratando ${lista()[S.atual].nome}`);});
+  setAtual(+b.dataset.i);S.fim='';save();$('escolhaCur').hidden=true;document.querySelector('.curBox2 .seta').textContent='▼';render();toast(`Tratando ${lista()[S.atual].nome}`);});
 /* Calendário do próprio app: tocou no dia, já muda (sem precisar confirmar) */
 let calMes=null;
 const MESES=['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
