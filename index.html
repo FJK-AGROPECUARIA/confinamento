@@ -156,6 +156,14 @@ table.trat button.editq{font-size:.84rem}
 .limparX{position:absolute;right:8px;top:50%;transform:translateY(-50%);width:36px;height:36px;padding:0;border-radius:50%;border:0;background:#dfe4ea;color:var(--fg);font-size:1rem;line-height:36px}
 input[type=number]::-webkit-inner-spin-button,input[type=number]::-webkit-outer-spin-button{-webkit-appearance:none;margin:0}
 input[type=number]{-moz-appearance:textfield}
+.linhas{display:flex;flex-wrap:wrap;align-items:center;gap:6px}
+.linhas button{padding:8px 10px;font-size:.9rem;border-radius:99px}
+.linhas button.sel{background:var(--accent);border-color:var(--accent);color:#fff}
+.somaLinha{flex:1 1 100%;background:var(--chip);border-radius:10px;padding:10px 12px}
+.somaLinha b{font-family:var(--display);font-stretch:condensed;font-size:1.6rem}
+.somaLinha span{color:var(--muted);font-size:.85rem;margin-left:6px}
+.somaLinha small{display:block;color:var(--muted);font-size:.8rem;margin-top:2px}
+.linhas button{flex:1 1 0;padding:8px 4px;font-size:.82rem;white-space:nowrap}
 </style>
 </head>
 <body>
@@ -185,6 +193,10 @@ input[type=number]{-moz-appearance:textfield}
       <thead><tr><th></th><th>Curral</th><th>Previsto (kg)</th><th></th></tr></thead>
       <tbody id="tbPrev"></tbody>
     </table></div>
+    <div class="linhas" id="linhas">
+      <button data-l="T" class="sel">Todas</button><button data-l="C">C · Confinamento</button><button data-l="P">P · Pasto TIP</button>
+      <div class="somaLinha" id="somaLinha"></div>
+    </div>
     <div id="editBox" hidden>
       <label for="lista">Um curral por linha: nome e quantidade (só deste trato)</label>
       <textarea id="lista" placeholder="C-10 1000&#10;C-3 600"></textarea>
@@ -344,7 +356,7 @@ input[type=number]{-moz-appearance:textfield}
 <div class="toast" id="toast" hidden></div>
 <script>
 'use strict';
-const APP_VERSAO='25';
+const APP_VERSAO='26';
 const APP_DATA='17/10/2026';
 const KEY='trato-confinamento-v1';
 const $=id=>document.getElementById(id);
@@ -589,10 +601,23 @@ function renderPrev(){
   resumoPrev();
   if(tecIdx!=null){const x=campoPrev(tecIdx);if(x){x.classList.add('sel');x.value=tecBuf;}}
 }
+/* Soma do previsto por linha: C = confinamento, P = pasto TIP */
+const linhaDe=n=>/^C-/.test(n)?'C':/^P-/.test(n)?'P':'O';
+let linhaSel='T';
+function somaLinhas(){
+  const k=$('pvTrato').value,m=S.prev[k]||{},t={T:[0,0],C:[0,0],P:[0,0]};
+  S.cadastro.forEach(c=>{const v=m[c];if(typeof v==='number'&&v>0){t.T[0]+=v;t.T[1]++;const l=linhaDe(c);if(t[l]){t[l][0]+=v;t[l][1]++;}}});
+  const nome={T:'Todas',C:'Linha C',P:'Linha P'}[linhaSel],x=t[linhaSel];
+  $('somaLinha').innerHTML=`<b>${fmt(x[0])} kg</b> <span>${nome} · ${x[1]} curral(is) · Trato ${k}</span>`+
+    (linhaSel==='T'?`<small>C: ${fmt(t.C[0])} kg · P: ${fmt(t.P[0])} kg</small>`:'');
+  document.querySelectorAll('#linhas button[data-l]').forEach(b=>b.classList.toggle('sel',b.dataset.l===linhaSel));
+}
+$('linhas').addEventListener('click',e=>{const b=e.target.closest('button[data-l]');if(!b)return;linhaSel=b.dataset.l;somaLinhas();});
 function resumoPrev(){
   const k=$('pvTrato').value,m=(S.prev[k])||{};let tot=0,n=0;
   S.cadastro.forEach(c=>{const v=m[c];if(typeof v==='number'&&v>0){tot+=v;n++;}});
   $('pvTot').textContent=`${n} curral(is) · ${fmt(tot)} kg`;
+  somaLinhas();
   $('btnLimparPrev').textContent=`Limpar previsto do Trato ${k}`;$('btnLimparPrev').disabled=!Object.keys(m).length;
   const dv=duvidas(k);
   $('pvAviso').hidden=!dv.length;$('pvAviso').textContent=dv.length?`${dv.length} curral(is) com "?": corrija o número.`:'';
