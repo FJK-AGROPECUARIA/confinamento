@@ -266,6 +266,26 @@ button.verde{background:#1f8f4e;border-color:#1f8f4e;color:#fff;font-size:1.1rem
 .eiCaixa{background:#fff;width:100%;max-width:640px;border-radius:16px 16px 0 0;padding:16px 16px calc(16px + env(safe-area-inset-bottom,0px));display:flex;flex-direction:column;gap:10px}
 .eiCaixa button.verde{font-size:1.25rem;padding:14px;text-align:left}
 .eiCaixa button small{display:block;font-size:.85rem;font-weight:500;opacity:.85}
+
+/* Ao vivo (modo visualização) */
+.aoVivo{display:none}
+body.somenteVer .aoVivo{display:flex;flex-direction:column;gap:10px}
+body.somenteVer #curWrap{display:none}
+.avCard{border:2px solid var(--accent);border-radius:14px;padding:8px;background:#fff;display:flex;flex-direction:column;gap:8px}
+.avTopo{display:flex;justify-content:space-between;align-items:center;font-size:.8rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--accent);padding:0 4px}
+.avTopo .avIdade{font-weight:600;text-transform:none;letter-spacing:0;color:var(--muted)}
+.avPonto{display:inline-block;width:10px;height:10px;border-radius:50%;background:#1f8f4e;margin-right:6px;animation:avPisca 1.6s infinite}
+.avCard.parado .avPonto{background:var(--warn);animation:none}
+@keyframes avPisca{50%{opacity:.25}}
+.avGrade{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
+.avGrade div{background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:6px 8px;min-width:0}
+.avGrade small{display:block;font-size:.68rem;text-transform:uppercase;letter-spacing:.05em;color:var(--muted)}
+.avGrade b{font-family:var(--display);font-stretch:condensed;font-size:1.5rem;font-weight:700;white-space:nowrap}
+.avGrade .avAlvo{background:var(--led-bg);border-color:var(--led-bg)}
+.avGrade .avAlvo small{color:#c9d3df}.avGrade .avAlvo b{color:var(--led)}
+.avGrade .ok{color:var(--ok)}.avGrade .warn{color:var(--warn)}.avGrade .bad{color:var(--bad)}
+.avVazio{border:1px dashed var(--line);border-radius:12px;padding:14px;text-align:center;color:var(--muted);font-size:.95rem;background:#fff}
+.avCard .curBox2 .cbCur b{font-size:2rem}
 </style>
 </head>
 <body>
@@ -340,7 +360,8 @@ button.verde{background:#1f8f4e;border-color:#1f8f4e;color:#fff;font-size:1.1rem
         <option value="1">Trato 1</option><option value="2">Trato 2</option><option value="3">Trato 3</option><option value="4">Trato 4</option><option value="5">Trato 5</option>
       </select>
     </div>
-    <div>
+    <div class="aoVivo" id="aoVivo"></div>
+    <div id="curWrap">
       <div class="curBox2">
         <div class="cbCur" id="btnTrocar" role="button" aria-label="Trocar curral"><span>Curral atual <i class="seta">▼</i></span><b id="curNome">—</b></div>
         <div class="cbPrev"><span>Previsto</span><b class="num" id="curPrev">—</b></div>
@@ -357,7 +378,7 @@ button.verde{background:#1f8f4e;border-color:#1f8f4e;color:#fff;font-size:1.1rem
       <div class="campoX"><input class="big num" id="fim" type="text" readonly inputmode="none"><button class="limparX" data-campo="fim" aria-label="Limpar balança no final" tabindex="-1">✕</button></div>
     </div>
     <div class="res">
-      <div><small>Fornecido</small><b class="num" id="forn">—</b></div>
+      <div><small>Realizado</small><b class="num" id="forn">—</b></div>
       <div><small>Diferença do previsto</small><b class="num" id="desv">—</b></div>
     </div>
     <button class="primary" id="btnReg" disabled>Registrar trato</button>
@@ -399,7 +420,7 @@ button.verde{background:#1f8f4e;border-color:#1f8f4e;color:#fff;font-size:1.1rem
   <section class="panel">
     <div class="curhead"><h2>Registros</h2><span class="note num" id="hN"></span></div>
     <div class="tablebox"><table>
-      <thead><tr><th>Curral</th><th>Hora</th><th>Previsto</th><th>Fornec.</th><th>Dif.</th></tr></thead>
+      <thead><tr><th>Curral</th><th>Hora</th><th>Previsto</th><th>Realiz.</th><th>Dif.</th></tr></thead>
       <tbody id="tbHist"></tbody>
     </table></div>
     <div class="selBar" id="selBar" hidden>
@@ -485,7 +506,7 @@ button.verde{background:#1f8f4e;border-color:#1f8f4e;color:#fff;font-size:1.1rem
 <div class="toast" id="toast" hidden></div>
 <script>
 'use strict';
-const APP_VERSAO='52';
+const APP_VERSAO='53';
 const APP_DATA='17/10/2026';
 const KEY='trato-confinamento-v1';
 const $=id=>document.getElementById(id);
@@ -544,7 +565,7 @@ const CAMPOS_EXEC=['tratoSel','atual','atualNome','ini','fim','pvTrato','dataMan
 let EXEC_GUARDADO=null;
 function guardarExec(){EXEC_GUARDADO={};CAMPOS_EXEC.forEach(k=>EXEC_GUARDADO[k]=S[k]);}
 function voltarExec(){if(!EXEC_GUARDADO)return;Object.assign(S,EXEC_GUARDADO);EXEC_GUARDADO=null;save();}
-function save(){try{localStorage.setItem(KEY,JSON.stringify(EXEC_GUARDADO?Object.assign({},S,EXEC_GUARDADO):S));}catch(e){}}
+function save(){try{localStorage.setItem(KEY,JSON.stringify(EXEC_GUARDADO?Object.assign({},S,EXEC_GUARDADO):S));}catch(e){}if(typeof agendarAoVivo==='function')agendarAoVivo();}
 async function iniciar(){
   S=loadState();
   try{await dbOpen();HIST=await dbAll();}catch(e){toast('Não foi possível abrir o banco de dados do celular');HIST=[];}
@@ -665,6 +686,7 @@ function ajustarNome(){const b=$('curNome');b.style.fontSize='';let f=parseFloat
   while(b.scrollWidth>b.clientWidth+1&&f>14&&n<30){f-=1;b.style.fontSize=f+'px';n++;}}
 window.addEventListener('resize',()=>{try{ajustarNome();}catch(e){}});
 function calc(){
+  if(typeof agendarAoVivo==='function')agendarAoVivo();
   const c=lista()[S.atual];const ini=parseFloat(S.ini),fim=parseFloat(S.fim);
   $('alvo').textContent=(c&&!isNaN(ini))?fmt(ini-c.prev):'—';
   if(c&&!isNaN(ini)&&!isNaN(fim)){
@@ -899,7 +921,7 @@ function grupos(regs){
 function mensagem(regs){
   return grupos(regs).map(g=>{
     const tot=g.rs.reduce((a,r)=>a+r.forn,0);
-    return `*${diaBR(g.dia)} — Trato ${g.trato}*\nCurral / Horário / Qtd fornecida\n${g.rs.map(r=>`${r.curral} / ${horaDe(r)} / ${fmt(r.forn)} kg`).join('\n')}\n*Total: ${fmt(tot)} kg*`;
+    return `*${diaBR(g.dia)} — Trato ${g.trato}*\nCurral / Horário / Qtd realizada\n${g.rs.map(r=>`${r.curral} / ${horaDe(r)} / ${fmt(r.forn)} kg`).join('\n')}\n*Total: ${fmt(tot)} kg*`;
   }).join('\n\n');
 }
 function copiar(txt,okMsg){
@@ -1704,22 +1726,67 @@ $('tecSenha').addEventListener('click',e=>{const b=e.target.closest('button[data
     if(senhaDig===SENHA_EXEC){$('tecSenha').hidden=true;senhaDig='';entrarExec();}
     else if(k==='ok'||senhaDig.length>=SENHA_EXEC.length){toast('Senha errada');senhaDig='';mostrarSenha();}
   }});
-function entrarExec(){modoVer=false;document.body.classList.remove('naInicio','somenteVer');$('faixaVer').hidden=true;aba('trato');}
+function entrarExec(){modoVer=false;document.body.classList.remove('naInicio','somenteVer');$('faixaVer').hidden=true;aba('trato');enviarAoVivo(true);}
 $('btnModoVer').onclick=()=>{$('tecSenha').hidden=true;if(typeof fecharTeclado==='function')fecharTeclado();if(balCampo)fecharBal();
   guardarExec();modoVer=true;document.body.classList.remove('naInicio');document.body.classList.add('somenteVer');$('faixaVer').hidden=false;
   S.dataManual=null;S.ini='';S.fim='';escolherTratoDoDia();$('tratoSel').value=String(S.tratoSel);$('pvTrato').value=String(S.tratoSel);S.pvTrato=S.tratoSel;
-  $('ini').value='';$('fim').value='';aba('trato');render();renderPrev();
+  $('ini').value='';$('fim').value='';aba('trato');render();renderPrev();avDados=null;avErro=false;renderAoVivo();if(navigator.onLine)puxarAoVivo();
   if(navigator.onLine){puxarRegistros(true).catch(()=>{});puxarPrevisto(true).catch(()=>{});}};
 function voltarInicio(){
   if(typeof fecharTeclado==='function')fecharTeclado();if(typeof balCampo!=='undefined'&&balCampo)fecharBal();
   if(selModo){selModo=false;sel.clear();}
-  const eraVer=modoVer;modoVer=false;document.body.classList.remove('somenteVer');document.body.classList.add('naInicio');$('faixaVer').hidden=true;$('cal').hidden=true;window.scrollTo({top:0});
+  const eraVer=modoVer;if(!eraVer&&!document.body.classList.contains('naInicio'))sairAoVivo();modoVer=false;document.body.classList.remove('somenteVer');document.body.classList.add('naInicio');$('faixaVer').hidden=true;$('cal').hidden=true;window.scrollTo({top:0});
   if(eraVer){voltarExec();$('tratoSel').value=String(S.tratoSel);$('pvTrato').value=String(S.pvTrato||S.tratoSel);$('ini').value=S.ini||'';$('fim').value=S.fim||'';mostrarX();render();renderPrev();}
 }
 $('btnSairVer').onclick=voltarInicio;
 $('btnVoltarIni').onclick=voltarInicio;
 // no modo visualização, busca o que os outros lançam a cada 15 segundos
 setInterval(()=>{if(modoVer&&navigator.onLine&&document.visibilityState==='visible'){puxarRegistros(true).catch(()=>{});puxarPrevisto(true).catch(()=>{});}},15000);
+/* ---------- Ao vivo: quem está em Executar manda o que está fazendo; o Visualizar mostra ---------- */
+let avUlt='',avTimer=null,avUltEnvio=0;
+function estadoAoVivo(){const L=lista(),c=L[S.atual],regs=regsAtuais();
+  return {dia:diaAtivo(),trato:S.tratoSel,curral:c?c.nome:'',prev:c?c.prev:null,ini:S.ini||'',fim:S.fim||'',feitos:L.filter(x=>feito(x.nome,regs)).length,total:L.length};}
+function avAtivo(){return !!(S&&!modoVer&&!document.body.classList.contains('naInicio')&&apiUrl()&&navigator.onLine);}
+function agendarAoVivo(){if(avTimer||!avAtivo())return;if(JSON.stringify(estadoAoVivo())===avUlt)return;
+  avTimer=setTimeout(enviarAoVivo,Math.max(300,2500-(Date.now()-avUltEnvio)));}
+async function enviarAoVivo(forcar){avTimer=null;if(!avAtivo())return;const est=estadoAoVivo(),e=JSON.stringify(est);
+  if(forcar!==true&&e===avUlt)return;avUlt=e;avUltEnvio=Date.now();
+  try{await postApi({acao:'aovivo',aparelho:S.aparelho,estado:est});}catch(x){avUlt='';}}
+function sairAoVivo(){avUlt='';if(S&&apiUrl()&&navigator.onLine)postApi({acao:'aovivo',aparelho:S.aparelho,sair:true}).catch(()=>{});}
+setInterval(()=>{if(avAtivo()&&document.visibilityState==='visible')enviarAoVivo(true);},45000);
+
+let avDados=null,avAgora=0,avRecebido=0,avBuscando=false,avErro=false;
+async function puxarAoVivo(){if(avBuscando||!apiUrl())return;avBuscando=true;
+  try{const r=await fetch(apiUrl()+'?acao=aovivo',{cache:'no-store'});const j=await r.json();
+    if(j&&j.ok){avDados=j.dados||{};avAgora=+j.agora||Date.now();avRecebido=Date.now();avErro=false;}else avErro=true;}
+  catch(x){avErro=true;}
+  avBuscando=false;renderAoVivo();}
+function idadeTxt(ms){const s=Math.max(0,Math.round(ms/1000));return s<60?`há ${s} s`:`há ${Math.round(s/60)} min`;}
+function renderAoVivo(){const box=$('aoVivo');if(!modoVer){box.innerHTML='';return;}
+  if(!navigator.onLine){box.innerHTML='<div class="avVazio">Sem internet: não dá para ver ao vivo agora</div>';return;}
+  if(avDados==null){box.innerHTML=`<div class="avVazio">${avErro?'Não consegui buscar quem está tratando':'Buscando quem está tratando…'}</div>`;return;}
+  const passou=Date.now()-avRecebido;
+  const lst=Object.keys(avDados).map(k=>Object.assign({ap:k},avDados[k])).map(d=>(d.idade=avAgora-d.tsServ+passou,d))
+    .filter(d=>d.idade<3*60000).sort((a,b)=>a.idade-b.idade);
+  if(!lst.length){box.innerHTML='<div class="avVazio">Ninguém executando trato agora</div>';return;}
+  box.innerHTML=lst.map(d=>{const ini=parseFloat(d.ini),fim=parseFloat(d.fim),pv=d.prev;
+    const alvo=(pv!=null&&!isNaN(ini))?fmt(ini-pv):'—';
+    let real='—',dif='—',cls='';if(!isNaN(ini)&&!isNaN(fim)){const f=ini-fim;real=fmt(f);if(pv!=null){const x=f-pv;dif=sgn(x);cls=classeDesv(x,pv);}}
+    const fora=d.dia!==hojeKey()?` · ${diaBR(d.dia)}`:'';
+    const nomeCur=d.curral||(d.total?'Trato completo':'—');
+    return `<div class="avCard${d.idade>70000?' parado':''}">
+      <div class="avTopo"><span><i class="avPonto"></i>Ao vivo · Trato ${d.trato}${fora} · ${d.feitos||0}/${d.total||0}</span><span class="avIdade">${idadeTxt(d.idade)}</span></div>
+      <div class="curBox2"><div class="cbCur"><span>Curral atual</span><b>${esc(nomeCur)}</b></div><div class="cbPrev"><span>Previsto</span><b class="num">${pv!=null&&d.curral?fmt(pv):'—'}</b></div></div>
+      <div class="avGrade">
+        <div><small>Bal. início</small><b class="num">${!isNaN(ini)?fmt(ini):'—'}</b></div>
+        <div class="avAlvo"><small>Parar em</small><b class="num">${alvo}</b></div>
+        <div><small>Bal. final</small><b class="num">${!isNaN(fim)?fmt(fim):'—'}</b></div>
+        <div><small>Realizado</small><b class="num">${real}</b></div>
+        <div><small>Diferença</small><b class="num ${cls}">${dif}</b></div>
+      </div></div>`;}).join('');
+  box.querySelectorAll('.cbCur b').forEach(b=>{let f=parseFloat(getComputedStyle(b).fontSize),n=0;while(b.scrollWidth>b.clientWidth+1&&f>14&&n<30){f--;b.style.fontSize=f+'px';n++;}});
+}
+setInterval(()=>{if(modoVer&&navigator.onLine&&document.visibilityState==='visible'&&!$('viewTrato').hidden)puxarAoVivo();},5000);
 iniciar();
 
 /* ---------- Atualização automática do app ---------- */
