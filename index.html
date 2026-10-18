@@ -506,7 +506,7 @@ body.somenteVer #curWrap{display:none}
 <div class="toast" id="toast" hidden></div>
 <script>
 'use strict';
-const APP_VERSAO='53';
+const APP_VERSAO='54';
 const APP_DATA='17/10/2026';
 const KEY='trato-confinamento-v1';
 const $=id=>document.getElementById(id);
@@ -1271,15 +1271,21 @@ async function puxarRegistros(forcar){
   if(!forcar&&Date.now()-ultPuxaReg<2*60000)return;
   ultPuxaReg=Date.now();
   const d=new Date();d.setDate(d.getDate()-7);
+  const envAntes=new Set(HIST.filter(x=>x.enviado).map(x=>x.uid)); // só confere os que já estavam na nuvem antes de buscar
   const r=await fetch(apiUrl()+'?acao=listar&desde='+diaKey(d),{cache:'no-store'});const j=await r.json();if(!j||!j.ok)return;
   const porUid=new Map(HIST.map(x=>[x.uid,x]));const pendEd=new Set((S.editarNuvem||[]).map(x=>x.uid));const apag=new Set(S.apagarNuvem||[]);
   const novos=[],mudados=[];
   (j.registros||[]).forEach(x=>{if(!x||!x.uid||apag.has(String(x.uid)))return;const u=String(x.uid),y=porUid.get(u);
     if(!y)novos.push({uid:u,enviado:true,ts:+x.ts,dia:String(x.dia),trato:+x.trato||1,hora:x.hora,curral:String(x.curral),prev:+x.prev||0,forn:+x.forn||0,ini:+x.ini||0,fim:+x.fim||0});
     else if(y.enviado&&!pendEd.has(u)&&Math.abs((+x.forn||0)-y.forn)>0.5){y.forn=+x.forn||0;mudados.push(y);}});
+  // apagados em outro celular: já estavam na nuvem e sumiram de lá -> apaga aqui também
+  const naNuvem=new Set((j.registros||[]).map(x=>x&&String(x.uid)));const desde=diaKey(d);
+  const sumiram=HIST.filter(x=>x.enviado&&x.uid&&envAntes.has(x.uid)&&x.dia>=desde&&!naNuvem.has(String(x.uid)));
+  let apagou=0;
+  if(sumiram.length&&sumiram.length<=40){for(const x of sumiram){try{await dbDel(x.id);apagou++;}catch(e){}}}
   if(novos.length)await dbAddMany(novos);
   if(mudados.length)await dbPutMany(mudados);
-  if(novos.length||mudados.length){HIST=await dbAll();render();if(!$('viewHist').hidden)renderHist();}
+  if(novos.length||mudados.length||apagou){HIST=await dbAll();render();if(!$('viewHist').hidden)renderHist();}
 }
 async function sincronizar(avisar){
   if(!apiUrl()||sincronizando){statusNuvem();return;}
