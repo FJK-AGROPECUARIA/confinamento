@@ -117,6 +117,22 @@ button.editq{border:0;background:none;padding:2px 0;font:inherit;color:inherit;c
 button.editq b{text-decoration:underline dotted}
 .navtrato button{flex:1 1 40%;padding:12px 8px}
 .navtrato button{white-space:nowrap;font-size:.95rem}
+#tbPrev input.cell{cursor:pointer;caret-color:transparent}
+#tbPrev input.sel{border-color:var(--accent);border-width:3px;background:#fff;font-weight:700}
+.teclado{position:fixed;left:0;right:0;bottom:0;z-index:6;background:#d6dbe1;padding:8px 8px calc(8px + env(safe-area-inset-bottom,0px));box-shadow:0 -4px 16px rgba(0,0,0,.15)}
+.tecTopo{display:flex;justify-content:space-between;align-items:baseline;padding:2px 6px 8px;font-family:var(--display);font-stretch:condensed;font-size:1.2rem;font-weight:600}
+.tecTopo b{font-size:1.6rem}
+.tecGrade{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
+.teclado button{font-size:28px;font-weight:600;padding:16px 0;border:1px solid var(--line);border-radius:12px;background:#fff;box-shadow:0 1px 0 var(--line);user-select:none;-webkit-user-select:none;touch-action:manipulation}
+.teclado button.tecSec{background:#eef1f4;font-size:1.1rem}
+.tecAcoes{display:grid;grid-template-columns:1fr 1.3fr 2fr;gap:6px;margin-top:6px}
+.teclado button.tecOk{background:var(--accent);color:#fff;font-size:1.2rem}
+body.comteclado .wrap{padding-bottom:360px}
+#tbPrev input.cell:focus{outline:none}
+.teclado button:active{background:var(--lima-claro)}
+.tecTopo b{font-size:2rem}
+.teclado{background:var(--bg);border-top:3px solid var(--lima)}
+body.comteclado .wrap{padding-bottom:420px}
 </style>
 </head>
 <body>
@@ -296,10 +312,20 @@ button.editq b{text-decoration:underline dotted}
 </div>
   <textarea id="copiaFallback" hidden readonly></textarea>
 </div>
+<div class="teclado" id="teclado" hidden>
+  <div class="tecTopo"><span id="tecNome"></span><b id="tecValor">—</b></div>
+  <div class="tecGrade">
+    <button data-k="1">1</button><button data-k="2">2</button><button data-k="3">3</button>
+    <button data-k="4">4</button><button data-k="5">5</button><button data-k="6">6</button>
+    <button data-k="7">7</button><button data-k="8">8</button><button data-k="9">9</button>
+    <button data-k="limpar" class="tecSec">Limpar</button><button data-k="0">0</button><button data-k="del" class="tecSec">⌫</button>
+  </div>
+  <div class="tecAcoes"><button data-k="up" class="tecSec">▲</button><button data-k="fechar" class="tecSec">Fechar</button><button data-k="ok" class="tecOk">Próximo ▼</button></div>
+</div>
 <div class="toast" id="toast" hidden></div>
 <script>
 'use strict';
-const APP_VERSAO='17';
+const APP_VERSAO='19';
 const APP_DATA='17/10/2026';
 const KEY='trato-confinamento-v1';
 const $=id=>document.getElementById(id);
@@ -510,13 +536,13 @@ let prevTimer,editandoPrev=false;
 function marcarPrev(){S.prevPend=true;S.prevTs=Date.now();save();clearTimeout(prevTimer);prevTimer=setTimeout(()=>sincronizar(),2000);}
 const valPrev=v=>v==null?'':(v==='?'?'?':String(v));
 function renderPrev(){
-  if($('tbPrev').contains(document.activeElement))return; // não atrapalha quem está digitando
   const k=$('pvTrato').value,m=(S.prev[k])||{};
   let tot=0,n=0;
   $('tbPrev').innerHTML=S.cadastro.map((c,i)=>{const v=m[c];if(typeof v==='number'&&v>0){tot+=v;n++;}
-    return `<tr><td class="alca" title="Arraste para mudar a ordem" aria-label="Arrastar ${esc(c)}">☰</td><td class="c" style="cursor:default">${esc(c)}</td><td><input class="cell${v==='?'?' duv':''}" type="text" inputmode="decimal" enterkeyhint="next" data-n="${i}" value="${esc(valPrev(v))}" placeholder="—" aria-label="Previsto ${esc(c)}"></td><td class="acoes"><button class="mini" tabindex="-1" data-a="ed" data-i="${i}" aria-label="Editar ${esc(c)}">✎</button><button class="mini danger" tabindex="-1" data-a="rm" data-i="${i}" aria-label="Excluir ${esc(c)}">✕</button></td></tr>`;}).join('');
+    return `<tr><td class="alca" title="Arraste para mudar a ordem" aria-label="Arrastar ${esc(c)}">☰</td><td class="c" style="cursor:default">${esc(c)}</td><td><input class="cell${v==='?'?' duv':''}" type="text" readonly tabindex="-1" inputmode="none" data-n="${i}" value="${esc(valPrev(v))}" placeholder="—" aria-label="Previsto ${esc(c)}"></td><td class="acoes"><button class="mini" tabindex="-1" data-a="ed" data-i="${i}" aria-label="Editar ${esc(c)}">✎</button><button class="mini danger" tabindex="-1" data-a="rm" data-i="${i}" aria-label="Excluir ${esc(c)}">✕</button></td></tr>`;}).join('');
   $('pvTot').title=`${S.cadastro.length} currais cadastrados`;
   resumoPrev();
+  if(tecIdx!=null){const x=campoPrev(tecIdx);if(x){x.classList.add('sel');x.value=tecBuf;}}
 }
 function resumoPrev(){
   const k=$('pvTrato').value,m=(S.prev[k])||{};let tot=0,n=0;
@@ -526,23 +552,51 @@ function resumoPrev(){
   const dv=duvidas(k);
   $('pvAviso').hidden=!dv.length;$('pvAviso').textContent=dv.length?`${dv.length} curral(is) com "?": corrija o número.`:'';
 }
-$('pvTrato').addEventListener('change',()=>{S.pvTrato=+$('pvTrato').value;save();fecharEdicao();renderPrev();});
-$('tbPrev').addEventListener('change',e=>{
-  const i=e.target.dataset.n;if(i==null)return;const nome=S.cadastro[i];const k=$('pvTrato').value;const m=mapaPrev(k);
-  const t=e.target.value.trim();
+$('pvTrato').addEventListener('change',()=>{fecharTeclado();S.pvTrato=+$('pvTrato').value;save();fecharEdicao();renderPrev();});
+/* Teclado numérico do próprio app: não fecha ao passar para o próximo curral */
+let tecIdx=null,tecBuf='',tecNovo=false;
+function campoPrev(i){return document.querySelector(`#tbPrev input[data-n="${i}"]`);}
+function aplicarPrev(i,t){
+  const nome=S.cadastro[i];if(nome==null)return true;const k=$('pvTrato').value;const m=mapaPrev(k);
+  t=String(t).trim();const antes=m[nome];
   if(t===''){delete m[nome];}
   else if(t==='?'){m[nome]='?';}
-  else{const v=parseNum(t);if(isNaN(v)||v<0){e.target.value=valPrev(m[nome]);toast('Digite uma quantidade válida');return;}m[nome]=v;}
-  const tocouOutro=Date.now()-ultimoToque<700; // tocou em outro lugar da tela (não no ✓ do teclado)
-  // não redesenha a lista: assim o teclado continua aberto ao passar para o próximo curral
-  e.target.value=valPrev(m[nome]);e.target.classList.toggle('duv',m[nome]==='?');
-  marcarPrev();editandoPrev=true;render();editandoPrev=false;resumoPrev();
-  // tocou no ✓ (Concluído) do teclado: já abre o próximo curral
-  if(!tocouOutro)irParaPrev(+i+1);
-});
-let ultimoToque=0;document.addEventListener('pointerdown',()=>{ultimoToque=Date.now();},true);
-function irParaPrev(i){const x=document.querySelector(`#tbPrev input[data-n="${i}"]`);if(!x)return;x.focus();try{x.select();}catch(e){}x.scrollIntoView({block:'center',behavior:'smooth'});}
-$('tbPrev').addEventListener('keydown',e=>{if(e.key==='Enter'&&e.target.dataset.n!=null){e.preventDefault();e.target.blur();}});
+  else{const v=parseNum(t);if(isNaN(v)||v<0){toast('Digite uma quantidade válida');return false;}m[nome]=v;}
+  if(antes!==m[nome]){marcarPrev();editandoPrev=true;render();editandoPrev=false;}
+  const x=campoPrev(i);if(x){x.value=valPrev(m[nome]);x.classList.toggle('duv',m[nome]==='?');}
+  resumoPrev();return true;
+}
+function abrirTeclado(i){
+  if(tecIdx!=null&&tecIdx!==i&&!aplicarPrev(tecIdx,tecBuf))return;
+  document.querySelectorAll('#tbPrev input.sel').forEach(x=>x.classList.remove('sel'));
+  const x=campoPrev(i);if(!x){fecharTeclado();return;}
+  tecIdx=i;tecBuf=x.value==='—'?'':x.value;tecNovo=true;x.classList.add('sel');
+  $('teclado').hidden=false;document.body.classList.add('comteclado');
+  $('tecNome').textContent=S.cadastro[i];$('tecValor').textContent=tecBuf||'—';
+  requestAnimationFrame(()=>{const r=x.getBoundingClientRect(),vis=innerHeight-$('teclado').offsetHeight;window.scrollBy({top:r.top-Math.max(80,vis/2-r.height/2),behavior:'smooth'});});
+}
+function fecharTeclado(){
+  if(tecIdx!=null)aplicarPrev(tecIdx,tecBuf);
+  document.querySelectorAll('#tbPrev input.sel').forEach(x=>x.classList.remove('sel'));
+  tecIdx=null;$('teclado').hidden=true;document.body.classList.remove('comteclado');
+}
+function teclar(k){
+  if(tecIdx==null)return;
+  if(k==='ok'){if(!aplicarPrev(tecIdx,tecBuf))return;const prox=tecIdx+1;tecIdx=null;if(campoPrev(prox))abrirTeclado(prox);else fecharTeclado();return;}
+  if(k==='fechar'){fecharTeclado();return;}
+  if(k==='up'){if(!aplicarPrev(tecIdx,tecBuf))return;const p=tecIdx-1;tecIdx=null;if(campoPrev(p))abrirTeclado(p);else abrirTeclado(0);return;}
+  if(tecNovo&&k!=='del'){tecBuf='';}tecNovo=false; // começar a digitar substitui o número antigo
+  if(k==='del')tecBuf=tecBuf.slice(0,-1);
+  else if(k==='?')tecBuf='?';
+  else if(k==='limpar')tecBuf='';
+  else{if(tecBuf==='?')tecBuf='';if(tecBuf.length<6)tecBuf+=k;}
+  const x=campoPrev(tecIdx);if(x)x.value=tecBuf;$('tecValor').textContent=tecBuf||'—';
+}
+$('tbPrev').addEventListener('click',e=>{const x=e.target.closest('input[data-n]');if(x){e.preventDefault();x.blur();abrirTeclado(+x.dataset.n);}});
+$('teclado').addEventListener('pointerdown',e=>{const b=e.target.closest('button[data-k]');if(!b)return;e.preventDefault();teclar(b.dataset.k);});
+document.addEventListener('keydown',e=>{if(tecIdx==null)return;
+  if(/^[0-9]$/.test(e.key))teclar(e.key);else if(e.key==='Backspace')teclar('del');else if(e.key==='Enter'||e.key==='Tab'){e.preventDefault();teclar('ok');}else if(e.key==='Escape')teclar('fechar');else if(e.key==='?')teclar('?');});
+document.addEventListener('pointerdown',e=>{if(tecIdx!=null&&!e.target.closest('#teclado,#tbPrev input'))fecharTeclado();},true);
 $('btnLimparPrev').onclick=()=>{
   const k=$('pvTrato').value,m=S.prev[k]||{},n=Object.keys(m).length;
   if(!n){toast(`O Trato ${k} já está vazio`);return;}
@@ -703,6 +757,7 @@ $('btnShareExcel').onclick=()=>compartilhar(regsAtuais());
 
 /* ---------- Abas ---------- */
 function aba(qual){
+  if(typeof fecharTeclado==='function')fecharTeclado();
   $('viewPrev').hidden=qual!=='prev';$('viewTrato').hidden=qual!=='trato';$('viewHist').hidden=qual!=='hist';
   $('tabPrev').setAttribute('aria-selected',String(qual==='prev'));$('tabTrato').setAttribute('aria-selected',String(qual==='trato'));$('tabHist').setAttribute('aria-selected',String(qual==='hist'));
   if(qual==='hist')renderHist();if(qual==='prev')renderPrev();window.scrollTo({top:0});
@@ -1005,7 +1060,7 @@ function inkParaCanvas(ink,W,H){
 }
 async function tratarFoto(file,extraGiro){
   let img;try{img=await createImageBitmap(file,{imageOrientation:'from-image'});}catch(e){img=await createImageBitmap(file);}
-  const alvo=2600,esc=Math.min(3,alvo/Math.max(img.width,img.height));
+  const alvo=2300,esc=Math.min(3,alvo/Math.max(img.width,img.height));
   let cv=document.createElement('canvas');cv.width=Math.round(img.width*esc);cv.height=Math.round(img.height*esc);
   cv.getContext('2d').drawImage(img,0,0,cv.width,cv.height);
   // 1) fundo uniforme (tira sombra, reflexo e manchas) e ângulo
@@ -1058,10 +1113,18 @@ function linhasPorPosicao(words){
   }
   return rows.filter(r=>r.ws.length).map(r=>r.ws.sort((a,b)=>a.x-b.x));
 }
+function distEd(a,b){const m=a.length,n=b.length;if(Math.abs(m-n)>2)return 9;let p=Array.from({length:n+1},(_,j)=>j);
+  for(let i=1;i<=m;i++){const c=[i];for(let j=1;j<=n;j++)c[j]=Math.min(p[j]+1,c[j-1]+1,p[j-1]+(a[i-1]===b[j-1]?0:1));p=c;}return p[n];}
+// acha o curral mesmo com uma ou duas letras lidas erradas (só nomes compridos, para não confundir C-3 com C-9)
+function acharCadastroFoto(txt){
+  const n=acharCadastro(txt);if(n)return n;const f=fuzzy(txt);if(f.length<6)return null;
+  const lim=f.length>=10?2:1;const cands=S.cadastro.filter(c=>fuzzy(c).length>=6&&distEd(f,fuzzy(c))<=lim);
+  return cands.length===1?cands[0]:null;
+}
 function acharCurralNaLinha(ws){
   for(let i=0;i<ws.length;i++){
     if(ehNum(ws[i].t))continue;
-    for(let len=Math.min(4,ws.length-i);len>=1;len--){const n=acharCadastro(ws.slice(i,i+len).map(w=>w.t).join(''));if(n)return {nome:n,i,len};}
+    for(let len=Math.min(4,ws.length-i);len>=1;len--){const n=acharCadastroFoto(ws.slice(i,i+len).map(w=>w.t).join(''));if(n)return {nome:n,i,len};}
   }
   return null;
 }
@@ -1085,7 +1148,7 @@ function lerTabela(linhas,tratoPadrao){
     if(it>=0){trato=nums[it].v;pv=nums[it+1]||null;}
     else{const cand=nums.filter(n=>n.v>=30);pv=cand.length===1?cand[0]:null;} // sem trato: só aceita se tiver um número só
     if(pv&&!isNaN(pv.v)&&pv.c>=CONF_MIN&&pv.v>=30&&pv.v<=30000)prev=pv.v;
-    itens.push({nome:cur.nome,trato:trato||ctx,prev,temTrato:it>=0});
+    itens.push({nome:cur.nome,trato:trato||ctx,prev,c:pv?pv.c:0,temTrato:it>=0});
   }
   // se a maioria das linhas tem a coluna Trato e esta não tem, o número é duvidoso
   const comT=itens.filter(x=>x.temTrato).length;
@@ -1116,20 +1179,26 @@ async function lerLocal(file,box,rot,trato){
 // O Google às vezes devolve coluna por coluna: primeiro currais (e trato), depois os números de cada linha
 function lerSequencial(texto,tratoPadrao){
   const ls=String(texto).split('\n').map(l=>l.trim()).filter(Boolean);
-  const curs=[];let nums=[],coletando=false,parar=false,ctx=tratoPadrao;
+  const curs=[];let nums=[],todos=[],coletando=false,parar=false,ctx=tratoPadrao;
   for(const l of ls){
     const ws=linhasDoTexto(l,85)[0]||[];const up=semAcento(l);
     const cur=acharCurralNaLinha(ws);
-    if(cur){curs.push({nome:cur.nome,trato:null});continue;}
+    if(cur){if(!curs.some(c=>c.nome===cur.nome))curs.push({nome:cur.nome,trato:null});continue;}
     if(/TOTAL/.test(up)){if(coletando)parar=true;continue;}
     const mt=up.match(/^TRATO\s*[:\-]?\s*([1-5])$/);if(mt){ctx=+mt[1];continue;}
     if(ws.length===1){const n=numDe(ws[0]);if(!n)continue;
       if(n.int&&n.v>=1&&n.v<=5&&curs.length&&curs[curs.length-1].trato==null&&!coletando){curs[curs.length-1].trato=n.v;continue;}
-      if(curs.length&&!parar){coletando=true;if(n.v>=30)nums.push(n);}
+      if(curs.length&&!parar){coletando=true;todos.push(n);if(n.v>=30)nums.push(n);}
     }
   }
-  const N=curs.length,itens=curs.map(c=>({nome:c.nome,trato:c.trato||ctx,prev:'?'}));
-  for(const k of [1,2,3])if(N&&nums.length===k*N){itens.forEach((x,i)=>{const n=nums[i*k];if(n.c>=CONF_MIN&&n.v<=30000)x.prev=n.v;});break;}
+  const N=curs.length,itens=curs.map(c=>({nome:c.nome,trato:c.trato||ctx,prev:'?',c:70}));
+  let feito=false;
+  for(const k of [1,2,3])if(N&&nums.length===k*N){itens.forEach((x,i)=>{const n=nums[i*k];if(n.c>=CONF_MIN&&n.v<=30000)x.prev=n.v;});feito=true;break;}
+  if(!feito&&N&&todos.length){
+    // cada linha da tela: Previsto, Realizado, Diferença (= realizado - previsto); acha os previstos pelo par certo
+    const prevs=[];for(let i=0;i+2<todos.length;i++){const p=todos[i].v,r=todos[i+1].v,d=todos[i+2].v;if(p>=30&&Math.abs(r-p-d)<1){prevs.push(todos[i]);i+=2;}}
+    if(prevs.length===N)itens.forEach((x,i)=>{x.prev=prevs[i].v;});
+  }
   return {itens,ign:[]};
 }
 async function lerGoogle(file,trato){
@@ -1138,19 +1207,22 @@ async function lerGoogle(file,trato){
   return nota(b)*b.itens.length>nota(a)*a.itens.length?b:a;
 }
 // junta a leitura do celular com a do Google: número diferente = dúvida "?"
+// junta a leitura do celular (a) com a do Google (b). Número do celular com boa certeza vale;
+// se os dois discordam e o celular não tem certeza, fica "?"
 function juntarLeituras(a,b){
   if(!a)return b||{itens:[],ign:[]};if(!b)return a;
   const m=new Map();a.itens.forEach(x=>m.set(x.nome+'|'+x.trato,{...x}));
   b.itens.forEach(x=>{const k=x.nome+'|'+x.trato,y=m.get(k);
-    if(!y)m.set(k,{...x});
-    else if(y.prev==='?')y.prev=x.prev;
-    else if(x.prev!=='?'&&Math.abs(x.prev-y.prev)>0.5)y.prev='?';});
+    if(!y){m.set(k,{...x});return;}
+    if(x.prev==='?')return;
+    if(y.prev==='?'){y.prev=x.prev;y.c=x.c;return;}
+    if(Math.abs(x.prev-y.prev)>0.5&&!(y.c>=75))y.prev='?';});
   return {itens:[...m.values()],ign:[...new Set(a.ign.concat(b.ign))]};
 }
 async function lerUmaFoto(file,box,rot,trato){
   const google=(apiUrl()&&navigator.onLine)?lerGoogle(file,trato).catch(()=>null):Promise.resolve(null);
   let local=null,erroLocal=null;
-  try{local=await lerLocal(file,box,rot,trato);}catch(e){erroLocal=e;}
+  try{local=await lerLocal(file,box,rot,trato);}catch(e){erroLocal=e;window.__erroLocal=String(e&&e.message||e);}
   if(navigator.onLine)box.textContent=`${rot}: conferindo com o Google…`;
   const g=await google;
   if(!local&&!g&&erroLocal)throw erroLocal;
@@ -1186,7 +1258,7 @@ $('btnAplicarRev').onclick=()=>{
 $('foto').addEventListener('change',async e=>{
   const files=[...e.target.files];e.target.value='';if(!files.length)return;
   const box=$('ocrBox');box.hidden=false;$('editBox').hidden=true;$('revBox').hidden=true;$('listaBtns').hidden=true;
-  const trato=+$('pvTrato').value;const mapa=new Map();let rep=0,falhas=0;const ign=new Set();
+  const trato=+$('pvTrato').value;const mapa=new Map();let rep=0,falhas=0;const ign=new Set();window.__erroLocal='';
   for(let i=0;i<files.length;i++){
     try{
       const r=await lerUmaFoto(files[i],box,files.length>1?`Foto ${i+1} de ${files.length}`:'Foto',trato);
@@ -1205,8 +1277,8 @@ $('foto').addEventListener('change',async e=>{
     $('listaBtns').hidden=false;return;
   }
   const q=REV.filter(x=>x.prev==='?').length;
-  box.textContent=`Li ${files.length} foto(s): ${REV.length} curral(is)`+(rep?`, ${rep} repetido(s) desconsiderado(s)`:'')+(q?`, ${q} com "?" (dúvida: confira)`:'')+
-    (falhas?`, ${falhas} foto(s) não deu para ler`:'')+(ign.size?`. Não cadastrados (ignorados): ${[...ign].join(', ')}`:'')+'. A ordem do cadastro não muda. Confira e toque em Atualizar previsto.';
+  box.textContent=`Li ${files.length} foto(s): ${REV.length} curral(is)`+(rep?`, ${rep} repetido(s)`:'')+(q?`, ${q} com "?"`:'')+
+    (falhas?`, ${falhas} foto(s) não deu para ler`:'')+(ign.size?`. Não cadastrados: ${[...ign].join(', ')}`:'')+'.'+(window.__erroLocal?` (Leitor do celular não funcionou: ${window.__erroLocal})`:'');
   renderRev();$('revBox').hidden=false;
 });
 
