@@ -360,6 +360,8 @@ table.trat th:nth-child(5),table:has(#tbHist) th:nth-child(5){width:14%}
 .camDisparo:active{transform:scale(.92)}
 body.somenteVer #btnCamera{display:none!important}
 #tbPrev button.edNome{margin-left:8px;padding:2px 8px;vertical-align:middle;font-size:.9rem;min-height:0}
+table:has(#tbHist) th:nth-child(2),table:has(#tbCur) th:nth-child(2){text-align:left!important}
+table:has(#tbHist) td.c{text-align:left}
 </style>
 </head>
 <body>
@@ -615,7 +617,7 @@ body.somenteVer #btnCamera{display:none!important}
 <div class="toast" id="toast" hidden></div>
 <script>
 'use strict';
-const APP_VERSAO='68';
+const APP_VERSAO='69';
 const APP_DATA='17/10/2026';
 const KEY='trato-confinamento-v1';
 const $=id=>document.getElementById(id);
