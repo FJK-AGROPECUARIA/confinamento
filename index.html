@@ -324,6 +324,16 @@ body.somenteVer #btnRestaurar{display:none!important}
 body.naInicio .atualizarBtn{visibility:hidden}
 .bkLista{display:flex;flex-direction:column;gap:8px;max-height:55vh;overflow:auto}
 .bkLista button.verde{font-size:1.05rem;padding:12px;text-align:left}
+/* ordem dos currais: o ☰ só aparece no modo Alterar ordem */
+#viewPrev:not(.ordem) #tbPrev td.alca,#viewPrev:not(.ordem) table:has(#tbPrev) th:first-child{display:none}
+#viewPrev.ordem #btnOrdem{background:var(--accent);border-color:var(--accent);color:#fff}
+#viewPrev.ordem #tbPrev td.alca{color:var(--fg)}
+body.somenteVer #btnOrdem{display:none!important}
+#listaBtns{margin-top:4px}
+#viewPrev:not(.ordem) #tbPrev button[data-a="ed"]{display:none}
+.avisoJa{margin:0;background:#fde8e8;border:2px solid var(--bad);color:var(--bad);border-radius:10px;padding:8px 10px;font-size:.92rem;font-weight:600;line-height:1.3}
+.avisoJa b{font-weight:800}
+body.somenteVer .avisoJa{display:none!important}
 </style>
 </head>
 <body>
@@ -355,13 +365,16 @@ body.naInicio .atualizarBtn{visibility:hidden}
       </select>
     </div>
     <p class="aviso bad" id="pvAviso" hidden></p>
-    <div class="tablebox"><table>
-      <thead><tr><th></th><th>Curral</th><th>Previsto (kg)</th><th></th></tr></thead>
-      <tbody id="tbPrev"></tbody>
-    </table></div>
-    <div class="linhas" id="linhas">
-      <button data-l="T" class="sel">Todos</button><button data-l="C">C · Confinamento</button><button data-l="P">P · Pasto TIP</button>
-      <div class="somaLinha" id="somaLinha"></div>
+    <div class="row" id="listaBtns">
+      <label class="filebtn lima" for="foto" style="margin:0;text-transform:none;letter-spacing:0;color:var(--fg);font-size:1rem">Ler lista por foto<input id="foto" type="file" accept="image/*" multiple></label>
+      <button id="btnEditar">Editar em texto</button>
+    </div>
+    <div class="filaFotos" id="filaFotos" hidden>
+      <p id="ffInfo"></p>
+      <div class="ffMinis" id="ffMinis"></div>
+      <label class="filebtn lima ffMais" for="foto2">📷 Tirar / adicionar mais fotos<input id="foto2" type="file" accept="image/*" multiple></label>
+      <button class="verde" id="ffLer">✓ Ler fotos</button>
+      <button id="ffCanc">Cancelar</button>
     </div>
     <div id="editBox" hidden>
       <label for="lista">Um curral por linha: nome e quantidade (só deste trato)</label>
@@ -377,18 +390,16 @@ body.naInicio .atualizarBtn{visibility:hidden}
       </table></div>
       <div class="row" style="margin-top:10px"><button class="primary" id="btnAplicarRev">Atualizar previsto</button><button id="btnCancRev">Cancelar</button></div>
     </div>
-    <div class="filaFotos" id="filaFotos" hidden>
-      <p id="ffInfo"></p>
-      <div class="ffMinis" id="ffMinis"></div>
-      <label class="filebtn lima ffMais" for="foto2">📷 Tirar / adicionar mais fotos<input id="foto2" type="file" accept="image/*" multiple></label>
-      <button class="verde" id="ffLer">✓ Ler fotos</button>
-      <button id="ffCanc">Cancelar</button>
+    <div class="linhas" id="linhas">
+      <button data-l="T" class="sel">Todos</button><button data-l="C">Confinamento</button><button data-l="P">Pasto</button>
+      <div class="somaLinha" id="somaLinha"></div>
     </div>
-    <div class="row" id="listaBtns">
-      <label class="filebtn lima" for="foto" style="margin:0;text-transform:none;letter-spacing:0;color:var(--fg);font-size:1rem">Ler lista por foto<input id="foto" type="file" accept="image/*" multiple></label>
-      <button id="btnEditar">Editar em texto</button>
-    </div>
+    <div class="tablebox"><table>
+      <thead><tr><th></th><th>Curral</th><th>Previsto (kg)</th><th></th></tr></thead>
+      <tbody id="tbPrev"></tbody>
+    </table></div>
     <button class="danger" id="btnLimparPrev">Limpar previsto deste trato</button>
+    <button id="btnOrdem">↕ Alterar ordem</button>
     <button class="lima" id="btnCadastrar">+ Adicionar curral</button>
     <button class="dangerfill" id="btnRemoverCurral">− Remover curral</button>
   </section>
@@ -412,6 +423,7 @@ body.naInicio .atualizarBtn{visibility:hidden}
         <div class="cbPrev"><span>Previsto</span><b class="num" id="curPrev">—</b></div>
       </div>
     </div>
+    <p class="avisoJa" id="avisoJa" hidden></p>
     <div class="escolha" id="escolhaCur" hidden></div>
     <div>
       <label for="ini">Balança no início (kg)</label>
@@ -563,7 +575,7 @@ body.naInicio .atualizarBtn{visibility:hidden}
 <div class="toast" id="toast" hidden></div>
 <script>
 'use strict';
-const APP_VERSAO='65';
+const APP_VERSAO='66';
 const APP_DATA='17/10/2026';
 const KEY='trato-confinamento-v1';
 const $=id=>document.getElementById(id);
@@ -715,6 +727,12 @@ function render(){
   if(modoVer){const i=L.findIndex(x=>!feito(x.nome,regs));S.atual=i<0?L.length:i;}
   if(S.atual>L.length)S.atual=L.length;
   const c=L[S.atual];
+  { // aviso: curral atual já tem trato registrado neste mesmo trato
+    const ja=c?regs.filter(x=>x.curral===c.nome):[];const av=$('avisoJa');
+    if(ja.length&&!modoVer){const tot=ja.reduce((a,x)=>a+x.forn,0);
+      av.innerHTML=`⚠ <b>${esc(c.nome)}</b> já tem trato registrado no <b>Trato ${S.tratoSel}</b>${ja.length>1?` (${ja.length} registros)`:''}: ${ja.map(x=>horaDe(x)).join(', ')} · ${fmt(tot)} kg.<br>Se registrar de novo, vai somar com o anterior.`;av.hidden=false;}
+    else av.hidden=true;
+  }
   $('curNome').textContent=c?c.nome:(L.length?'Trato completo':'-');
   $('curPrev').textContent=c?fmt(c.prev):'—';
   ajustarNome();
@@ -867,9 +885,9 @@ let linhaSel='T';
 function somaLinhas(){
   const k=$('pvTrato').value,m=S.prev[k]||{},t={T:[0,0],C:[0,0],P:[0,0]};
   S.cadastro.forEach(c=>{const v=m[c];if(typeof v==='number'&&v>0){t.T[0]+=v;t.T[1]++;const l=linhaDe(c);if(t[l]){t[l][0]+=v;t[l][1]++;}}});
-  const nome={T:'Todos',C:'Linha C',P:'Linha P'}[linhaSel],x=t[linhaSel];
-  $('somaLinha').innerHTML=`<b>${fmt(x[0])} kg</b> <span>${nome} · ${x[1]} curral(is) · Trato ${k}</span>`+
-    (linhaSel==='T'?`<small>C: ${fmt(t.C[0])} kg · P: ${fmt(t.P[0])} kg</small>`:'');
+  const nome={T:'Todos',C:'Confinamento',P:'Pasto'}[linhaSel],x=t[linhaSel];
+  $('somaLinha').innerHTML=`<b>${fmt(x[0])} kg</b> <span>${x[1]} ${x[1]===1?'curral':'currais'}</span>`+
+    (linhaSel==='T'?`<small>Confinamento: ${fmt(t.C[0])} kg · Pasto: ${fmt(t.P[0])} kg</small>`:'');
   document.querySelectorAll('#linhas button[data-l]').forEach(b=>b.classList.toggle('sel',b.dataset.l===linhaSel));
 }
 $('linhas').addEventListener('click',e=>{const b=e.target.closest('button[data-l]');if(!b)return;linhaSel=b.dataset.l;somaLinhas();});
@@ -1210,6 +1228,7 @@ function aba(qual){
   if(typeof modoRemover!=='undefined'&&modoRemover&&qual!=='prev')$('btnRemoverCurral').click();
   if(typeof fecharTeclado==='function')fecharTeclado();
   if(typeof fecharBal==='function'&&balCampo)fecharBal();
+  if(qual!=='prev'&&typeof modoOrdem==='function')modoOrdem(false);
   $('viewPrev').hidden=qual!=='prev';$('viewTrato').hidden=qual!=='trato';$('viewHist').hidden=qual!=='hist';
   if(qual==='hist'&&$('viewHist').dataset.aberta!=='1'){$('fDia').value='hoje';$('hCal').hidden=true;localSel='T';}
   $('viewHist').dataset.aberta=qual==='hist'?'1':'';
@@ -1906,6 +1925,9 @@ function voltarInicio(){
   if(eraVer){voltarExec();$('tratoSel').value=String(S.tratoSel);$('pvTrato').value=String(S.pvTrato||S.tratoSel);$('ini').value=S.ini||'';$('fim').value=S.fim||'';mostrarX();render();renderPrev();}
 }
 $('btnSairVer').onclick=voltarInicio;
+/* ↕ Alterar ordem: só mostra o ☰ de arrastar quando liga */
+function modoOrdem(v){$('viewPrev').classList.toggle('ordem',v);$('btnOrdem').textContent=v?'✓ Concluir ordem':'↕ Alterar ordem';if(v)toast('Arraste pelo ☰ para mudar a ordem');}
+$('btnOrdem').onclick=()=>{if(bloqueado())return;modoOrdem(!$('viewPrev').classList.contains('ordem'));};
 /* ⟳ Atualizar agora: no Visualizar busca tudo na hora; em Executar envia o que falta e busca o que os outros lançaram */
 let atualizando=false;
 $('btnAtualizar').onclick=async()=>{if(atualizando)return;
