@@ -187,6 +187,8 @@ input[type=number]{-moz-appearance:textfield}
 .curBox .cbPrev b{color:var(--led)}
 .curBox{grid-template-columns:1fr 1fr}
 .curBox .cbPrev b{overflow:visible;font-size:2.1rem}
+.dataLinha.amanha .dataBox{background:#fde8e8;border-color:var(--bad);color:var(--bad)}
+.calDias button.amanha{border-color:var(--bad);border-style:dashed;border-width:2px}
 </style>
 </head>
 <body>
@@ -377,7 +379,7 @@ input[type=number]{-moz-appearance:textfield}
 <div class="toast" id="toast" hidden></div>
 <script>
 'use strict';
-const APP_VERSAO='31';
+const APP_VERSAO='32';
 const APP_DATA='17/10/2026';
 const KEY='trato-confinamento-v1';
 const $=id=>document.getElementById(id);
@@ -494,6 +496,7 @@ function escolherTratoDoDia(){
 function setAtual(i){S.atual=i;const c=lista()[i];S.atualNome=c?c.nome:null;}
 /* Data dos lançamentos: automática (hoje). Só muda se tocar em "Mudar data" (para lançar algo esquecido) */
 const diaAtivo=()=>(S&&S.dataManual)||hojeKey();
+const amanhaKey=()=>{const d=new Date();d.setDate(d.getDate()+1);return diaKey(d);};
 const regsAtuais=()=>HIST.filter(r=>r.dia===diaAtivo()&&r.trato===S.tratoSel).sort((a,b)=>a.ts-b.ts);
 const fornecidoDe=(nome,regs)=>regs.filter(r=>r.curral===nome).reduce((a,r)=>a+r.forn,0);
 const feito=(nome,regs)=>regs.some(r=>r.curral===nome);
@@ -502,8 +505,9 @@ const horaDe=r=>r.hora||new Date(r.ts).toLocaleTimeString('pt-BR',{hour:'2-digit
 
 function render(){
   const man=!!S.dataManual;
-  $('dataEsc').textContent=(man?'📅 ':'📅 Hoje · ')+diaBR(diaAtivo());
-  $('dataLinha').classList.toggle('manual',man);$('btnHoje').hidden=!man;
+  const amh=diaAtivo()===amanhaKey();
+  $('dataEsc').textContent=amh?`⚠ DIA SEGUINTE · ${diaBR(diaAtivo())}`:(man?'📅 ':'📅 Hoje · ')+diaBR(diaAtivo());
+  $('dataLinha').classList.toggle('manual',man);$('dataLinha').classList.toggle('amanha',amh);$('btnHoje').hidden=!man;
   $('hoje').textContent=new Date().toLocaleDateString('pt-BR',{weekday:'short',day:'2-digit',month:'2-digit',year:'numeric'});
   const L=lista(),regs=regsAtuais();
   if(S.atualNome!=null){const i=L.findIndex(x=>x.nome===S.atualNome);if(i>=0)S.atual=i;}
@@ -595,17 +599,17 @@ $('escolhaCur').addEventListener('click',e=>{const b=e.target.closest('button[da
 let calMes=null;
 const MESES=['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
 function escolherData(v){
-  if(v>hojeKey()){toast('Não dá para lançar em data futura');return;}
+  if(v>amanhaKey()){toast('Só dá para escolher até o dia seguinte');return;}
   S.dataManual=v===hojeKey()?null:v;S.fim='';const L=lista(),regs=regsAtuais();setAtual(Math.max(0,L.findIndex(x=>!feito(x.nome,regs))));save();
   $('cal').hidden=true;render();
-  toast(S.dataManual?`Lançamentos agora vão para ${diaBR(v)}`:'Voltou para hoje');
+  toast(v===amanhaKey()?`⚠ Atenção: DIA SEGUINTE (${diaBR(v)})`:S.dataManual?`Lançamentos agora vão para ${diaBR(v)}`:'Voltou para hoje');
 }
 function desenharCal(){
-  const [y,m]=calMes,primeiro=new Date(y,m,1),dias=new Date(y,m+1,0).getDate(),ini=primeiro.getDay(),hj=hojeKey(),sel=diaAtivo();
-  let h=`<div class="calTopo"><button data-c="ant" aria-label="Mês anterior">◀</button><b>${MESES[m]} ${y}</b><button data-c="prox" aria-label="Próximo mês" ${diaKey(new Date(y,m+1,1))>hj?'disabled':''}>▶</button></div>
+  const [y,m]=calMes,primeiro=new Date(y,m,1),dias=new Date(y,m+1,0).getDate(),ini=primeiro.getDay(),hj=hojeKey(),am=amanhaKey(),sel=diaAtivo();
+  let h=`<div class="calTopo"><button data-c="ant" aria-label="Mês anterior">◀</button><b>${MESES[m]} ${y}</b><button data-c="prox" aria-label="Próximo mês" ${diaKey(new Date(y,m+1,1))>am?'disabled':''}>▶</button></div>
     <div class="calSem"><span>D</span><span>S</span><span>T</span><span>Q</span><span>Q</span><span>S</span><span>S</span></div><div class="calDias">`;
   for(let i=0;i<ini;i++)h+='<span></span>';
-  for(let d=1;d<=dias;d++){const k=diaKey(new Date(y,m,d));h+=`<button data-d="${k}" class="${k===sel?'sel':''} ${k===hj?'hoje':''}" ${k>hj?'disabled':''}>${d}</button>`;}
+  for(let d=1;d<=dias;d++){const k=diaKey(new Date(y,m,d));h+=`<button data-d="${k}" class="${k===sel?'sel':''} ${k===hj?'hoje':''} ${k===am?'amanha':''}" ${k>am?'disabled':''}>${d}</button>`;}
   h+=`</div><div class="row"><button data-c="hoje" class="lima">Hoje</button><button data-c="fechar">Fechar</button></div>`;
   $('cal').innerHTML=h;
 }
