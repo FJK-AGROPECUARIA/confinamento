@@ -113,6 +113,10 @@ tr.arrastando td{background:var(--lima-claro)}
 table:has(#tbPrev) th:nth-child(2){text-align:left;padding-left:4px}
 html,body{touch-action:manipulation;-webkit-text-size-adjust:100%;text-size-adjust:100%}
 input,select,textarea{font-size:16px}
+button.editq{border:0;background:none;padding:2px 0;font:inherit;color:inherit;cursor:pointer;white-space:nowrap}
+button.editq b{text-decoration:underline dotted}
+.navtrato button{flex:1 1 40%;padding:12px 8px}
+.navtrato button{white-space:nowrap;font-size:.95rem}
 </style>
 </head>
 <body>
@@ -191,6 +195,7 @@ input,select,textarea{font-size:16px}
       <div><small>Diferença do previsto</small><b class="num" id="desv">—</b></div>
     </div>
     <button class="primary" id="btnReg" disabled>Registrar trato</button>
+    <div class="row navtrato"><button id="btnAnterior">◀ Trato anterior</button><button class="lima" id="btnProximo">Ir para o Trato 2 ▶</button></div>
     <p class="note">Recarregou o vagão? É só corrigir o peso de início antes de começar o curral.</p>
   </section>
 
@@ -224,7 +229,6 @@ input,select,textarea{font-size:16px}
       <button id="btnExcel">Baixar planilha Excel</button>
       <button id="btnShareExcel" class="shareX" hidden>Compartilhar planilha</button>
     </div>
-    <button class="primary" id="btnProximo">Ir para o próximo trato</button>
     <p class="note">Tudo já fica salvo no histórico assim que você registra cada curral.</p>
   </section>
 </div>
@@ -295,7 +299,7 @@ input,select,textarea{font-size:16px}
 <div class="toast" id="toast" hidden></div>
 <script>
 'use strict';
-const APP_VERSAO='14';
+const APP_VERSAO='17';
 const APP_DATA='17/10/2026';
 const KEY='trato-confinamento-v1';
 const $=id=>document.getElementById(id);
@@ -438,15 +442,15 @@ function render(){
   $('totais').textContent=`${fmt(tf)} de ${fmt(tp)} kg`;
   $('tituloReg').textContent=`Registros — Trato ${S.tratoSel} de hoje`;
   $('nReg').textContent=regs.length?`${regs.length} curral(is)`:'';
-  $('tbReg').innerHTML=regs.length?regs.map(r=>`<tr><td>${horaDe(r)}</td><td class="c">${esc(r.curral)}</td><td>${fmt(r.ini)}</td><td>${fmt(r.fim)}</td><td><b>${fmt(r.forn)}</b></td></tr>`).join(''):
+  $('tbReg').innerHTML=regs.length?regs.map(r=>`<tr><td>${horaDe(r)}</td><td class="c">${esc(r.curral)}</td><td>${fmt(r.ini)}</td><td>${fmt(r.fim)}</td><td><button class="editq" data-uid="${esc(r.uid)}" aria-label="Editar quantidade do ${esc(r.curral)}"><b>${fmt(r.forn)}</b> ✎</button></td></tr>`).join(''):
     `<tr><td colspan="5" class="note" style="text-align:left">Nenhum curral registrado neste trato hoje.</td></tr>`;
   const tem=regs.length>0;
   ['btnDesfazer','btnWa','btnCopiarMsg','btnExcel','btnShareExcel'].forEach(id=>$(id).disabled=!tem);
   $('msg').textContent=tem?mensagem(regs):'A mensagem do WhatsApp aparece aqui depois do primeiro registro.';
-  $('btnProximo').hidden=S.tratoSel>=5;
-  $('btnProximo').textContent=`Ir para o Trato ${S.tratoSel+1}`;
+  $('btnProximo').disabled=S.tratoSel>=5;$('btnProximo').textContent=S.tratoSel>=5?'Último trato':`Ir ao Trato ${S.tratoSel+1} ▶`;
+  $('btnAnterior').disabled=S.tratoSel<=1;$('btnAnterior').textContent=S.tratoSel<=1?'◀ Voltar':`◀ Voltar Trato ${S.tratoSel-1}`;
   if(!$('viewHist').hidden)renderHist();
-  if(!$('viewPrev').hidden)renderPrev();
+  if(!$('viewPrev').hidden&&!editandoPrev)renderPrev();
   statusNuvem();
 }
 
@@ -467,7 +471,9 @@ $('tratoSel').addEventListener('change',e=>{
   const L=lista(),regs=regsAtuais();setAtual(Math.max(0,L.findIndex(x=>!feito(x.nome,regs))));
   save();render();toast(`Trato ${S.tratoSel}`);
 });
-$('btnProximo').onclick=()=>{if(S.tratoSel>=5)return;$('tratoSel').value=String(S.tratoSel+1);$('tratoSel').dispatchEvent(new Event('change'));window.scrollTo({top:0,behavior:'smooth'});};
+function irTrato(k){if(k<1||k>5)return;$('tratoSel').value=String(k);$('tratoSel').dispatchEvent(new Event('change'));window.scrollTo({top:0,behavior:'smooth'});}
+$('btnProximo').onclick=()=>irTrato(S.tratoSel+1);
+$('btnAnterior').onclick=()=>irTrato(S.tratoSel-1);
 
 $('btnReg').onclick=async()=>{
   const L=lista(),c=L[S.atual];const ini=parseFloat(S.ini),fim=parseFloat(S.fim);
@@ -500,7 +506,7 @@ $('btnDesfazer').onclick=async()=>{
 };
 
 /* ---------- Aba Previsto ---------- */
-let prevTimer;
+let prevTimer,editandoPrev=false;
 function marcarPrev(){S.prevPend=true;S.prevTs=Date.now();save();clearTimeout(prevTimer);prevTimer=setTimeout(()=>sincronizar(),2000);}
 const valPrev=v=>v==null?'':(v==='?'?'?':String(v));
 function renderPrev(){
@@ -508,8 +514,13 @@ function renderPrev(){
   const k=$('pvTrato').value,m=(S.prev[k])||{};
   let tot=0,n=0;
   $('tbPrev').innerHTML=S.cadastro.map((c,i)=>{const v=m[c];if(typeof v==='number'&&v>0){tot+=v;n++;}
-    return `<tr><td class="alca" title="Arraste para mudar a ordem" aria-label="Arrastar ${esc(c)}">☰</td><td class="c" style="cursor:default">${esc(c)}</td><td><input class="cell${v==='?'?' duv':''}" type="text" inputmode="decimal" enterkeyhint="next" data-n="${i}" value="${esc(valPrev(v))}" placeholder="—" aria-label="Previsto ${esc(c)}"></td><td class="acoes"><button class="mini" data-a="ed" data-i="${i}" aria-label="Editar ${esc(c)}">✎</button><button class="mini danger" data-a="rm" data-i="${i}" aria-label="Excluir ${esc(c)}">✕</button></td></tr>`;}).join('');
+    return `<tr><td class="alca" title="Arraste para mudar a ordem" aria-label="Arrastar ${esc(c)}">☰</td><td class="c" style="cursor:default">${esc(c)}</td><td><input class="cell${v==='?'?' duv':''}" type="text" inputmode="decimal" enterkeyhint="next" data-n="${i}" value="${esc(valPrev(v))}" placeholder="—" aria-label="Previsto ${esc(c)}"></td><td class="acoes"><button class="mini" tabindex="-1" data-a="ed" data-i="${i}" aria-label="Editar ${esc(c)}">✎</button><button class="mini danger" tabindex="-1" data-a="rm" data-i="${i}" aria-label="Excluir ${esc(c)}">✕</button></td></tr>`;}).join('');
   $('pvTot').title=`${S.cadastro.length} currais cadastrados`;
+  resumoPrev();
+}
+function resumoPrev(){
+  const k=$('pvTrato').value,m=(S.prev[k])||{};let tot=0,n=0;
+  S.cadastro.forEach(c=>{const v=m[c];if(typeof v==='number'&&v>0){tot+=v;n++;}});
   $('pvTot').textContent=`${n} curral(is) · ${fmt(tot)} kg`;
   $('btnLimparPrev').textContent=`Limpar previsto do Trato ${k}`;$('btnLimparPrev').disabled=!Object.keys(m).length;
   const dv=duvidas(k);
@@ -523,7 +534,9 @@ $('tbPrev').addEventListener('change',e=>{
   else if(t==='?'){m[nome]='?';}
   else{const v=parseNum(t);if(isNaN(v)||v<0){e.target.value=valPrev(m[nome]);toast('Digite uma quantidade válida');return;}m[nome]=v;}
   const tocouOutro=Date.now()-ultimoToque<700; // tocou em outro lugar da tela (não no ✓ do teclado)
-  marcarPrev();render();renderPrev();
+  // não redesenha a lista: assim o teclado continua aberto ao passar para o próximo curral
+  e.target.value=valPrev(m[nome]);e.target.classList.toggle('duv',m[nome]==='?');
+  marcarPrev();editandoPrev=true;render();editandoPrev=false;resumoPrev();
   // tocou no ✓ (Concluído) do teclado: já abre o próximo curral
   if(!tocouOutro)irParaPrev(+i+1);
 });
@@ -717,7 +730,7 @@ function renderHist(){
   $('tbHist').innerHTML=regs.length?grupos(regs).reverse().map(g=>{
     const gp=g.rs.reduce((a,r)=>a+r.prev,0),gf=g.rs.reduce((a,r)=>a+r.forn,0);
     return `<tr class="grp"><td colspan="5">${diaBR(g.dia)} · Trato ${g.trato}<span>${fmt(gf)} kg (${sgn(gf-gp)})</span></td></tr>`+
-      g.rs.map(r=>`<tr><td class="c">${esc(r.curral)}</td><td>${horaDe(r)}</td><td>${fmt(r.prev)}</td><td><b>${fmt(r.forn)}</b></td><td class="${classeDesv(r.forn-r.prev,r.prev)}">${sgn(r.forn-r.prev)}</td></tr>`).join('');
+      g.rs.map(r=>`<tr><td class="c">${esc(r.curral)}</td><td>${horaDe(r)}</td><td>${fmt(r.prev)}</td><td><button class="editq" data-uid="${esc(r.uid)}" aria-label="Editar quantidade do ${esc(r.curral)}"><b>${fmt(r.forn)}</b> ✎</button></td><td class="${classeDesv(r.forn-r.prev,r.prev)}">${sgn(r.forn-r.prev)}</td></tr>`).join('');
   }).join(''):`<tr><td colspan="5" class="note" style="text-align:left">Nenhum registro para esse filtro.</td></tr>`;
   ['hWa','hCopiar','hExcel','hShare','hApagar'].forEach(id=>$(id).disabled=!regs.length);
   const nd=dias.length;
@@ -760,10 +773,25 @@ $('restaurar').addEventListener('change',async e=>{
   }catch(err){toast('Esse arquivo não é uma cópia de segurança do app');}
 });
 
+/* ---------- Editar a quantidade realizada (só a quantidade; os pesos da balança ficam como foram registrados) ---------- */
+async function editarQtd(uid){
+  const r=HIST.find(x=>x.uid===uid);if(!r)return;
+  const t=prompt(`Quantidade realizada no ${r.curral} (Trato ${r.trato}, ${diaBR(r.dia)}), em kg:`,String(Math.round(r.forn)));
+  if(t==null)return;const v=parseNum(t);
+  if(isNaN(v)||v<=0||v>30000){toast('Digite uma quantidade válida');return;}
+  if(v===r.forn)return;
+  if(r.fornOriginal==null)r.fornOriginal=r.forn;
+  r.forn=v;r.editado=true;
+  try{await dbPutMany([r]);}catch(e){toast('Erro ao salvar');return;}
+  if(r.enviado){S.editarNuvem=(S.editarNuvem||[]).filter(x=>x.uid!==uid).concat({uid,forn:v});save();}
+  render();renderHist();sincronizar();toast(`${r.curral}: realizado agora ${fmt(v)} kg`);
+}
+document.addEventListener('click',e=>{const b=e.target.closest('button.editq');if(b)editarQtd(b.dataset.uid);});
+
 /* ---------- Nuvem (Google Apps Script + Planilha) ---------- */
 let sincronizando=false,ultPuxaPrev=0;
 function statusNuvem(){
-  const el=$('nuvem'),pend=HIST.filter(r=>!r.enviado).length+((S&&S.apagarNuvem)||[]).length+(S&&S.prevPend?1:0);
+  const el=$('nuvem'),pend=HIST.filter(r=>!r.enviado).length+((S&&S.apagarNuvem)||[]).length+((S&&S.editarNuvem)||[]).length+(S&&S.prevPend?1:0);
   let t,c;
   if(!apiUrl()){t='Nuvem: não ligada';c='var(--muted)';}
   else if(sincronizando){t='Nuvem: enviando…';c='var(--muted)';}
@@ -810,6 +838,8 @@ async function sincronizar(avisar){
       const ok=new Set(j.uids||[]);const feitos=lote.filter(r=>ok.has(r.uid));feitos.forEach(r=>r.enviado=true);
       if(feitos.length)await dbPutMany(feitos);
     }
+    if(S.editarNuvem&&S.editarNuvem.length){const lt=S.editarNuvem.slice();await postApi({acao:'editar',itens:lt});
+      S.editarNuvem=S.editarNuvem.filter(x=>!lt.includes(x));save();}
     await enviarPrevisto();
   }catch(e){erro=e;}
   try{await puxarPrevisto(avisar);}catch(e){}
