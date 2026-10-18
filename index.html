@@ -260,6 +260,8 @@ body.naInicio .voltarIni{visibility:hidden}
 body.somenteVer table:has(#tbPrev) th:first-child,body.somenteVer table:has(#tbPrev) th:last-child{display:none}
 body.somenteVer table:has(#tbPrev) th:nth-child(3),body.somenteVer #tbPrev td:last-child{text-align:right}
 body.somenteVer #tbPrev input.cell{width:5.5em;pointer-events:none;background:transparent;border-color:transparent;font-weight:700;font-size:1.05rem}
+button.verde{background:#1f8f4e;border-color:#1f8f4e;color:#fff;font-size:1.1rem;padding:14px}
+.compart>button{flex:1 1 0}
 </style>
 </head>
 <body>
@@ -367,13 +369,10 @@ body.somenteVer #tbPrev input.cell{width:5.5em;pointer-events:none;background:tr
       <tbody id="tbCur"></tbody>
     </table></div>
     <button id="btnDesfazer">Desfazer último</button>
-    <div class="row">
-      <button class="wa" id="btnWa">Enviar no WhatsApp</button>
-      <button id="btnCopiarMsg">Copiar mensagem</button>
-    </div>
-    <div class="row">
-      <button id="btnExcel">Baixar planilha Excel</button>
-      <button id="btnShareExcel" class="shareX" hidden>Compartilhar planilha</button>
+    <div class="row compart"><button class="verde" id="btnImg">🖼 Imagem</button><button class="verde" id="btnXls">📊 Excel</button></div>
+    <div hidden>
+      <button class="wa" id="btnWa">Enviar no WhatsApp</button><button id="btnCopiarMsg">Copiar mensagem</button>
+      <button id="btnExcel">Baixar planilha Excel</button><button id="btnShareExcel" class="shareX" hidden>Compartilhar planilha</button>
     </div>
   </section>
 
@@ -404,15 +403,12 @@ body.somenteVer #tbPrev input.cell{width:5.5em;pointer-events:none;background:tr
       <div class="row"><button id="selTodos">Selecionar todos</button><button id="selCanc">Cancelar</button></div>
       <button class="dangerfill" id="selApagar" disabled>Apagar selecionados</button>
     </div>
+    <div class="row compart"><button class="verde" id="hImg">🖼 Imagem</button><button class="verde" id="hXls">📊 Excel</button></div>
+    <div hidden>
+      <button class="wa" id="hWa">Enviar no WhatsApp</button><button id="hCopiar">Copiar lista</button>
+      <button id="hExcel">Exportar Excel</button><button id="hShare" class="shareX" hidden>Compartilhar planilha</button>
+    </div>
     <button class="danger" id="hApagar">Apagar registros…</button>
-    <div class="row">
-      <button class="wa" id="hWa">Enviar no WhatsApp</button>
-      <button id="hCopiar">Copiar lista</button>
-    </div>
-    <div class="row">
-      <button id="hExcel">Exportar Excel</button>
-      <button id="hShare" class="shareX" hidden>Compartilhar planilha</button>
-    </div>
   </section>
 
   <section class="panel">
@@ -466,7 +462,7 @@ body.somenteVer #tbPrev input.cell{width:5.5em;pointer-events:none;background:tr
 <div class="toast" id="toast" hidden></div>
 <script>
 'use strict';
-const APP_VERSAO='47';
+const APP_VERSAO='48';
 const APP_DATA='17/10/2026';
 const KEY='trato-confinamento-v1';
 const $=id=>document.getElementById(id);
@@ -627,7 +623,8 @@ function render(){
   $('trAviso').hidden=!dv.length;$('trAviso').textContent=dv.length?`Previsto com "?" (fora da lista até corrigir): ${dv.join(', ')}`:'';
   $('totais').textContent=`${fmt(tf)} de ${fmt(tp)} kg`;
   const tem=regs.length>0;
-  ['btnDesfazer','btnWa','btnCopiarMsg','btnExcel','btnShareExcel'].forEach(id=>$(id).disabled=!tem);
+  ['btnDesfazer','btnWa','btnCopiarMsg','btnExcel','btnShareExcel','btnXls'].forEach(id=>$(id).disabled=!tem);
+  $('btnImg').disabled=!(tem||L.length);
   $('btnProximo').disabled=S.tratoSel>=5;$('btnProximo').textContent=S.tratoSel>=5?'Último trato':`Ir ao Trato ${S.tratoSel+1} ▶`;
   $('btnAnterior').disabled=S.tratoSel<=1;$('btnAnterior').textContent=S.tratoSel<=1?'◀ Voltar':`◀ Voltar Trato ${S.tratoSel-1}`;
   if(!$('viewHist').hidden)renderHist();
@@ -998,6 +995,62 @@ try{if(navigator.canShare&&navigator.canShare({files:[new File(['x'],'t.xlsx',{t
 $('btnExcel').onclick=()=>exportar(regsAtuais());
 $('btnShareExcel').onclick=()=>compartilhar(regsAtuais());
 
+/* ---------- Compartilhar: Imagem da tabela e Excel ---------- */
+async function compartilharArquivo(blob,nome,tipo){
+  const f=new File([blob],nome,{type:tipo});
+  if(navigator.canShare&&navigator.canShare({files:[f]})){try{await navigator.share({files:[f],title:nome});return;}catch(e){if(e.name==='AbortError')return;}}
+  baixar(blob,nome);toast('Arquivo salvo em Downloads');
+}
+const linhaReg=(nome,prev,rs)=>{const f=rs.reduce((a,r)=>a+r.forn,0),fz=rs.length>0;
+  return {curral:nome,hora:fz?horaDe(rs[rs.length-1]):'',prev,ini:fz?rs[0].ini:null,fim:fz?rs[rs.length-1].fim:null,real:fz?f:null,dif:fz&&prev!=null?f-prev:null};};
+function secaoTratar(){
+  const L=lista(),regs=regsAtuais();
+  const linhas=L.map(x=>linhaReg(x.nome,x.prev,regs.filter(r=>r.curral===x.nome)));
+  [...new Set(regs.map(r=>r.curral))].filter(n=>!L.some(x=>x.nome===n)).forEach(n=>{const rs=regs.filter(r=>r.curral===n);linhas.push(linhaReg(n,rs[0].prev,rs));});
+  return [{cab:`${diaBR(diaAtivo())} · Trato ${S.tratoSel}`,linhas}];
+}
+function secoesHist(){
+  return grupos(filtrados()).map(g=>{const m=new Map();g.rs.forEach(r=>{if(!m.has(r.curral))m.set(r.curral,[]);m.get(r.curral).push(r);});
+    return {cab:`${diaBR(g.dia)} · Trato ${g.trato}`,linhas:[...m.entries()].map(([n,rs])=>linhaReg(n,rs[0].prev,rs))};});
+}
+function desenharImagem(secoes){
+  const cols=[['Curral',230,'l'],['Hora',95,'c'],['Previsto',125,'r'],['Início',120,'r'],['Final',120,'r'],['Realizado',135,'r'],['Dif.',115,'r']];
+  const M=30,W=M*2+cols.reduce((a,c)=>a+c[1],0),RH=46,esc=2;
+  let H=120;secoes.forEach(s=>{H+=50+40+RH*s.linhas.length+52+20;});H+=40;
+  const cv=document.createElement('canvas');cv.width=W*esc;cv.height=H*esc;const c=cv.getContext('2d');c.scale(esc,esc);
+  const F='-apple-system,"Segoe UI",Roboto,Arial,sans-serif';
+  c.fillStyle='#ffffff';c.fillRect(0,0,W,H);
+  c.fillStyle='#11253d';c.fillRect(0,0,W,90);c.fillStyle='#a7bc09';c.fillRect(0,90,W,6);
+  c.fillStyle='#ffffff';c.font=`700 34px ${F}`;c.textBaseline='middle';c.fillText('Tratos - Vagão · FJK',M,46);
+  c.font=`500 18px ${F}`;c.textAlign='right';c.fillStyle='#c8dd1e';c.fillText('Gerado em '+new Date().toLocaleString('pt-BR',{day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'}),W-M,46);c.textAlign='left';
+  let y=120;const fx=n=>n==null||isNaN(n)?'':fmt(n);
+  const cor=(d,p)=>{if(d==null)return '#11253d';const k=classeDesv(d,p);return k==='ok'?'#5f7a00':k==='warn'?'#b26a00':'#b3261e';};
+  secoes.forEach(s=>{
+    c.fillStyle='#f3f7dc';c.fillRect(M,y,W-2*M,44);c.fillStyle='#11253d';c.font=`700 24px ${F}`;c.fillText(s.cab,M+12,y+22);y+=50;
+    let x=M;c.font=`700 16px ${F}`;c.fillStyle='#5d6b7a';
+    cols.forEach(([t,w,a])=>{c.textAlign=a==='l'?'left':a==='c'?'center':'right';c.fillText(t.toUpperCase(),a==='l'?x+8:a==='c'?x+w/2:x+w-8,y+20);x+=w;});
+    c.textAlign='left';y+=40;c.fillStyle='#dde3ea';c.fillRect(M,y-2,W-2*M,2);
+    let tp=0,tf=0,tpf=0;
+    s.linhas.forEach((l,i)=>{if(i%2){c.fillStyle='#f7f9fb';c.fillRect(M,y,W-2*M,RH);}
+      if(l.prev!=null)tp+=l.prev;if(l.real!=null){tf+=l.real;tpf+=l.prev||0;}
+      const v=[l.curral,l.hora,fx(l.prev),fx(l.ini),fx(l.fim),fx(l.real),l.dif==null?'':sgn(l.dif)];x=M;
+      cols.forEach(([t,w,a],k)=>{c.textAlign=a==='l'?'left':a==='c'?'center':'right';c.font=(k===0||k===5?'700 ':'500 ')+'21px '+F;
+        c.fillStyle=k===6?cor(l.dif,l.prev):'#11253d';c.fillText(String(v[k]),a==='l'?x+8:a==='c'?x+w/2:x+w-8,y+RH/2);x+=w;});
+      c.textAlign='left';y+=RH;c.fillStyle='#dde3ea';c.fillRect(M,y-1,W-2*M,1);});
+    c.fillStyle='#11253d';c.fillRect(M,y+6,W-2*M,44);c.fillStyle='#ffffff';c.font=`700 21px ${F}`;
+    c.fillText('TOTAL',M+12,y+28);c.textAlign='right';
+    const pos=k=>{let xx=M;for(let i=0;i<=k;i++)xx+=cols[i][1];return xx-8;};
+    c.fillText(fmt(tp),pos(2),y+28);c.fillStyle='#c8dd1e';c.fillText(fmt(tf),pos(5),y+28);c.fillStyle='#ffffff';c.fillText(tf?sgn(tf-tpf):'',pos(6),y+28);c.textAlign='left';
+    y+=52+20;});
+  return new Promise(ok=>cv.toBlob(ok,'image/png'));
+}
+async function enviarImagem(secoes,nome){if(!secoes.length||!secoes.some(s=>s.linhas.length)){toast('Nada para mostrar');return;}
+  const b=await desenharImagem(secoes);compartilharArquivo(b,nome,'image/png');}
+$('btnImg').onclick=()=>enviarImagem(secaoTratar(),`Trato_${diaAtivo()}_T${S.tratoSel}.png`);
+$('btnXls').onclick=()=>{const r=regsAtuais();if(r.length)compartilharArquivo(gerarXlsx(r),nomeArquivo(r),XT);};
+$('hImg').onclick=()=>{const f=filtrados();enviarImagem(secoesHist(),nomeArquivo(f).replace('.xlsx','.png'));};
+$('hXls').onclick=()=>{const f=filtrados();if(f.length)compartilharArquivo(gerarXlsx(f),nomeArquivo(f),XT);};
+
 /* ---------- Abas ---------- */
 function aba(qual){
   if(typeof modoRemover!=='undefined'&&modoRemover&&qual!=='prev')$('btnRemoverCurral').click();
@@ -1032,7 +1085,7 @@ function renderHist(){
     return `<tr class="grp"><td colspan="5">${diaBR(g.dia)} · Trato ${g.trato}<span>${fmt(gf)} kg (${sgn(gf-gp)})</span></td></tr>`+
       g.rs.map(r=>`<tr class="${selModo?'selrow':''} ${selModo&&sel.has(r.uid)?'marcado':''}" ${selModo?`data-sel="${esc(r.uid)}"`:''}><td class="c">${selModo?`<span class="chk">${sel.has(r.uid)?'☑':'☐'}</span> `:''}${esc(r.curral)}</td><td>${horaDe(r)}</td><td>${fmt(r.prev)}</td><td><button class="editq" data-uid="${esc(r.uid)}" aria-label="Editar quantidade do ${esc(r.curral)}"><b>${fmt(r.forn)}</b> ✎</button></td><td class="${classeDesv(r.forn-r.prev,r.prev)}">${sgn(r.forn-r.prev)}</td></tr>`).join('');
   }).join(''):`<tr><td colspan="5" class="note" style="text-align:left">Nenhum registro para esse filtro.</td></tr>`;
-  ['hWa','hCopiar','hExcel','hShare','hApagar'].forEach(id=>$(id).disabled=!regs.length);
+  ['hWa','hCopiar','hExcel','hShare','hApagar','hImg','hXls'].forEach(id=>$(id).disabled=!regs.length);
   $('hApagar').hidden=selModo;$('selBar').hidden=!selModo;
   if(selModo){$('selInfo').textContent=sel.size?`${sel.size} registro(s) selecionado(s).`:'Toque nos registros que quer apagar.';$('selApagar').disabled=!sel.size;$('selApagar').textContent=sel.size?`Apagar selecionados (${sel.size})`:'Apagar selecionados';}
   const nd=dias.length;
