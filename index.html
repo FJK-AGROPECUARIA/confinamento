@@ -241,7 +241,7 @@ input[type=number]{-moz-appearance:textfield}
       <label for="ini">Balança no início (kg)</label>
       <div class="campoX"><input class="big num" id="ini" type="number" inputmode="numeric" placeholder="ex.: 5000"><button class="limparX" data-campo="ini" aria-label="Limpar balança no início" tabindex="-1">✕</button></div>
     </div>
-    <div class="led"><span>Parar quando a balança mostrar</span><b id="alvo">—</b></div>
+    <div class="led"><span>Parar com balança em</span><b id="alvo">—</b></div>
     <div>
       <label for="fim">Balança no final (kg)</label>
       <div class="campoX"><input class="big num" id="fim" type="number" inputmode="numeric" placeholder="ex.: 3980"><button class="limparX" data-campo="fim" aria-label="Limpar balança no final" tabindex="-1">✕</button></div>
@@ -263,11 +263,6 @@ input[type=number]{-moz-appearance:textfield}
       <tbody id="tbCur"></tbody>
     </table></div>
     <button id="btnDesfazer">Desfazer último</button>
-  </section>
-
-  <section class="panel">
-    <h2>Fechar o trato</h2>
-    <pre class="msg num" id="msg"></pre>
     <div class="row">
       <button class="wa" id="btnWa">Enviar no WhatsApp</button>
       <button id="btnCopiarMsg">Copiar mensagem</button>
@@ -276,8 +271,8 @@ input[type=number]{-moz-appearance:textfield}
       <button id="btnExcel">Baixar planilha Excel</button>
       <button id="btnShareExcel" class="shareX" hidden>Compartilhar planilha</button>
     </div>
-    <p class="note">Tudo já fica salvo no histórico assim que você registra cada curral.</p>
   </section>
+
 </div>
 
 <div id="viewHist" hidden>
@@ -356,7 +351,7 @@ input[type=number]{-moz-appearance:textfield}
 <div class="toast" id="toast" hidden></div>
 <script>
 'use strict';
-const APP_VERSAO='27';
+const APP_VERSAO='28';
 const APP_DATA='17/10/2026';
 const KEY='trato-confinamento-v1';
 const $=id=>document.getElementById(id);
@@ -512,7 +507,6 @@ function render(){
   $('totais').textContent=`${fmt(tf)} de ${fmt(tp)} kg`;
   const tem=regs.length>0;
   ['btnDesfazer','btnWa','btnCopiarMsg','btnExcel','btnShareExcel'].forEach(id=>$(id).disabled=!tem);
-  $('msg').textContent=tem?mensagem(regs):'A mensagem do WhatsApp aparece aqui depois do primeiro registro.';
   $('btnProximo').disabled=S.tratoSel>=5;$('btnProximo').textContent=S.tratoSel>=5?'Último trato':`Ir ao Trato ${S.tratoSel+1} ▶`;
   $('btnAnterior').disabled=S.tratoSel<=1;$('btnAnterior').textContent=S.tratoSel<=1?'◀ Voltar':`◀ Voltar Trato ${S.tratoSel-1}`;
   if(!$('viewHist').hidden)renderHist();
