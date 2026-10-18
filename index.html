@@ -189,6 +189,17 @@ input[type=number]{-moz-appearance:textfield}
 .curBox .cbPrev b{overflow:visible;font-size:2.1rem}
 .dataLinha.amanha .dataBox{background:#fde8e8;border-color:var(--bad);color:var(--bad)}
 .calDias button.amanha{border-color:var(--bad);border-style:dashed;border-width:2px}
+.curBox{grid-template-columns:minmax(0,1fr) auto}
+.curBox .cbPrev{padding:10px 12px;min-width:0}
+.curBox .cbPrev b{width:5.2ch;text-align:right}
+.curBox .cbCur b{text-overflow:clip}
+.curBox{grid-template-columns:1fr auto}
+.curBox .cbCur{grid-column:1/-1}
+.curBox .cbCur b{overflow:visible;white-space:nowrap}
+.curBox .trocar{margin:0;font-size:1rem;padding:8px 14px;border-radius:12px;align-self:stretch}
+.curBox .cbPrev b{width:auto;min-width:5.2ch}
+.curBox .cbCur{padding:10px 12px}
+.curBox .cbCur b{overflow:hidden}
 </style>
 </head>
 <body>
@@ -260,9 +271,9 @@ input[type=number]{-moz-appearance:textfield}
     <div>
       <div class="curBox">
         <div class="cbCur"><span>Curral atual</span><b id="curNome">—</b></div>
+        <button class="trocar" id="btnTrocar">Trocar<br>curral ▾</button>
         <div class="cbPrev"><span>Previsto</span><b class="num" id="curPrev">—</b></div>
       </div>
-      <button class="mini trocar" id="btnTrocar">Trocar curral ▾</button>
     </div>
     <div class="escolha" id="escolhaCur" hidden></div>
     <div>
@@ -379,7 +390,7 @@ input[type=number]{-moz-appearance:textfield}
 <div class="toast" id="toast" hidden></div>
 <script>
 'use strict';
-const APP_VERSAO='33';
+const APP_VERSAO='35';
 const APP_DATA='17/10/2026';
 const KEY='trato-confinamento-v1';
 const $=id=>document.getElementById(id);
@@ -506,8 +517,9 @@ const horaDe=r=>r.hora||new Date(r.ts).toLocaleTimeString('pt-BR',{hour:'2-digit
 function render(){
   const man=!!S.dataManual;
   const amh=diaAtivo()===amanhaKey();
-  $('dataEsc').textContent=amh?`⚠ DIA SEGUINTE · ${diaBR(diaAtivo())}`:(man?'📅 ':'📅 Hoje · ')+diaBR(diaAtivo());
-  $('dataLinha').classList.toggle('manual',man);$('dataLinha').classList.toggle('amanha',amh);$('btnHoje').hidden=!man;
+  const ant=man&&!amh;
+  $('dataEsc').textContent=amh?`⚠ DIA SEGUINTE · ${diaBR(diaAtivo())}`:ant?`⚠ DIA ANTERIOR · ${diaBR(diaAtivo())}`:'📅 Hoje · '+diaBR(diaAtivo());
+  $('dataLinha').classList.toggle('manual',man);$('dataLinha').classList.toggle('amanha',man);$('btnHoje').hidden=!man;
   $('hoje').textContent=new Date().toLocaleDateString('pt-BR',{weekday:'short',day:'2-digit',month:'2-digit',year:'numeric'});
   const L=lista(),regs=regsAtuais();
   if(S.atualNome!=null){const i=L.findIndex(x=>x.nome===S.atualNome);if(i>=0)S.atual=i;}
@@ -515,6 +527,7 @@ function render(){
   const c=L[S.atual];
   $('curNome').textContent=c?c.nome:(L.length?'Trato completo':'-');
   $('curPrev').textContent=c?fmt(c.prev):'—';
+  ajustarNome();
   if(document.activeElement!==$('ini'))$('ini').value=S.ini;
   if(document.activeElement!==$('fim'))$('fim').value=S.fim;
   calc();mostrarX();
@@ -544,6 +557,10 @@ function render(){
   statusNuvem();
 }
 
+// nome comprido: diminui só o necessário para caber inteiro (nomes curtos ficam do tamanho normal)
+function ajustarNome(){const b=$('curNome');b.style.fontSize='';let f=parseFloat(getComputedStyle(b).fontSize);let n=0;
+  while(b.scrollWidth>b.clientWidth+1&&f>14&&n<30){f-=1;b.style.fontSize=f+'px';n++;}}
+window.addEventListener('resize',()=>{try{ajustarNome();}catch(e){}});
 function calc(){
   const c=lista()[S.atual];const ini=parseFloat(S.ini),fim=parseFloat(S.fim);
   $('alvo').textContent=(c&&!isNaN(ini))?fmt(ini-c.prev):'—';
@@ -602,7 +619,7 @@ function escolherData(v){
   if(v>amanhaKey()){toast('Só dá para escolher até o dia seguinte');return;}
   S.dataManual=v===hojeKey()?null:v;S.fim='';const L=lista(),regs=regsAtuais();setAtual(Math.max(0,L.findIndex(x=>!feito(x.nome,regs))));save();
   $('cal').hidden=true;render();
-  toast(v===amanhaKey()?`⚠ Atenção: DIA SEGUINTE (${diaBR(v)})`:S.dataManual?`Lançamentos agora vão para ${diaBR(v)}`:'Voltou para hoje');
+  toast(v===amanhaKey()?`⚠ Atenção: DIA SEGUINTE (${diaBR(v)})`:S.dataManual?`⚠ Atenção: DIA ANTERIOR (${diaBR(v)})`:'Voltou para hoje');
 }
 function desenharCal(){
   const [y,m]=calMes,primeiro=new Date(y,m,1),dias=new Date(y,m+1,0).getDate(),ini=primeiro.getDay(),hj=hojeKey(),am=amanhaKey(),sel=diaAtivo();
