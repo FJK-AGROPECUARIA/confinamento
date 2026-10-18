@@ -133,6 +133,9 @@ body.comteclado .wrap{padding-bottom:360px}
 .tecTopo b{font-size:2rem}
 .teclado{background:var(--bg);border-top:3px solid var(--lima)}
 body.comteclado .wrap{padding-bottom:420px}
+button.dangerfill{background:var(--bad);border-color:var(--bad);color:#fff}
+#tbPrev input.cell{width:4.6em}
+#tbPrev td.acoes button.mini{padding:4px 7px;margin-left:2px}
 </style>
 </head>
 <body>
@@ -166,6 +169,7 @@ body.comteclado .wrap{padding-bottom:420px}
       <label for="lista">Um curral por linha: nome e quantidade (só deste trato)</label>
       <textarea id="lista" placeholder="C-10 1000&#10;C-3 600"></textarea>
       <div class="row" style="margin-top:10px"><button id="btnSalvarLista" class="primary">Salvar lista</button><button id="btnCancLista">Cancelar</button></div>
+      <button class="danger" id="btnLimparTexto" style="margin-top:10px;width:100%">Limpar texto</button>
     </div>
     <div class="ocr" id="ocrBox" hidden></div>
     <div id="revBox" hidden>
@@ -179,8 +183,9 @@ body.comteclado .wrap{padding-bottom:420px}
       <label class="filebtn lima" for="foto" style="margin:0;text-transform:none;letter-spacing:0;color:var(--fg);font-size:1rem">Ler lista por foto<input id="foto" type="file" accept="image/*" multiple></label>
       <button id="btnEditar">Editar em texto</button>
     </div>
-    <div class="row"><input type="text" id="novoCurral" placeholder="Novo curral, ex.: C-11" autocomplete="off" autocapitalize="characters" style="flex:2 1 140px;width:auto"><button class="lima" id="btnCadastrar">+ Adicionar curral</button></div>
     <button class="danger" id="btnLimparPrev">Limpar previsto deste trato</button>
+    <div class="row"><input type="text" id="novoCurral" placeholder="Novo curral, ex.: C-11" autocomplete="off" autocapitalize="characters" style="flex:2 1 140px;width:auto"><button class="lima" id="btnCadastrar">+ Adicionar curral</button></div>
+    <button class="dangerfill" id="btnRemoverCurral">− Remover curral</button>
   </section>
 
 </div>
@@ -325,7 +330,7 @@ body.comteclado .wrap{padding-bottom:420px}
 <div class="toast" id="toast" hidden></div>
 <script>
 'use strict';
-const APP_VERSAO='19';
+const APP_VERSAO='20';
 const APP_DATA='17/10/2026';
 const KEY='trato-confinamento-v1';
 const $=id=>document.getElementById(id);
@@ -621,6 +626,14 @@ $('btnCadastrar').onclick=()=>{
   const n=nomeLimpo($('novoCurral').value);if(!n){toast('Digite o nome do curral');return;}
   const ja=acharCadastro(n);if(ja){toast(`${ja} já está cadastrado`);return;}
   S.cadastro.push(n);$('novoCurral').value='';marcarPrev();render();renderPrev();toast(`${n} cadastrado no fim da lista`);
+};
+$('btnRemoverCurral').onclick=()=>{
+  let t=$('novoCurral').value.trim();
+  if(!t)t=prompt('Qual curral remover? (ex.: C-11)')||'';
+  const n=acharCadastro(nomeLimpo(t));if(!t)return;if(!n){toast('Curral não encontrado no cadastro');return;}
+  if(!confirm(`Remover o ${n}? O previsto dele em todos os tratos também sai. Os registros já feitos continuam no histórico.`))return;
+  S.cadastro.splice(S.cadastro.indexOf(n),1);Object.values(S.prev).forEach(m=>{delete m[n];});
+  $('novoCurral').value='';marcarPrev();render();renderPrev();toast(`${n} removido`);
 };
 $('novoCurral').addEventListener('keydown',e=>{if(e.key==='Enter')$('btnCadastrar').click();});
 /* ---------- Mensagem WhatsApp ---------- */
@@ -957,6 +970,7 @@ function fecharEdicao(){$('editBox').hidden=true;$('revBox').hidden=true;$('list
 function abrirEdicao(txt){$('lista').value=txt;$('editBox').hidden=false;$('revBox').hidden=true;$('listaBtns').hidden=true;$('lista').focus();}
 $('btnEditar').onclick=()=>{const m=S.prev[$('pvTrato').value]||{};abrirEdicao(S.cadastro.filter(n=>m[n]!=null).map(n=>`${n} ${m[n]}`).join('\n'));};
 $('btnCancLista').onclick=fecharEdicao;
+$('btnLimparTexto').onclick=()=>{$('lista').value='';$('lista').focus();};
 // "795,00" vira 795 (despreza o que vem depois da vírgula); "1.720,00" vira 1720
 function parseNum(s){s=String(s).replace(/\s/g,'');const neg=s.startsWith('-');s=s.replace(/^-/,'');
   const m=s.match(/^(.*\d)[.,](\d{1,2})$/);if(m)s=m[1];
@@ -1178,27 +1192,29 @@ async function lerLocal(file,box,rot,trato){
 }
 // O Google às vezes devolve coluna por coluna: primeiro currais (e trato), depois os números de cada linha
 function lerSequencial(texto,tratoPadrao){
-  const ls=String(texto).split('\n').map(l=>l.trim()).filter(Boolean);
-  const curs=[];let nums=[],todos=[],coletando=false,parar=false,ctx=tratoPadrao;
+  const ls=String(texto).split('\n').map(l=>l.trim().replace(/^(-?\d+) (\d{2})$/,'$1,$2')).filter(Boolean);
+  const curs=[];let nums=[],todos=[],pularProx=false,ctx=tratoPadrao;
   for(const l of ls){
     const ws=linhasDoTexto(l,85)[0]||[];const up=semAcento(l);
     const cur=acharCurralNaLinha(ws);
-    if(cur){if(!curs.some(c=>c.nome===cur.nome))curs.push({nome:cur.nome,trato:null});continue;}
-    if(/TOTAL/.test(up)){if(coletando)parar=true;continue;}
+    if(cur){if(!curs.some(c=>c.nome===cur.nome))curs.push({nome:cur.nome,trato:null});pularProx=false;continue;}
+    if(/TOTAL/.test(up)){pularProx=/:\s*$/.test(l);continue;} // total: o número dele não é de curral
     const mt=up.match(/^TRATO\s*[:\-]?\s*([1-5])$/);if(mt){ctx=+mt[1];continue;}
     if(ws.length===1){const n=numDe(ws[0]);if(!n)continue;
-      if(n.int&&n.v>=1&&n.v<=5&&curs.length&&curs[curs.length-1].trato==null&&!coletando){curs[curs.length-1].trato=n.v;continue;}
-      if(curs.length&&!parar){coletando=true;todos.push(n);if(n.v>=30)nums.push(n);}
-    }
+      if(pularProx){pularProx=false;continue;}
+      if(n.int&&n.v>=1&&n.v<=5&&curs.length&&curs[curs.length-1].trato==null&&!todos.length){curs[curs.length-1].trato=n.v;continue;}
+      if(curs.length){todos.push(n);if(n.v>=30)nums.push(n);}
+    }else pularProx=false;
   }
   const N=curs.length,itens=curs.map(c=>({nome:c.nome,trato:c.trato||ctx,prev:'?',c:70}));
-  let feito=false;
-  for(const k of [1,2,3])if(N&&nums.length===k*N){itens.forEach((x,i)=>{const n=nums[i*k];if(n.c>=CONF_MIN&&n.v<=30000)x.prev=n.v;});feito=true;break;}
-  if(!feito&&N&&todos.length){
-    // cada linha da tela: Previsto, Realizado, Diferença (= realizado - previsto); acha os previstos pelo par certo
-    const prevs=[];for(let i=0;i+2<todos.length;i++){const p=todos[i].v,r=todos[i+1].v,d=todos[i+2].v;if(p>=30&&Math.abs(r-p-d)<1){prevs.push(todos[i]);i+=2;}}
-    if(prevs.length===N)itens.forEach((x,i)=>{x.prev=prevs[i].v;});
-  }
+  if(!N)return {itens,ign:[]};
+  // cada linha da tela: Previsto, Realizado, Diferença (= realizado - previsto). Acha os previstos pelo par certo
+  const prevs=[];
+  for(let i=0;i<todos.length;i++){const p=todos[i].v;if(!(p>=30))continue;
+    for(let k=i+1;k<=Math.min(todos.length-1,i+3);k++){const d=todos[k].v,r=k-1>i?todos[k-1].v:0;
+      if(d<0&&(Math.abs(p+d)<1||Math.abs(r-p-d)<1)){prevs.push(todos[i]);i=k;break;}}}
+  if(prevs.length===N)itens.forEach((x,i)=>{x.prev=prevs[i].v;});
+  else{for(const k of [1,2,3])if(nums.length===k*N){itens.forEach((x,i)=>{const n=nums[i*k];if(n.c>=CONF_MIN&&n.v<=30000)x.prev=n.v;});break;}}
   return {itens,ign:[]};
 }
 async function lerGoogle(file,trato){
