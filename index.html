@@ -413,7 +413,7 @@ tr.gClic{cursor:pointer}
 .gDiaBox .stat div{background:#fff}
 .gAlerta{display:block;width:100%;text-align:left;font-size:.9rem;padding:9px 12px;border-left-width:5px}
 .gAlerta.warn{border-left-color:var(--warn)}.gAlerta.bad{border-left-color:var(--bad)}.gAlerta.ok{border-left-color:var(--ok)}
-.gNotas{display:grid!important;grid-template-columns:repeat(6,1fr);gap:5px}
+.gNotas{display:grid!important;gap:5px}
 .gNotas button{font-size:1.05rem!important}
 .gNotas button.mais{border-color:#cfe08a}.gNotas button.menos{border-color:#f0c7c3}
 .gCoTopo{flex-wrap:nowrap!important;align-items:center!important;justify-content:flex-start!important}
@@ -424,11 +424,86 @@ tr.gClic{cursor:pointer}
 .gNotaCab{font-size:.72rem;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);font-weight:600}
 button.mini.sel{background:var(--accent);color:#fff;border-color:var(--accent)}
 input.gRs{font-variant-numeric:tabular-nums}
-#gBox .stat b{font-size:1.18rem;line-height:1.15;overflow-wrap:anywhere}
-#gBox .stat small{font-size:.66rem}
+input[type=date]{display:block;width:100%;min-width:0;max-width:100%;box-sizing:border-box;-webkit-appearance:none;appearance:none;font:inherit;color:var(--fg);background:var(--bg);border:2px solid var(--line);border-radius:10px;padding:9px 10px;min-height:46px}
+input[type=date]::-webkit-date-and-time-value{text-align:left;margin:0}
+input[type=date]::-webkit-calendar-picker-indicator{margin-left:2px;padding:0}
+.gForm{grid-template-columns:repeat(2,minmax(0,1fr))!important}.gCampo,.gForm>*{min-width:0}
+.gMini3 small{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.gRacItem{display:flex;flex-direction:column;gap:8px}
+.gMini3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px}
+.gMini3 div{background:var(--chip);border-radius:8px;padding:6px 8px;min-width:0}
+.gMini3 small{display:block;font-size:.66rem;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;font-weight:600}
+.gMini3 b{display:block;font-family:var(--display);font-stretch:condensed;font-size:1.15rem;white-space:nowrap;overflow:hidden}
+.gComp{display:flex;flex-direction:column}
+.gComp>div{display:grid;grid-template-columns:1fr 3.6em 3.6em;gap:6px;align-items:center;padding:5px 0;border-bottom:1px solid var(--line);font-size:.86rem;font-weight:500}
+.gComp>div:last-child{border-bottom:0}
+.gComp>div span{position:relative;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;padding-bottom:4px}
+.gComp>div span i{position:absolute;left:0;bottom:0;height:3px;border-radius:3px;background:var(--lima)}
+.gComp>div b{text-align:right;font-variant-numeric:tabular-nums}
+.gComp .gCompCab{font-size:.66rem;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);font-weight:600;padding-top:0}
+.gComp .gCompCab span:not(:first-child){text-align:right}
+.gRacLin{display:grid!important;grid-template-columns:1fr 5.5em 2.4em;gap:6px;align-items:center}
+.gRacLin input{width:100%!important}
+.gRacCab{font-size:.68rem;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);font-weight:600}
+.gRacTab td.c{font-size:.95rem}
+.gStat2{display:grid!important;grid-template-columns:1fr 1fr}
+.gPesBox{background:var(--accent);color:#fff;border-radius:12px;padding:12px 14px}
+.gPesBox small{display:block;font-size:.72rem;text-transform:uppercase;letter-spacing:.08em;color:var(--led);font-weight:700}
+.gPesBox b{display:block;font-family:var(--display);font-stretch:condensed;font-size:2.4rem;line-height:1.05;color:#fff}
+.gPesBox span{display:block;font-size:.78rem;color:#c9d3df;margin-top:2px}
+.gChips{display:flex;flex-wrap:wrap;gap:5px}.gChips button{padding:4px 9px;font-size:.8rem;border-radius:99px}.gChips button.sel{background:var(--lima-claro);border-color:var(--lima)}
+.gHeat{border-collapse:collapse;font-size:.85rem;table-layout:fixed;width:100%;max-width:100%}
+.gHeat td{border:1px solid var(--surface)!important;border-radius:6px}
+.gHeat td,.gHeat th{overflow:hidden;white-space:nowrap}
+.gHeat tbody .gHc.p{white-space:normal;word-break:break-all;font-size:.64rem!important;line-height:1.05;color:#2f6b3a}.gHeat .gHm{padding-left:2px!important;text-align:right!important;font-size:.72rem!important}
+.gHeat col.cC{width:54px}.gHeat col.cM{width:28px}
+.gHeat td{font-size:.74rem!important;padding:6px 0!important;min-width:0!important}
+.gHeat .gHc{font-size:.78rem!important;overflow:hidden;text-overflow:ellipsis;max-width:62px}
+.gHeat th{padding:2px;text-align:center;font-size:.72rem;line-height:1.05}.gHeat th small{display:block;font-size:.6rem;color:var(--muted)}
+.gHeat td{text-align:center;padding:7px 0;min-width:26px;border-radius:5px;border:0;font-weight:700;cursor:pointer}
+.gHeat td.vazio{color:#c4ccd5;font-weight:400}
+.gHeat .gHc{text-align:left;white-space:nowrap;font-family:var(--display);font-stretch:condensed;font-size:.95rem;padding-right:4px;position:sticky;left:0;background:var(--surface)}
+.gHeat .gHm{font-weight:700;padding-left:4px;color:var(--fg)}
+.gLegNota{display:flex;flex-wrap:wrap;gap:3px}.gLegNota span{flex:1;min-width:30px;text-align:center;border-radius:5px;padding:3px 0;font-weight:700;font-size:.8rem}.gLegNota small{display:block;font-size:.6rem;font-weight:600}
+.gRacaAdd{display:flex;gap:6px}.gRacaAdd input{flex:1;min-width:0}
+.gHero{background:var(--accent);color:#fff;border-radius:14px;padding:14px 16px}
+.gHero small{display:block;font-size:.72rem;text-transform:uppercase;letter-spacing:.08em;color:var(--led);font-weight:700}
+.gHero b{display:block;font-family:var(--display);font-stretch:condensed;font-size:2.3rem;line-height:1.05;white-space:nowrap}
+.gHero span{display:block;font-size:.8rem;color:#c9d3df;margin-top:3px}
+.gHero.pos{background:#2f6b3a}.gHero.pos small{color:#d9ef7a}.gHero.neg{background:#9e2a24}.gHero.neg small{color:#ffd2cf}
+.gCustos td,.gCustos th{font-size:.84rem;white-space:nowrap;padding-left:2px;padding-right:2px}.gCustos td:first-child{white-space:normal}.gCustos td:first-child{font-weight:600}.gCustos tr.grp td{font-weight:800}
+.stat b small{font-size:.7rem;font-family:var(--body);color:var(--muted)}
+.gLoteRel{display:flex;flex-direction:column;gap:8px;width:100%;text-align:left;padding:10px;background:var(--surface);border-radius:14px}
+.gRelTopo{display:flex;gap:10px;align-items:center}
+.gRelTopo .gSelo{width:auto;min-width:64px!important;max-width:120px!important;padding:5px 8px;flex-direction:column}
+.gRelTopo .gSelo small{font-size:.55rem}.gRelTopo .gSelo b.t1,.gRelTopo .gSelo b.t2{font-size:1.35rem}.gRelTopo .gSelo b.t3{font-size:1rem}.gRelTopo .gSelo b.t4{font-size:.85rem}
+.gRelNums{background:var(--chip);border-radius:10px;padding:8px 6px;row-gap:8px!important}.gRelNums b{font-size:1.1rem}
+.gLoteNums span.ok b{color:var(--ok)}.gLoteNums span.bad b{color:var(--bad)}
+.gTab td small{white-space:nowrap}
+.gEvol{width:100%;height:auto;display:block;touch-action:pan-y}
+.gEvol .gEvRot{font-size:10px;font-weight:700;fill:var(--muted);text-transform:uppercase;letter-spacing:.04em}
+.gEvol .gEvUlt{font-size:13px;font-weight:800;fill:var(--fg)}
+.gEvol .gEvEixo{font-size:9px;fill:var(--muted)}.gEvol .gEvVazio{font-size:11px;fill:var(--muted)}
+.gEvol .gEvBase{stroke:var(--line);stroke-width:1}
+.gEvol .gEvLinha{fill:none;stroke:#2a78d6;stroke-width:2;stroke-linejoin:round;stroke-linecap:round}
+.gEvol .gEvPto{fill:#2a78d6;stroke:var(--surface);stroke-width:1.5}
+.gEvol .gEvCursor{stroke:var(--fg);stroke-width:1;stroke-dasharray:3 3}
+.gEvol .gEvHit{fill:transparent;cursor:crosshair}
+.gEvLeitura{font-size:.82rem;color:var(--muted);background:var(--chip);border-radius:8px;padding:6px 8px;min-height:2.1em}.gEvLeitura b{color:var(--fg)}
+.gVers{display:flex;flex-direction:column;gap:2px;padding:6px 0;border-bottom:1px solid var(--line);font-size:.86rem}.gVers span{color:var(--muted)}
+.gNavData{display:flex;align-items:stretch;gap:6px}
+.gSeta{flex:0 0 42px;padding:0;font-size:1.1rem;background:var(--accent);color:#fff;border-color:var(--accent)}
+.gDataBox{flex:1;min-width:0;position:relative;margin:0;display:flex;align-items:center;justify-content:center;background:var(--bg);border:2px solid var(--line);border-radius:10px;min-height:46px;padding:0 6px;cursor:pointer;text-transform:none;letter-spacing:0;color:var(--fg);font-size:1rem}
+.gDataBox span{font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.gDataBox i{font-style:normal;font-size:.75rem;background:var(--lima);border-radius:99px;padding:1px 7px;margin-left:4px}
+.gDataBox input{position:absolute;inset:0;opacity:0;width:100%;height:100%;border:0;padding:0;cursor:pointer}
+.gHoje{align-self:flex-start;margin-top:6px}
+#gBox .stat b{font-size:1.18rem;line-height:1.15}
+.stat b,.res b,.gLoteNums b{white-space:nowrap;display:block;overflow:hidden}
+.stat div,.res div{min-width:0}
+#gBox .stat small{font-size:.6rem;letter-spacing:.02em;overflow-wrap:normal;word-break:normal;hyphens:none}
 .gSelo{max-width:36%}
 .gLoteNums{display:grid!important;grid-template-columns:repeat(3,minmax(0,1fr));gap:0 6px}
-.gLoteNums span{display:flex;flex-direction:column;line-height:1.1;font-size:.72rem;white-space:nowrap}.gLoteNums b{font-size:1.2rem!important}
+.gLoteNums span{display:flex;flex-direction:column;line-height:1.1;font-size:.72rem;white-space:nowrap;min-width:0;overflow:hidden}.gLoteNums b{font-size:1.2rem}
 .gSelo{width:96px;min-width:96px!important;max-width:96px!important;padding:8px 6px}
 .gSelo b{word-break:keep-all;overflow-wrap:normal;white-space:nowrap}
 .gSelo b.t1{font-size:2.3rem}.gSelo b.t2{font-size:1.75rem}.gSelo b.t3{font-size:1.08rem}.gSelo b.t4{font-size:.86rem}
@@ -453,9 +528,9 @@ input.gRs{font-variant-numeric:tabular-nums}
   <div class="menu" id="menu">
   <nav class="tabs" role="tablist">
     <button id="tabGrpGest" role="tab" aria-selected="false">Gestão</button>
-    <button id="tabGrpTrato" role="tab" aria-selected="true">Tratos</button>
+    <button id="tabGrpTrato" role="tab" aria-selected="false">Tratos</button>
   </nav>
-  <div class="subtabs sub3" id="subTrato">
+  <div class="subtabs sub3" id="subTrato" hidden>
     <button id="tabPrev" aria-selected="false">Previsto</button>
     <button id="tabTrato" aria-selected="true">Tratar</button>
     <button id="tabHist" aria-selected="false">Histórico</button>
@@ -711,7 +786,7 @@ input.gRs{font-variant-numeric:tabular-nums}
 <div class="toast" id="toast" hidden></div>
 <script>
 'use strict';
-const APP_VERSAO='4';
+const APP_VERSAO='5';
 const APP_DATA='17/10/2026';
 const KEY='confinamento-completo-v1';
 const $=id=>document.getElementById(id);
@@ -1392,11 +1467,16 @@ function aba(qual){
   if(qual==='prev'&&$('viewPrev').dataset.aberta!=='1')linhaSel='T'; // filtro do Previsto volta para Todos
   $('viewPrev').dataset.aberta=qual==='prev'?'1':'';
   if(qual==='trato')caberTabela($('tbCur'));if(qual==='hist')caberTabela($('tbHist'));
-  $('tabPrev').setAttribute('aria-selected',String(qual==='prev'));$('tabTrato').setAttribute('aria-selected',String(qual==='trato'));$('tabHist').setAttribute('aria-selected',String(qual==='hist'));$('tabGrpGest').setAttribute('aria-selected',String(qual==='gest'));$('tabGrpTrato').setAttribute('aria-selected',String(qual!=='gest'));$('subGest').hidden=qual!=='gest';$('subTrato').hidden=qual==='gest';if(qual!=='gest')abaTrato=qual;if(qual==='gest'&&window.gAoAbrir)gAoAbrir();
+  $('tabPrev').setAttribute('aria-selected',String(qual==='prev'));$('tabTrato').setAttribute('aria-selected',String(qual==='trato'));$('tabHist').setAttribute('aria-selected',String(qual==='hist'));if(menuAberto)abrirMenu(qual==='gest'?'gest':'trato');if(qual!=='gest')abaTrato=qual;if(qual==='gest'&&window.gAoAbrir)gAoAbrir();
   if(qual==='hist')renderHist();if(qual==='prev')renderPrev();window.scrollTo({top:0});
 }
 let abaTrato='trato';
-$('tabGrpTrato').onclick=()=>aba(abaTrato||'trato');
+/* menu de cima: começa só com Gestão e Tratos; toca para abrir os botões, toca de novo para esconder */
+var menuAberto=null;
+function abrirMenu(g){menuAberto=g;$('subGest').hidden=g!=='gest';$('subTrato').hidden=g!=='trato';
+  $('tabGrpGest').setAttribute('aria-selected',String(g==='gest'));$('tabGrpTrato').setAttribute('aria-selected',String(g==='trato'));}
+function tocarGrupo(g){if(menuAberto===g){abrirMenu(null);return;}abrirMenu(g);aba(g==='gest'?'gest':(abaTrato||'trato'));}
+$('tabGrpTrato').onclick=()=>tocarGrupo('trato');
 $('tabPrev').onclick=()=>aba('prev');
 $('tabTrato').onclick=()=>aba('trato');
 $('tabHist').onclick=()=>aba('hist');
