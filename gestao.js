@@ -943,7 +943,7 @@ window.gAoAbrir=()=>{gRender();if(navigator.onLine)gSync(true).catch(()=>{});};
 window.gRenomearCurral=(de,para)=>{const hj=hojeKey();gTodos('lote').forEach(l=>{if(ativo(l)&&curralEm(l,hj)===de){const x=JSON.parse(JSON.stringify(l));setHist(x.curr,hj,{c:para});gPut(x);}});};
 
 /* valores nos quadros sempre numa linha só: se não couber, diminui a letra até caber */
-function encaixarValores(){document.querySelectorAll('.stat b,.res b,.gLoteNums b,.gMini3 b,.gHero b,#cBox .cbCur b').forEach(b=>{if(!b.offsetParent)return;b.style.fontSize='';
+function encaixarValores(){document.querySelectorAll('.stat b,.res b,.gLoteNums b,.gMini3 b,.gHero b,#cBox .cbCur b,#acBox .cbCur b').forEach(b=>{if(!b.offsetParent)return;b.style.fontSize='';
   let f=parseFloat(getComputedStyle(b).fontSize),n=0;if(b.scrollWidth>b.clientWidth+1&&b.clientWidth>0){f=Math.max(9,Math.floor(f*b.clientWidth/b.scrollWidth*2)/2);b.style.fontSize=f+'px';}
   while(b.scrollWidth>b.clientWidth+1&&f>9&&n<20){f-=0.5;b.style.fontSize=f+'px';n++;}});}
 let encTimer=null;new MutationObserver(()=>{clearTimeout(encTimer);encTimer=setTimeout(encaixarValores,30);}).observe(document.querySelector('.wrap'),{childList:true,subtree:true,characterData:true});
@@ -963,7 +963,12 @@ function sugestaoCarga(trato,racId){const hj=hojeKey(),m=(S.prev||{})[String(tra
 function itensCarga(racId,total){const r=G.it[racId];const cp=r&&!r.del?compRacao(r,hojeKey()):null;if(!cp)return [];
   let resto=Math.round(total);return cp.itens.map((i,k,a)=>{const kg=k===a.length-1?resto:Math.round(total*i.pMN/100);resto-=kg;return {ins:i.ins?i.ins.uid:'',nome:i.nome,pMN:i.pMN,prev:kg,ini:null,fim:null,real:null};});}
 const cAtiva=()=>CG.ativa||null;
-function cRender(){const b=$('cBox');if(!b)return;b.innerHTML=cAtiva()?cTelaBatida():cTelaNova();b.insertAdjacentHTML('beforeend',cTelaDia());}
+/* a mesma batida aparece no Carregar manual (#cBox) e no Carregar da Automação (#acBox) */
+const cAuto=()=>!!($('viewAutoC')&&!$('viewAutoC').hidden);
+const cCaixa=()=>$(cAuto()?'acBox':'cBox');
+function cRender(){const auto=cAuto(),b=$(auto?'acBox':'cBox'),o=$(auto?'cBox':'acBox');if(!b)return;if(o&&!auto)o.innerHTML='';
+  if(auto&&window.acTela){b.innerHTML=acTela(cAtiva()?null:cTelaNova(),cTelaDia());if(window.acDepois)acDepois();return;}
+  b.innerHTML=cAtiva()?cTelaBatida():cTelaNova();b.insertAdjacentHTML('beforeend',cTelaDia());}
 function cTelaNova(){const R=gTodos('racao').sort(porNome);if(!CG.trato)CG.trato=S.tratoSel||1;if(!CG.rac||!G.it[CG.rac]||G.it[CG.rac].del)CG.rac=R[0]?R[0].uid:'';
   if(!R.length)return `<section class="panel"><h2>Carregar vagão</h2><p class="note">Cadastre a ração primeiro em Gestão → Rações.</p></section>`;
   const sg=sugestaoCarga(CG.trato,CG.rac);if(CG.totalDe!==CG.trato+'|'+CG.rac){CG.total=sg.tot||CG.total||0;CG.totalDe=CG.trato+'|'+CG.rac;cSave();}
@@ -1010,33 +1015,34 @@ function cTelaDia(){const dia=CG.verDia||hojeKey(),L=cargasDia(dia);
 function cTeclado(campo){if(bloqueado())return;cTec=campo;const A=cAtiva(),it=A&&A.itens[A.atual];
   const v=campo==='total'?CG.total:it?it[campo]:null;cBuf=ok(v)&&v?String(Math.round(v)):'';
   $('ctNome').textContent=campo==='total'?'Total a carregar (kg)':campo==='ini'?'Balança no início (kg)':'Balança no final (kg)';cMostra();$('tecCarga').hidden=false;
-  document.body.classList.add('comteclado');document.querySelectorAll('#cBox [data-ct]').forEach(e=>e.classList.toggle('sel',e.dataset.ct===campo));
-  requestAnimationFrame(()=>{const f=document.querySelector(`#cBox [data-ct="${campo}"]`);if(!f)return;const r=f.getBoundingClientRect(),livre=innerHeight-$('tecCarga').offsetHeight;
+  document.body.classList.add('comteclado');cCaixa().querySelectorAll('[data-ct]').forEach(e=>e.classList.toggle('sel',e.dataset.ct===campo));
+  requestAnimationFrame(()=>{const f=cCaixa().querySelector(`[data-ct="${campo}"]`);if(!f)return;const r=f.getBoundingClientRect(),livre=innerHeight-$('tecCarga').offsetHeight;
     const mb=typeof topoLivre==='function'?topoLivre():80;if(r.bottom>livre-12||r.top<mb)window.scrollBy({top:r.top-mb,behavior:'smooth'});});}
 function cMostra(){$('ctValor').textContent=cBuf?nf(+cBuf):'—';}
-function cFecha(){cTec=null;$('tecCarga').hidden=true;document.body.classList.remove('comteclado');document.querySelectorAll('#cBox [data-ct].sel').forEach(e=>e.classList.remove('sel'));}
+function cFecha(){cTec=null;$('tecCarga').hidden=true;document.body.classList.remove('comteclado');document.querySelectorAll('#cBox [data-ct].sel,#acBox [data-ct].sel').forEach(e=>e.classList.remove('sel'));}
 function cConfirma(){const v=cBuf===''?null:+cBuf,A=cAtiva();
   if(cTec==='total'){CG.total=v||0;cSave();}
   else if(A){const it=A.itens[A.atual];it[cTec]=v;if(cTec==='ini'&&v!=null&&!ok(it.fim))it.fim=null;cSave();}
-  const prox=cTec==='ini'&&A?'fim':null;cFecha();cRender();if(prox)cTeclado(prox);}
+  const prox=cTec==='ini'&&A&&!cAuto()?'fim':null;cFecha();cRender();if(prox)cTeclado(prox);}
 (function(){const d=document.createElement('div');d.className='teclado';d.id='tecCarga';d.hidden=true;
   d.innerHTML=`<div class="tecTopo"><span id="ctNome"></span><b id="ctValor">—</b></div><div class="tecGrade">${[1,2,3,4,5,6,7,8,9].map(n=>`<button data-k="${n}">${n}</button>`).join('')}<button data-k="limpar" class="tecSec">Limpar</button><button data-k="0">0</button><button data-k="del" class="tecSec">⌫</button></div><div class="tecAcoes"><button data-k="fechar" class="tecSec">Fechar</button><button data-k="ok" class="tecOk">OK</button></div>`;
   document.body.appendChild(d);d.addEventListener('pointerdown',e=>e.preventDefault());
   d.addEventListener('click',e=>{const b=e.target.closest('button[data-k]');if(!b)return;const k=b.dataset.k;
     if(k==='fechar')return cFecha();if(k==='ok')return cConfirma();if(k==='limpar')cBuf='';else if(k==='del')cBuf=cBuf.slice(0,-1);else if(cBuf.length<6)cBuf=(cBuf+k).replace(/^0+(?=\d)/,'');cMostra();});})();
-$('cBox').addEventListener('click',e=>{
+function cClique(e){
   const inp=e.target.closest('[data-ct]');if(inp)return cTeclado(inp.dataset.ct);
   const b=e.target.closest('[data-c],[data-g]');if(!b)return;
-  if(b.dataset.g==='dataPasso'||b.dataset.g==='dataHoje'){const i=$(b.dataset.alvo);i.value=b.dataset.g==='dataHoje'?hojeKey():somaDias(i.value||hojeKey(),+b.dataset.n);CG.verDia=i.value;cSave();return cRender();}
+  if(b.dataset.g==='dataPasso'||b.dataset.g==='dataHoje'){const i=cCaixa().querySelector('#'+b.dataset.alvo)||$(b.dataset.alvo);i.value=b.dataset.g==='dataHoje'?hojeKey():somaDias(i.value||hojeKey(),+b.dataset.n);CG.verDia=i.value;cSave();return cRender();}
   const a=b.dataset.c,A=cAtiva();if(!a)return;
   if(a==='imgCarga'||a==='xlsCarga')return a==='imgCarga'?imgCarga():xlsCarga();
   if(bloqueado())return;
   if(a==='iniciar'){const r=G.it[CG.rac],its=itensCarga(CG.rac,CG.total);if(!its.length)return toast('Ração sem fórmula');
-    CG.ativa={dia:hojeKey(),trato:+CG.trato,rac:CG.rac,racNome:r.nome,total:CG.total,itens:its,atual:0,ts0:Date.now()};cSave();cRender();window.scrollTo({top:0});return cTeclado('ini');}
+    CG.ativa={dia:hojeKey(),trato:+CG.trato,rac:CG.rac,racNome:r.nome,total:CG.total,itens:its,atual:0,ts0:Date.now()};cSave();cRender();window.scrollTo({top:0});if(cAuto()){if(window.acIniciou)acIniciou();return;}return cTeclado('ini');}
   if(!A&&a!=='apagaCarga')return;
   if(a==='escolher'){A.escolha=!A.escolha;cSave();return cRender();}
   if(a==='ir'){A.atual=+b.dataset.i;A.escolha=false;cSave();return cRender();}
   if(a==='ant'||a==='prox'){A.atual=Math.max(0,Math.min(A.itens.length-1,A.atual+(a==='ant'?-1:1)));const it=A.itens[A.atual],pv=A.itens[A.atual-1];if(a==='prox'&&!ok(it.ini)&&pv&&ok(pv.fim))it.ini=pv.fim;cSave();return cRender();}
+  if(a==='registrar'&&cAuto())return window.acRegistrar&&acRegistrar();
   if(a==='registrar'){const it=A.itens[A.atual];if(!(ok(it.ini)&&ok(it.fim)&&it.fim>it.ini))return toast('A balança no final precisa ser maior que no início');
     it.real=it.fim-it.ini;it.hora=new Date().toTimeString().slice(0,5);
     const k=A.itens.findIndex((x,j)=>j>A.atual&&!ok(x.real)),nx=k>=0?k:A.itens.findIndex(x=>!ok(x.real));
@@ -1050,11 +1056,13 @@ $('cBox').addEventListener('click',e=>{
       itens:A.itens.map(x=>({ins:x.ins,nome:x.nome,pMN:x.pMN,prev:x.prev,ini:x.ini,fim:x.fim,real:ok(x.real)?x.real:null,hora:x.hora||''}))});
     CG.ativa=null;CG.verDia=A.dia;cSave();toast('Batida salva');cRender();window.scrollTo({top:0});return;}
   if(a==='apagaCarga'){if(!confirm('Apagar esta batida?'))return;gDel(b.dataset.id);return cRender();}
-});
-$('cBox').addEventListener('change',e=>{const t=e.target;
+}
+$('cBox').addEventListener('click',cClique);$('acBox').addEventListener('click',cClique);
+function cMuda(e){const t=e.target;
   if(t.id==='cTrato'){CG.trato=+t.value;cSave();cRender();}
   if(t.id==='cRac'){CG.rac=t.value;cSave();cRender();}
-  if(t.id==='cDia'){CG.verDia=t.value||hojeKey();cSave();cRender();}});
+  if(t.id==='cDia'){CG.verDia=t.value||hojeKey();cSave();cRender();}}
+$('cBox').addEventListener('change',cMuda);$('acBox').addEventListener('change',cMuda);
 function imgCarga(){const dia=CG.verDia||hojeKey(),L=cargasDia(dia);
   enviarImg(`Batidas do vagão · ${dB(dia)}`,L.map(c=>{const tp=c.itens.reduce((a,x)=>a+x.prev,0),tr=c.itens.reduce((a,x)=>a+(+x.real||0),0);
     return {cab:`${c.hora} · Trato ${c.trato} · ${c.racNome}`,cols:[['Produto',330,'l'],['Previsto',170,'r'],['Carregado',170,'r'],['Diferença',170,'r']],
