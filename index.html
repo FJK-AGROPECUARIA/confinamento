@@ -83,7 +83,7 @@ pre.msg{background:var(--chip);border-radius:10px;padding:12px;margin:0;white-sp
 
 .menu{position:sticky;top:env(safe-area-inset-top,0px);z-index:4;background:var(--bg);padding-block:6px;display:flex;flex-direction:column;gap:6px;box-shadow:0 6px 8px -8px rgba(17,37,61,.25)}
 .tabs{display:flex;gap:6px}
-.subtabs{display:grid;gap:6px}.subtabs.sub3{grid-template-columns:repeat(3,1fr)}.subtabs.sub4{grid-template-columns:repeat(4,1fr)}
+.subtabs{display:grid;gap:6px}.subtabs.sub3{grid-template-columns:repeat(3,1fr)}.subtabs.sub4{grid-template-columns:repeat(4,1fr)}.subtabs.sub5{grid-template-columns:repeat(5,1fr)}.subtabs.sub5 button{font-size:.8rem;padding:7px 2px}
 .subtabs button{border-radius:99px;padding:7px 4px;font-size:.88rem;background:var(--surface)}
 .subtabs button[aria-selected="true"]{background:var(--lima);border-color:var(--lima);color:var(--fg)}
 .tabs button{flex:1;border-radius:99px;padding:10px}
@@ -553,11 +553,12 @@ body.comteclado .wrap{padding-bottom:300px!important}
     <button id="tabGrpGest" role="tab" aria-selected="false">Gestão</button>
     <button id="tabGrpTrato" role="tab" aria-selected="false">Tratos</button>
   </nav>
-  <div class="subtabs sub4" id="subTrato" hidden>
+  <div class="subtabs sub5" id="subTrato" hidden>
     <button id="tabPrev" aria-selected="false">Previsto</button>
     <button id="tabCarga" aria-selected="false">Carregar</button>
     <button id="tabTrato" aria-selected="true">Tratar</button>
     <button id="tabHist" aria-selected="false">Histórico</button>
+    <button id="tabAuto" aria-selected="false">Automação</button>
   </div>
   <div class="subtabs sub4" id="subGest" hidden>
     <button data-gt="home" id="tabGest">Resumo</button>
@@ -739,6 +740,7 @@ body.comteclado .wrap{padding-bottom:300px!important}
 </div>
   <div id="viewCarga" hidden><div class="gTela" id="cBox"></div></div>
   <div id="viewGest" hidden><div class="gTela" id="gBox"></div></div>
+  <div id="viewAuto" hidden><div class="gTela" id="aBox"></div></div>
   <textarea id="copiaFallback" hidden readonly></textarea>
 </div>
 <div class="teclado" id="teclado" hidden>
@@ -811,8 +813,8 @@ body.comteclado .wrap{padding-bottom:300px!important}
 <div class="toast" id="toast" hidden></div>
 <script>
 'use strict';
-const APP_VERSAO='8';
-const APP_DATA='17/10/2026';
+const APP_VERSAO='9';
+const APP_DATA='18/10/2026';
 const KEY='confinamento-completo-v1';
 const $=id=>document.getElementById(id);
 const fmt=n=>(n==null||isNaN(n))?'—':Math.round(n).toLocaleString('pt-BR');
@@ -1489,7 +1491,7 @@ function aba(qual){
   if(typeof fecharBal==='function'&&balCampo)fecharBal();
   if(qual!=='prev'&&typeof modoOrdem==='function')modoOrdem(false);
   if(typeof camStream!=='undefined'&&camStream)fecharCamera();
-  $('viewPrev').hidden=qual!=='prev';$('viewTrato').hidden=qual!=='trato';$('viewHist').hidden=qual!=='hist';$('viewGest').hidden=qual!=='gest';$('viewCarga').hidden=qual!=='carga';$('tabCarga').setAttribute('aria-selected',String(qual==='carga'));if(qual==='carga'&&window.cAoAbrir)cAoAbrir();
+  $('viewPrev').hidden=qual!=='prev';$('viewTrato').hidden=qual!=='trato';$('viewHist').hidden=qual!=='hist';$('viewGest').hidden=qual!=='gest';$('viewCarga').hidden=qual!=='carga';$('viewAuto').hidden=qual!=='auto';$('tabAuto').setAttribute('aria-selected',String(qual==='auto'));if(qual==='auto'&&window.aAoAbrir)aAoAbrir();$('tabCarga').setAttribute('aria-selected',String(qual==='carga'));if(qual==='carga'&&window.cAoAbrir)cAoAbrir();
   if(qual==='hist'&&$('viewHist').dataset.aberta!=='1'){$('fDia').value='hoje';$('hCal').hidden=true;localSel='T';}
   $('viewHist').dataset.aberta=qual==='hist'?'1':'';
   if(qual==='prev'&&$('viewPrev').dataset.aberta!=='1')linhaSel='T'; // filtro do Previsto volta para Todos
@@ -2296,7 +2298,7 @@ Promise.resolve(iniciar()).catch(()=>{}).then(()=>{
    Depois de atualizar, volta sozinho para onde estava (sem pedir senha de novo). */
 function podeAtualizar(){
   if(document.body.classList.contains('naInicio')||modoVer)return !!$('tecSenha').hidden;
-  return !balCampo&&tecIdx==null&&!S.ini&&!S.fim&&!FILA.length&&!camStream&&$('revBox').hidden&&$('editBox').hidden;}
+  return !(window.autoOcupado&&autoOcupado())&&!balCampo&&tecIdx==null&&!S.ini&&!S.fim&&!FILA.length&&!camStream&&$('revBox').hidden&&$('editBox').hidden;}
 let atualizarPend=false;
 function recarregarQuandoPuder(){
   if(!podeAtualizar()){if(!atualizarPend){atualizarPend=true;const t=setInterval(()=>{if(podeAtualizar()){clearInterval(t);recarregarQuandoPuder();}},5000);}return;}
@@ -2325,5 +2327,6 @@ if('serviceWorker' in navigator){
 }
 </script>
 <script src="gestao.js"></script>
+<script src="automacao.js"></script>
 </body>
 </html>
