@@ -14,7 +14,10 @@ gLoad();
 const gNum=v=>{if(v==null)return NaN;let s=String(v).trim().replace(/\s/g,'').replace(/^R\$/i,'').replace(/%$/,'');if(!s)return NaN;if(s.includes(','))s=s.replace(/\./g,'').replace(',','.');return parseFloat(s);};
 const ok=n=>n!=null&&isFinite(n);
 const nf=(n,d=0)=>ok(n)?n.toLocaleString('pt-BR',{minimumFractionDigits:d,maximumFractionDigits:d}):'—';
-const rs=(n,d=2)=>ok(n)?'R$ '+nf(n,d):'—';
+const rs=(n,d=2)=>ok(n)?'R$ '+nf(n,Math.max(2,d)):'—';
+const rsIn=n=>ok(n)?'R$ '+nf(n,2):'';
+/* máscara de dinheiro: digita só números, vira R$ 1.234,56 */
+function mascaraRs(el){const dg=el.value.replace(/\D/g,'').replace(/^0+(?=\d)/,'');el.value=dg?'R$ '+nf(+dg/100,2):'';}
 const pc=(n,d=1)=>ok(n)?nf(n,d)+'%':'—';
 const vIn=n=>ok(n)?String(+(+n).toFixed(4)).replace('.',','):'';
 const dB=k=>k?diaBR(k):'—';
@@ -63,14 +66,9 @@ const gEditando=()=>{const a=document.activeElement;return a&&$('gBox').contains
 setInterval(()=>{if(modoVer&&!$('viewGest').hidden&&navigator.onLine&&document.visibilityState==='visible')gSync(true).catch(()=>{});},20000);
 
 /* ---------- configurações ---------- */
-const NOTAS_PADRAO=[
-  {n:0,t:'Cocho limpo, lambido',p:10},
-  {n:1,t:'Pouca sobra (ideal)',p:0},
-  {n:2,t:'Sobra pequena',p:-5},
-  {n:3,t:'Sobra média',p:-10},
-  {n:4,t:'Muita sobra',p:-15}];
+const NOTAS_PADRAO=[-5,-4,-3,-2,-1,0,1,2,3,4,5].map(n=>({n,t:n>0?'Aumentar':n<0?'Diminuir':'Manter',p:n*5}));
 function gCfg(){const c=G.it.config&&!G.it.config.del?G.it.config:{uid:'config',tipo:'config'};
-  if(!Array.isArray(c.taxa))c.taxa=[];if(!Array.isArray(c.notas)||!c.notas.length)c.notas=NOTAS_PADRAO.map(x=>Object.assign({},x));
+  if(!Array.isArray(c.taxa))c.taxa=[];if(!Array.isArray(c.notas)||!c.notas.length||c.notasV!==2)c.notas=NOTAS_PADRAO.map(x=>Object.assign({},x));
   if(!ok(c.arred))c.arred=10;if(!ok(c.pvIni))c.pvIni=2.2;if(!ok(c.rc))c.rc=52;return c;}
 const taxaEm=dia=>{const v=vig(gCfg().taxa,dia);return v?+v.rs||0:0;};
 
@@ -101,7 +99,7 @@ function pesoEm(l,dia,pz){if(!l.ent)return NaN;let b={dia:l.ent.dia,peso:+l.ent.
 const fimLote=l=>{if(cabAtual(l)>0)return null;const sd=saidasDe(l);return sd.length?sd[sd.length-1].dia:null;};
 const ativo=l=>cabAtual(l)>0||(l.ent&&l.ent.dia>hojeKey());
 const lotesAtivos=()=>gTodos('lote').filter(ativo).sort(porNome);
-function valorCompra(l){const e=l.ent||{};const cab=+e.cab||0,peso=+e.peso||0,p=+e.preco||0;
+function valorCompra(l){const e=l.ent||{};const cab=+e.cab||0,peso=+(e.pesoC||e.peso)||0,p=+e.preco||0;
   const v=e.unid==='cab'?cab*p:e.unid==='kg'?cab*peso*p:cab*peso/30*p;return v+(+e.outros||0);}
 const arrobaVenda=s=>(+s.cab||0)*(+s.peso||0)*((+s.rc||0)/100)/15;
 function valorVenda(s){const cab=+s.cab||0,peso=+s.peso||0,p=+s.preco||0;
@@ -118,7 +116,7 @@ function diaLote(l,dia,X){
   const mn=tot*cab/cabTot,rac=racaoEm(l,dia),cp=rac?compRacao(rac,dia):null;
   const ms=cp?mn*cp.ms/100:NaN,peso=pesoEm(l,dia,X.pz.get(l.uid)),cabOp=cabEm(l,dia,sd);
   return {dia,c,cab,cabOp,peso,mn,ms,mnCab:mn/cab,msCab:ms/cab,pv:ms/cab/peso*100,
-    custoR:cp?mn*cp.custoMN:NaN,custoOp:cabOp*taxaEm(dia),rac:rac?rac.nome:'—',tem:tot>0,juntos:juntos.length};
+    custoR:cp?mn*cp.custoMN:NaN,custoOp:cabOp*taxaEm(dia),rac:rac?rac.nome:'—',tem:tot>0,juntos:juntos.length,cp};
 }
 function resumoLote(l,ate){
   const X=gCtx(),ini=l.ent.dia,fim=ate||fimLote(l)||hojeKey();
@@ -142,8 +140,9 @@ const st=(rot,val,cls)=>`<div class="${cls||''}"><small>${rot}</small><b class="
 function campo(f){const id='gf_'+f.k,v=f.v==null?'':f.v;let inp;
   if(f.t==='sel')inp=`<select id="${id}">${f.op.map(([a,b])=>`<option value="${esc(a)}"${String(a)===String(v)?' selected':''}>${esc(b)}</option>`).join('')}</select>`;
   else if(f.t==='dia')inp=`<input type="date" id="${id}" value="${esc(v)}">`;
+  else if(f.t==='rs')inp=`<input type="text" inputmode="numeric" class="gRs" id="${id}" value="${esc(rsIn(f.v===''||f.v==null?NaN:+f.v))}" placeholder="R$ 0,00" autocomplete="off">`;
   else if(f.t==='num')inp=`<input type="text" inputmode="decimal" id="${id}" value="${esc(vIn(v))}" placeholder="${esc(f.ph||'')}" autocomplete="off">`;
-  else inp=`<input type="text" id="${id}" value="${esc(v)}" placeholder="${esc(f.ph||'')}" autocomplete="off">`;
+  else inp=`<input type="text" id="${id}" value="${esc(v)}" placeholder="${esc(f.ph||'')}" autocomplete="off"${f.lista?` list="${f.lista}"`:''}>`;
   return `<div class="gCampo${f.meia?' meia':''}"><label for="${id}">${esc(f.l)}${f.suf?` <span class="gSuf">(${esc(f.suf)})</span>`:''}</label>${inp}${f.ajuda?`<p class="note">${f.ajuda}</p>`:''}</div>`;}
 const fv=k=>{const e=$('gf_'+k);return e?e.value.trim():'';};
 const fn=k=>gNum(fv(k));
@@ -153,55 +152,111 @@ const opInsumos=()=>gTodos('insumo').sort(porNome).map(r=>[r.uid,r.nome]);
 const UNID_C=[['arroba','R$ por @ (peso vivo ÷ 30)'],['cab','R$ por cabeça'],['kg','R$ por kg vivo']];
 const UNID_V=[['arroba','R$ por @ (carcaça ÷ 15)'],['cab','R$ por cabeça'],['kg','R$ por kg vivo']];
 
+const RAIZ={home:'home',lotes:'lotes',lote:'lotes',loteForm:'lotes',pesForm:'lotes',saiForm:'lotes',mudForm:'lotes',rel:'lotes',custoForm:'lotes',
+  cocho:'cocho',rels:'rels',dia:'rels',periodo:'rels',comp:'rels',racoes:'racoes',racForm:'racoes',insumos:'insumos',insForm:'insumos',cfg:'cfg'};
+function gRaiz(t){GT={t};gPilha.length=0;if($('viewGest').hidden)aba('gest');else gRender();window.scrollTo({top:0});}
 function gRender(){
   const b=$('gBox');if(!b)return;
-  const f={home:tHome,lotes:tLotes,lote:tLote,loteForm:tLoteForm,pesForm:tPesForm,saiForm:tSaiForm,mudForm:tMudForm,rel:tRelLote,
-    cocho:tCocho,dia:tDia,racoes:tRacoes,racForm:tRacForm,insumos:tInsumos,insForm:tInsForm,cfg:tCfg}[GT.t]||tHome;
+  const f={home:tHome,lotes:tLotes,lote:tLote,loteForm:tLoteForm,pesForm:tPesForm,saiForm:tSaiForm,mudForm:tMudForm,rel:tRelLote,custoForm:tCustoForm,
+    cocho:tCocho,rels:tRels,dia:tDia,periodo:tPeriodo,comp:tComp,racoes:tRacoes,racForm:tRacForm,insumos:tInsumos,insForm:tInsForm,cfg:tCfg}[GT.t]||tHome;
+  const raiz=RAIZ[GT.t]||'home';document.querySelectorAll('#subGest button[data-gt]').forEach(x=>x.setAttribute('aria-selected',String(x.dataset.gt===raiz)));
   b.innerHTML=f(GT);
   if(GT.t==='racForm')calcRacao();
   if(GT.t==='rel')calcSimul();
 }
 
-/* ---------- início ---------- */
+/* ---------- custos extras do lote (sanidade, medicamento, mão de obra…) ---------- */
+const custosDe=l=>gTodos('custo').filter(c=>c.lote===l.uid).sort(porDia);
+const TIPOS_CUSTO=['Sanidade / vacina','Medicamento','Mão de obra','Frete','Outros'];
+const SEXOS=[['','—'],['MI','Macho inteiro'],['MC','Macho castrado'],['F','Fêmea'],['MX','Misto']];
+const CATS=[['','—'],['Bezerro(a)','Bezerro(a)'],['Garrote','Garrote'],['Boi magro','Boi magro'],['Novilha','Novilha'],['Vaca','Vaca'],['Boi','Boi']];
+const SISTEMAS=[['Confinamento','Confinamento'],['Semiconfinamento','Semiconfinamento'],['Pasto com suplementação','Pasto com suplementação']];
+const RACAS=['Nelore','Anelorado','Cruzado industrial','Angus x Nelore','Mestiço leiteiro','Girolando','Tabapuã','Brahman'];
+const sexoTxt=v=>(SEXOS.find(x=>x[0]===v)||['',''])[1];
+
+/* cálculo completo de um lote (usado no relatório do lote e no comparativo) */
+function calcLote(l){
+  const fim=fimLote(l),hj=hojeKey(),ate=fim||hj,R=resumoLote(l,ate),sd=saidasDe(l);
+  const vendas=sd.filter(s=>s.mot!=='morte'),mortes=sd.filter(s=>s.mot==='morte').reduce((a,s)=>a+(+s.cab||0),0);
+  const cabE=+l.ent.cab,pesoE=+l.ent.peso,compra=valorCompra(l);
+  const outros=custosDe(l).filter(c=>c.dia<=ate).reduce((a,c)=>a+(+c.rs||0),0);
+  const cabV=vendas.reduce((a,s)=>a+(+s.cab||0),0),arrV=vendas.reduce((a,s)=>a+arrobaVenda(s),0),receita=vendas.reduce((a,s)=>a+valorVenda(s),0);
+  const pesoV=cabV?vendas.reduce((a,s)=>a+s.cab*s.peso,0)/cabV:NaN;
+  const ganhoV=vendas.reduce((a,s)=>a+s.cab*(s.peso-pesoE),0),cabDiasV=vendas.reduce((a,s)=>a+s.cab*difDias(l.ent.dia,s.dia),0);
+  const alim=R.custoR,op=R.custoOp,prod=alim+op+outros,custo=compra+prod,arrProd=cabV?arrV-cabV*pesoE/30:NaN;
+  return {fim,ate,R,vendas,mortes,cabE,pesoE,compra,outros,cabV,arrV,receita,pesoV,ganhoV,cabDiasV,alim,op,prod,custo,arrProd,
+    dias:difDias(l.ent.dia,ate),cabAt:cabAtual(l),msCab:R.ms/R.cabDias,mnCab:R.mn/R.cabDias,pv:R.pvN?R.pvS/R.pvN:NaN,
+    gmdV:cabDiasV?ganhoV/cabDiasV:NaN,custoArr:prod/arrProd,conv:R.ms/ganhoV,lucro:fim?receita-custo:NaN,custoCabDia:(alim+op)/R.cabDias};
+}
+const ordCurral=c=>{const i=(S.cadastro||[]).indexOf(c);return i<0?999:i;};
+const porCurral=(a,b)=>{const h=hojeKey(),x=ordCurral(curralEm(a,h)),y=ordCurral(curralEm(b,h));return x-y||porNome(a,b);};
+/* curral em destaque: "C-10" -> CURRAL / C-10 ; "P-REPRESA-1" -> PASTO / REPRESA-1 */
+function seloCurral(c){const p=/^P-/.test(c),t=p?c.replace(/^P-/,''):c;
+  return `<div class="gSelo${p?' pasto':''}"><small>${p?'Pasto':'Curral'}</small><b class="${t.length<=4?'t1':t.length<=6?'t2':t.length<=9?'t3':'t4'}">${esc(t||'—').replace(/-/g,'\u2011')}</b></div>`;}
+
+/* ---------- resumo ---------- */
 function tHome(){
-  const hj=hojeKey(),ont=somaDias(hj,-1),X=gCtx(),A=lotesAtivos();
-  let cab=0,mn=0,cus=0;A.forEach(l=>{cab+=cabAtual(l);const x=diaLote(l,ont,X);if(x){mn+=x.mn;cus+=(ok(x.custoR)?x.custoR:0)+x.custoOp;}});
-  const semLeit=cochoCurrais(hj).filter(c=>!G.it[idLeit(hj,c)]).length;
-  return `<section class="panel"><h2>Resumo</h2><div class="stat">${st('Lotes ativos',nf(A.length))}${st('Cabeças',nf(cab))}${st('Trato ontem',nf(mn)+' kg')}${st('Custo ontem',rs(cus,0))}</div>
-    ${semLeit?`<p class="aviso warn">Leitura de cocho de hoje: falta em ${semLeit} curral(is).</p>`:''}</section>
-  <div class="gGrade">
-    <button class="gBig" data-g="ir" data-t="lotes">🐂<b>Lotes</b><small>entrada, pesagem, venda</small></button>
-    <button class="gBig" data-g="ir" data-t="cocho">🥣<b>Leitura de cocho</b><small>ajusta o previsto</small></button>
-    <button class="gBig" data-g="ir" data-t="dia">📋<b>Relatório do dia</b><small>consumo e custo</small></button>
-    <button class="gBig" data-g="ir" data-t="racoes">🌾<b>Rações</b><small>formulação e custo</small></button>
-    <button class="gBig" data-g="ir" data-t="insumos">🧺<b>Insumos</b><small>preço e matéria seca</small></button>
-    <button class="gBig" data-g="ir" data-t="cfg">⚙️<b>Configurações</b><small>taxa e notas</small></button>
-  </div>`;
+  const hj=hojeKey(),ont=somaDias(hj,-1),X=gCtx(),A=lotesAtivos().sort(porCurral);
+  let cab=0,mn=0,ms=0,cus=0,pvP=0,cabO=0;const sexo={};
+  A.forEach(l=>{const c=cabAtual(l);cab+=c;if(l.sexo)sexo[l.sexo]=(sexo[l.sexo]||0)+c;
+    const x=diaLote(l,ont,X);if(x&&x.mn>0){mn+=x.mn;if(ok(x.ms))ms+=x.ms;cus+=(ok(x.custoR)?x.custoR:0)+x.custoOp;pvP+=x.cab*x.peso;cabO+=x.cab;}});
+  const pesoM=cab?A.reduce((a,l)=>a+cabAtual(l)*pesoEm(l,hj),0)/cab:NaN;
+  const alertas=[];
+  const semLeit=cochoCurrais(hj).filter(c=>!G.it[idLeit(hj,c)]);if(semLeit.length)alertas.push(['warn',`Leitura de cocho de hoje faltando: ${semLeit.join(', ')}`,'cocho']);
+  A.forEach(l=>{if(!racaoEm(l,hj))alertas.push(['bad',`${l.nome}: sem ração escolhida`,'lote',l.uid]);
+    const pz=pesagensDe(l),ult=pz.length?pz[pz.length-1].dia:l.ent.dia,dd=difDias(ult,hj);if(dd>=45)alertas.push(['warn',`${l.nome}: ${dd} dias sem pesagem`,'lote',l.uid]);
+    if(l.alvo&&l.gmd>0){const f=Math.ceil((l.alvo-pesoEm(l,hj))/l.gmd);if(f<=15)alertas.push(['ok',`${l.nome}: ${f<=0?'já atingiu':'atinge em '+f+' dias'} o peso de saída (${nf(l.alvo)} kg)`,'lote',l.uid]);}
+    if(l.diasPrev){const f=l.diasPrev-difDias(l.ent.dia,hj);if(f<=15)alertas.push(['ok',`${l.nome}: ${f<=0?'passou':'faltam '+f} dias ${f<=0?'dos':'para os'} ${l.diasPrev} dias de cocho previstos`,'lote',l.uid]);}});
+  gTodos('insumo').forEach(i=>{if(!ok(precoIns(i,hj)))alertas.push(['bad',`Insumo ${i.nome} sem preço`,'insumos']);});
+  const sx=Object.entries(sexo).map(([k,v])=>`${sexoTxt(k)}: ${nf(v)}`).join(' · ');
+  const linhas=A.map(l=>{const R=resumoLote(l,hj),cc=(R.custoR+R.custoOp+custosDe(l).reduce((a,c)=>a+(+c.rs||0),0))/Math.max(1,cabAtual(l));
+    return `<tr class="gClic" data-g="lote" data-id="${l.uid}"><td class="c">${esc(curralEm(l,hj))}<small>${esc(l.nome)}</small></td><td>${nf(cabAtual(l))}</td><td>${nf(difDias(l.ent.dia,hj))}</td><td>${nf(pesoEm(l,hj))}</td><td>${rs(cc,0)}</td></tr>`;}).join('');
+  return `<section class="panel"><h2>Resumo de hoje</h2>
+    <div class="stat">${st('Lotes ativos',nf(A.length))}${st('Cabeças',nf(cab))}${st('Peso médio (proj.)',nf(pesoM)+' kg')}</div>
+    ${sx?`<p class="note">${sx}</p>`:''}
+    <div class="stat">${st('Trato ontem (MN)',nf(mn)+' kg')}${st('MS/cab ontem',nf(cabO?ms/cabO:NaN,2)+' kg')}${st('% do peso vivo',pc(pvP?ms/pvP*100:NaN,2))}</div>
+    <div class="stat">${st('Custo ontem',rs(cus,0))}${st('Custo/cab/dia',rs(cabO?cus/cabO:NaN))}${st('Taxa operacional',rs(taxaEm(hj))+'/cab')}</div></section>
+  ${alertas.length?`<section class="panel"><h2>Atenção</h2>${alertas.map(a=>`<button class="gAlerta ${a[0]}" data-g="${a[2]==='lote'?'lote':'raiz'}" data-t="${a[2]}" data-id="${a[3]||''}">${esc(a[1])}</button>`).join('')}</section>`:''}
+  <section class="panel"><h2>Lotes no cocho</h2>${linhas?`<div class="tablebox"><table class="gTab"><thead><tr><th>Curral / lote</th><th>Cab</th><th>Dias</th><th>Peso</th><th>Custo/cab*</th></tr></thead><tbody>${linhas}</tbody></table></div>
+    <p class="note">* Ração + operacional + outros custos até hoje, por cabeça (sem a compra).</p>`:'<p class="note">Nenhum lote ativo. Comece por Insumos → Rações → Lotes.</p>'}</section>`;
 }
 
 /* ---------- lotes ---------- */
 function tLotes(t){
-  const hj=hojeKey(),X=gCtx(),todosL=gTodos('lote').sort(porNome),lista=t.enc?todosL.filter(l=>!ativo(l)):todosL.filter(ativo);
-  const ont=somaDias(hj,-1);
-  const cards=lista.map(l=>{const cab=cabAtual(l),r=racaoEm(l,hj),x=diaLote(l,ont,X),fim=fimLote(l);
-    return `<button class="gItem" data-g="lote" data-id="${l.uid}"><div class="gItemTopo"><b>${esc(l.nome)}</b><span class="pill">${esc(curralEm(l,hj)||'—')}</span></div>
-      <div class="gItemInfo">${fim?`Encerrado em ${dB(fim)}`:`${nf(cab)} cab · ${nf(difDias(l.ent.dia,hj))} dias · ${nf(pesoEm(l,hj))} kg proj.`}<br>${esc(r?r.nome:'sem ração')}${x&&x.mn>0?` · ontem ${nf(x.msCab,2)} kg MS/cab (${pc(x.pv,2)} PV)`:''}</div></button>`;}).join('');
-  return `${voltar('Gestão')}<section class="panel"><div class="curhead"><h2>${t.enc?'Lotes encerrados':'Lotes ativos'}</h2><span class="note">${lista.length}</span></div>
+  const hj=hojeKey(),X=gCtx(),todosL=gTodos('lote'),lista=(t.enc?todosL.filter(l=>!ativo(l)).sort(porNome):todosL.filter(ativo).sort(porCurral));
+  const ont=t.dia||somaDias(hj,-1);GT.dia=ont;const dd=dB(ont).slice(0,5);
+  const cards=lista.map(l=>{const cab=cabPres(l,ont),r=racaoEm(l,ont),x=diaLote(l,ont,X),fim=fimLote(l),c=curralEm(l,fim&&fim<ont?fim:ont);
+    const sub=[sexoTxt(l.sexo),l.raca,l.cat].filter(Boolean).join(' · ');
+    return `<button class="gLote" data-g="lote" data-id="${l.uid}">${seloCurral(c)}
+      <div class="gLoteInfo"><b>${esc(l.nome)}</b>${sub?`<span>${esc(sub)}</span>`:''}
+      ${fim&&fim<ont?`<span>Encerrado em ${dB(fim)}</span>`:l.ent.dia>ont?`<span>Entra em ${dB(l.ent.dia)}</span>`:`<div class="gLoteNums"><span><b>${nf(cab)}</b> cab</span><span><b>${nf(difDias(l.ent.dia,ont))}</b> dias</span><span><b>${nf(pesoEm(l,ont))}</b> kg</span></div>
+      <div class="gLoteNums"><span><b>${x&&x.mn>0?nf(x.mnCab,1):'—'}</b> MN/cab</span><span><b>${x&&x.mn>0?nf(x.msCab,2):'—'}</b> MS/cab</span><span><b>${x&&x.mn>0?pc(x.pv,2):'—'}</b> PV</span></div>
+      <span>${esc(r?r.nome:'sem ração')}${x&&x.mn>0?` · ${nf(x.mn)} kg no cocho em ${dd}`:` · sem trato em ${dd}`}</span>`}</div></button>`;}).join('');
+  return `<section class="panel"><div class="curhead"><h2>${t.enc?'Lotes encerrados':'Lotes ativos'}</h2><span class="note">${lista.length}</span></div>
+    <div class="gCampo"><label for="gRefDia">Ver os números do dia</label><input type="date" id="gRefDia" value="${ont}"></div>
     ${cards||`<p class="note">${t.enc?'Nenhum lote encerrado.':'Nenhum lote ainda. Toque em “+ Novo lote”.'}</p>`}
     ${t.enc?'':'<button class="lima" data-g="novoLote">+ Novo lote</button>'}
     <button data-g="ir" data-t="lotes" data-enc="${t.enc?'':'1'}">${t.enc?'Ver lotes ativos':'Ver lotes encerrados'}</button></section>`;
 }
 function tLoteForm(t){
-  const l=t.id?G.it[t.id]:null,e=(l&&l.ent)||{},hj=hojeKey(),novo=!l,cfg=gCfg();
-  const fs=[{k:'nome',l:'Nome do lote',v:l?l.nome:'',ph:'Ex.: Lote 1 - Nelore'}];
+  const l=t.id?G.it[t.id]:null,e=(l&&l.ent)||{},hj=hojeKey(),novo=!l,v=k=>l?l[k]:'';
+  const fs=[{k:'nome',l:'Nome do lote',v:v('nome'),ph:'Ex.: Lote 1 - Nelore'}];
   if(novo)fs.push({k:'curral',l:'Curral / pasto',t:'sel',op:opCurrais(),v:''});
-  fs.push({k:'dia',l:'Data de entrada',t:'dia',v:e.dia||hj,meia:1},{k:'cab',l:'Cabeças',t:'num',v:e.cab,meia:1},
-    {k:'peso',l:'Peso médio de entrada',suf:'kg',t:'num',v:e.peso,meia:1},{k:'gmd',l:'Ganho por dia (meta)',suf:'kg/cab/dia',t:'num',v:l?l.gmd:1.5,meia:1},
-    {k:'unid',l:'Preço de compra em',t:'sel',op:UNID_C,v:e.unid||'arroba'},{k:'preco',l:'Preço de compra',suf:'R$',t:'num',v:e.preco,meia:1},
-    {k:'outros',l:'Frete e outros custos de compra',suf:'R$ total',t:'num',v:e.outros,meia:1});
+  fs.push({k:'sistema',l:'Sistema',t:'sel',op:SISTEMAS,v:l?l.sistema:'Confinamento'},
+    {k:'sexo',l:'Sexo',t:'sel',op:SEXOS,v:v('sexo'),meia:1},{k:'cat',l:'Categoria',t:'sel',op:CATS,v:v('cat'),meia:1},
+    {k:'raca',l:'Raça',v:v('raca'),ph:'Ex.: Nelore',lista:'gRacas',meia:1},{k:'idade',l:'Idade',suf:'meses',t:'num',v:v('idade'),meia:1},
+    {k:'dia',l:'Data de entrada',t:'dia',v:e.dia||hj,meia:1},{k:'cab',l:'Cabeças',t:'num',v:e.cab,meia:1},
+    {k:'peso',l:'Peso médio na chegada',suf:'kg',t:'num',v:e.peso,meia:1},{k:'pesoC',l:'Peso médio de compra',suf:'kg, na origem',t:'num',v:e.pesoC,meia:1,ajuda:'Se a compra foi pelo peso da origem. Vazio = usa o da chegada.'},
+    {k:'unid',l:'Preço de compra em',t:'sel',op:UNID_C,v:e.unid||'arroba'},{k:'preco',l:'Preço de compra',t:'rs',v:e.preco,meia:1},
+    {k:'outros',l:'Frete, comissão e outros da compra',suf:'total',t:'rs',v:e.outros,meia:1},
+    {k:'origem',l:'Origem / fornecedor',v:e.origem,meia:1},{k:'gta',l:'GTA / nota fiscal',v:e.gta,meia:1},
+    {k:'ident',l:'Identificação (brincos, marca)',v:v('ident')});
   if(novo)fs.push({k:'racao',l:'Ração',t:'sel',op:opRacoes(),v:''});
-  fs.push({k:'alvo',l:'Peso de saída desejado (opcional)',suf:'kg',t:'num',v:l?l.alvo:''},{k:'obs',l:'Observação',v:l?l.obs:''});
+  fs.push({k:'gmd',l:'Ganho por dia (meta)',suf:'kg/cab/dia',t:'num',v:l?l.gmd:1.5,meia:1},{k:'diasPrev',l:'Dias de cocho previstos',t:'num',v:v('diasPrev'),meia:1},
+    {k:'alvo',l:'Peso de saída desejado',suf:'kg',t:'num',v:v('alvo'),meia:1},{k:'rcPrev',l:'Rendimento de carcaça esperado',suf:'%',t:'num',v:v('rcPrev')||'',meia:1},
+    {k:'obs',l:'Observação',v:v('obs')});
   return `${voltar()}<section class="panel"><h2>${novo?'Novo lote':'Editar lote'}</h2><div class="gForm">${fs.map(campo).join('')}</div>
+    <datalist id="gRacas">${RACAS.map(r=>`<option value="${r}">`).join('')}</datalist>
     ${novo?'':'<p class="note">Curral e ração mudam pelos botões “Mudar curral” e “Mudar ração” do lote, com a data da mudança.</p>'}
     <button class="primary" data-g="salvaLote" data-id="${t.id||''}">Salvar</button></section>`;
 }
@@ -212,38 +267,55 @@ function salvaLote(id){
   const l=id?JSON.parse(JSON.stringify(G.it[id])):{uid:novoId('lote'),tipo:'lote',curr:[],rac:[]};
   if(!id){const c=fv('curral');if(!c)return toast('Escolha o curral');l.curr=[{desde:dia,c}];const r=fv('racao');l.rac=r?[{desde:dia,r}]:[];}
   else{if(l.curr.length&&l.curr[0].desde>dia)l.curr[0].desde=dia;if(l.rac.length&&l.rac[0].desde>dia)l.rac[0].desde=dia;}
-  l.nome=nome;l.ent={dia,cab,peso,unid:fv('unid'),preco:fn('preco'),outros:fn('outros')||0};l.gmd=fn('gmd')||0;l.alvo=fn('alvo')||null;l.obs=fv('obs');
+  l.nome=nome;l.ent={dia,cab,peso,pesoC:fn('pesoC')||null,unid:fv('unid'),preco:fn('preco'),outros:fn('outros')||0,origem:fv('origem'),gta:fv('gta')};
+  l.sistema=fv('sistema');l.sexo=fv('sexo');l.cat=fv('cat');l.raca=fv('raca');l.idade=fn('idade')||null;l.ident=fv('ident');
+  l.gmd=fn('gmd')||0;l.diasPrev=fn('diasPrev')||null;l.alvo=fn('alvo')||null;l.rcPrev=fn('rcPrev')||null;l.obs=fv('obs');
   gPut(l);toast('Lote salvo');gPilha.pop();GT={t:'lote',id:l.uid};gRender();
 }
 function tLote(t){
   const l=G.it[t.id];if(!l||l.del)return `${voltar()}<p class="note">Lote não encontrado.</p>`;
-  const hj=hojeKey(),cab=cabAtual(l),fim=fimLote(l),ref=fim||hj,X=gCtx(),ont=somaDias(hj,-1),x=fim?null:diaLote(l,ont,X);
-  const r=racaoEm(l,ref),pz=pesagensDe(l),sd=saidasDe(l),pj=pesoEm(l,ref);
+  const hj=hojeKey(),cab=cabAtual(l),fim=fimLote(l),ref=fim||hj,X=gCtx(),dRef=t.dia||(fim||somaDias(hj,-1));GT.dia=dRef;const x=diaLote(l,dRef,X),dd=dB(dRef).slice(0,5);
+  const r=racaoEm(l,ref),pz=pesagensDe(l),sd=saidasDe(l),cs=custosDe(l),pj=pesoEm(l,ref),e=l.ent;
   let prevAlvo='';if(!fim&&l.alvo&&l.gmd>0){const falta=(l.alvo-pj)/l.gmd;prevAlvo=falta<=0?'já atingiu o peso desejado':`${dB(somaDias(hj,Math.ceil(falta)))} (${nf(Math.ceil(falta))} dias)`;}
-  const proj=fim?'':`<div class="tablebox"><table><thead><tr><th>Projeção</th><th>Data</th><th>Peso (kg)</th><th>@ (÷30)</th></tr></thead><tbody>${[0,30,60,90].map(n=>{const d=somaDias(hj,n),p=pesoEm(l,d);return `<tr><td>${n?'+'+n+' dias':'Hoje'}</td><td>${dB(d)}</td><td>${nf(p)}</td><td>${nf(p/30,1)}</td></tr>`;}).join('')}</tbody></table></div>`;
-  let ant={dia:l.ent.dia,peso:+l.ent.peso};
+  const saidaPrev=l.diasPrev?somaDias(e.dia,l.diasPrev):null;
+  const proj=fim?'':`<div class="tablebox"><table><thead><tr><th>Projeção</th><th>Data</th><th>Peso (kg)</th><th>@ (÷30)</th></tr></thead><tbody>${[0,30,60,90].map(n=>{const d=somaDias(hj,n),p=pesoEm(l,d);return `<tr><td>${n?'+'+n+' dias':'Hoje'}</td><td>${dB(d)}</td><td>${nf(p)}</td><td>${nf(p/30,1)}</td></tr>`;}).join('')}${saidaPrev&&saidaPrev>hj?`<tr><td>Saída prevista</td><td>${dB(saidaPrev)}</td><td>${nf(pesoEm(l,saidaPrev))}</td><td>${nf(pesoEm(l,saidaPrev)/30,1)}</td></tr>`:''}</tbody></table></div>`;
+  let ant={dia:e.dia,peso:+e.peso};
   const lp=pz.map(p=>{const dd=difDias(ant.dia,p.dia),g=dd>0?(p.peso-ant.peso)/dd:NaN;ant=p;
     return `<tr><td>${dB(p.dia)}</td><td>${nf(p.peso)}</td><td>${nf(g,3)}</td><td>${p.cab?nf(p.cab):'—'}</td><td class="acoes"><button class="mini danger" data-g="apaga" data-id="${p.uid}" data-o="pesagem">✕</button></td></tr>`;}).join('');
   const ls=sd.map(s=>`<tr><td>${dB(s.dia)}</td><td>${s.mot==='morte'?'Morte':'Venda'}</td><td>${nf(s.cab)}</td><td>${s.mot==='morte'?'—':nf(s.peso)}</td><td>${s.mot==='morte'?'—':rs(valorVenda(s),0)}</td><td class="acoes"><button class="mini danger" data-g="apaga" data-id="${s.uid}" data-o="saída">✕</button></td></tr>`).join('');
+  const lc=cs.map(c=>`<tr><td>${dB(c.dia)}</td><td>${esc(c.cat)}${c.desc?`<small>${esc(c.desc)}</small>`:''}</td><td>${rs(+c.rs,0)}</td><td class="acoes"><button class="mini danger" data-g="apaga" data-id="${c.uid}" data-o="despesa">✕</button></td></tr>`).join('');
   const hist=(arr,fmt,o)=>(arr||[]).map((h,i)=>`<tr><td>${dB(h.desde)}</td><td>${esc(fmt(h))}</td><td class="acoes">${i?`<button class="mini danger" data-g="apagaHist" data-id="${l.uid}" data-o="${o}" data-i="${i}">✕</button>`:''}</td></tr>`).join('');
-  return `${voltar('Lotes')}<section class="panel"><div class="curhead"><h2>${esc(l.nome)}</h2><span class="pill${fim?'':' done'}">${fim?'Encerrado':'Ativo'}</span></div>
-    <div class="stat">${st('Curral',esc(curralEm(l,ref)||'—'))}${st('Cabeças',nf(cab))}${st('Dias',nf(difDias(l.ent.dia,ref)))}</div>
-    <div class="stat">${st('Entrada',nf(l.ent.peso)+' kg')}${st(fim?'Peso final proj.':'Peso hoje (proj.)',nf(pj)+' kg')}${st('Meta GMD',nf(l.gmd,2)+' kg')}</div>
-    <div class="stat">${st('Ração',esc(r?r.nome:'—'))}${x&&x.mn>0?st('Ontem MS/cab',nf(x.msCab,2)+' kg')+st('% do peso vivo',pc(x.pv,2)):st('Consumo ontem','sem trato')}</div>
+  const ult7=[];for(let i=6;i>=0;i--){const d=somaDias(dRef,-i);if(d<e.dia)continue;const y=diaLote(l,d,X);if(!y)continue;const lt=G.it[idLeit(d,y.c)];
+    ult7.push(`<tr><td>${dB(d).slice(0,5)}</td><td>${nf(y.mn)}</td><td>${nf(y.msCab,2)}</td><td>${pc(y.pv,2)}</td><td>${lt&&!lt.del?lt.nota:'—'}</td></tr>`);}
+  const ficha=[['Sistema',l.sistema],['Sexo',sexoTxt(l.sexo)],['Raça',l.raca],['Categoria',l.cat],['Idade',l.idade?nf(l.idade)+' meses':''],['Origem',e.origem],['GTA / NF',e.gta],['Identificação',l.ident],
+    ['Peso de compra',e.pesoC?`${nf(e.pesoC)} kg · quebra ${pc((e.pesoC-e.peso)/e.pesoC*100,1)}`:''],['Compra',rs(valorCompra(l),0)+` (${rs(valorCompra(l)/e.cab,0)}/cab)`],
+    ['Dias de cocho previstos',l.diasPrev?`${nf(l.diasPrev)} (saída ${dB(saidaPrev)})`:'']].filter(x=>x[1]);
+  return `${voltar('Lotes')}<section class="panel"><div class="gLoteTopo">${seloCurral(curralEm(l,ref))}<div><h2>${esc(l.nome)}</h2><span class="pill${fim?'':' done'}">${fim?'Encerrado':'Ativo'}</span></div></div>
+    <div class="stat">${st('Cabeças',nf(cab))}${st('Dias',nf(difDias(e.dia,ref)))}${st('Entrada',dB(e.dia))}</div>
+    <div class="stat">${st('Peso chegada',nf(e.peso)+' kg')}${st(fim?'Peso final proj.':'Peso hoje (proj.)',nf(pj)+' kg')}${st('Meta GMD',nf(l.gmd,2)+' kg')}</div>
+    <div class="stat">${st('Ração atual',esc(r?r.nome:'—'))}</div>
+    <div class="gDiaBox"><div class="gCampo"><label for="gRefDia">Números do dia</label><input type="date" id="gRefDia" value="${dRef}"></div>
+    ${x?`<div class="stat">${st('Cabeças',nf(x.cab))}${st('Peso proj.',nf(x.peso)+' kg')}${st('Ração',esc(x.rac))}</div>
+    <div class="stat">${st('MN no cocho',nf(x.mn)+' kg')}${st('MN/cab',nf(x.mnCab,2)+' kg')}${st('MS/cab',nf(x.msCab,2)+' kg')}</div>
+    <div class="stat">${st('% do peso vivo',pc(x.pv,2))}${st('Custo do dia',rs((ok(x.custoR)?x.custoR:0)+x.custoOp))}${st('Custo/cab',rs(((ok(x.custoR)?x.custoR:0)+x.custoOp)/x.cab))}</div>
+    ${x.mn>0?'':`<p class="aviso warn">Sem trato lançado no ${esc(x.c)} em ${dd}.</p>`}`:`<p class="note">O lote não estava no cocho em ${dd}.</p>`}</div>
     ${prevAlvo?`<p class="note">Peso desejado de ${nf(l.alvo)} kg: ${prevAlvo}.</p>`:''}
-    ${l.obs?`<p class="note">${esc(l.obs)}</p>`:''}
     ${proj}
     <div class="gAcoes">
       ${fim?'':`<button class="lima" data-g="ir" data-t="pesForm" data-id="${l.uid}">⚖️ Pesagem</button>
       <button class="lima" data-g="ir" data-t="saiForm" data-id="${l.uid}" data-o="venda">💲 Venda / saída</button>
+      <button data-g="ir" data-t="custoForm" data-id="${l.uid}">💉 Sanidade / custo</button>
       <button data-g="ir" data-t="saiForm" data-id="${l.uid}" data-o="morte">✝ Morte</button>
       <button data-g="ir" data-t="mudForm" data-id="${l.uid}" data-o="curr">↔ Mudar curral</button>
       <button data-g="ir" data-t="mudForm" data-id="${l.uid}" data-o="rac">🌾 Mudar ração</button>`}
       <button data-g="ir" data-t="loteForm" data-id="${l.uid}">✎ Editar dados</button>
     </div>
     <button class="primary" data-g="ir" data-t="rel" data-id="${l.uid}">📊 ${fim?'Relatório final':'Resultado até hoje'}</button></section>
+  ${card('Ficha do lote',`<div class="gLinhas">${ficha.map(([a,b])=>lin(a,esc(b))).join('')}</div>${l.obs?`<p class="note">${esc(l.obs)}</p>`:''}`)}
+  ${ult7.length?card(`7 dias até ${dd}`,`<div class="tablebox"><table><thead><tr><th>Dia</th><th>MN kg</th><th>MS/cab</th><th>%PV</th><th>Nota</th></tr></thead><tbody>${ult7.join('')}</tbody></table></div>`):''}
   ${card('Pesagens',`<div class="tablebox"><table><thead><tr><th>Data</th><th>Peso</th><th>GMD real</th><th>Cab.</th><th></th></tr></thead><tbody>
-    <tr><td>${dB(l.ent.dia)}</td><td>${nf(l.ent.peso)}</td><td>entrada</td><td>${nf(l.ent.cab)}</td><td></td></tr>${lp}</tbody></table></div>`)}
+    <tr><td>${dB(e.dia)}</td><td>${nf(e.peso)}</td><td>entrada</td><td>${nf(e.cab)}</td><td></td></tr>${lp}</tbody></table></div>`)}
+  ${cs.length?card('Sanidade e outros custos',`<div class="tablebox"><table class="gTab"><thead><tr><th>Data</th><th>Tipo</th><th>Valor</th><th></th></tr></thead><tbody>${lc}</tbody></table></div><p class="note">Total: ${rs(cs.reduce((a,c)=>a+(+c.rs||0),0))}</p>`):''}
   ${sd.length?card('Saídas',`<div class="tablebox"><table><thead><tr><th>Data</th><th>Tipo</th><th>Cab.</th><th>Peso</th><th>Valor</th><th></th></tr></thead><tbody>${ls}</tbody></table></div>`):''}
   ${card('Curral e ração',`<div class="tablebox"><table><thead><tr><th>Desde</th><th>Curral</th><th></th></tr></thead><tbody>${hist(l.curr,h=>h.c,'curr')}</tbody></table></div>
     <div class="tablebox"><table><thead><tr><th>Desde</th><th>Ração</th><th></th></tr></thead><tbody>${hist(l.rac,h=>{const r=G.it[h.r];return r&&!r.del?r.nome:'(apagada)';},'rac')||'<tr><td colspan="3">Sem ração escolhida</td></tr>'}</tbody></table></div>`)}
@@ -255,12 +327,18 @@ function tPesForm(t){const l=G.it[t.id];
     {k:'cab',l:'Cabeças pesadas (opcional)',t:'num',meia:1},{k:'obs',l:'Observação'}].map(campo).join('')}</div>
     <p class="note">A projeção do peso passa a partir desta pesagem.</p>
     <button class="primary" data-g="salvaPes" data-id="${l.uid}">Salvar pesagem</button></section>`;}
+function tCustoForm(t){const l=G.it[t.id];
+  return `${voltar()}<section class="panel"><h2>Sanidade / custo · ${esc(l.nome)}</h2><div class="gForm">${[
+    {k:'dia',l:'Data',t:'dia',v:hojeKey(),meia:1},{k:'cat',l:'Tipo',t:'sel',op:TIPOS_CUSTO.map(x=>[x,x]),v:TIPOS_CUSTO[0],meia:1},
+    {k:'desc',l:'Descrição',ph:'Ex.: Vacina aftosa + vermífugo'},{k:'rs',l:'Valor total do lote',t:'rs',meia:1}].map(campo).join('')}</div>
+    <p class="note">Entra no custo do lote e no custo da @ produzida.</p>
+    <button class="primary" data-g="salvaCusto" data-id="${l.uid}">Salvar</button></section>`;}
 function tSaiForm(t){const l=G.it[t.id],m=t.o==='morte',cfg=gCfg();
   const fs=m?[{k:'dia',l:'Data',t:'dia',v:hojeKey(),meia:1},{k:'cab',l:'Cabeças',t:'num',v:1,meia:1},{k:'obs',l:'Causa / observação'}]:
    [{k:'dia',l:'Data da saída',t:'dia',v:hojeKey(),meia:1},{k:'cab',l:'Cabeças',t:'num',v:cabAtual(l),meia:1},
-    {k:'peso',l:'Peso vivo médio na saída',suf:'kg',t:'num',v:Math.round(pesoEm(l,hojeKey())),meia:1},{k:'rc',l:'Rendimento de carcaça',suf:'%',t:'num',v:cfg.rc,meia:1},
-    {k:'unid',l:'Preço de venda em',t:'sel',op:UNID_V,v:'arroba'},{k:'preco',l:'Preço de venda',suf:'R$',t:'num',meia:1},
-    {k:'desc',l:'Descontos (frete, impostos)',suf:'R$ total',t:'num',meia:1},{k:'obs',l:'Comprador / observação'}];
+    {k:'peso',l:'Peso vivo médio na saída',suf:'kg',t:'num',v:Math.round(pesoEm(l,hojeKey())),meia:1},{k:'rc',l:'Rendimento de carcaça',suf:'%',t:'num',v:l.rcPrev||cfg.rc,meia:1},
+    {k:'unid',l:'Preço de venda em',t:'sel',op:UNID_V,v:'arroba'},{k:'preco',l:'Preço de venda',t:'rs',meia:1},
+    {k:'desc',l:'Descontos (frete, impostos)',suf:'total',t:'rs',meia:1},{k:'obs',l:'Comprador / frigorífico'}];
   return `${voltar()}<section class="panel"><h2>${m?'Morte':'Venda / saída'} · ${esc(l.nome)}</h2><p class="note">No lote agora: ${nf(cabAtual(l))} cabeças.</p>
     <div class="gForm">${fs.map(campo).join('')}</div><button class="primary" data-g="salvaSai" data-id="${l.uid}" data-o="${m?'morte':'venda'}">Salvar</button></section>`;}
 function tMudForm(t){const l=G.it[t.id],c=t.o==='curr';
@@ -271,53 +349,49 @@ function tMudForm(t){const l=G.it[t.id],c=t.o==='curr';
 
 /* ---------- relatório do lote ---------- */
 function tRelLote(t){
-  const l=G.it[t.id],fim=fimLote(l),hj=hojeKey(),ate=fim||hj,R=resumoLote(l,ate),sd=saidasDe(l),cfg=gCfg();
-  const vendas=sd.filter(s=>s.mot!=='morte'),mortes=sd.filter(s=>s.mot==='morte').reduce((a,s)=>a+(+s.cab||0),0);
-  const cabE=+l.ent.cab,pesoE=+l.ent.peso,compra=valorCompra(l);
-  const cabV=vendas.reduce((a,s)=>a+(+s.cab||0),0),arrV=vendas.reduce((a,s)=>a+arrobaVenda(s),0),receita=vendas.reduce((a,s)=>a+valorVenda(s),0);
-  const pesoV=cabV?vendas.reduce((a,s)=>a+s.cab*s.peso,0)/cabV:NaN;
-  const ganhoV=vendas.reduce((a,s)=>a+s.cab*(s.peso-pesoE),0),cabDiasV=vendas.reduce((a,s)=>a+s.cab*difDias(l.ent.dia,s.dia),0);
-  const alim=R.custoR,op=R.custoOp,custo=compra+alim+op;
-  const msCab=R.ms/R.cabDias,mnCab=R.mn/R.cabDias,pv=R.pvN?R.pvS/R.pvN:NaN;
+  const l=G.it[t.id],C=calcLote(l),R=C.R,hj=hojeKey(),cfg=gCfg(),fim=C.fim;
   const avisos=[R.semPreco?`${R.semPreco} dia(s) com ração sem preço ou sem matéria seca completa.`:'',R.semReg?`${R.semReg} dia(s) sem trato lançado no curral do lote.`:''].filter(Boolean);
   const comum=`<div class="gLinhas">
-    ${lin('Período',`${dB(l.ent.dia)} a ${dB(ate)} · ${nf(difDias(l.ent.dia,ate))} dias`)}
-    ${lin('Entrada',`${nf(cabE)} cab · ${nf(pesoE)} kg · ${nf(pesoE/30,2)} @/cab`)}
-    ${lin('Consumo matéria natural',`${nf(R.mn)} kg · ${nf(mnCab,2)} kg/cab/dia`)}
-    ${lin('Consumo matéria seca',`${nf(R.ms)} kg · ${nf(msCab,2)} kg/cab/dia`)}
-    ${lin('MS em % do peso vivo (média)',pc(pv,2))}
-    ${lin('Custo de compra',rs(compra))}
-    ${lin('Custo da ração',rs(alim))}
-    ${lin('Custo operacional',`${rs(op)} (${nf(R.cabOpDias)} cab-dia)`)}
-    ${lin('Custo alimentação + operacional / cab / dia',rs((alim+op)/R.cabDias))}
-    ${lin('Custo total',rs(custo),'forte')}</div>`;
+    ${lin('Lote',[sexoTxt(l.sexo),l.raca,l.cat].filter(Boolean).join(' · ')||'—')}
+    ${lin('Período',`${dB(l.ent.dia)} a ${dB(C.ate)} · ${nf(C.dias)} dias`)}
+    ${lin('Entrada',`${nf(C.cabE)} cab · ${nf(C.pesoE)} kg · ${nf(C.pesoE/30,2)} @/cab`)}
+    ${lin('Consumo matéria natural',`${nf(R.mn)} kg · ${nf(C.mnCab,2)} kg/cab/dia`)}
+    ${lin('Consumo matéria seca',`${nf(R.ms)} kg · ${nf(C.msCab,2)} kg/cab/dia`)}
+    ${lin('MS em % do peso vivo (média)',pc(C.pv,2))}
+    ${lin('Custo de compra',rs(C.compra))}
+    ${lin('Custo da ração',rs(C.alim))}
+    ${lin('Custo operacional',`${rs(C.op)} (${nf(R.cabOpDias)} cab-dia)`)}
+    ${lin('Sanidade e outros custos',rs(C.outros))}
+    ${lin('Ração + operacional por cab/dia',rs(C.custoCabDia))}
+    ${lin('Custo total',rs(C.custo),'forte')}
+    ${lin('Custo total por cabeça',rs(C.custo/C.cabE),'')}</div>`;
   let fecha='';
-  if(cabV){
-    const arrE=cabV*pesoE/30,arrProd=arrV-arrE,lucro=receita-custo;
+  if(C.cabV){
     fecha=card(fim?'Resultado final':'Vendas até agora',`<div class="gLinhas">
-      ${lin('Vendidos',`${nf(cabV)} cab · ${nf(pesoV)} kg vivo médio`)}${mortes?lin('Mortes',`${nf(mortes)} cab`):''}
-      ${lin('@ vendidas (carcaça)',nf(arrV,2))}${lin('Receita líquida',rs(receita))}
-      ${lin('GMD real',`${nf(cabDiasV?ganhoV/cabDiasV:NaN,3)} kg/dia`)}
-      ${lin('@ produzidas',nf(arrProd,2))}
-      ${lin('Custo da @ produzida',rs((alim+op)/arrProd))}
-      ${lin('Conversão alimentar (kg MS / kg ganho)',nf(R.ms/ganhoV,2))}
-      ${fim?lin(lucro>=0?'LUCRO':'PREJUÍZO',`${rs(lucro)} · ${rs(lucro/cabE)} por cab`,lucro>=0?'forte ok':'forte bad'):''}</div>
+      ${lin('Vendidos',`${nf(C.cabV)} cab · ${nf(C.pesoV)} kg vivo médio`)}${C.mortes?lin('Mortes',`${nf(C.mortes)} cab (${pc(C.mortes/C.cabE*100,1)})`):''}
+      ${lin('@ vendidas (carcaça)',`${nf(C.arrV,2)} · ${nf(C.arrV/C.cabV,2)} @/cab`)}${lin('Receita líquida',`${rs(C.receita)} · ${rs(C.receita/C.cabV,0)}/cab`)}
+      ${lin('GMD real',`${nf(C.gmdV,3)} kg/dia`)}
+      ${lin('@ produzidas',`${nf(C.arrProd,2)} · ${nf(C.arrProd/C.cabV,2)} @/cab`)}
+      ${lin('Custo da @ produzida',rs(C.custoArr))}
+      ${lin('Conversão alimentar (kg MS / kg ganho)',nf(C.conv,2))}
+      ${fim?lin(C.lucro>=0?'LUCRO':'PREJUÍZO',`${rs(C.lucro)} · ${rs(C.lucro/C.cabE)} por cab`,C.lucro>=0?'forte ok':'forte bad'):''}
+      ${fim?lin('Rentabilidade sobre o custo',pc(C.lucro/C.custo*100,1)):''}</div>
       ${fim?'':'<p class="note">O lote ainda tem animais: o lucro final aparece quando sair o último.</p>'}`);
   }
   const sim=fim?'':card('Simular venda hoje',`<div class="gForm">${[
-    {k:'sPeso',l:'Peso vivo',suf:'kg',t:'num',v:Math.round(pesoEm(l,hj)),meia:1},{k:'sRc',l:'Rendimento',suf:'%',t:'num',v:cfg.rc,meia:1},
-    {k:'sPreco',l:'Preço da @',suf:'R$',t:'num',v:t.sp||'',meia:1}].map(campo).join('')}</div><div id="gSimRes" class="gLinhas"></div>`);
-  GT.calc={cab:cabAtual(l),pesoE,compraCab:compra/cabE,alimOp:alim+op,custo,receita,cabE,cabV,arrV,dias:difDias(l.ent.dia,hj),ms:R.ms,ganhoV};
+    {k:'sPeso',l:'Peso vivo',suf:'kg',t:'num',v:Math.round(pesoEm(l,hj)),meia:1},{k:'sRc',l:'Rendimento',suf:'%',t:'num',v:l.rcPrev||cfg.rc,meia:1},
+    {k:'sPreco',l:'Preço da @',t:'rs',v:'',meia:1}].map(campo).join('')}</div><div id="gSimRes" class="gLinhas"></div>`);
+  GT.calc={cab:C.cabAt,pesoE:C.pesoE,prod:C.prod,custo:C.custo,receita:C.receita,cabE:C.cabE,cabV:C.cabV,arrV:C.arrV,ms:R.ms,ganhoV:C.ganhoV};
   return `${voltar()}<section class="panel"><div class="curhead"><h2>${esc(l.nome)}</h2><span class="pill">${fim?'Relatório final':'Até hoje'}</span></div>
     ${avisos.map(a=>`<p class="aviso warn">${a}</p>`).join('')}${comum}
-    <button class="verde" data-g="compRel" data-id="${l.uid}">📤 Enviar resumo</button></section>${fecha}${sim}`;
+    <div class="row compart"><button class="verde" data-g="compRel" data-id="${l.uid}">📤 Enviar resumo</button><button class="verde" data-g="xlsLote" data-id="${l.uid}">📊 Excel</button></div></section>${fecha}${sim}`;
 }
 const lin=(a,b,c)=>`<div class="${c||''}"><span>${a}</span><b class="num">${b}</b></div>`;
 function calcSimul(){const box=$('gSimRes');if(!box)return;const c=GT.calc,peso=fn('sPeso'),rc=fn('sRc'),pr=fn('sPreco');
   if(!(peso>0&&rc>0&&pr>0)){box.innerHTML='<p class="note">Coloque o preço da @ para ver o resultado estimado com os animais que estão no lote.</p>';return;}
   const arr=c.cab*peso*rc/100/15,rec=arr*pr+c.receita,lucro=rec-c.custo;
   const arrProd=c.arrV+arr-(c.cabV+c.cab)*c.pesoE/30,ganho=c.ganhoV+c.cab*(peso-c.pesoE);
-  box.innerHTML=lin('@ por cabeça',nf(peso*rc/100/15,2))+lin('Receita estimada',rs(rec))+lin('Custo da @ produzida',rs(c.alimOp/arrProd))+
+  box.innerHTML=lin('@ por cabeça',nf(peso*rc/100/15,2))+lin('Receita estimada',rs(rec))+lin('@ produzidas',nf(arrProd,2))+lin('Custo da @ produzida',rs(c.prod/arrProd))+
     lin('Conversão alimentar',nf(c.ms/ganho,2))+lin(lucro>=0?'Lucro estimado':'Prejuízo estimado',`${rs(lucro)} · ${rs(lucro/c.cabE)} por cab`,lucro>=0?'forte ok':'forte bad');}
 function textoRel(){return [...$('gBox').querySelectorAll('.panel')].map(p=>{const h=p.querySelector('h2');
   const ls=[...p.querySelectorAll('.gLinhas>div')].map(d=>`${d.children[0].textContent}: ${d.children[1].textContent}`);
@@ -328,8 +402,10 @@ const idLeit=(dia,c)=>'lc-'+dia+'-'+chave(c);
 function cochoCurrais(dia){const set=new Set();const A=gTodos('lote').filter(l=>cabPres(l,dia)>0);A.forEach(l=>set.add(curralEm(l,dia)));
   return (S.cadastro||[]).filter(c=>set.has(c));}
 const prevTotal=c=>Object.values(S.prev||{}).reduce((a,m)=>a+(typeof m[c]==='number'?m[c]:0),0);
+const notaTxt=n=>(n>0?'+':'')+nf(n,0);
 function tCocho(t){
   const dia=t.dia||hojeKey(),ont=somaDias(dia,-1),ix=gIndice(),cfg=gCfg(),Cs=cochoCurrais(dia),hoje=dia===hojeKey();
+  const notas=cfg.notas.slice().sort((a,b)=>a.n-b.n);
   GT.dia=dia;GT.sel=GT.sel||{};
   const rows=Cs.map(c=>{const L=gTodos('lote').filter(l=>curralEm(l,dia)===c&&cabPres(l,dia)>0);
     const ontem=ix.get(ont+'|'+c)||0,pt=prevTotal(c),cab=L.reduce((a,l)=>a+cabPres(l,dia),0);
@@ -337,16 +413,17 @@ function tCocho(t){
     if(!base&&pt){base=pt;orig='previsto atual';}
     if(!base){const ms=L.reduce((a,l)=>{const r=racaoEm(l,dia),cp=r&&compRacao(r,dia);return a+(cp?cabPres(l,dia)*pesoEm(l,dia)*cfg.pvIni/100/(cp.ms/100):0);},0);base=Math.round(ms);orig=`sugestão ${nf(cfg.pvIni,1)}% PV`;}
     const lt=G.it[idLeit(dia,c)],sel=GT.sel[c]||(lt&&!lt.del?{n:lt.nota,kg:lt.novo}:null);
-    const nota=sel?sel.n:null,cn=cfg.notas.find(x=>x.n===nota);
+    const nota=sel?sel.n:null,cn=notas.find(x=>x.n===nota);
     const sug=cn?arred(base*(1+cn.p/100),cfg.arred):null,kg=sel&&ok(sel.kg)?sel.kg:sug;
+    const ant=[3,2,1].map(i=>{const x=G.it[idLeit(somaDias(dia,-i),c)];return x&&!x.del?notaTxt(x.nota):'·';}).join('  ');
     return `<div class="gCocho${lt&&!lt.del?' feito':''}" data-c="${esc(c)}" data-base="${base}">
-      <div class="gCoTopo"><b>${esc(c)}</b><span>${esc(L.map(l=>l.nome).join(', '))} · ${nf(cab)} cab</span></div>
+      <div class="gCoTopo">${seloCurral(c)}<div><span>${esc(L.map(l=>l.nome).join(', '))}</span><span>${nf(cab)} cab · últimas notas: <b>${ant}</b></span></div></div>
       <div class="gCoBase">Base: <b class="num">${nf(base)} kg</b> <small>(${orig})</small></div>
-      <div class="gNotas">${cfg.notas.map(x=>`<button class="${x.n===nota?'sel':''}" data-g="nota" data-c="${esc(c)}" data-n="${x.n}" title="${esc(x.t)}">${x.n}<small>${x.p>0?'+':''}${nf(x.p,0)}%</small></button>`).join('')}</div>
+      <div class="gNotas">${notas.map(x=>`<button class="${x.n===nota?'sel':''} ${x.p>0?'mais':x.p<0?'menos':''}" data-g="nota" data-c="${esc(c)}" data-n="${x.n}" title="${esc(x.t)}">${notaTxt(x.n)}<small>${x.p>0?'+':''}${nf(x.p,0)}%</small></button>`).join('')}</div>
       <div class="gCoNovo"><span>${cn?esc(cn.t):'Toque na nota'}</span><input class="cell num" inputmode="numeric" data-kg="${esc(c)}" value="${kg!=null?kg:''}" placeholder="kg"><small>kg/dia</small></div></div>`;}).join('');
-  return `${voltar('Gestão')}<section class="panel"><h2>Leitura de cocho</h2>
+  return `<section class="panel"><h2>Leitura de cocho</h2>
     <div class="gCampo"><label for="gCoDia">Data da leitura</label><input type="date" id="gCoDia" value="${dia}"></div>
-    <details class="gLeg"><summary class="note">Ver as notas</summary>${cfg.notas.map(x=>`<p class="note"><b>${x.n}</b> — ${esc(x.t)}: ${x.p>0?'+':''}${nf(x.p,0)}%</p>`).join('')}</details>
+    <details class="gLeg"><summary class="note">Ver as notas</summary>${notas.map(x=>`<p class="note"><b>${notaTxt(x.n)}</b> — ${esc(x.t)}: ${x.p>0?'+':''}${nf(x.p,0)}%</p>`).join('')}<p class="note">Para mudar as notas: Config.</p></details>
     ${rows||'<p class="note">Nenhum lote ativo nesta data. Cadastre os lotes primeiro.</p>'}
     ${rows?`<button class="primary" data-g="salvaCocho">${hoje?'Salvar e ajustar o previsto':'Salvar leitura'}</button>
     <p class="note">${hoje?'O total do dia de cada curral é dividido entre os tratos na mesma proporção do previsto atual.':'Data diferente de hoje: só guarda a leitura, sem mexer no previsto.'}</p>`:''}</section>`;
@@ -374,31 +451,110 @@ function aplicaPrev(c,total){
   let mud=false;idx.forEach(i=>{const m=mapaPrev(ks[i]);if(m[c]!==novos[i]){m[c]=novos[i];mud=true;}});return mud;
 }
 
-/* ---------- relatório do dia ---------- */
+/* ---------- Excel ---------- */
+const XS={int:4,dec:11,rs:12,pct:14,dia:2};
+const xc=(v,f)=>(v==null||(typeof v==='number'&&!isFinite(v)))?{v:''}:(f?{v:f==='dia'?diaSer(v):v,s:XS[f]}:{v});
+const diaSer=k=>{const [y,m,d]=k.split('-').map(Number);return (Date.UTC(y,m-1,d)-Date.UTC(1899,11,30))/864e5;};
+async function gExcel(nome,abas){
+  try{const ws=abas.map(([n,cab,ls,w])=>[n.slice(0,31),[cab.map(t=>({v:t,s:1})),...ls],w||cab.map(()=>14)]);
+    const blob=montarXlsx(ws);await compartilharArquivo(blob,nome.normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[\\/:*?"<>|]/g,'-')+'.xlsx',blob.type);}
+  catch(e){toast('Não consegui gerar o Excel');}
+}
+/* insumos que entraram no cocho (pela fórmula da ração do lote naquele dia) */
+function somaInsumos(acc,x){if(!x||!x.cp||!(x.mn>0))return;x.cp.itens.forEach(i=>{const k=i.nome,o=acc[k]||(acc[k]={kg:0,rs:0});const kg=x.mn*i.pMN/100;o.kg+=kg;if(ok(i.preco))o.rs+=kg*i.preco/1000;});}
+const tabInsumos=acc=>{const e=Object.entries(acc).sort((a,b)=>b[1].kg-a[1].kg);if(!e.length)return '';const tk=e.reduce((a,[,o])=>a+o.kg,0),tr=e.reduce((a,[,o])=>a+o.rs,0);
+  return `<div class="tablebox"><table><thead><tr><th>Insumo</th><th>kg (MN)</th><th>Custo</th></tr></thead><tbody>${e.map(([n,o])=>`<tr><td>${esc(n)}</td><td>${nf(o.kg)}</td><td>${rs(o.rs)}</td></tr>`).join('')}
+  <tr class="grp"><td>Total</td><td>${nf(tk)}</td><td>${rs(tr)}</td></tr></tbody></table></div>`;};
+
+/* ---------- relatórios ---------- */
+function tRels(){return `<div class="gGrade">
+  <button class="gBig" data-g="ir" data-t="dia">📋<b>Do dia</b><small>consumo, custo e insumos por lote</small></button>
+  <button class="gBig" data-g="ir" data-t="periodo">📆<b>Por período</b><small>semana, mês ou datas escolhidas</small></button>
+  <button class="gBig" data-g="ir" data-t="comp">📊<b>Comparativo de lotes</b><small>desempenho e resultado lado a lado</small></button>
+  <button class="gBig" data-g="raiz" data-t="lotes">🐂<b>Relatório de um lote</b><small>escolha o lote e toque em Resultado</small></button></div>`;}
+function linhasDia(dia){const X=gCtx();return X.L.map(l=>({l,x:diaLote(l,dia,X)})).filter(o=>o.x).sort((a,b)=>porCurral(a.l,b.l));}
 function tDia(t){
-  const dia=t.dia||somaDias(hojeKey(),-1),X=gCtx();
-  const ls=X.L.map(l=>({l,x:diaLote(l,dia,X)})).filter(o=>o.x).sort((a,b)=>porNome(a.l,b.l));
-  const T={cab:0,mn:0,ms:0,cr:0,co:0,pvS:0,pvP:0};
-  const rows=ls.map(({l,x})=>{T.cab+=x.cab;T.mn+=x.mn;if(ok(x.ms))T.ms+=x.ms;if(ok(x.custoR))T.cr+=x.custoR;T.co+=x.custoOp;T.pvP+=x.cab*x.peso;
-    const tot=(ok(x.custoR)?x.custoR:0)+x.custoOp;
-    return `<tr><td class="c">${esc(l.nome)}<small>${esc(x.c)} · ${esc(x.rac)}</small></td><td>${nf(x.cab)}</td><td>${nf(x.peso)}</td><td>${nf(x.mn)}<small>${nf(x.mnCab,1)}/cab</small></td><td>${nf(x.ms)}<small>${nf(x.msCab,2)}/cab</small></td><td>${pc(x.pv,2)}</td><td>${rs(tot,0)}<small>${rs(tot/x.cab)}/cab</small></td></tr>`;}).join('');
+  const dia=t.dia||somaDias(hojeKey(),-1),ls=linhasDia(dia),T={cab:0,mn:0,ms:0,cr:0,co:0,pvP:0},ins={};
+  const rows=ls.map(({l,x})=>{T.cab+=x.cab;T.mn+=x.mn;if(ok(x.ms))T.ms+=x.ms;if(ok(x.custoR))T.cr+=x.custoR;T.co+=x.custoOp;T.pvP+=x.cab*x.peso;somaInsumos(ins,x);
+    const tot=(ok(x.custoR)?x.custoR:0)+x.custoOp;const lt=G.it[idLeit(dia,x.c)];
+    return `<tr class="gClic" data-g="lote" data-id="${l.uid}"><td class="c">${esc(x.c)}<small>${esc(l.nome)} · ${esc(x.rac)}${lt&&!lt.del?' · nota '+notaTxt(lt.nota):''}</small></td><td>${nf(x.cab)}</td><td>${nf(x.peso)}</td><td>${nf(x.mn)}<small>${nf(x.mnCab,1)}/cab</small></td><td>${nf(x.ms)}<small>${nf(x.msCab,2)}/cab</small></td><td>${pc(x.pv,2)}</td><td>${rs(tot)}<small>${rs(tot/x.cab)}/cab</small></td></tr>`;}).join('');
   const tot=T.cr+T.co;
-  return `${voltar('Gestão')}<section class="panel"><h2>Relatório do dia</h2>
+  return `${voltar('Relatórios')}<section class="panel"><h2>Relatório do dia</h2>
     <div class="gCampo"><label for="gDiaDia">Data</label><input type="date" id="gDiaDia" value="${dia}"></div>
     <div class="stat">${st('Cabeças',nf(T.cab))}${st('Matéria natural',nf(T.mn)+' kg')}${st('Matéria seca',nf(T.ms)+' kg')}</div>
-    <div class="stat">${st('Custo ração',rs(T.cr,0))}${st('Operacional',rs(T.co,0))}${st('Custo/cab/dia',rs(T.cab?tot/T.cab:NaN))}</div>
-    <div class="stat">${st('MS/cab',nf(T.cab?T.ms/T.cab:NaN,2)+' kg')}${st('% peso vivo',pc(T.pvP?T.ms/T.pvP*100:NaN,2))}${st('Custo total',rs(tot,0))}</div>
-    <div class="tablebox"><table class="gTab"><thead><tr><th>Lote</th><th>Cab</th><th>Peso</th><th>MN kg</th><th>MS kg</th><th>%PV</th><th>Custo</th></tr></thead>
+    <div class="stat">${st('Custo ração',rs(T.cr))}${st('Operacional',rs(T.co))}${st('Custo/cab/dia',rs(T.cab?tot/T.cab:NaN))}</div>
+    <div class="stat">${st('MS/cab',nf(T.cab?T.ms/T.cab:NaN,2)+' kg')}${st('% peso vivo',pc(T.pvP?T.ms/T.pvP*100:NaN,2))}${st('Custo total',rs(tot))}</div>
+    <div class="tablebox"><table class="gTab"><thead><tr><th>Curral / lote</th><th>Cab</th><th>Peso</th><th>MN kg</th><th>MS kg</th><th>%PV</th><th>Custo</th></tr></thead>
     <tbody>${rows||'<tr><td colspan="7">Nenhum lote nesta data.</td></tr>'}</tbody></table></div>
     <p class="note">Peso = projetado pela última pesagem e a meta de ganho. MN = trato realizado no curral (dividido por cabeça se houver mais de um lote).</p>
-    ${rows?'<button class="verde" data-g="compDia">📤 Enviar relatório</button>':''}</section>`;
+    ${rows?'<div class="row compart"><button class="verde" data-g="compDia">📤 Enviar</button><button class="verde" data-g="xlsDia">📊 Excel</button></div>':''}</section>
+  ${Object.keys(ins).length?card('Insumos usados no dia',tabInsumos(ins)):''}`;
 }
-function textoDia(){const dia=$('gDiaDia').value,X=gCtx();const ls=X.L.map(l=>({l,x:diaLote(l,dia,X)})).filter(o=>o.x).sort((a,b)=>porNome(a.l,b.l));
+function textoDia(){const dia=$('gDiaDia').value,ls=linhasDia(dia);
   let cab=0,mn=0,ms=0,c=0;const linhas=ls.map(({l,x})=>{cab+=x.cab;mn+=x.mn;ms+=ok(x.ms)?x.ms:0;const t=(ok(x.custoR)?x.custoR:0)+x.custoOp;c+=t;
-    return `*${l.nome}* (${x.c}) ${nf(x.cab)} cab · ${nf(x.peso)} kg\n  MN ${nf(x.mn)} kg (${nf(x.mnCab,1)}/cab) · MS ${nf(x.msCab,2)} kg/cab · ${pc(x.pv,2)} PV\n  Custo ${rs(t,0)} (${rs(t/x.cab)}/cab)`;});
-  return `*Relatório do dia ${dB(dia)}*\n\n${linhas.join('\n\n')}\n\n*Total:* ${nf(cab)} cab · MN ${nf(mn)} kg · MS ${nf(ms)} kg · ${rs(c,0)}`;}
-async function enviarTexto(txt){try{if(navigator.share){await navigator.share({text:txt});return;}}catch(e){if(e&&e.name==='AbortError')return;}
-  if(typeof copiar==='function')copiar(txt,'Copiado. Cole no WhatsApp');else window.open('https://wa.me/?text='+encodeURIComponent(txt));}
+    return `*${x.c}* · ${l.nome} · ${nf(x.cab)} cab · ${nf(x.peso)} kg\n  MN ${nf(x.mn)} kg (${nf(x.mnCab,1)}/cab) · MS ${nf(x.msCab,2)} kg/cab · ${pc(x.pv,2)} PV\n  Custo ${rs(t)} (${rs(t/x.cab)}/cab)`;});
+  return `*Relatório do dia ${dB(dia)}*\n\n${linhas.join('\n\n')}\n\n*Total:* ${nf(cab)} cab · MN ${nf(mn)} kg · MS ${nf(ms)} kg · ${rs(c)}`;}
+function xlsDia(){const dia=$('gDiaDia').value,ls=linhasDia(dia),ins={};
+  const r=ls.map(({l,x})=>{somaInsumos(ins,x);const t=(ok(x.custoR)?x.custoR:0)+x.custoOp;
+    return [xc(dia,'dia'),xc(x.c),xc(l.nome),xc(x.rac),xc(x.cab,'int'),xc(x.peso,'int'),xc(x.mn,'int'),xc(x.ms,'int'),xc(x.mnCab,'dec'),xc(x.msCab,'dec'),xc(x.pv/100,'pct'),xc(x.custoR,'rs'),xc(x.custoOp,'rs'),xc(t,'rs'),xc(t/x.cab,'rs')];});
+  gExcel(`Relatório do dia - ${dB(dia).replace(/\//g,'-')}`,[['Por lote',['Data','Curral','Lote','Ração','Cabeças','Peso proj. (kg)','MN (kg)','MS (kg)','MN/cab','MS/cab','% PV','Custo ração','Custo operacional','Custo total','Custo/cab'],r,[11,10,18,14,9,10,10,10,9,9,8,13,13,13,11]],
+    ['Insumos',['Insumo','kg (MN)','Custo'],Object.entries(ins).map(([n,o])=>[xc(n),xc(o.kg,'int'),xc(o.rs,'rs')]),[22,12,14]]]);}
+
+function periodoDados(ini,fim){
+  const X=gCtx(),por=new Map(),diario=[],ins={};
+  for(let d=ini,i=0;d<=fim&&i<1500;d=somaDias(d,1),i++){X.L.forEach(l=>{const x=diaLote(l,d,X);if(!x)return;
+    let o=por.get(l.uid);if(!o){o={l,cabDias:0,mn:0,ms:0,cr:0,co:0,pvS:0,pvN:0,dias:0,cab:0};por.set(l.uid,o);}
+    o.dias++;o.cabDias+=x.cab;o.mn+=x.mn;if(ok(x.ms))o.ms+=x.ms;if(ok(x.custoR))o.cr+=x.custoR;o.co+=x.custoOp;if(ok(x.pv)&&x.mn>0){o.pvS+=x.pv;o.pvN++;}o.cab=x.cab;
+    somaInsumos(ins,x);diario.push({d,l,x});});}
+  por.forEach(o=>{o.out=custosDe(o.l).filter(c=>c.dia>=ini&&c.dia<=fim).reduce((a,c)=>a+(+c.rs||0),0);});
+  return {lotes:[...por.values()].sort((a,b)=>porCurral(a.l,b.l)),diario,ins};
+}
+function tPeriodo(t){
+  const hj=hojeKey(),fim=t.fim||somaDias(hj,-1),ini=t.ini||somaDias(fim,-6);GT.ini=ini;GT.fim=fim;
+  const D=periodoDados(ini,fim),T={cd:0,mn:0,ms:0,cr:0,co:0,out:0};
+  const rows=D.lotes.map(o=>{T.cd+=o.cabDias;T.mn+=o.mn;T.ms+=o.ms;T.cr+=o.cr;T.co+=o.co;T.out+=o.out;const tot=o.cr+o.co+o.out;
+    return `<tr class="gClic" data-g="lote" data-id="${o.l.uid}"><td class="c">${esc(curralEm(o.l,fim))}<small>${esc(o.l.nome)} · ${nf(o.dias)} dias</small></td><td>${nf(o.cabDias/o.dias)}</td><td>${nf(o.mn)}<small>${nf(o.mn/o.cabDias,1)}/cab/d</small></td><td>${nf(o.ms)}<small>${nf(o.ms/o.cabDias,2)}/cab/d</small></td><td>${pc(o.pvN?o.pvS/o.pvN:NaN,2)}</td><td>${rs(tot)}<small>${rs((o.cr+o.co)/o.cabDias)}/cab/d</small></td></tr>`;}).join('');
+  const tot=T.cr+T.co+T.out;
+  const atalho=(n,r)=>`<button class="mini" data-g="perAtalho" data-n="${n}">${r}</button>`;
+  return `${voltar('Relatórios')}<section class="panel"><h2>Relatório por período</h2>
+    <div class="gForm"><div class="gCampo meia"><label for="gPerIni">De</label><input type="date" id="gPerIni" value="${ini}"></div><div class="gCampo meia"><label for="gPerFim">Até</label><input type="date" id="gPerFim" value="${fim}"></div></div>
+    <div class="row">${atalho(7,'7 dias')}${atalho(15,'15 dias')}${atalho(30,'30 dias')}${atalho('mes','Este mês')}</div>
+    <div class="stat">${st('Cab-dia',nf(T.cd))}${st('Matéria natural',nf(T.mn)+' kg')}${st('Matéria seca',nf(T.ms)+' kg')}</div>
+    <div class="stat">${st('Custo ração',rs(T.cr))}${st('Operacional',rs(T.co))}${st('Sanidade/outros',rs(T.out))}</div>
+    <div class="stat">${st('Custo total',rs(tot))}${st('Ração+oper./cab/dia',rs(T.cd?(T.cr+T.co)/T.cd:NaN))}${st('MS/cab/dia',nf(T.cd?T.ms/T.cd:NaN,2)+' kg')}</div>
+    <div class="tablebox"><table class="gTab"><thead><tr><th>Curral / lote</th><th>Cab</th><th>MN kg</th><th>MS kg</th><th>%PV</th><th>Custo</th></tr></thead>
+    <tbody>${rows||'<tr><td colspan="6">Nada nesse período.</td></tr>'}</tbody></table></div>
+    ${rows?'<button class="verde" data-g="xlsPer">📊 Excel (por lote, por dia e insumos)</button>':''}</section>
+  ${Object.keys(D.ins).length?card('Insumos usados no período',tabInsumos(D.ins)):''}`;
+}
+function xlsPer(){const ini=GT.ini,fim=GT.fim,D=periodoDados(ini,fim);
+  const r1=D.lotes.map(o=>[xc(curralEm(o.l,fim)),xc(o.l.nome),xc(o.dias,'int'),xc(o.cabDias,'int'),xc(o.mn,'int'),xc(o.ms,'int'),xc(o.mn/o.cabDias,'dec'),xc(o.ms/o.cabDias,'dec'),xc(o.pvN?o.pvS/o.pvN/100:NaN,'pct'),xc(o.cr,'rs'),xc(o.co,'rs'),xc(o.out,'rs'),xc(o.cr+o.co+o.out,'rs'),xc((o.cr+o.co)/o.cabDias,'rs')]);
+  const r2=D.diario.map(({d,l,x})=>[xc(d,'dia'),xc(x.c),xc(l.nome),xc(x.rac),xc(x.cab,'int'),xc(x.peso,'int'),xc(x.mn,'int'),xc(x.ms,'int'),xc(x.msCab,'dec'),xc(x.pv/100,'pct'),xc(x.custoR,'rs'),xc(x.custoOp,'rs')]);
+  gExcel(`Relatório ${dB(ini).replace(/\//g,'-')} a ${dB(fim).replace(/\//g,'-')}`,[
+    ['Por lote',['Curral','Lote','Dias','Cab-dia','MN (kg)','MS (kg)','MN/cab/dia','MS/cab/dia','% PV médio','Custo ração','Custo operacional','Sanidade/outros','Custo total','Ração+oper./cab/dia'],r1,[10,18,7,9,11,11,10,10,9,13,13,13,13,12]],
+    ['Por dia',['Data','Curral','Lote','Ração','Cabeças','Peso proj.','MN (kg)','MS (kg)','MS/cab','% PV','Custo ração','Custo operacional'],r2,[11,10,18,14,9,10,10,10,9,8,13,13]],
+    ['Insumos',['Insumo','kg (MN)','Custo'],Object.entries(D.ins).map(([n,o])=>[xc(n),xc(o.kg,'int'),xc(o.rs,'rs')]),[22,12,14]]]);}
+
+function tComp(t){
+  const todosL=gTodos('lote').filter(l=>t.enc?!ativo(l):true).sort(porCurral);
+  const Cs=todosL.map(l=>({l,C:calcLote(l)}));GT.compEnc=!!t.enc;
+  const rows=Cs.map(({l,C})=>`<tr class="gClic" data-g="lote" data-id="${l.uid}"><td class="c">${esc(l.nome)}<small>${C.fim?'encerrado':esc(curralEm(l,hojeKey()))} · ${nf(C.dias)} dias</small></td>
+    <td>${nf(C.cabV?C.gmdV:l.gmd,2)}<small>${C.cabV?'real':'meta'}</small></td><td>${nf(C.msCab,2)}<small>${pc(C.pv,1)}</small></td><td>${nf(C.conv,1)}</td><td>${rs(C.custoArr)}</td><td class="${C.lucro>=0?'ok':C.lucro<0?'bad':''}">${C.fim?rs(C.lucro/C.cabE):'—'}</td></tr>`).join('');
+  return `${voltar('Relatórios')}<section class="panel"><h2>Comparativo de lotes</h2>
+    <div class="row"><button class="mini${t.enc?'':' sel'}" data-g="ir" data-t="comp">Todos</button><button class="mini${t.enc?' sel':''}" data-g="ir" data-t="comp" data-enc="1">Só encerrados</button></div>
+    <div class="tablebox"><table class="gTab"><thead><tr><th>Lote</th><th>GMD</th><th>MS/cab</th><th>Conv.</th><th>R$/@ prod.</th><th>Lucro/cab</th></tr></thead><tbody>${rows||'<tr><td colspan="6">Nenhum lote.</td></tr>'}</tbody></table></div>
+    <p class="note">Conversão e custo da @ produzida aparecem depois das vendas. Lucro só nos lotes encerrados.</p>
+    ${rows?'<button class="verde" data-g="xlsComp">📊 Excel</button>':''}</section>`;
+}
+function xlsComp(){const todosL=gTodos('lote').filter(l=>GT.compEnc?!ativo(l):true).sort(porCurral);
+  const r=todosL.map(l=>{const C=calcLote(l),e=l.ent;return [xc(l.nome),xc(C.fim?'Encerrado':'Ativo'),xc(curralEm(l,C.ate)),xc(sexoTxt(l.sexo)),xc(l.raca||''),xc(e.dia,'dia'),xc(C.fim||'','dia'),xc(C.dias,'int'),xc(C.cabE,'int'),xc(C.cabV,'int'),xc(C.mortes,'int'),
+    xc(C.pesoE,'int'),xc(C.pesoV,'int'),xc(C.gmdV,'dec'),xc(l.gmd,'dec'),xc(C.msCab,'dec'),xc(C.pv/100,'pct'),xc(C.conv,'dec'),xc(C.compra,'rs'),xc(C.alim,'rs'),xc(C.op,'rs'),xc(C.outros,'rs'),xc(C.custo,'rs'),xc(C.receita,'rs'),xc(C.arrProd,'dec'),xc(C.custoArr,'rs'),xc(C.lucro,'rs'),xc(C.lucro/C.cabE,'rs')];});
+  gExcel('Comparativo de lotes',[['Lotes',['Lote','Situação','Curral','Sexo','Raça','Entrada','Saída','Dias','Cab. entrada','Cab. vendidas','Mortes','Peso entrada','Peso saída','GMD real','GMD meta','MS/cab/dia','% PV','Conversão','Compra','Ração','Operacional','Sanidade/outros','Custo total','Receita','@ produzidas','Custo @ produzida','Lucro','Lucro/cab'],r]]);}
+function xlsLote(id){const l=G.it[id],C=calcLote(l),X=gCtx(),r=[];
+  for(let d=l.ent.dia,i=0;d<=C.ate&&i<4000;d=somaDias(d,1),i++){const x=diaLote(l,d,X);if(!x)continue;const lt=G.it[idLeit(d,x.c)];
+    r.push([xc(d,'dia'),xc(x.c),xc(x.rac),xc(x.cab,'int'),xc(x.peso,'int'),xc(x.mn,'int'),xc(x.ms,'int'),xc(x.mnCab,'dec'),xc(x.msCab,'dec'),xc(x.pv/100,'pct'),xc(lt&&!lt.del?lt.nota:''),xc(x.custoR,'rs'),xc(x.custoOp,'rs')]);}
+  const res=[...$('gBox').querySelectorAll('.gLinhas>div')].map(d=>[xc(d.children[0].textContent),xc(d.children[1].textContent)]);
+  gExcel(`Lote ${l.nome}`,[['Resumo',['Item','Valor'],res,[36,40]],['Dia a dia',['Data','Curral','Ração','Cabeças','Peso proj.','MN (kg)','MS (kg)','MN/cab','MS/cab','% PV','Nota cocho','Custo ração','Custo operacional'],r,[11,10,14,9,10,10,10,9,9,8,9,13,13]]]);}
 
 /* ---------- rações ---------- */
 function tRacoes(){
@@ -406,7 +562,7 @@ function tRacoes(){
   const cards=R.map(r=>{const cp=compRacao(r,hj);const usam=lotesAtivos().filter(l=>{const x=racaoEm(l,hj);return x&&x.uid===r.uid;}).length;
     return `<button class="gItem" data-g="ir" data-t="racForm" data-id="${r.uid}"><div class="gItemTopo"><b>${esc(r.nome)}</b><span class="pill">${usam?usam+' lote(s)':'sem lote'}</span></div>
       <div class="gItemInfo">${cp?`MS ${pc(cp.ms)} · ${rs(cp.custoMN,3)}/kg MN · ${rs(cp.custoMS,3)}/kg MS<br>${cp.itens.map(i=>`${esc(i.nome)} ${nf(i.pMS,1)}%`).join(' · ')}`:'sem fórmula'}</div></button>`;}).join('');
-  return `${voltar('Gestão')}<section class="panel"><h2>Rações</h2>${cards||'<p class="note">Nenhuma ração. Cadastre os insumos primeiro e depois a ração.</p>'}
+  return `<section class="panel"><h2>Rações</h2>${cards||'<p class="note">Nenhuma ração. Cadastre os insumos primeiro e depois a ração.</p>'}
     <button class="lima" data-g="ir" data-t="racForm">+ Nova ração</button></section>`;
 }
 function tRacForm(t){
@@ -458,7 +614,7 @@ function salvaRac(id){
 function tInsumos(){
   const hj=hojeKey(),I=gTodos('insumo').sort(porNome);
   const rows=I.map(i=>{const p=precoIns(i,hj);return `<tr data-g="ir" data-t="insForm" data-id="${i.uid}" class="gClic"><td class="c">${esc(i.nome)}</td><td>${pc(+i.ms,0)}</td><td>${rs(p,0)}</td><td>${rs(p/1000/(i.ms/100),3)}</td></tr>`;}).join('');
-  return `${voltar('Gestão')}<section class="panel"><h2>Insumos</h2>
+  return `<section class="panel"><h2>Insumos</h2>
     <div class="tablebox"><table><thead><tr><th>Insumo</th><th>MS</th><th>R$/t</th><th>R$/kg MS</th></tr></thead><tbody>${rows||'<tr><td colspan="4">Nenhum insumo ainda.</td></tr>'}</tbody></table></div>
     <p class="note">Preço por tonelada como comprado (matéria natural). Toque no insumo para mudar o preço.</p>
     <button class="lima" data-g="ir" data-t="insForm">+ Novo insumo</button></section>`;
@@ -467,7 +623,7 @@ function tInsForm(t){const i=t.id?G.it[t.id]:null,hj=hojeKey();
   const hist=i?(i.precos||[]).slice().reverse().map((p,k,a)=>`<tr><td>${dB(p.desde)}</td><td>${rs(+p.rs,2)}</td><td class="acoes">${a.length>1?`<button class="mini danger" data-g="insPrecoRm" data-id="${i.uid}" data-d="${p.desde}">✕</button>`:''}</td></tr>`).join(''):'';
   return `${voltar()}<section class="panel"><h2>${i?'Insumo':'Novo insumo'}</h2><div class="gForm">${[
     {k:'nome',l:'Nome',v:i?i.nome:'',ph:'Ex.: Silagem de milho'},{k:'ms',l:'Matéria seca',suf:'%',t:'num',v:i?i.ms:'',meia:1},
-    {k:'preco',l:'Preço por tonelada',suf:'R$/t',t:'num',v:i?precoIns(i,hj):'',meia:1},
+    {k:'preco',l:'Preço por tonelada',suf:'R$/t',t:'rs',v:i?precoIns(i,hj):'',meia:1},
     {k:'desde',l:'Preço vale a partir de',t:'dia',v:i?hj:'2000-01-01',ajuda:i?'Se mudar o preço, os dias antes dessa data continuam com o preço antigo.':''}].map(campo).join('')}</div>
     <button class="primary" data-g="salvaIns" data-id="${t.id||''}">Salvar</button></section>
     ${i?`<section class="panel"><h2>Histórico de preço</h2><div class="tablebox"><table><thead><tr><th>Desde</th><th>R$/t</th><th></th></tr></thead><tbody>${hist}</tbody></table></div>
@@ -480,27 +636,33 @@ function salvaIns(id){const nome=fv('nome'),ms=fn('ms'),preco=fn('preco'),desde=
 
 /* ---------- configurações ---------- */
 function tCfg(){const c=gCfg(),hj=hojeKey(),tx=vig(c.taxa,hj);
-  return `${voltar('Gestão')}<section class="panel"><h2>Custo operacional</h2><div class="gForm">${[
-    {k:'taxa',l:'Taxa operacional',suf:'R$ por cabeça por dia',t:'num',v:tx?tx.rs:'',meia:1},{k:'tdesde',l:'Vale a partir de',t:'dia',v:tx?hj:'2000-01-01',meia:1}].map(campo).join('')}</div>
+  if(!GT.notasEd)GT.notasEd=c.notas.slice().sort((a,b)=>a.n-b.n).map(x=>Object.assign({},x));
+  return `<section class="panel"><h2>Custo operacional</h2><div class="gForm">${[
+    {k:'taxa',l:'Taxa operacional',suf:'por cabeça por dia',t:'rs',v:tx?tx.rs:'',meia:1},{k:'tdesde',l:'Vale a partir de',t:'dia',v:tx?hj:'2000-01-01',meia:1}].map(campo).join('')}</div>
     ${(c.taxa||[]).length?`<p class="note">${c.taxa.map(x=>`Desde ${dB(x.desde)}: ${rs(+x.rs)}`).join(' · ')}</p>`:''}</section>
   <section class="panel"><h2>Notas da leitura de cocho</h2>
-    ${c.notas.map((x,k)=>`<div class="gNotaCfg"><b>${x.n}</b><input type="text" data-nt="${k}" value="${esc(x.t)}"><input class="cell num" inputmode="decimal" data-np="${k}" value="${esc(vIn(x.p))}"><span>%</span></div>`).join('')}
-    <p class="note">Ajuste aplicado em cima do realizado de ontem. Use sinal de menos para diminuir.</p></section>
+    <div class="gNotaCfg gNotaCab"><span>Nota</span><span>Descrição</span><span>Ajuste %</span><span></span></div>
+    ${GT.notasEd.map((x,k)=>`<div class="gNotaCfg"><input class="cell num" inputmode="text" data-nn="${k}" value="${esc(vIn(x.n))}"><input type="text" data-nt="${k}" value="${esc(x.t)}"><input class="cell num" inputmode="text" data-np="${k}" value="${esc(vIn(x.p))}"><button class="mini danger" data-g="notaRm" data-i="${k}">✕</button></div>`).join('')}
+    <div class="row"><button data-g="notaAdd">+ Adicionar nota</button><button data-g="notaPadrao">Voltar ao padrão (−5 a +5)</button></div>
+    <p class="note">Nota positiva aumenta o trato, negativa diminui. O ajuste é em cima do realizado de ontem. Use o sinal de menos (−) para diminuir.</p></section>
   <section class="panel"><h2>Outros</h2><div class="gForm">${[
     {k:'arred',l:'Arredondar o previsto de',suf:'kg',t:'num',v:c.arred,meia:1},{k:'rc',l:'Rendimento de carcaça padrão',suf:'%',t:'num',v:c.rc,meia:1},
     {k:'pvIni',l:'Consumo inicial sugerido',suf:'% do PV em MS',t:'num',v:c.pvIni,ajuda:'Usado na leitura de cocho quando o curral ainda não tem trato.'}].map(campo).join('')}</div>
     <button class="primary" data-g="salvaCfg">Salvar configurações</button></section>`;}
+function lerNotasEd(){(GT.notasEd||[]).forEach((x,k)=>{const n=document.querySelector(`#gBox [data-nn="${k}"]`),t=document.querySelector(`#gBox [data-nt="${k}"]`),p=document.querySelector(`#gBox [data-np="${k}"]`);
+  if(n)x.n=gNum(n.value);if(t)x.t=t.value.trim();if(p)x.p=gNum(p.value);});}
 function salvaCfg(){const c=JSON.parse(JSON.stringify(gCfg()));const t=fn('taxa'),d=fv('tdesde')||hojeKey();
   if(ok(t)){const v=vig(c.taxa,d);if(!v||+v.rs!==t)setHist(c.taxa,d,{rs:t});}
-  document.querySelectorAll('#gBox [data-nt]').forEach(e=>{c.notas[+e.dataset.nt].t=e.value.trim()||c.notas[+e.dataset.nt].t;});
-  document.querySelectorAll('#gBox [data-np]').forEach(e=>{const v=gNum(e.value);if(ok(v))c.notas[+e.dataset.np].p=v;});
+  lerNotasEd();const ns=GT.notasEd.filter(x=>ok(x.n)&&ok(x.p));
+  if(new Set(ns.map(x=>x.n)).size!==ns.length)return toast('Tem nota repetida');if(!ns.length)return toast('Coloque pelo menos uma nota');
+  c.notas=ns.map(x=>({n:x.n,t:x.t||(x.p>0?'Aumentar':x.p<0?'Diminuir':'Manter'),p:x.p})).sort((a,b)=>a.n-b.n);c.notasV=2;
   const a=fn('arred'),rc=fn('rc'),pv=fn('pvIni');if(ok(a)&&a>=0)c.arred=a;if(rc>0)c.rc=rc;if(pv>0)c.pvIni=pv;
-  gPut(c);toast('Configurações salvas');gVoltar();}
+  gPut(c);GT.notasEd=null;toast('Configurações salvas');gRender();}
 
 /* =====================================================================================
    EVENTOS
    ===================================================================================== */
-const SO_VER=new Set(['voltar','ir','lote','compRel','compDia','nota','racAdd','racRm']);
+const SO_VER=new Set(['voltar','ir','lote','raiz','compRel','compDia','xlsDia','xlsPer','xlsComp','xlsLote','perAtalho','nota','racAdd','racRm','notaAdd','notaRm','notaPadrao']);
 $('gBox').addEventListener('click',e=>{
   const b=e.target.closest('[data-g]');if(!b)return;const a=b.dataset.g,id=b.dataset.id;
   if(!SO_VER.has(a)&&bloqueado())return;
@@ -508,6 +670,17 @@ $('gBox').addEventListener('click',e=>{
   if(a==='ir'){const t={t:b.dataset.t,id,o:b.dataset.o,enc:b.dataset.enc==='1'};
     if(GT.t==='lotes'&&t.t==='lotes'){GT=t;return gRender();}return gIr(t);}
   if(a==='lote')return gIr({t:'lote',id});
+  if(a==='raiz')return gRaiz(b.dataset.t);
+  if(a==='salvaCusto'){const dia=fv('dia'),v=fn('rs');if(!dia||!(v>0))return toast('Coloque a data e o valor');
+    gPut({uid:novoId('cus'),tipo:'custo',lote:id,dia,cat:fv('cat'),desc:fv('desc'),rs:v});toast('Custo lançado');return gVoltar();}
+  if(a==='xlsDia')return xlsDia();
+  if(a==='xlsPer')return xlsPer();
+  if(a==='xlsComp')return xlsComp();
+  if(a==='xlsLote')return xlsLote(id);
+  if(a==='perAtalho'){const n=b.dataset.n,hj=hojeKey();if(n==='mes')return gRenderCom({ini:hj.slice(0,8)+'01',fim:hj});return gRenderCom({fim:hj,ini:somaDias(hj,-(+n-1))});}
+  if(a==='notaAdd'){lerNotasEd();const mx=GT.notasEd.reduce((m,x)=>Math.max(m,ok(x.n)?x.n:0),0);GT.notasEd.push({n:mx+1,t:'Aumentar',p:(mx+1)*5});return gRender();}
+  if(a==='notaRm'){lerNotasEd();GT.notasEd.splice(+b.dataset.i,1);return gRender();}
+  if(a==='notaPadrao'){GT.notasEd=NOTAS_PADRAO.map(x=>Object.assign({},x));gRender();return toast('Notas −5 a +5 de volta. Toque em Salvar.');}
   if(a==='novoLote')return gIr({t:'loteForm'});
   if(a==='salvaLote')return salvaLote(id);
   if(a==='salvaPes'){const dia=fv('dia'),peso=fn('peso');if(!dia||!(peso>0))return toast('Coloque a data e o peso');
@@ -542,6 +715,7 @@ $('gBox').addEventListener('click',e=>{
 });
 $('gBox').addEventListener('input',e=>{
   const t=e.target;
+  if(t.classList.contains('gRs'))mascaraRs(t);
   if(GT.t==='racForm'&&(t.matches('[data-rp]')||t.id==='gVag'))calcRacao();
   if(GT.t==='rel'&&/^gf_s/.test(t.id))calcSimul();
 });
@@ -550,15 +724,17 @@ $('gBox').addEventListener('change',e=>{
   if(GT.t==='racForm'&&t.matches('[data-ri]'))calcRacao();
   if(t.id==='gCoDia'){GT.sel={};GT.dia=t.value||hojeKey();gRenderCom({dia:GT.dia});}
   if(t.id==='gDiaDia'){gRenderCom({dia:t.value||hojeKey()});}
+  if(t.id==='gRefDia'){gRenderCom({dia:t.value||hojeKey()});}
+  if(t.id==='gPerIni'||t.id==='gPerFim'){let a=$('gPerIni').value,b=$('gPerFim').value;if(a&&b&&a>b)[a,b]=[b,a];gRenderCom({ini:a,fim:b});}
   if(t.matches('input[data-kg]')){const c=t.dataset.kg;GT.sel=GT.sel||{};const lt=G.it[idLeit(GT.dia,c)];
     const n=GT.sel[c]?GT.sel[c].n:(lt&&!lt.del?lt.nota:null);if(n==null){toast('Marque a nota primeiro');t.value='';return;}GT.sel[c]={n,kg:gNum(t.value)};}
 });
 function gRenderCom(o){Object.assign(GT,o);gRender();}
 
 
-/* ---------- aba ---------- */
-function abrirGestao(){if(typeof aba==='function')aba('gest');}
-$('tabGest').addEventListener('click',()=>{abrirGestao();});
+/* ---------- menu: Gestão (Resumo, Lotes, Cocho, Relatórios, Rações, Insumos, Config.) ---------- */
+$('tabGrpGest').addEventListener('click',()=>aba('gest'));
+$('subGest').addEventListener('click',e=>{const b=e.target.closest('button[data-gt]');if(b)gRaiz(b.dataset.gt);});
 window.gAoAbrir=()=>{gRender();if(navigator.onLine)gSync(true).catch(()=>{});};
 /* nome do curral mudou no Previsto: o lote passa a usar o nome novo a partir de hoje */
 window.gRenomearCurral=(de,para)=>{const hj=hojeKey();gTodos('lote').forEach(l=>{if(ativo(l)&&curralEm(l,hj)===de){const x=JSON.parse(JSON.stringify(l));setHist(x.curr,hj,{c:para});gPut(x);}});};
