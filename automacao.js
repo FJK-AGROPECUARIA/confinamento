@@ -13,7 +13,7 @@ const A={fonte:null,status:'Desconectado',peso:null,amostras:[],estavel:false,va
   est:'aguardando',base:null,menor:null,avisou1:false,avisou2:false,bruto:[],buf:'',
   bt:null,btChars:[],ws:null,sim:null,wake:null,ultDado:0};
 window.AUTO=A;
-const CFG_PADRAO={tol:10,tempo:4,minDesc:30,aviso:50,ws:'ws://10.10.100.254:6432',auto:true,som:true};
+const CFG_PADRAO={tol:10,tempo:4,minDesc:30,amarelo:100,vermelho:50,continuo:20,ws:'ws://10.10.100.254:6432',som:true};
 function cfg(){if(!S.auto)S.auto={};for(const k in CFG_PADRAO)if(S.auto[k]==null)S.auto[k]=CFG_PADRAO[k];return S.auto;}
 
 /* não atualiza o app sozinho enquanto a balança está conectada ou descarregando */
@@ -27,15 +27,29 @@ const css=`
 #aBox .aStatus{display:flex;align-items:center;gap:8px;font-size:.9rem;color:var(--muted)}
 #aBox .aStatus i{width:12px;height:12px;border-radius:50%;background:#b8c0c8;display:inline-block;flex:none}
 #aBox .aStatus.ok i{background:#4caf50}#aBox .aStatus.err i{background:var(--bad)}#aBox .aStatus.wait i{background:var(--warn)}
-#aBox .aPeso{background:var(--led-bg);border-radius:14px;padding:12px 16px;text-align:center}
-#aBox .aPeso small{display:block;color:#c9d3df;font-size:.75rem;text-transform:uppercase;letter-spacing:.08em}
-#aBox .aPeso b{display:block;font-family:var(--display);font-stretch:condensed;font-weight:700;color:var(--led);font-size:4.4rem;line-height:1.05;font-variant-numeric:tabular-nums}
+#aBox .aPeso{background:var(--led-bg);border-radius:12px;padding:8px 12px;display:flex;align-items:center;justify-content:space-between;gap:8px}
+#aBox .aFalta{border-radius:16px;padding:10px 14px 12px;text-align:center;color:#fff;background:#2e7d32;transition:background .2s}
+#aBox .aFalta small{display:block;font-size:.85rem;font-weight:700;text-transform:uppercase;letter-spacing:.1em;opacity:.9}
+#aBox .aFalta b{display:block;font-family:var(--display);font-stretch:condensed;font-weight:700;font-size:6.2rem;line-height:1;font-variant-numeric:tabular-nums}
+#aBox .aFalta em{display:block;font-style:normal;font-size:.9rem;font-weight:600;opacity:.95}
+#aBox .aFalta.amarelo{background:#f2b705;color:#11253d}
+#aBox .aFalta.vermelho{background:#c62828}
+#aBox .aFalta.continuo{background:#c62828;animation:aPisca .5s steps(2) infinite}
+#aBox .aFalta.cinza{background:#7c8794}
+@keyframes aPisca{50%{background:#7f0000}}
+#aBox .aMini{display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px}
+#aBox .aMini div{background:var(--chip);border-radius:10px;padding:6px 8px}
+#aBox .aMini small{display:block;font-size:.66rem;color:var(--muted);text-transform:uppercase;letter-spacing:.04em}
+#aBox .aMini b{font-family:var(--display);font-stretch:condensed;font-size:1.5rem;line-height:1.1}
+#aBox .aMini div.caiu{background:#e5f4e3}#aBox .aMini div.caiu b{font-size:1.9rem;color:var(--ok)}
+#aBox .aPeso small{display:block;color:#c9d3df;font-size:.7rem;text-transform:uppercase;letter-spacing:.08em;text-align:left}
+#aBox .aPeso b{font-family:var(--display);font-stretch:condensed;font-weight:700;color:var(--led);font-size:2.2rem;line-height:1;font-variant-numeric:tabular-nums}
 #aBox .aPeso em{font-style:normal;font-size:.85rem;color:#c9d3df}
 #aBox .aPeso em.est{color:#8be08f}
 #aBox .aBarra{height:18px;border-radius:99px;background:var(--chip);overflow:hidden;border:1px solid var(--line)}
 #aBox .aBarra div{height:100%;width:0;background:var(--lima);transition:width .3s}
 #aBox .aBarra div.passou{background:var(--bad)}
-#aBox .aEtapa{text-align:center;font-weight:700;padding:8px;border-radius:10px;background:var(--chip)}
+#aBox .aEtapa{text-align:center;font-weight:700;padding:6px;border-radius:10px;background:var(--chip);font-size:.92rem}
 #aBox .aEtapa.desc{background:#fff4d6;color:var(--warn)}
 #aBox .aEtapa.pronto{background:#e5f4e3;color:var(--ok)}
 #aBox .aBruto{font-family:ui-monospace,Menlo,monospace;font-size:.75rem;background:#0f1d2e;color:#cfe;padding:8px;border-radius:8px;max-height:150px;overflow:auto;white-space:pre-wrap;word-break:break-all}
@@ -66,7 +80,7 @@ function montar(){
       <button id="aSimDesc">▼ Descarregar</button>
       <button id="aSimPara">■ Parar</button>
     </div>
-    <div class="aPeso"><small>Peso na balança (kg)</small><b class="num" id="aPeso">—</b><em id="aEstTxt">sem leitura</em></div>
+    <div class="aPeso"><div><small>Balança (kg)</small><em id="aEstTxt">sem leitura</em></div><b class="num" id="aPeso">—</b></div>
   </section>
 
   <section class="panel">
@@ -77,20 +91,18 @@ function montar(){
       </select>
     </div>
     <div class="curBox2">
-      <div class="cbCur"><span>Curral atual</span><b id="aCur">—</b></div>
+      <div class="cbCur" id="aTrocar" role="button" aria-label="Trocar curral"><span>Curral atual <i class="seta">▼</i></span><b id="aCur">—</b></div>
       <div class="cbPrev"><span>Previsto</span><b class="num" id="aPrev">—</b></div>
     </div>
-    <select id="aEscolha" aria-label="Escolher curral"></select>
+    <div class="escolha" id="aEscolha" hidden></div>
     <div class="aEtapa" id="aEtapa">Conecte a balança</div>
-    <div class="led"><span>Parar com balança em</span><b id="aAlvo">—</b></div>
-    <div class="aBarra"><div id="aBarra"></div></div>
-    <div class="res">
+    <div class="aFalta" id="aFaltaBox"><small>Falta cair</small><b class="num" id="aFalta">—</b><em id="aFaltaTxt">&nbsp;</em></div>
+    <div class="aMini">
+      <div class="caiu"><small>Já caiu</small><b class="num" id="aCaiu">—</b></div>
       <div><small>Peso inicial</small><b class="num" id="aIni">—</b></div>
-      <div><small>Já caiu</small><b class="num" id="aCaiu">—</b></div>
-      <div><small>Falta</small><b class="num" id="aFalta">—</b></div>
+      <div><small>Parar com</small><b class="num" id="aAlvo">—</b></div>
     </div>
-    <label class="aChk"><input type="checkbox" id="aAuto"> Registrar sozinho quando parar de cair</label>
-    <button class="primary" id="aReg" disabled>Registrar agora</button>
+    <button class="primary" id="aReg" disabled>Registrar trato</button>
     <div class="row"><button id="aRecomecar">↺ Pegar peso inicial</button><button id="aPular">Pular curral ▶</button></div>
   </section>
 
@@ -111,7 +123,9 @@ function montar(){
         <div><label for="aTol">Variação aceita parada (kg)</label><input id="aTol" type="number" inputmode="numeric"></div>
         <div><label for="aTempo">Tempo parado (seg)</label><input id="aTempo" type="number" inputmode="numeric"></div>
         <div><label for="aMin">Mínimo que conta como descarga (kg)</label><input id="aMin" type="number" inputmode="numeric"></div>
-        <div><label for="aAviso">Apitar faltando (kg)</label><input id="aAviso" type="number" inputmode="numeric"></div>
+        <div><label for="aAmarelo">Amarelo e apito lento faltando (kg)</label><input id="aAmarelo" type="number" inputmode="numeric"></div>
+        <div><label for="aVermelho">Vermelho e apito rápido faltando (kg)</label><input id="aVermelho" type="number" inputmode="numeric"></div>
+        <div><label for="aContinuo">Apito direto faltando (kg)</label><input id="aContinuo" type="number" inputmode="numeric"></div>
       </div>
       <label for="aWs" style="margin-top:8px">Endereço da caixinha Wi-Fi</label>
       <input id="aWs" type="text" autocapitalize="off" autocorrect="off" spellcheck="false">
@@ -137,17 +151,20 @@ function ligar(){
   $('aSimDesc').onclick=()=>{if(A.sim)A.sim.modo='desc';};
   $('aSimPara').onclick=()=>{if(A.sim)A.sim.modo='parado';};
   $('aTrato').onchange=e=>{if(A.est==='descarregando'&&!confirm('Está descarregando um curral. Trocar de trato mesmo assim?')){e.target.value=String(S.tratoSel);return;}
-    $('tratoSel').value=e.target.value;$('tratoSel').dispatchEvent(new Event('change'));novoCurral();aRender();};
-  $('aEscolha').onchange=e=>{const i=+e.target.value;if(isNaN(i))return;setAtual(i);save();novoCurral();render();aRender();};
-  $('aAuto').checked=!!c.auto;$('aAuto').onchange=e=>{c.auto=e.target.checked;save();aRender();};
+    $('tratoSel').value=e.target.value;$('tratoSel').dispatchEvent(new Event('change'));novoCurral(true);aRender();};
+  $('aTrocar').onclick=()=>{const e=$('aEscolha');e.hidden=!e.hidden;if(!e.hidden)mostrarAEscolha();};
+  $('aEscolha').addEventListener('click',ev=>{const b=ev.target.closest('button[data-i]');if(!b)return;
+    if(A.est==='descarregando'&&!confirm('Está descarregando. Trocar de curral mesmo assim?'))return;
+    setAtual(+b.dataset.i);save();$('aEscolha').hidden=true;novoCurral(true);render();aRender();});
+  $('aBox').addEventListener('pointerdown',liberarSom,{passive:true});
   $('aSom').checked=!!c.som;$('aSom').onchange=e=>{c.som=e.target.checked;save();if(c.som)apito(1);};
-  [['aTol','tol'],['aTempo','tempo'],['aMin','minDesc'],['aAviso','aviso']].forEach(([id,k])=>{
+  [['aTol','tol'],['aTempo','tempo'],['aMin','minDesc'],['aAmarelo','amarelo'],['aVermelho','vermelho'],['aContinuo','continuo']].forEach(([id,k])=>{
     $(id).value=c[k];$(id).onchange=e=>{const v=parseFloat(e.target.value);if(!isNaN(v)&&v>=0){c[k]=v;save();}else e.target.value=c[k];};});
   $('aWs').value=c.ws;$('aWs').onchange=e=>{c.ws=e.target.value.trim()||CFG_PADRAO.ws;e.target.value=c.ws;save();};
-  $('aReg').onclick=()=>registrarAuto(true);
-  $('aRecomecar').onclick=()=>{if(A.peso==null){toast('Sem leitura da balança');return;}novoCurral();A.base=A.estavel?A.valEst:A.peso;aRender();toast('Peso inicial: '+fmt(A.base)+' kg');};
+  $('aReg').onclick=()=>registrarAuto();
+  $('aRecomecar').onclick=()=>{if(A.peso==null){toast('Sem leitura da balança');return;}novoCurral(true);aRender();toast('Peso inicial: '+fmt(A.base)+' kg');};
   $('aPular').onclick=()=>{const L=lista(),regs=regsAtuais();let nx=L.findIndex((x,i)=>i>S.atual&&!feito(x.nome,regs));if(nx<0)nx=Math.min(S.atual+1,L.length);
-    setAtual(nx);save();novoCurral();render();aRender();};
+    setAtual(nx);save();novoCurral(true);render();aRender();};
   $('aDesfazer').onclick=()=>{$('btnDesfazer').click();setTimeout(aRender,300);};
   $('aCopiarBruto').onclick=()=>copiar(A.bruto.join('\n')+'\n\n'+($('aBtInfo').textContent||''),'Dados copiados');
   document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible'&&A.fonte)pedirTelaLigada();});
@@ -279,7 +296,8 @@ function novoPeso(n){
    começou a cair (mais que o mínimo) → descarregando
    parou de cair → registra (inicial − final) e passa para o próximo curral */
 function curralAtual(){return lista()[S.atual]||null;}
-function novoCurral(){A.est='aguardando';A.base=null;A.menor=null;A.avisou1=false;A.avisou2=false;}
+/* troca de curral: o peso de agora vira o inicial */
+function novoCurral(manterPeso){A.est='aguardando';A.menor=null;A.base=manterPeso&&A.peso!=null?(A.estavel?A.valEst:A.peso):null;}
 function maquina(){
   const c=cfg(),cur=curralAtual();if(A.peso==null)return;
   if(A.est==='aguardando'){
@@ -289,21 +307,13 @@ function maquina(){
   }
   if(A.est==='descarregando'){
     A.menor=Math.min(A.menor,A.peso);
-    const alvo=cur?A.base-cur.prev:null;
-    if(alvo!=null&&c.som){
-      if(!A.avisou1&&A.peso<=alvo+c.aviso){A.avisou1=true;apito(1);}
-      if(!A.avisou2&&A.peso<=alvo){A.avisou2=true;apito(3);}
-    }
     if(A.estavel&&A.valEst>A.base+c.minDesc){ // subiu: recarregou o vagão sem registrar
-      toast('Peso subiu: recarga? Peso inicial atualizado.');A.est='aguardando';A.base=A.valEst;return;}
-    if(A.estavel&&A.base-A.valEst>=c.minDesc){
-      if(c.auto&&!modoVer)registrarAuto(false);
-    }
+      toast('Peso subiu: recarga? Peso inicial atualizado.');A.est='aguardando';A.base=A.valEst;}
   }
 }
 
 let registrando=false;
-async function registrarAuto(manual){
+async function registrarAuto(){
   if(registrando)return;
   if(bloqueado())return;
   const L=lista(),cur=L[S.atual];
@@ -313,15 +323,15 @@ async function registrarAuto(manual){
   const ini=A.base;
   if(!(fim<ini)){toast('O peso não caiu desde o início');return;}
   const ja=regsAtuais().filter(x=>x.curral===cur.nome);
-  if(ja.length&&manual&&!confirm(`${cur.nome} já tem trato no Trato ${S.tratoSel}. Lançar mais um (soma no realizado)?`))return;
+  if(ja.length&&!confirm(`${cur.nome} já tem trato no Trato ${S.tratoSel}. Lançar mais um (soma no realizado)?`))return;
   registrando=true;
   const now=new Date();
   const r={ts:now.getTime(),dia:diaAtivo(),trato:S.tratoSel,hora:now.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'}),
-    curral:cur.nome,prev:cur.prev,ini,fim,forn:ini-fim,uid:`${S.aparelho}-${now.getTime()}`,enviado:false,origem:'auto'};
+    curral:cur.nome,prev:cur.prev,ini,fim,forn:ini-fim,uid:`${S.aparelho}-${now.getTime()}`,enviado:false,origem:'balanca'};
   try{r.id=await dbAdd(r);}catch(e){registrando=false;toast('Erro ao salvar no banco. Tente de novo.');return;}
   HIST.push(r);
-  if(cfg().som)apito(2);
-  toast(`${cur.nome}: ${fmt(r.forn)} kg salvo${manual?'':' automaticamente'}`);
+  pararSom();
+  toast(`${cur.nome}: ${fmt(r.forn)} kg salvo`);
   const regs=regsAtuais();
   let nx=L.findIndex((x,i)=>i>S.atual&&!feito(x.nome,regs));if(nx<0)nx=L.findIndex(x=>!feito(x.nome,regs));
   setAtual(nx<0?L.length:nx);
@@ -330,15 +340,31 @@ async function registrarAuto(manual){
   sincronizar();
 }
 
-/* ---------------- Apito, vibração e tela ligada ---------------- */
-let actx=null;
-function apito(vezes){try{
-  if(navigator.vibrate)navigator.vibrate(vezes>=3?[300,120,300,120,500]:vezes===2?[150,80,150]:200);
-  actx=actx||new (window.AudioContext||window.webkitAudioContext)();if(actx.state==='suspended')actx.resume();
-  for(let i=0;i<vezes;i++){const o=actx.createOscillator(),g=actx.createGain(),t=actx.currentTime+i*.28;
-    o.frequency.value=vezes>=3?1400:1000;o.connect(g);g.connect(actx.destination);
-    g.gain.setValueAtTime(.0001,t);g.gain.exponentialRampToValueAtTime(.5,t+.02);g.gain.exponentialRampToValueAtTime(.0001,t+.22);o.start(t);o.stop(t+.24);}
-}catch(e){}}
+/* ---------------- Apito, vibração e tela ligada ----------------
+   verde: sem apito · amarelo (≤100): apito espaçado · vermelho (≤50): apito rápido · ≤20: apito direto
+   só apita enquanto o peso está caindo; parou o vagão, o apito para */
+let actx=null,contOsc=null,ultBip=0;
+function liberarSom(){try{actx=actx||new (window.AudioContext||window.webkitAudioContext)();if(actx.state==='suspended')actx.resume();}catch(e){}}
+function bip(dur,freq){try{liberarSom();const o=actx.createOscillator(),g=actx.createGain(),t=actx.currentTime;
+  o.frequency.value=freq;o.connect(g);g.connect(actx.destination);
+  g.gain.setValueAtTime(.0001,t);g.gain.exponentialRampToValueAtTime(.6,t+.01);g.gain.setValueAtTime(.6,t+dur-.02);g.gain.exponentialRampToValueAtTime(.0001,t+dur);o.start(t);o.stop(t+dur+.01);}catch(e){}}
+function somContinuo(liga){try{
+  if(liga&&!contOsc){liberarSom();const o=actx.createOscillator(),g=actx.createGain();o.frequency.value=1500;g.gain.value=.5;o.connect(g);g.connect(actx.destination);o.start();contOsc={o,g};}
+  if(!liga&&contOsc){contOsc.o.stop();contOsc=null;}}catch(e){contOsc=null;}}
+function pararSom(){somContinuo(false);try{navigator.vibrate&&navigator.vibrate(0);}catch(e){}}
+function zona(){const cur=curralAtual();if(!cur||A.base==null||A.peso==null)return null;
+  const c=cfg(),falta=cur.prev-Math.max(0,A.base-A.peso);
+  return {falta,z:falta<=c.continuo?'continuo':falta<=c.vermelho?'vermelho':falta<=c.amarelo?'amarelo':'verde'};}
+function apito(vezes){for(let i=0;i<vezes;i++)setTimeout(()=>bip(.15,1000),i*250);}
+setInterval(()=>{
+  const z=zona(),c=cfg();
+  const tocando=!!(c.som&&A.fonte&&z&&A.est==='descarregando'&&!A.estavel&&z.z!=='verde'&&!modoVer);
+  if(!tocando){pararSom();return;}
+  if(z.z==='continuo'){somContinuo(true);if(Date.now()-ultBip>900){ultBip=Date.now();try{navigator.vibrate&&navigator.vibrate(1000);}catch(e){}}return;}
+  somContinuo(false);
+  const intervalo=z.z==='vermelho'?350:1000;
+  if(Date.now()-ultBip>=intervalo){ultBip=Date.now();bip(z.z==='vermelho'?.12:.18,z.z==='vermelho'?1300:950);try{navigator.vibrate&&navigator.vibrate(120);}catch(e){}}
+},100);
 async function pedirTelaLigada(){try{if('wakeLock' in navigator&&!A.wake){A.wake=await navigator.wakeLock.request('screen');A.wake.addEventListener('release',()=>{A.wake=null;});}}catch(e){}}
 function soltarTela(){try{A.wake&&A.wake.release();}catch(e){}A.wake=null;}
 
@@ -359,14 +385,16 @@ function pintarPeso(){
   $('aAlvo').textContent=alvo==null?'—':fmt(alvo);
   const caiu=(A.base!=null&&A.peso!=null)?Math.max(0,A.base-A.peso):null;
   $('aCaiu').textContent=caiu==null?'—':fmt(caiu);
-  $('aFalta').textContent=(cur&&caiu!=null)?fmt(cur.prev-caiu):'—';
-  const pc=(cur&&caiu!=null&&cur.prev>0)?caiu/cur.prev:0;
-  $('aBarra').style.width=Math.min(100,pc*100)+'%';$('aBarra').classList.toggle('passou',pc>1.03);
+  const z=zona(),fb=$('aFaltaBox');
+  if(z){$('aFalta').textContent=fmt(Math.abs(z.falta));fb.className='aFalta '+z.z;
+    $('aFaltaTxt').textContent=z.falta<0?`passou ${fmt(-z.falta)} kg do previsto`:z.falta===0?'no ponto!':`de ${fmt(cur.prev)} kg previstos`;
+    if(z.falta<0)$('aFalta').textContent='+'+fmt(-z.falta);}
+  else{$('aFalta').textContent=cur?fmt(cur.prev):'—';fb.className='aFalta cinza';$('aFaltaTxt').textContent=A.fonte?'esperando peso inicial':'conecte a balança';}
   const et=$('aEtapa');let txt,cl='';
   if(!A.fonte)txt='Conecte a balança (ou use o Simulador)';
   else if(A.peso==null)txt='Esperando o peso chegar da balança…';
   else if(!cur)txt=lista().length?'✓ Trato completo':'Sem previsto neste trato (lance na aba Previsto)';
-  else if(A.est==='descarregando'){txt=A.estavel?'Parou de cair… '+(c.auto?'registrando':'toque em Registrar'):'▼ Descarregando no '+cur.nome;cl='desc';}
+  else if(A.est==='descarregando'){txt=A.estavel?'Parou de cair · confira e toque em Registrar':'▼ Descarregando no '+cur.nome;cl='desc';}
   else if(A.base==null)txt='Deixe o vagão parado para pegar o peso inicial';
   else{txt='Pronto: pode descarregar no '+cur.nome;cl='pronto';}
   et.textContent=txt;et.className='aEtapa '+cl;
@@ -380,9 +408,7 @@ function aRender(){
   $('aTrato').value=String(S.tratoSel);
   $('aCur').textContent=cur?cur.nome:(L.length?'Completo':'—');
   $('aPrev').textContent=cur?fmt(cur.prev):'—';
-  $('aEscolha').innerHTML='<option value="">Trocar curral…</option>'+L.map((x,i)=>`<option value="${i}">${feito(x.nome,regs)?'✓ ':''}${esc(x.nome)} · ${fmt(x.prev)} kg</option>`).join('');
-  $('aEscolha').value='';
-  $('aAuto').checked=!!S.auto.auto;
+  if(!$('aEscolha').hidden)mostrarAEscolha();
   let tp=0,tf=0;
   const linha=(nome,prev,i)=>{const rs=regs.filter(r=>r.curral===nome),fz=rs.length>0,f=rs.reduce((a,r)=>a+r.forn,0);
     if(prev!=null)tp+=prev;tf+=f;const d=f-(prev||0);
@@ -398,6 +424,9 @@ function aRender(){
   marcarFonte();pintarPeso();
 }
 window.aRender=aRender;
+/* quadros com todos os currais que têm previsto (igual à aba Tratar) */
+function mostrarAEscolha(){const L=lista(),regs=regsAtuais();
+  $('aEscolha').innerHTML=L.length?L.map((x,i)=>`<button data-i="${i}" class="${i===S.atual?'atual':''} ${feito(x.nome,regs)?'feito':''}">${feito(x.nome,regs)?'✓ ':''}${esc(x.nome)}<small>${fmt(x.prev)} kg</small></button>`).join(''):'<p class="note">Sem previsto neste trato.</p>';}
 
 /* abrir a aba */
 window.aAoAbrir=()=>{montar();aRender();};
