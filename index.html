@@ -501,7 +501,18 @@ details.gMais>.gLoteRel{margin-top:10px}
 .gCarga summary{display:flex;flex-wrap:wrap;gap:4px;align-items:baseline}.gCarga summary span{margin-left:auto;font-weight:700}.gCarga summary i{font-style:normal;font-size:.8rem}
 #cBox .escolha{display:flex;flex-direction:column;gap:6px}#cBox .escolha button.sel{background:var(--lima-claro);border-color:var(--lima)}
 #cBox .cbCur{min-width:0;overflow:hidden}#cBox .cbCur b{display:block;max-width:100%;overflow:hidden;white-space:nowrap}
-#tecCarga .tecAcoes{grid-template-columns:1fr 2fr}
+#tecCarga .tecAcoes{grid-template-columns:1fr 2fr;margin-top:5px}
+/* teclados compactos (Tratar, Previsto, Carregar) */
+.teclado{padding:6px 8px calc(6px + env(safe-area-inset-bottom,0px))!important}
+.teclado .tecTopo{padding:0 6px 3px!important;font-size:.95rem!important}.teclado .tecTopo b{font-size:1.35rem!important}
+.teclado .tecGrade{gap:5px!important}.teclado button{font-size:21px!important;padding:6px 0!important;border-radius:9px!important;min-height:40px}
+.teclado button.tecSec{font-size:.95rem!important}.teclado button.tecOk{font-size:1.1rem!important}
+.teclado .tecAcoes,.teclado .tecAcoes1{margin-top:5px!important}.tecAcoes1 button.tecOk{padding:7px 0!important}
+body.comteclado .wrap{padding-bottom:300px!important}
+#cBox input.sel{border-color:var(--lima);box-shadow:0 0 0 3px var(--lima-claro)}
+.gDuas{display:grid;grid-template-columns:1fr 1fr;gap:12px}.gDuas .gLinhas>div{font-size:.84rem}
+#gBox h3{font-size:.78rem;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin:4px 0 0}
+.gRacLote{font-weight:700;color:var(--ok)!important;font-size:.82rem}
 .gVers{display:flex;flex-direction:column;gap:2px;padding:6px 0;border-bottom:1px solid var(--line);font-size:.86rem}.gVers span{color:var(--muted)}
 .gNavData{display:flex;align-items:stretch;gap:6px}
 .gSeta{flex:0 0 42px;padding:0;font-size:1.1rem;background:var(--accent);color:#fff;border-color:var(--accent)}
@@ -800,7 +811,7 @@ details.gMais>.gLoteRel{margin-top:10px}
 <div class="toast" id="toast" hidden></div>
 <script>
 'use strict';
-const APP_VERSAO='7';
+const APP_VERSAO='8';
 const APP_DATA='17/10/2026';
 const KEY='confinamento-completo-v1';
 const $=id=>document.getElementById(id);
@@ -1155,7 +1166,7 @@ function abrirTeclado(i){
   tecIdx=i;tecBuf=x.value==='—'?'':x.value;tecNovo=true;x.classList.add('sel');
   $('teclado').hidden=false;document.body.classList.add('comteclado');
   $('tecNome').textContent=S.cadastro[i];$('tecValor').textContent=tecBuf||'—';
-  requestAnimationFrame(()=>{const r=x.getBoundingClientRect(),vis=innerHeight-$('teclado').offsetHeight;window.scrollBy({top:r.top-Math.max(80,vis/2-r.height/2),behavior:'smooth'});});
+  requestAnimationFrame(()=>{const r=x.getBoundingClientRect(),vis=innerHeight-$('teclado').offsetHeight;const mb=topoLivre();window.scrollBy({top:r.top-Math.max(mb,mb+(vis-mb)/2-r.height/2),behavior:'smooth'});});
 }
 function fecharTeclado(){
   if(tecIdx!=null)aplicarPrev(tecIdx,tecBuf);
@@ -1164,6 +1175,8 @@ function fecharTeclado(){
 }
 /* Teclado do app para a balança: OK fecha (espera o curral terminar para digitar o final) */
 let balCampo=null,balBuf='',balNovo=false;
+/* altura ocupada pelo menu fixo no topo: o campo digitado para logo abaixo dele */
+function topoLivre(){const m=document.getElementById('menu');return (m&&!document.body.classList.contains('naInicio')?m.getBoundingClientRect().bottom:0)+12;}
 function abrirBal(id){
   if(bloqueado())return;
   if(typeof fecharTeclado==='function'&&tecIdx!=null)fecharTeclado();
@@ -1171,7 +1184,7 @@ function abrirBal(id){
   balCampo=id;balBuf=$(id).value;balNovo=true;$(id).classList.add('sel');
   $('balNome').textContent=id==='ini'?'Balança no início':'Balança no final';$('balValor').textContent=balBuf||'—';
   $('tecBal').hidden=false;document.body.classList.add('comteclado');
-  requestAnimationFrame(()=>{const r=$(id).getBoundingClientRect(),vis=innerHeight-$('tecBal').offsetHeight;window.scrollBy({top:r.top-80,behavior:'smooth'});});
+  requestAnimationFrame(()=>{const r=$(id).getBoundingClientRect(),vis=innerHeight-$('tecBal').offsetHeight;window.scrollBy({top:r.top-topoLivre(),behavior:'smooth'});});
 }
 function fecharBal(){if(balCampo)$(balCampo).classList.remove('sel');balCampo=null;$('tecBal').hidden=true;document.body.classList.remove('comteclado');save();calc();mostrarX();}
 function teclarBal(k){
