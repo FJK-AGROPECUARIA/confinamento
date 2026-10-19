@@ -96,13 +96,14 @@ function montar(){
     </div>
     <div class="escolha" id="aEscolha" hidden></div>
     <div class="aEtapa" id="aEtapa">Conecte a balança</div>
-    <div class="aFalta" id="aFaltaBox"><small>Falta cair</small><b class="num" id="aFalta">—</b><em id="aFaltaTxt">&nbsp;</em></div>
+    <div class="aFalta" id="aFaltaBox"><small id="aFaltaTit">Falta tratar</small><b class="num" id="aFalta">—</b><em id="aFaltaTxt">&nbsp;</em></div>
     <div class="aMini">
       <div class="caiu"><small>Já caiu</small><b class="num" id="aCaiu">—</b></div>
       <div><small>Peso inicial</small><b class="num" id="aIni">—</b></div>
       <div><small>Parar com</small><b class="num" id="aAlvo">—</b></div>
     </div>
     <button class="primary" id="aReg" disabled>Registrar trato</button>
+    <button id="aTestarSom">🔊 Testar apito (amarelo, vermelho e direto)</button>
     <div class="row"><button id="aRecomecar">↺ Pegar peso inicial</button><button id="aPular">Pular curral ▶</button></div>
   </section>
 
@@ -156,7 +157,6 @@ function ligar(){
   $('aEscolha').addEventListener('click',ev=>{const b=ev.target.closest('button[data-i]');if(!b)return;
     if(A.est==='descarregando'&&!confirm('Está descarregando. Trocar de curral mesmo assim?'))return;
     setAtual(+b.dataset.i);save();$('aEscolha').hidden=true;novoCurral(true);render();aRender();});
-  $('aBox').addEventListener('pointerdown',liberarSom,{passive:true});
   $('aSom').checked=!!c.som;$('aSom').onchange=e=>{c.som=e.target.checked;save();if(c.som)apito(1);};
   [['aTol','tol'],['aTempo','tempo'],['aMin','minDesc'],['aAmarelo','amarelo'],['aVermelho','vermelho'],['aContinuo','continuo']].forEach(([id,k])=>{
     $(id).value=c[k];$(id).onchange=e=>{const v=parseFloat(e.target.value);if(!isNaN(v)&&v>=0){c[k]=v;save();}else e.target.value=c[k];};});
@@ -166,6 +166,12 @@ function ligar(){
   $('aPular').onclick=()=>{const L=lista(),regs=regsAtuais();let nx=L.findIndex((x,i)=>i>S.atual&&!feito(x.nome,regs));if(nx<0)nx=Math.min(S.atual+1,L.length);
     setAtual(nx);save();novoCurral(true);render();aRender();};
   $('aDesfazer').onclick=()=>{$('btnDesfazer').click();setTimeout(aRender,300);};
+  $('aTestarSom').onclick=()=>{liberarSom();
+    if(!cfg().som){toast('O apito está desligado nos Ajustes da balança');return;}
+    [400,1400,2400].forEach(t=>setTimeout(()=>bip(.18,950),t));
+    [3000,3350,3700,4050,4400].forEach(t=>setTimeout(()=>bip(.12,1300),t));
+    setTimeout(()=>{somContinuo(true);setTimeout(()=>somContinuo(false),1500);},5000);
+    toast('Apito lento, rápido e direto. Sem som? Tire do silencioso e aumente o volume.');};
   $('aCopiarBruto').onclick=()=>copiar(A.bruto.join('\n')+'\n\n'+($('aBtInfo').textContent||''),'Dados copiados');
   document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible'&&A.fonte)pedirTelaLigada();});
 }
@@ -241,8 +247,8 @@ function conectarSim(){
   desconectar(false);A.fonte='sim';marcarFonte();
   A.sim={peso:6000,modo:'parado',t:null};
   A.sim.t=setInterval(()=>{const s=A.sim;if(!s)return;
-    if(s.modo==='desc'){s.peso=Math.max(0,s.peso-(18+Math.random()*14));if(s.peso<=0)s.modo='parado';}
-    const ruido=s.modo==='desc'?(Math.random()-.5)*16:(Math.random()-.5)*4;
+    if(s.modo==='desc'){s.peso=Math.max(0,s.peso-(5+Math.random()*3));if(s.peso<=0)s.modo='parado';}
+    const ruido=s.modo==='desc'?(Math.random()-.5)*6:(Math.random()-.5)*4;
     receber(`GR ${Math.round(s.peso+ruido)} kg\r\n`,'sim');},300);
   setStatus('Simulador ligado (peso de mentira, para treinar)','ok');
 }
@@ -343,14 +349,34 @@ async function registrarAuto(){
 /* ---------------- Apito, vibração e tela ligada ----------------
    verde: sem apito · amarelo (≤100): apito espaçado · vermelho (≤50): apito rápido · ≤20: apito direto
    só apita enquanto o peso está caindo; parou o vagão, o apito para */
-let actx=null,contOsc=null,ultBip=0;
-function liberarSom(){try{actx=actx||new (window.AudioContext||window.webkitAudioContext)();if(actx.state==='suspended')actx.resume();}catch(e){}}
-function bip(dur,freq){try{liberarSom();const o=actx.createOscillator(),g=actx.createGain(),t=actx.currentTime;
-  o.frequency.value=freq;o.connect(g);g.connect(actx.destination);
-  g.gain.setValueAtTime(.0001,t);g.gain.exponentialRampToValueAtTime(.6,t+.01);g.gain.setValueAtTime(.6,t+dur-.02);g.gain.exponentialRampToValueAtTime(.0001,t+dur);o.start(t);o.stop(t+dur+.01);}catch(e){}}
-function somContinuo(liga){try{
-  if(liga&&!contOsc){liberarSom();const o=actx.createOscillator(),g=actx.createGain();o.frequency.value=1500;g.gain.value=.5;o.connect(g);g.connect(actx.destination);o.start();contOsc={o,g};}
-  if(!liga&&contOsc){contOsc.o.stop();contOsc=null;}}catch(e){contOsc=null;}}
+/* Som feito como arquivo WAV tocado por <audio>: é o jeito que o iPhone aceita melhor.
+   O iPhone só libera o som depois de um toque na tela; no 1º toque cada som é "destravado". */
+try{if(navigator.audioSession)navigator.audioSession.type='playback';}catch(e){}
+let ultBip=0,somLiberado=false;
+function wav(freq,ms,vol){const sr=22050,n=Math.round(sr*ms/1000),buf=new ArrayBuffer(44+n*2),d=new DataView(buf);
+  const w=(o,t)=>{for(let i=0;i<t.length;i++)d.setUint8(o+i,t.charCodeAt(i));};
+  w(0,'RIFF');d.setUint32(4,36+n*2,true);w(8,'WAVE');w(12,'fmt ');d.setUint32(16,16,true);d.setUint16(20,1,true);d.setUint16(22,1,true);
+  d.setUint32(24,sr,true);d.setUint32(28,sr*2,true);d.setUint16(32,2,true);d.setUint16(34,16,true);w(36,'data');d.setUint32(40,n*2,true);
+  const ramp=Math.min(200,n/4);
+  for(let i=0;i<n;i++){const env=Math.min(1,i/ramp,(n-i)/ramp);d.setInt16(44+i*2,Math.sin(2*Math.PI*freq*i/sr)*32767*vol*env,true);}
+  return URL.createObjectURL(new Blob([buf],{type:'audio/wav'}));}
+const SONS={};
+function criarSons(){if(SONS.lento)return;
+  const mk=(u,loop)=>{const a=new Audio(u);a.preload='auto';a.loop=!!loop;a.setAttribute('playsinline','');return a;};
+  SONS.lento=mk(wav(950,180,.9));SONS.rapido=mk(wav(1300,120,.9));
+  SONS.cont=mk(wav(1500,1000,.8),true);}  // 1 s em repetição = apito direto
+function liberarSom(){try{
+  try{if(navigator.audioSession)navigator.audioSession.type='playback';}catch(e){}
+  criarSons();if(somLiberado)return;somLiberado=true;
+  Object.values(SONS).forEach(a=>{a.muted=true;const p=a.play();const fim=()=>{a.pause();a.currentTime=0;a.muted=false;};
+    if(p&&p.then)p.then(fim).catch(()=>{a.muted=false;somLiberado=false;});else fim();});
+}catch(e){}}
+['touchend','click','keydown'].forEach(ev=>document.addEventListener(ev,liberarSom,{passive:true,capture:true}));
+function tocar(a){try{criarSons();a.currentTime=0;const p=a.play();if(p&&p.catch)p.catch(()=>{});}catch(e){}}
+function bip(dur,freq){criarSons();tocar(freq>=1200?SONS.rapido:SONS.lento);}
+function somContinuo(liga){try{criarSons();const a=SONS.cont;
+  if(liga&&a.paused){const p=a.play();if(p&&p.catch)p.catch(()=>{});}
+  if(!liga&&!a.paused){a.pause();a.currentTime=0;}}catch(e){}}
 function pararSom(){somContinuo(false);try{navigator.vibrate&&navigator.vibrate(0);}catch(e){}}
 function zona(){const cur=curralAtual();if(!cur||A.base==null||A.peso==null)return null;
   const c=cfg(),falta=cur.prev-Math.max(0,A.base-A.peso);
@@ -386,9 +412,10 @@ function pintarPeso(){
   const caiu=(A.base!=null&&A.peso!=null)?Math.max(0,A.base-A.peso):null;
   $('aCaiu').textContent=caiu==null?'—':fmt(caiu);
   const z=zona(),fb=$('aFaltaBox');
-  if(z){$('aFalta').textContent=fmt(Math.abs(z.falta));fb.className='aFalta '+z.z;
+  $('aFaltaTit').textContent=(z&&z.falta<0)?'Passou':'Falta tratar';
+  if(z){$('aFalta').textContent=fmt(z.falta);fb.className='aFalta '+z.z;
     $('aFaltaTxt').textContent=z.falta<0?`passou ${fmt(-z.falta)} kg do previsto`:z.falta===0?'no ponto!':`de ${fmt(cur.prev)} kg previstos`;
-    if(z.falta<0)$('aFalta').textContent='+'+fmt(-z.falta);}
+    if(z.falta<0)$('aFalta').textContent='-'+fmt(-z.falta);}
   else{$('aFalta').textContent=cur?fmt(cur.prev):'—';fb.className='aFalta cinza';$('aFaltaTxt').textContent=A.fonte?'esperando peso inicial':'conecte a balança';}
   const et=$('aEtapa');let txt,cl='';
   if(!A.fonte)txt='Conecte a balança (ou use o Simulador)';
