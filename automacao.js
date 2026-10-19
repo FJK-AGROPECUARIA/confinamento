@@ -77,7 +77,7 @@ function montar(){
     <button id="aDesc" hidden>Desconectar</button>
     <div class="aSim" id="aSimBox" hidden>
       <button class="lima" id="aSimCarga">+ Carregar 1.000</button>
-      <button id="aSimDesc">▼ Descarregar</button>
+      <button id="aSimDesc">▼ Fornecer</button>
       <button id="aSimPara">■ Parar</button>
     </div>
     <div class="aPeso"><div><small>Balança (kg)</small><em id="aEstTxt">sem leitura</em></div><b class="num" id="aPeso">—</b></div>
@@ -96,9 +96,9 @@ function montar(){
     </div>
     <div class="escolha" id="aEscolha" hidden></div>
     <div class="aEtapa" id="aEtapa">Conecte a balança</div>
-    <div class="aFalta" id="aFaltaBox"><small id="aFaltaTit">Falta tratar</small><b class="num" id="aFalta">—</b><em id="aFaltaTxt">&nbsp;</em></div>
+    <div class="aFalta" id="aFaltaBox"><small id="aFaltaTit">Fornecer</small><b class="num" id="aFalta">—</b><em id="aFaltaTxt">&nbsp;</em></div>
     <div class="aMini">
-      <div class="caiu"><small>Já caiu</small><b class="num" id="aCaiu">—</b></div>
+      <div class="caiu"><small>Fornecido</small><b class="num" id="aCaiu">—</b></div>
       <div><small>Peso inicial</small><b class="num" id="aIni">—</b></div>
       <div><small>Parar com</small><b class="num" id="aAlvo">—</b></div>
     </div>
@@ -151,11 +151,11 @@ function ligar(){
   $('aSimCarga').onclick=()=>{if(A.sim){A.sim.modo='parado';A.sim.peso+=1000;}};
   $('aSimDesc').onclick=()=>{if(A.sim)A.sim.modo='desc';};
   $('aSimPara').onclick=()=>{if(A.sim)A.sim.modo='parado';};
-  $('aTrato').onchange=e=>{if(A.est==='descarregando'&&!confirm('Está descarregando um curral. Trocar de trato mesmo assim?')){e.target.value=String(S.tratoSel);return;}
+  $('aTrato').onchange=e=>{if(A.est==='descarregando'&&!confirm('Está fornecendo num curral. Trocar de trato mesmo assim?')){e.target.value=String(S.tratoSel);return;}
     $('tratoSel').value=e.target.value;$('tratoSel').dispatchEvent(new Event('change'));novoCurral(true);aRender();};
   $('aTrocar').onclick=()=>{const e=$('aEscolha');e.hidden=!e.hidden;if(!e.hidden)mostrarAEscolha();};
   $('aEscolha').addEventListener('click',ev=>{const b=ev.target.closest('button[data-i]');if(!b)return;
-    if(A.est==='descarregando'&&!confirm('Está descarregando. Trocar de curral mesmo assim?'))return;
+    if(A.est==='descarregando'&&!confirm('Está fornecendo. Trocar de curral mesmo assim?'))return;
     setAtual(+b.dataset.i);save();$('aEscolha').hidden=true;novoCurral(true);render();aRender();});
   $('aSom').checked=!!c.som;$('aSom').onchange=e=>{c.som=e.target.checked;save();if(c.som)apito(1);};
   [['aTol','tol'],['aTempo','tempo'],['aMin','minDesc'],['aAmarelo','amarelo'],['aVermelho','vermelho'],['aContinuo','continuo']].forEach(([id,k])=>{
@@ -412,7 +412,7 @@ function pintarPeso(){
   const caiu=(A.base!=null&&A.peso!=null)?Math.max(0,A.base-A.peso):null;
   $('aCaiu').textContent=caiu==null?'—':fmt(caiu);
   const z=zona(),fb=$('aFaltaBox');
-  $('aFaltaTit').textContent=(z&&z.falta<0)?'Passou':'Falta tratar';
+  $('aFaltaTit').textContent=(z&&z.falta<0)?'Passou':'Fornecer';
   if(z){$('aFalta').textContent=fmt(z.falta);fb.className='aFalta '+z.z;
     $('aFaltaTxt').textContent=z.falta<0?`passou ${fmt(-z.falta)} kg do previsto`:z.falta===0?'no ponto!':`de ${fmt(cur.prev)} kg previstos`;
     if(z.falta<0)$('aFalta').textContent='-'+fmt(-z.falta);}
@@ -421,9 +421,9 @@ function pintarPeso(){
   if(!A.fonte)txt='Conecte a balança (ou use o Simulador)';
   else if(A.peso==null)txt='Esperando o peso chegar da balança…';
   else if(!cur)txt=lista().length?'✓ Trato completo':'Sem previsto neste trato (lance na aba Previsto)';
-  else if(A.est==='descarregando'){txt=A.estavel?'Parou de cair · confira e toque em Registrar':'▼ Descarregando no '+cur.nome;cl='desc';}
+  else if(A.est==='descarregando'){txt=A.estavel?'Parou de cair · confira e toque em Registrar':'▼ Fornecendo no '+cur.nome;cl='desc';}
   else if(A.base==null)txt='Deixe o vagão parado para pegar o peso inicial';
-  else{txt='Pronto: pode descarregar no '+cur.nome;cl='pronto';}
+  else{txt='Pronto: pode fornecer no '+cur.nome;cl='pronto';}
   et.textContent=txt;et.className='aEtapa '+cl;
   $('aReg').disabled=!(cur&&A.base!=null&&A.peso!=null&&A.peso<A.base)||modoVer;
 }
