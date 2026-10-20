@@ -1084,6 +1084,7 @@ function cClique(e){
   if(!A&&a!=='apagaCarga')return;
   if(a==='escolher'){A.escolha=!A.escolha;cSave();return cRender();}
   if(a==='ir'){A.atual=+b.dataset.i;A.escolha=false;cSave();return cRender();}
+  if(a==='prox'&&cAuto()&&window.acProximo)return acProximo();
   if(a==='ant'||a==='prox'){A.atual=Math.max(0,Math.min(A.itens.length-1,A.atual+(a==='ant'?-1:1)));const it=A.itens[A.atual],pv=A.itens[A.atual-1];if(a==='prox'&&!ok(it.ini)&&pv&&ok(pv.fim))it.ini=pv.fim;cSave();return cRender();}
   if(a==='registrar'&&cAuto())return window.acRegistrar&&acRegistrar();
   if(a==='registrar'){const it=A.itens[A.atual];if(!(ok(it.ini)&&ok(it.fim)&&it.fim>it.ini))return toast('A balança no final precisa ser maior que no início');
@@ -1093,7 +1094,9 @@ function cClique(e){
     cSave();toast(`${it.nome}: ${nf(it.real)} kg`);cRender();if(nx>=0)cTeclado('fim');else toast('Todos os produtos carregados. Toque em Concluir batida.');return;}
   if(a==='desfazer'){const feitos=A.itens.map((x,j)=>[x,j]).filter(([x])=>ok(x.real)).sort((p,q)=>((q[0].tsReg||0)-(p[0].tsReg||0))||(q[0].hora||'').localeCompare(p[0].hora||'')||(q[1]-p[1]));if(!feitos.length)return;
     const [x,j]=feitos[0];x.real=null;x.fim=null;A.atual=j;cSave();return cRender();}
-  if(a==='cancelar'){if(!confirm('Cancelar esta batida? O que foi lançado nela não será salvo.'))return;CG.ativa=null;cSave();return cRender();}
+  if(a==='cancelar'){const feitos=A.itens.filter(x=>ok(x.real)).length;
+    confirmaVermelho('Deseja realmente cancelar a batida?',`${feitos?`Os ${feitos} produto(s) já carregado(s) nesta batida serão perdidos.`:'Esta batida será descartada.'} Nada dela será salvo e não dá para desfazer.`,'Sim, cancelar batida','Não, continuar carregando')
+      .then(sim=>{if(!sim)return;if(CG.ativa!==A)return;CG.ativa=null;cSave();cRender();toast('Batida cancelada');window.scrollTo({top:0});});return;}
   if(a==='concluir'){const falta=A.itens.filter(x=>!ok(x.real)).length;if(falta&&!confirm(`Faltam ${falta} produto(s). Concluir assim mesmo?`))return;
     gPut({uid:novoId('carga'),tipo:'carga',dia:A.dia,trato:A.trato,racao:A.rac,racNome:A.racNome,total:A.total,ts0:A.ts0,hora:new Date(A.ts0).toTimeString().slice(0,5),
       itens:A.itens.map(x=>({ins:x.ins,nome:x.nome,pMN:x.pMN,prev:x.prev,ini:x.ini,fim:x.fim,real:ok(x.real)?x.real:null,hora:x.hora||''})),origem:A.origem||''});
@@ -1117,3 +1120,16 @@ function xlsCarga(){const dia=CG.verDia||hojeKey(),L=cargasDia(dia),r=[];
   gExcel(`Batidas ${dB(dia).replace(/\//g,'-')}`,[['Batidas',['Data','Hora','Trato','Ração','Produto','Previsto (kg)','Carregado (kg)','Diferença (kg)','Balança início','Balança final'],r,[11,7,7,16,22,12,13,13,13,13]]]);}
 $('tabCarga').addEventListener('click',()=>aba('carga'));
 window.cAoAbrir=()=>{cRender();};window.cFecha=cFecha;
+
+/* confirmação com aviso em vermelho (ex.: cancelar batida) */
+function confirmaVermelho(tit,txt,sim,nao){return new Promise(res=>{
+  if(!document.getElementById('cvEstilo')){const st=document.createElement('style');st.id='cvEstilo';st.textContent=`.cvFundo{position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:9999;display:flex;align-items:center;justify-content:center;padding:16px}
+.cvCaixa{background:var(--card,#fff);border-radius:16px;max-width:420px;width:100%;padding:20px;border:3px solid #d32f2f;box-shadow:0 10px 40px rgba(0,0,0,.35)}
+.cvCaixa h3{margin:0 0 10px;color:#d32f2f;font-size:1.25rem}.cvCaixa p{margin:0 0 18px;color:#d32f2f;font-weight:600;line-height:1.35}
+.cvCaixa .cvBt{display:grid;gap:10px}.cvCaixa button{padding:14px;font-size:1rem;border-radius:12px}.cvCaixa .cvSim{background:#d32f2f;color:#fff;border-color:#d32f2f}`;document.head.appendChild(st);}
+  const f=document.createElement('div');f.className='cvFundo';
+  f.innerHTML=`<div class="cvCaixa" role="alertdialog"><h3>⚠️ ${esc(tit)}</h3><p>${esc(txt)}</p><div class="cvBt"><button class="cvSim">${esc(sim)}</button><button class="cvNao">${esc(nao)}</button></div></div>`;
+  const fim=v=>{f.remove();res(v);};
+  f.querySelector('.cvSim').onclick=()=>fim(true);f.querySelector('.cvNao').onclick=()=>fim(false);
+  f.addEventListener('click',e=>{if(e.target===f)fim(false);});document.body.appendChild(f);});}
+window.confirmaVermelho=confirmaVermelho;

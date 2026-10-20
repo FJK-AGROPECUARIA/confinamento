@@ -28,8 +28,8 @@ window.autoOcupado=()=>!!A.fonte||A.est==='descarregando';
 
 /* ---------------- Tela ---------------- */
 const css=`
-:is(#aBox,#acBox) .aConn{display:grid;grid-template-columns:repeat(2,1fr);gap:6px}
-:is(#aBox,#acBox) .aConn button{padding:10px 4px;font-size:.9rem}
+:is(#aBox,#acBox) .aConn{display:grid;grid-template-columns:1fr;gap:6px}
+:is(#aBox,#acBox) .aConn button{padding:14px 6px;font-size:1rem}
 :is(#aBox,#acBox) .aConn button.on{background:var(--lima);border-color:var(--lima);color:var(--fg);font-weight:700}
 :is(#aBox,#acBox) .aStatus{display:flex;align-items:center;gap:8px;font-size:.9rem;color:var(--muted)}
 :is(#aBox,#acBox) .aStatus i{width:12px;height:12px;border-radius:50%;background:#b8c0c8;display:inline-block;flex:none}
@@ -79,10 +79,10 @@ function montar(){
     <div class="curhead"><h2>Balança automática</h2><span class="note" id="aData"></span></div>
     <div class="aStatus" id="aStatus"><i></i><span id="aStatusTxt">Desconectado</span></div>
     <div class="aConn">
-      <button id="aBtSer">🔵 Bluetooth</button>
-      <button id="aBtBt">🔷 Bluetooth BLE</button>
-      <button id="aBtWs">📶 Caixinha Wi-Fi</button>
-      <button id="aBtSim">🧪 Simulador</button>
+      <button id="aBtSer" hidden>🔵 Bluetooth</button>
+      <button id="aBtBt">🔷 Conectar balança (Bluetooth)</button>
+      <button id="aBtWs" hidden>📶 Caixinha Wi-Fi</button>
+      <button id="aBtSim" hidden>🧪 Simulador</button>
     </div>
     <button id="aDesc" hidden>Desconectar</button>
     <div class="aTeclas" id="aTeclas" hidden><button data-tecla="43">▸0◂<br>Zero</button><button data-tecla="40">▸T◂<br>Tara</button><button data-tecla="10">Líquido/<br>Bruto</button><button data-tecla="23">🖨<br>Imprimir</button></div>
@@ -201,13 +201,34 @@ async function conectarBt(){
     setStatus('Escolha a balança na lista…','wait');
     const dev=await navigator.bluetooth.requestDevice({acceptAllDevices:true,optionalServices:servicosBle()});
     A.bt=dev;A.fonte='bt';marcarFonte();
-    dev.addEventListener('gattserverdisconnected',()=>{if(dev._manual||A.bt!==dev)return;setStatus('Bluetooth caiu, reconectando…','wait');setTimeout(()=>{if(A.bt===dev)btAbrir(dev).catch(()=>setStatus('Bluetooth desconectado. Toque em Bluetooth de novo.','err'));},1500);});
+    try{localStorage.setItem('btUltimo',dev.id||'');}catch(e){}
+    ligarQueda(dev);
     await btAbrir(dev);
   }catch(e){
     if(e&&e.name==='NotFoundError'){setStatus('Nenhum aparelho escolhido');A.fonte=null;marcarFonte();return;}
     setStatus('Bluetooth: '+(e.message||e),'err');A.fonte=null;marcarFonte();
   }
 }
+/* Bluetooth caiu: tenta reconectar sozinho, de novo e de novo, até voltar (ou até tocar em Desconectar) */
+function ligarQueda(dev){if(dev._queda)return;dev._queda=true;
+  dev.addEventListener('gattserverdisconnected',()=>{if(dev._manual||A.bt!==dev||A.btReconectando)return;reconectarBt('Bluetooth caiu');});}
+async function reconectarBt(motivo){const dev=A.bt;if(!dev||A.btReconectando)return;A.btReconectando=true;let n=0;
+  try{while(A.bt===dev&&A.fonte==='bt'){n++;setStatus(`${motivo} · reconectando${n>1?' (tentativa '+n+')':''}…`,'wait');bruto(motivo+': reconectando (tentativa '+n+')');
+      try{dev._manual=true;if(dev.gatt.connected)dev.gatt.disconnect();}catch(e){}dev._manual=false;
+      await new Promise(r=>setTimeout(r,n===1?700:3000));if(A.bt!==dev)break;
+      try{await btAbrir(dev);A.ultDado=Date.now();A.btCutucou=0;toast('Balança reconectada');break;}catch(e){bruto('não reconectou: '+(e.message||e));}}}
+  finally{A.btReconectando=false;}}
+/* vigia: a balança Digi-Star manda o peso o tempo todo (umas 2 vezes por segundo). Se parar de chegar,
+   primeiro chama de novo (05); se continuar parada, reconecta sozinho — mesmo que pareça "conectado". */
+setInterval(()=>{if(A.fonte!=='bt'||!A.bt||!A.digiStar||A.btReconectando)return;
+  const parado=Date.now()-Math.max(A.ultDado||0,A.tCon||0);
+  if(parado>5000&&!A.btCutucou&&A.dsEsc){A.btCutucou=Date.now();bruto('sem peso há 5 s: chamando a balança de novo');A.dsEsc.writeValue(new Uint8Array([5])).catch(()=>{});}
+  if(parado>10000)reconectarBt('Balança parou de mandar o peso');},2000);
+/* ao abrir o app de novo (ou depois de atualizar), tenta voltar sozinho para a última balança, se o Chrome deixar */
+window.btAutoVoltar=async()=>{try{if(A.fonte||!navigator.bluetooth||!navigator.bluetooth.getDevices)return;const id=localStorage.getItem('btUltimo');if(!id)return;
+  const dev=(await navigator.bluetooth.getDevices()).find(d=>d.id===id);if(!dev)return;
+  A.bt=dev;A.fonte='bt';marcarFonte();ligarQueda(dev);setStatus('Voltando a conectar na balança…','wait');
+  try{await btAbrir(dev);}catch(e){reconectarBt('Conectando na balança');}}catch(e){}};
 async function btAbrir(dev){
   setStatus('Conectando em '+(dev.name||'aparelho')+'…','wait');
   const srv=await dev.gatt.connect();
@@ -245,7 +266,7 @@ async function btAbrir(dev){
    Zero "43", Tara "40", Líquido/Bruto "10", Imprimir "23" (descobertos no registro HCI do tablet). */
 const TECLAS={'43':'Zero','40':'Tara','10':'Líquido/Bruto','23':'Imprimir'};
 async function teclaBalanca(cod){
-  if(!(A.fonte==='bt'&&A.digiStar&&A.dsEsc)){toast('Conecte a balança Digi-Star pelo 🔷 Bluetooth BLE');return;}
+  if(!(A.fonte==='bt'&&A.digiStar&&A.dsEsc)){toast('Conecte a balança pelo 🔷 Conectar balança (Bluetooth)');return;}
   if((cod==='43'||cod==='40')&&!confirm(TECLAS[cod]+' na balança: o peso do visor vai para 0. Confirmar?'))return;
   A.dsSeq=(A.dsSeq%99)+1;const sq=String(A.dsSeq).padStart(2,'0'),txt=cod+sq;
   const b=new Uint8Array([0x1a,...Array.from(txt).map(c=>c.charCodeAt(0))]);
@@ -338,7 +359,7 @@ function bruto(l){A.bruto.push(new Date().toLocaleTimeString('pt-BR')+'  '+l);if
 let ultBruto=0;
 window.autoReceber=(v,o)=>receber(v,o||"sim");window.autoPeso=()=>({peso:A.peso,visor:A.visor});
 function receber(v,origem){
-  A.ultDado=Date.now();
+  A.ultDado=Date.now();A.btCutucou=0;
   const t=txtDe(v);
   if(origem!=='sim'&&(origem==='bt'||Date.now()-ultBruto>400)){ultBruto=Date.now();bruto(JSON.stringify(t)+(typeof v!=='string'?'   ['+hexDe(v)+']':''));}
   /* Digi-Star EZ: ESC 'O' 'm' '0' '2' STX "  2115" EOT ESC 'O' 'a' … EOT SUB EOT — o peso é o que está entre STX e EOT.
@@ -635,7 +656,7 @@ window.acTela=(nova,dia)=>{
   const topo=`<section class="panel">
     <div class="curhead"><h2>Carregar com a balança</h2><span class="note">⚡ Automação</span></div>
     <div class="aStatus" id="acStatus"><i></i><span id="acStatusTxt">Desconectado</span></div>
-    <div class="aConn"><button data-ac="ser" id="acBtSer">🔵 Bluetooth</button><button data-ac="bt" id="acBtBt">🔷 Bluetooth BLE</button><button data-ac="ws" id="acBtWs">📶 Caixinha Wi-Fi</button><button data-ac="sim" id="acBtSim">🧪 Simulador</button></div>
+    <div class="aConn"><button data-ac="ser" id="acBtSer" hidden>🔵 Bluetooth</button><button data-ac="bt" id="acBtBt">🔷 Conectar balança (Bluetooth)</button><button data-ac="ws" id="acBtWs" hidden>📶 Caixinha Wi-Fi</button><button data-ac="sim" id="acBtSim" hidden>🧪 Simulador</button></div>
     <button data-ac="desc" id="acDesc" hidden>Desconectar</button>
     <div class="aTeclas" id="acTeclas" hidden><button data-tecla="43">▸0◂<br>Zero</button><button data-tecla="40">▸T◂<br>Tara</button><button data-tecla="10">Líquido/<br>Bruto</button><button data-tecla="23">🖨<br>Imprimir</button></div>
     <div class="aSim" id="acSimBox" hidden><button class="lima" data-ac="simSobe">▲ Carregar</button><button data-ac="simPara">■ Parar</button><button data-ac="simZera">Esvaziar</button></div>
@@ -645,6 +666,7 @@ window.acTela=(nova,dia)=>{
   </section>`;
   if(nova)return topo+nova+dia;
   const B=acB(),i=B.atual,it=B.itens[i];
+  const pend=B.itens.filter(x=>!ok(x.real)).length,todosC=!pend,ultimoC=pend===1&&it&&!ok(it.real);
   const h=cTelaBatida(),k=h.indexOf('<section',8),tabela=k>0?h.slice(k):'';
   return topo+`<section class="panel"><div class="curhead"><h2>Batida · Trato ${B.trato}</h2><span class="note">${esc(B.racNome)} · ${nf(B.total)} kg</span></div>
     <div class="curBox2"><div class="cbCur" data-c="escolher" role="button"><span>Produto ${i+1} de ${B.itens.length} <i class="seta">▼</i></span><b>${esc(it?it.nome:'—')}</b></div>
@@ -658,7 +680,8 @@ window.acTela=(nova,dia)=>{
       <div><small>Peso inicial</small><b class="num" id="acIni">—</b></div>
       <div><small>Parar com</small><b class="num" id="acAlvo">—</b></div>
     </div>
-    <button class="primary" data-c="registrar" id="acReg" disabled>Registrar produto</button>
+    ${todosC?`<p class="avisoJa">✓ Todos os produtos foram carregados.</p><button class="primary" data-c="concluir">✓ Concluir batida</button>`
+      :`<button class="primary" data-c="registrar" id="acReg" disabled>${ultimoC?'✓ Registrar último produto':'✓ Registrar e ir para o próximo ▶'}</button>`}
     <div class="row"><button data-ac="pegar">↺ Pegar peso inicial</button><button class="lima" data-c="prox"${i<B.itens.length-1?'':' disabled'}>Próximo produto ▶</button></div>
     <button data-c="ant"${i>0?'':' disabled'}>◀ Produto anterior</button>
   </section>`+tabela+dia;};
@@ -675,6 +698,13 @@ window.acRegistrar=()=>{const B=acB(),it=acItem();if(!B||!it)return;
   if(nx>=0){B.atual=nx;const n=B.itens[nx];if(!ok(n.real)){n.ini=fim;n.fim=null;}}
   AC.idx=B.atual;acNovoProduto();pararSom();cSave();toast(`${it.nome}: ${nf(it.real)} kg`);cRender();
   if(nx<0)toast('Todos os produtos carregados. Toque em ✓ Concluir batida.');};
+/* "Próximo produto": se já carregou este produto, registra (e vai para o próximo); senão só passa para o próximo */
+window.acProximo=()=>{const B=acB(),it=acItem();if(!B||!it)return;const c=cfg();
+  if(!ok(it.real)&&ok(it.ini)&&A.peso!=null&&(A.estavel?A.valEst:A.peso)>it.ini+Math.max(c.tol,5))return acRegistrar();
+  if(B.atual>=B.itens.length-1)return;
+  B.atual++;const n=B.itens[B.atual];
+  if(!ok(n.real)){const pv=B.itens[B.atual-1];n.ini=ok(pv.fim)&&ok(pv.real)?pv.fim:(A.estavel?A.valEst:null);n.fim=null;}
+  B.escolha=false;AC.idx=B.atual;acNovoProduto();pararSom();cSave();cRender();};
 function acSyncTopo(){if(!$('acStatus'))return;
   $('acStatusTxt').textContent=A.status;$('acStatus').className='aStatus '+(A.statusTipo||'');
   ['ser','bt','ws','sim'].forEach(f=>$({ser:'acBtSer',bt:'acBtBt',ws:'acBtWs',sim:'acBtSim'}[f]).classList.toggle('on',A.fonte===f));
@@ -702,7 +732,7 @@ function pintarCarga(){
   else if(AC.est==='carregando'){txt=A.estavel?'Parou de subir · confira e toque em Registrar':z&&z.caindo?`▲ Carregando ${it.nome} · ${fmt(z.taxa)} kg/s`:'■ Parou de subir · esperando o peso firmar';cl='desc';}
   else{txt='Pronto: pode carregar '+it.nome;cl='pronto';}
   $('acEtapa').textContent=txt;$('acEtapa').className='aEtapa '+cl;
-  $('acReg').disabled=!(it&&!ok(it.real)&&ok(it.ini)&&A.peso!=null&&A.peso>it.ini)||modoVer;
+  if($('acReg'))$('acReg').disabled=!(it&&!ok(it.real)&&ok(it.ini)&&A.peso!=null&&A.peso>it.ini)||modoVer;
 }
 $('acBox').addEventListener('click',e=>{const b=e.target.closest('[data-ac]');if(!b)return;const a=b.dataset.ac;
   if(a==='ser')return conectarSerial();if(a==='bt')return conectarBt();if(a==='ws')return conectarWs();if(a==='sim'){conectarSim();return cRender();}

@@ -120,7 +120,7 @@ tr.arrastando td{background:var(--lima-claro)}
 #tbPrev td.acoes button.mini{padding:4px 8px;margin-left:3px}
 #tbPrev td.alca{width:1.8em}
 table:has(#tbPrev) th:nth-child(2){text-align:left;padding-left:4px}
-html,body{touch-action:manipulation;-webkit-text-size-adjust:100%;text-size-adjust:100%}
+html,body{overscroll-behavior-y:none;touch-action:manipulation;-webkit-text-size-adjust:100%;text-size-adjust:100%}
 input,select,textarea{font-size:16px}
 button.editq{border:0;background:none;padding:2px 0;font:inherit;color:inherit;cursor:pointer;white-space:nowrap}
 button.editq b{text-decoration:underline dotted}
@@ -920,7 +920,7 @@ body.menuFechado .menuSeta{background:#2e6b2f;color:#fff;padding:9px 12px;font-s
 <div class="toast" id="toast" hidden></div>
 <script>
 'use strict';
-const APP_VERSAO='27';
+const APP_VERSAO='28';
 const APP_DATA='19/10/2026';
 const KEY='confinamento-completo-v1';
 const $=id=>document.getElementById(id);
@@ -1729,7 +1729,16 @@ function aba(qual){
   if(!menuAberto)$('subModo').hidden=true;
   $('tabPrev').setAttribute('aria-selected',String(qual==='prev'));$('tabTrato').setAttribute('aria-selected',String(qual==='trato'));$('tabHist').setAttribute('aria-selected',String(qual==='hist'));if(menuAberto)abrirMenu(qual==='gest'?'gest':'trato');if(qual!=='gest')abaTrato=qual;if(qual==='gest'&&window.gAbrir)gAbrir('gest');
   if(qual==='hist')renderHist();if(qual==='prev')renderPrev();window.scrollTo({top:0});
+  lembrarTela();
 }
+/* lembra a tela aberta: se a página recarregar (arrastar para baixo, atualização do app), volta para ela */
+function lembrarTela(){try{const ini=document.body.classList.contains('naInicio');
+  if(ini){sessionStorage.removeItem('telaApp');return;}
+  const m=modoVer?'ver':document.body.classList.contains('modoGest')?'gest':'trato';
+  sessionStorage.setItem('telaApp',JSON.stringify({m,aba:window.abaAtual||'',gt:(typeof GT!=='undefined'&&GT&&GT.t)?GT:null,ts:Date.now()}));}catch(e){}}
+window.lembrarTela=lembrarTela;
+['pagehide','beforeunload'].forEach(ev=>window.addEventListener(ev,()=>{try{save();}catch(e){}lembrarTela();}));
+document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='hidden')lembrarTela();});
 let abaTrato='trato';
 var modoAtual='man';const ultModo={man:'trato',auto:'autoc'};
 /* menu de cima: começa só com Gestão e Tratos; toca para abrir os botões, toca de novo para esconder */
@@ -2465,6 +2474,7 @@ function voltarInicio(){
   if(typeof fecharTeclado==='function')fecharTeclado();if(typeof balCampo!=='undefined'&&balCampo)fecharBal();
   if(selModo){selModo=false;sel.clear();}
   const eraVer=modoVer;if(!eraVer&&!document.body.classList.contains('naInicio'))sairAoVivo();modoVer=false;document.body.classList.remove('somenteVer','modoTrato','modoGest');document.body.classList.add('naInicio');$('faixaVer').hidden=true;$('cal').hidden=true;window.scrollTo({top:0});
+  try{sessionStorage.removeItem('telaApp');}catch(e){}
   if(eraVer){voltarExec();$('tratoSel').value=String(S.tratoSel);$('pvTrato').value=String(S.pvTrato||S.tratoSel);$('ini').value=S.ini||'';$('fim').value=S.fim||'';mostrarX();render();renderPrev();}
 }
 $('btnSairVer').onclick=voltarInicio;
@@ -2556,7 +2566,13 @@ setInterval(()=>{if(modoVer&&navigator.onLine&&document.visibilityState==='visib
 Promise.resolve(iniciar()).catch(()=>{}).then(()=>{
   // voltou de uma atualização: abre de novo onde estava
   try{const vp=sessionStorage.getItem('voltarPara');sessionStorage.removeItem('voltarPara');
-    if(vp==='exec')entrarExec('trato');else if(vp==='gest')entrarExec('gest');else if(vp==='ver')$('btnModoVer').onclick();}catch(e){}
+    let t=null;try{t=JSON.parse(sessionStorage.getItem('telaApp')||'null');}catch(e){}
+    if(t&&Date.now()-(+t.ts||0)>12*3600e3)t=null;
+    const m=t?t.m:vp==='exec'?'trato':vp==='gest'?'gest':vp==='ver'?'ver':null;
+    if(m==='trato')entrarExec('trato');else if(m==='gest')entrarExec('gest');else if(m==='ver')$('btnModoVer').onclick();
+    if(t&&t.aba&&m){if(t.aba==='gest'){if(t.gt){try{GT=t.gt;}catch(e){}}aba('gest');}else aba(t.aba);
+      setTimeout(()=>{try{if(window.menuFecha)menuFecha();}catch(e){}},200);
+      if(['auto','autoc'].includes(t.aba)&&window.btAutoVoltar)btAutoVoltar();}}catch(e){}
 });
 
 /* ---------- Atualização automática do app ---------- */
@@ -2615,7 +2631,7 @@ if('serviceWorker' in navigator){
   m.addEventListener('click',e=>{const t=e.target.closest('button');if(!t||t===b)return;
     const final=t.closest('#subGest')||t.closest('#subModo')||['tabPrev','tabLeit','tabHist'].includes(t.id);
     if(final)setTimeout(fecha,150);else setTimeout(pinta,0);});
-  window.menuCaminho=pinta;pinta();})();
+  window.menuCaminho=pinta;window.menuFecha=fecha;pinta();})();
 </script>
 </body>
 </html>
