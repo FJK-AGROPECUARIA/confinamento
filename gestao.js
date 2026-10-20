@@ -500,16 +500,27 @@ function tCocho(t){
   GT.dia=dia;GT.sel=GT.sel||{};
   const rows=Cs.map(c=>{const L=gTodos('lote').filter(l=>curralEm(l,dia)===c&&cabPres(l,dia)>0);
     const ontem=ix.get(ont+'|'+c)||0,pt=prevTotal(c),cab=L.reduce((a,l)=>a+cabPres(l,dia),0);
-    let base=ontem,orig=dia===hojeKey()?'realizado ontem':'realizado do dia anterior';
-    if(!base&&pt){base=pt;orig='previsto atual';}
-    if(!base){const ms=L.reduce((a,l)=>{const r=racaoEm(l,dia),cp=r&&compRacao(r,dia);return a+(cp?cabPres(l,dia)*pesoEm(l,dia)*cfg.pvIni/100/(cp.ms/100):0);},0);base=Math.round(ms);orig=`sugestão ${nf(cfg.pvIni,1)}% PV`;}
+    let base=ontem,orig=dia===hojeKey()?'realizado ontem':ont===hojeKey()?'realizado de hoje':'realizado do dia anterior';
+    /* base escolhida à mão (o dia anterior não serve de referência): outra data, previsto ou digitada */
+    const lt0=G.it[idLeit(dia,c)],bs0=(GT.base||{})[c]||(lt0&&!lt0.del&&lt0.baseM&&lt0.baseM!=='ontem'?{m:lt0.baseM,d:lt0.baseDia,kg:lt0.base}:null),bs=bs0&&bs0.m!=='ontem'?bs0:null;
+    if(bs&&bs.m==='dia'&&bs.d){base=ix.get(bs.d+'|'+c)||0;orig='realizado de '+diaBR(bs.d).slice(0,5);}
+    else if(bs&&bs.m==='prev'){base=window.prevApi?prevApi.totalCurral(c,prevApi.prevDoDia(ont)):0;orig='previsto de '+(ont===hojeKey()?'hoje':diaBR(ont).slice(0,5));}
+    else if(bs&&bs.m==='kg'&&ok(bs.kg)){base=+bs.kg;orig='base digitada';}
+    const bm=bs?bs.m:'ontem';
+    const chips=bm==='dia'?[1,2,3].map(i=>{const d=somaDias(dia,-i),v=ix.get(d+'|'+c)||0;return v?`<button class="mini${bs&&bs.d===d?' sel':''}" data-g="baseDia" data-c="${esc(c)}" data-d="${d}">${diaBR(d).slice(0,5)} · ${nf(v)}</button>`:'';}).join(''):'';
+    const baseOp=`<details class="gBaseOp"${bs?' open':''}><summary>✎ Mudar a base do cálculo</summary><div class="gBaseF">
+      <select data-bm="${esc(c)}"><option value="ontem"${bm==='ontem'?' selected':''}>Realizado do dia anterior</option><option value="dia"${bm==='dia'?' selected':''}>Igual ao trato de uma data</option><option value="prev"${bm==='prev'?' selected':''}>Previsto do dia anterior</option><option value="kg"${bm==='kg'?' selected':''}>Digitar a base (kg)</option></select>
+      ${bm==='dia'?`<input type="date" data-bd="${esc(c)}" value="${bs&&bs.d||''}"><div class="gBaseChips">${chips||'<small>Sem trato nos últimos 3 dias</small>'}</div>`:''}
+      ${bm==='kg'?`<input class="cell num" inputmode="numeric" data-bk="${esc(c)}" value="${bs&&ok(bs.kg)?bs.kg:''}" placeholder="kg do dia">`:''}</div></details>`;
+    if(!base&&!bs&&pt){base=pt;orig='previsto atual';}
+    if(!base&&!bs){const ms=L.reduce((a,l)=>{const r=racaoEm(l,dia),cp=r&&compRacao(r,dia);return a+(cp?cabPres(l,dia)*pesoEm(l,dia)*cfg.pvIni/100/(cp.ms/100):0);},0);base=Math.round(ms);orig=`sugestão ${nf(cfg.pvIni,1)}% PV`;}
     const lt=G.it[idLeit(dia,c)],sel=GT.sel[c]||(lt&&!lt.del?{n:lt.nota,kg:lt.novo}:null);
     const nota=sel?sel.n:null,cn=notas.find(x=>x.n===nota);
     const sug=cn?arred(base*(1+cn.p/100),cfg.arred):null,kg=sel&&ok(sel.kg)?sel.kg:sug;
     const ant=[3,2,1].map(i=>{const x=G.it[idLeit(somaDias(dia,-i),c)];return x&&!x.del?notaTxt(x.nota):'·';}).join('  ');
     return `<div class="gCocho${lt&&!lt.del?' feito':''}" data-c="${esc(c)}" data-base="${base}">
       <div class="gCoTopo">${seloCurral(c)}<div><span>${esc(L.map(l=>l.nome).join(', '))}</span><span>${nf(cab)} cab · últimas notas: <b>${ant}</b></span></div></div>
-      <div class="gCoBase">Base: <b class="num">${nf(base)} kg</b> <small>(${orig})</small></div>
+      <div class="gCoBase">Base: <b class="num">${nf(base)} kg</b> <small>(${orig})</small></div>${baseOp}
       ${gradeNotas(notas,nota,c)}
       <div class="gCoNovo"><span>${cn?esc(cn.t):'Toque na nota'}</span><input class="cell num" inputmode="numeric" data-kg="${esc(c)}" value="${kg!=null?kg:''}" placeholder="kg"><small>kg/dia</small></div></div>`;}).join('');
   return `<section class="panel"><h2>Leitura de cocho</h2>
@@ -529,11 +540,12 @@ function salvaCocho(){
   document.querySelectorAll('#gBox .gCocho').forEach(el=>{const c=el.dataset.c,s=GT.sel[c];const inp=el.querySelector('input[data-kg]');const kg=gNum(inp.value);
     const lt=G.it[idLeit(dia,c)];const nota=s?s.n:(lt&&!lt.del?lt.nota:null);if(nota==null)return;
     const cn=cfg.notas.find(x=>x.n===nota);
-    gPut({uid:idLeit(dia,c),tipo:'leitura',dia,curral:c,nota,pct:cn?cn.p:0,base:+el.dataset.base||0,novo:ok(kg)?kg:null});n++;
+    const bs=(GT.base||{})[c]||(lt&&!lt.del&&lt.baseM?{m:lt.baseM,d:lt.baseDia}:null)||{m:'ontem'};
+    gPut({uid:idLeit(dia,c),tipo:'leitura',dia,curral:c,nota,pct:cn?cn.p:0,base:+el.dataset.base||0,baseM:bs.m,baseDia:bs.m==='dia'?bs.d:null,novo:ok(kg)?kg:null});n++;
     if(ok(kg)&&kg>0&&aplicaPrev(c,kg,obj))ap++;});
   if(!n)return toast('Marque a nota de pelo menos um curral');
   if(ap){if(hoje){marcarPrev();if(typeof render==='function')render();}else prevApi.guardarPrevDia(dia,obj);}
-  GT.sel={};toast(`Leitura salva · previsto ${hoje?'de hoje':'de amanhã'} ajustado em ${ap} curral(is)`);gRender();
+  GT.sel={};GT.base={};toast(`Leitura salva · previsto ${hoje?'de hoje':'de amanhã'} ajustado em ${ap} curral(is)`);gRender();
 }
 function aplicaPrev(c,total,obj){obj=obj||S.prev;const antes=JSON.stringify([1,2,3,4,5,6].map(k=>(obj[k]||{})[c]));
   prevApi.distribuir(c,total,prevApi.nTratos(c,obj),obj);return JSON.stringify([1,2,3,4,5,6].map(k=>(obj[k]||{})[c]))!==antes;}
@@ -854,6 +866,9 @@ function tCfg(){const c=gCfg(),hj=hojeKey(),tx=vig(c.taxa,hj),ab=GT.cab||'custo'
     <p class="note">Quando o curral tem 2 ou mais tratos, o total do dia é dividido assim. 1 trato = 100% no Trato 1.</p>
     ${[2,3,4,5,6].map(n=>{const v=P?P.divisao(n):[];return `<div class="gDiv"><b>${n} tratos</b><div class="gDivIn">${v.map((x,k)=>`<label><small>T${k+1}</small><input class="cell" inputmode="decimal" data-div="${n}" value="${String(x).replace('.',',')}"></label>`).join('')}</div><small class="gDivSoma" data-divsoma="${n}">${nf(v.reduce((a,b)=>a+b,0),1)}%</small></div>`;}).join('')}
     <button class="primary" data-g="salvaDiv">Salvar divisão</button></section>
+  <section class="panel gCfgP"><h2>Compensar no último trato</h2>
+    <p class="note">O que for a mais ou a menos nos tratos do dia é ajustado no último trato do curral, para fechar o total do dia. Ex.: total 2.000 (1.000 + 1.000); tratou 1.200 no 1º → o 2º vira 800.</p>
+    <select id="cfgComp"><option value="1"${c.compensa===false?'':' selected'}>Ligado (recomendado)</option><option value="0"${c.compensa===false?' selected':''}>Desligado</option></select></section>
   <section class="panel gCfgP"><h2>Arredondamento</h2><div class="gForm">${campo({k:'arred',l:'Arredondar o previsto de',suf:'kg',t:'num',v:c.arred,meia:1})}</div>${salvar}</section>`;}
   if(ab==='balanca')h='<div id="cfgBalHost"></div>';
   return botoes+h;}
@@ -929,6 +944,7 @@ $('gBox').addEventListener('click',e=>{
     gTodos('pesagem').concat(gTodos('saida')).filter(x=>x.lote===id).forEach(x=>gDel(x.uid));gDel(id);toast('Lote apagado');GT={t:'lotes'};gPilha.length=1;return gRender();}
   if(a==='compRel')return enviarTexto(textoRel());
   if(a==='compDia')return enviarTexto(textoDia());
+  if(a==='baseDia'){GT.base=GT.base||{};GT.base[b.dataset.c]={m:'dia',d:b.dataset.d};if(GT.sel&&GT.sel[b.dataset.c])delete GT.sel[b.dataset.c].kg;gRender();return;}
   if(a==='nota'){const c=b.dataset.c,n=+b.dataset.n;GT.sel=GT.sel||{};GT.sel[c]={n};gRender();return;}
   if(a==='salvaCocho')return salvaCocho();
   if(a==='racAdd'){lerItensRac();GT.itens.push({ins:'',pMS:''});const y=window.scrollY;gRender();window.scrollTo({top:y});return;}
@@ -959,11 +975,16 @@ $('gBox').addEventListener('input',e=>{
 $('gBox').addEventListener('change',e=>{
   const t=e.target;
   if(GT.t==='racForm'&&t.matches('[data-ri]'))calcRacao();
-  if(t.id==='gCoDia'){GT.sel={};GT.dia=t.value||hojeKey();gRenderCom({dia:GT.dia});}
+  if(t.id==='gCoDia'){GT.sel={};GT.base={};GT.dia=t.value||hojeKey();gRenderCom({dia:GT.dia});}
   if(t.id==='gDiaDia'){gRenderCom({dia:t.value||hojeKey()});}
   if(t.id==='gResDia'){gRenderCom({dia:t.value||hojeKey()});}
   if(t.id==='gRefDia'||t.id==='gGrafDia'){gRenderCom({dia:t.value||hojeKey()});}
   if(t.id==='gPerIni'||t.id==='gPerFim'){let a=$('gPerIni').value,b=$('gPerFim').value;if(a&&b&&a>b)[a,b]=[b,a];gRenderCom({ini:a,fim:b});}
+  const novaBase=(c,o)=>{GT.base=GT.base||{};GT.base[c]=o;if(GT.sel&&GT.sel[c])delete GT.sel[c].kg;setTimeout(gRender,0);};
+  if(t.matches('select[data-bm]')){const c=t.dataset.bm,m=t.value;if(m==='ontem'){novaBase(c,{m:'ontem'});return;}
+    novaBase(c,{m,d:m==='dia'?somaDias(GT.dia||hojeKey(),-2):null,kg:null});return;}
+  if(t.matches('input[data-bd]')){const c=t.dataset.bd;novaBase(c,{m:'dia',d:t.value||null});return;}
+  if(t.matches('input[data-bk]')){const c=t.dataset.bk;novaBase(c,{m:'kg',kg:gNum(t.value)});return;}
   if(t.matches('input[data-kg]')){const c=t.dataset.kg;GT.sel=GT.sel||{};const lt=G.it[idLeit(GT.dia,c)];
     const n=GT.sel[c]?GT.sel[c].n:(lt&&!lt.del?lt.nota:null);if(n==null){toast('Marque a nota primeiro');t.value='';return;}GT.sel[c]={n,kg:gNum(t.value)};}
 });
@@ -1000,8 +1021,8 @@ window.cEstadoAoVivo=auto=>{const B=CG.ativa,base={modo:'carga',origem:auto?'aut
     carregado:B.itens.reduce((a,x)=>a+(ok(x.real)?x.real:0),0),totalPrev:B.itens.reduce((a,x)=>a+(+x.prev||0),0)});};
 let cTec=null,cBuf='';
 /* currais do trato que usam a ração (pelo lote) e o total previsto deles */
-function sugestaoCarga(trato,racId){const hj=hojeKey(),m=(S.prev||{})[String(trato)]||{},cs=[];let tot=0;
-  gTodos('lote').filter(l=>cabPres(l,hj)>0).forEach(l=>{const r=racaoEm(l,hj),c=curralEm(l,hj);if(r&&r.uid===racId&&typeof m[c]==='number'&&m[c]>0&&!cs.includes(c)){cs.push(c);tot+=m[c];}});
+function sugestaoCarga(trato,racId,loc){const hj=hojeKey(),m=(S.prev||{})[String(trato)]||{},cs=[];let tot=0;
+  gTodos('lote').filter(l=>cabPres(l,hj)>0).forEach(l=>{const r=racaoEm(l,hj),c=curralEm(l,hj);if(r&&r.uid===racId&&(!loc||linhaDe(c)===loc)&&typeof m[c]==='number'&&m[c]>0&&!cs.includes(c)){cs.push(c);tot+=m[c];}});
   return {cs:cs.sort(alfa),tot};}
 function itensCarga(racId,total){const r=G.it[racId];const cp=r&&!r.del?compRacao(r,hojeKey()):null;if(!cp)return [];
   let resto=Math.round(total);return cp.itens.map((i,k,a)=>{const kg=k===a.length-1?resto:Math.round(total*i.pMN/100);resto-=kg;return {ins:i.ins?i.ins.uid:'',nome:i.nome,pMN:i.pMN,prev:kg,ini:null,fim:null,real:null};});}
@@ -1010,17 +1031,34 @@ const cAtiva=()=>CG.ativa||null;
 const cAuto=()=>!!($('viewAutoC')&&!$('viewAutoC').hidden);
 const cCaixa=()=>$(cAuto()?'acBox':'cBox');
 function cRender(){const auto=cAuto(),b=$(auto?'acBox':'cBox'),o=$(auto?'cBox':'acBox');if(!b)return;if(o)o.innerHTML='';
-  if(auto&&window.acTela){b.innerHTML=acTela(cAtiva()?null:cTelaNova(),cTelaDia());if(window.acDepois)acDepois();return;}
-  b.innerHTML=cAtiva()?cTelaBatida():cTelaNova();b.insertAdjacentHTML('beforeend',cTelaDia());}
-function cTelaNova(){const R=gTodos('racao').sort(porNome);if(!CG.trato)CG.trato=S.tratoSel||1;if(!CG.rac||!G.it[CG.rac]||G.it[CG.rac].del)CG.rac=R[0]?R[0].uid:'';
-  if(!R.length)return `<section class="panel"><h2>Carregar vagão</h2><p class="note">Cadastre a ração primeiro em Gestão → Rações.</p></section>`;
-  const sg=sugestaoCarga(CG.trato,CG.rac);if(CG.totalDe!==CG.trato+'|'+CG.rac){CG.total=sg.tot||CG.total||0;CG.totalDe=CG.trato+'|'+CG.rac;cSave();}
+  if(auto&&window.acTela){b.innerHTML=acTela(cAtiva()?null:cTelaNova(),cAtiva()?'':NOTA_BAT);if(window.acDepois)acDepois();return;}
+  b.innerHTML=(cAtiva()?cTelaBatida():cTelaNova())+(cAtiva()?'':NOTA_BAT);}
+const NOTA_BAT='<p class="note" style="text-align:center">As batidas feitas ficam no Histórico › Batidas.</p>';
+/* ração ativa de cada curral hoje (pelo lote) e rações usadas em cada local (C = confinamento, P = pasto) */
+function racaoDoCurral(c,dia){dia=dia||hojeKey();const l=gTodos('lote').find(l=>curralEm(l,dia)===c&&cabPres(l,dia)>0);const r=l&&racaoEm(l,dia);return r?r.uid:null;}
+window.racaoDoCurral=racaoDoCurral;
+function racoesDoLocal(loc,dia){dia=dia||hojeKey();const s=new Set();gTodos('lote').filter(l=>cabPres(l,dia)>0).forEach(l=>{const c=curralEm(l,dia),r=racaoEm(l,dia);if(c&&r&&(!loc||linhaDe(c)===loc))s.add(r.uid);});
+  return gTodos('racao').filter(r=>s.has(r.uid)).sort(porNome);}
+window.racoesDoLocal=racoesDoLocal;
+const NOMELOC={C:'Confinamento',P:'Pasto'};
+function escolhaLocal(attr,sel){return `<div class="gLocal">${['C','P'].map(l=>`<button type="button" ${attr}="${l}" class="${sel===l?'sel':''}">${l==='C'?'🏠 Confinamento':'🌾 Pasto'}</button>`).join('')}</div>`;}
+window.escolhaLocal=escolhaLocal;
+function cTelaNova(){if(!CG.local)CG.local='C';if(!CG.trato)CG.trato=S.tratoSel||1;
+  const todas=gTodos('racao').sort(porNome);if(!todas.length)return `<section class="panel"><h2>Carregar vagão</h2><p class="note">Cadastre a ração primeiro em Gestão → Rações.</p></section>`;
+  const doLocal=racoesDoLocal(CG.local),R=doLocal.length?doLocal:todas;
+  if(!CG.rac||!R.some(r=>r.uid===CG.rac))CG.rac=R[0].uid;
+  CG.juntos=(CG.juntos||[]).filter(k=>k!==+CG.trato);const trs=[+CG.trato].concat(CG.juntos).sort((a,b)=>a-b);
+  const partes=trs.map(k=>({k,sg:sugestaoCarga(k,CG.rac,CG.local)})),sg={tot:partes.reduce((a,p)=>a+p.sg.tot,0),cs:[...new Set(partes.flatMap(p=>p.sg.cs))]};
+  const chave=CG.local+'|'+trs.join('+')+'|'+CG.rac;if(CG.totalDe!==chave){CG.total=sg.tot||0;CG.totalDe=chave;cSave();}
   const its=itensCarga(CG.rac,CG.total||0);
   return `<section class="panel"><h2>Carregar vagão</h2>
-    <div class="linhaTrato"><label for="cTrato">Trato</label><select class="trato" id="cTrato">${[1,2,3,4,5,6].map(k=>`<option value="${k}"${+CG.trato===k?' selected':''}>Trato ${k}</option>`).join('')}</select></div>
-    <div><label for="cRac">Ração</label><select id="cRac">${R.map(r=>`<option value="${r.uid}"${r.uid===CG.rac?' selected':''}>${esc(r.nome)}</option>`).join('')}</select></div>
-    <div><label>Total a carregar (kg)</label><div class="campoX"><input class="big num" id="cTotal" type="text" readonly inputmode="none" value="${CG.total?nf(CG.total):''}" data-ct="total"></div>
-      <p class="note">${sg.cs.length?`Previsto do Trato ${CG.trato} para esta ração: <b>${nf(sg.tot)} kg</b> (${sg.cs.join(', ')})`:`Nenhum curral com esta ração no previsto do Trato ${CG.trato}. Digite o total.`}</p></div>
+    <label>1. Local</label>${escolhaLocal('data-cloc',CG.local)}
+    <div><label for="cRac">2. Ração</label><select id="cRac">${R.map(r=>`<option value="${r.uid}"${r.uid===CG.rac?' selected':''}>${esc(r.nome)}</option>`).join('')}</select>
+      ${doLocal.length===1?`<p class="note">Única ração ativa no ${NOMELOC[CG.local].toLowerCase()}: já selecionada.</p>`:!doLocal.length?`<p class="note">Nenhum lote com ração no ${NOMELOC[CG.local].toLowerCase()}: mostrando todas.</p>`:''}</div>
+    <label for="cTrato">3. Trato</label>${window.tratoSeta?tratoSeta('cTrato',CG.trato):''}
+    <div class="cJunto"><small>Carregar junto com:</small>${[1,2,3,4,5,6].filter(k=>k!==+CG.trato).map(k=>{const t=sugestaoCarga(k,CG.rac,CG.local).tot;return `<button type="button" data-cjunto="${k}" class="${CG.juntos.includes(k)?'sel':''}"${t||CG.juntos.includes(k)?'':' disabled'}>T${k}${t?`<small>${nf(t)}</small>`:''}</button>`;}).join('')}</div>
+    <div><label>4. Total a carregar (kg) · pode mudar</label><div class="campoX"><input class="big num" id="cTotal" type="text" readonly inputmode="none" value="${CG.total?nf(CG.total):''}" data-ct="total"></div>
+      <p class="note">${sg.cs.length?`Previsto ${trs.length>1?'dos Tratos '+trs.join(' + '):'do Trato '+CG.trato} (${NOMELOC[CG.local]}, esta ração): <b>${nf(sg.tot)} kg</b>${trs.length>1?' ('+partes.map(p=>'T'+p.k+': '+nf(p.sg.tot)).join(' · ')+')':''} · ${sg.cs.join(', ')}`:`Nenhum curral do ${NOMELOC[CG.local].toLowerCase()} com esta ração no Trato ${CG.trato}. Digite o total.`}</p></div>
     ${its.length&&CG.total>0?`<div class="tablebox"><table class="gTab"><thead><tr><th>Produto</th><th>% MN</th><th>Carregar (kg)</th></tr></thead><tbody>${its.map(i=>`<tr><td class="c">${esc(i.nome)}</td><td>${nf(i.pMN,1)}</td><td><b>${nf(i.prev)}</b></td></tr>`).join('')}
       <tr class="grp"><td>Total</td><td>100,0</td><td>${nf(CG.total)}</td></tr></tbody></table></div>`:''}
     <button class="primary" data-c="iniciar"${CG.total>0&&its.length?'':' disabled'}>▶ Iniciar batida</button></section>`;}
@@ -1042,7 +1080,7 @@ function cTelaBatida(){const A=cAtiva(),i=A.atual,it=A.itens[i],alvo=it&&ok(it.i
     <div class="tablebox"><table class="gTab"><thead><tr><th>Produto</th><th>Previsto</th><th>Carreg.</th><th>Dif.</th></tr></thead><tbody>
     ${A.itens.map((x,k)=>{const d=ok(x.real)?x.real-x.prev:NaN;return `<tr class="${k===i?'cur':''} gClic" data-c="ir" data-i="${k}"><td class="c">${ok(x.real)?'✓ ':''}${esc(x.nome)}</td><td>${nf(x.prev)}</td><td>${ok(x.real)?nf(x.real):'—'}</td><td class="${ok(d)?cls(d,x.prev):''}">${ok(d)?(d>0?'+':'')+nf(d):''}</td></tr>`;}).join('')}
     <tr class="grp"><td>Total</td><td>${nf(tp)}</td><td>${nf(tr)}</td><td>${feitos?(tr-tpf>0?'+':'')+nf(tr-tpf):''}</td></tr></tbody></table></div>
-    <button class="primary" data-c="concluir"${feitos?'':' disabled'}>✓ Concluir batida</button>
+    <button class="primary" data-c="concluir"${feitos?'':' disabled'}>✓ Finalizar batida</button>
     <div class="row"><button data-c="desfazer"${feitos?'':' disabled'}>Desfazer último</button><button class="danger" data-c="cancelar">Cancelar batida</button></div></section>`;}
 function cargasDia(dia){return gTodos('carga').filter(c=>c.dia===dia).sort((a,b)=>a.ts0-b.ts0);}
 function cTelaDia(){const dia=CG.verDia||hojeKey(),L=cargasDia(dia);
@@ -1073,6 +1111,8 @@ function cConfirma(){const v=cBuf===''?null:+cBuf,A=cAtiva();
   d.addEventListener('click',e=>{const b=e.target.closest('button[data-k]');if(!b)return;const k=b.dataset.k;
     if(k==='fechar')return cFecha();if(k==='ok')return cConfirma();if(k==='limpar')cBuf='';else if(k==='del')cBuf=cBuf.slice(0,-1);else if(cBuf.length<6)cBuf=(cBuf+k).replace(/^0+(?=\d)/,'');cMostra();});})();
 function cClique(e){
+  const lb=e.target.closest('[data-cloc]');if(lb){CG.local=lb.dataset.cloc;CG.juntos=[];cSave();return cRender();}
+  const jb=e.target.closest('[data-cjunto]');if(jb){const k=+jb.dataset.cjunto;CG.juntos=CG.juntos||[];CG.juntos=CG.juntos.includes(k)?CG.juntos.filter(x=>x!==k):CG.juntos.concat(k);cSave();return cRender();}
   const inp=e.target.closest('[data-ct]');if(inp)return cTeclado(inp.dataset.ct);
   const b=e.target.closest('[data-c],[data-g]');if(!b)return;
   if(b.dataset.g==='dataPasso'||b.dataset.g==='dataHoje'){const i=cCaixa().querySelector('#'+b.dataset.alvo)||$(b.dataset.alvo);i.value=b.dataset.g==='dataHoje'?hojeKey():somaDias(i.value||hojeKey(),+b.dataset.n);CG.verDia=i.value;cSave();return cRender();}
@@ -1080,7 +1120,7 @@ function cClique(e){
   if(a==='imgCarga'||a==='xlsCarga')return a==='imgCarga'?imgCarga():xlsCarga();
   if(bloqueado())return;
   if(a==='iniciar'){const r=G.it[CG.rac],its=itensCarga(CG.rac,CG.total);if(!its.length)return toast('Ração sem fórmula');
-    CG.ativa={dia:hojeKey(),trato:+CG.trato,rac:CG.rac,racNome:r.nome,total:CG.total,itens:its,atual:0,ts0:Date.now(),origem:cAuto()?'balanca':'manual'};cSave();cRender();window.scrollTo({top:0});if(cAuto()){if(window.acIniciou)acIniciou();return;}return cTeclado('ini');}
+    CG.ativa={dia:hojeKey(),local:CG.local||'',trato:+CG.trato,tratos:[+CG.trato].concat(CG.juntos||[]).sort((a,b)=>a-b),rac:CG.rac,racNome:r.nome,total:CG.total,itens:its,atual:0,ts0:Date.now(),origem:cAuto()?'balanca':'manual'};cSave();cRender();window.scrollTo({top:0});if(cAuto()){if(window.acIniciou)acIniciou();return;}return cTeclado('ini');}
   if(!A&&a!=='apagaCarga')return;
   if(a==='escolher'){A.escolha=!A.escolha;cSave();return cRender();}
   if(a==='ir'){A.atual=+b.dataset.i;A.escolha=false;cSave();return cRender();}
@@ -1091,14 +1131,14 @@ function cClique(e){
     it.real=it.fim-it.ini;it.hora=new Date().toTimeString().slice(0,5);it.tsReg=Date.now();
     const k=A.itens.findIndex((x,j)=>j>A.atual&&!ok(x.real)),nx=k>=0?k:A.itens.findIndex(x=>!ok(x.real));
     if(nx>=0){A.atual=nx;const n=A.itens[nx];if(!ok(n.real)){n.ini=it.fim;n.fim=null;}}
-    cSave();toast(`${it.nome}: ${nf(it.real)} kg`);cRender();if(nx>=0)cTeclado('fim');else toast('Todos os produtos carregados. Toque em Concluir batida.');return;}
+    cSave();toast(`${it.nome}: ${nf(it.real)} kg`);cRender();if(nx>=0)cTeclado('fim');else toast('Todos os produtos carregados. Toque em Finalizar batida.');return;}
   if(a==='desfazer'){const feitos=A.itens.map((x,j)=>[x,j]).filter(([x])=>ok(x.real)).sort((p,q)=>((q[0].tsReg||0)-(p[0].tsReg||0))||(q[0].hora||'').localeCompare(p[0].hora||'')||(q[1]-p[1]));if(!feitos.length)return;
     const [x,j]=feitos[0];x.real=null;x.fim=null;A.atual=j;cSave();return cRender();}
   if(a==='cancelar'){const feitos=A.itens.filter(x=>ok(x.real)).length;
     confirmaVermelho('Deseja realmente cancelar a batida?',`${feitos?`Os ${feitos} produto(s) já carregado(s) nesta batida serão perdidos.`:'Esta batida será descartada.'} Nada dela será salvo e não dá para desfazer.`,'Sim, cancelar batida','Não, continuar carregando')
-      .then(sim=>{if(!sim)return;if(CG.ativa!==A)return;CG.ativa=null;cSave();cRender();toast('Batida cancelada');window.scrollTo({top:0});});return;}
-  if(a==='concluir'){const falta=A.itens.filter(x=>!ok(x.real)).length;if(falta&&!confirm(`Faltam ${falta} produto(s). Concluir assim mesmo?`))return;
-    gPut({uid:novoId('carga'),tipo:'carga',dia:A.dia,trato:A.trato,racao:A.rac,racNome:A.racNome,total:A.total,ts0:A.ts0,hora:new Date(A.ts0).toTimeString().slice(0,5),
+      .then(sim=>{if(!sim)return;if(CG.ativa!==A)return;try{window.diagLog&&diagLog('batida_cancelada',{trato:A.trato,itens:A.itens.map(x=>[x.nome,x.prev,x.real])});}catch(e){}CG.ativa=null;cSave();cRender();toast('Batida cancelada');window.scrollTo({top:0});});return;}
+  if(a==='concluir'){const falta=A.itens.filter(x=>!ok(x.real)).length;if(falta&&!confirm(`Faltam ${falta} produto(s). Finalizar assim mesmo?`))return;
+    gPut({uid:novoId('carga'),tipo:'carga',dia:A.dia,local:A.local||'',trato:A.trato,tratos:A.tratos||[A.trato],racao:A.rac,racNome:A.racNome,total:A.total,ts0:A.ts0,hora:new Date(A.ts0).toTimeString().slice(0,5),
       itens:A.itens.map(x=>({ins:x.ins,nome:x.nome,pMN:x.pMN,prev:x.prev,ini:x.ini,fim:x.fim,real:ok(x.real)?x.real:null,hora:x.hora||''})),origem:A.origem||''});
     CG.ativa=null;CG.verDia=A.dia;cSave();toast('Batida salva');cRender();window.scrollTo({top:0});return;}
   if(a==='apagaCarga'){if(!confirm('Apagar esta batida?'))return;gDel(b.dataset.id);return cRender();}
@@ -1133,3 +1173,23 @@ function confirmaVermelho(tit,txt,sim,nao){return new Promise(res=>{
   f.querySelector('.cvSim').onclick=()=>fim(true);f.querySelector('.cvNao').onclick=()=>fim(false);
   f.addEventListener('click',e=>{if(e.target===f)fim(false);});document.body.appendChild(f);});}
 window.confirmaVermelho=confirmaVermelho;
+
+document.addEventListener('change',e=>{if(e.target&&e.target.id==='cfgComp'){const c=JSON.parse(JSON.stringify(gCfg()));c.compensa=e.target.value==='1';gPut(c);toast(c.compensa?'Compensação ligada':'Compensação desligada');}});
+
+/* ---------- Histórico › Batidas: o que foi carregado no vagão (previsto e carregado de cada ingrediente, data e hora) ---------- */
+window.batidasLista=(pa,pb,loc,t)=>gTodos('carga').filter(c=>c.dia>=pa&&c.dia<=pb&&(!loc||loc==='T'||c.local===loc||(!c.local&&false))&&(!t||+c.trato===+t||(c.tratos||[]).includes(+t)))
+  .sort((a,b)=>(b.dia+b.hora).localeCompare(a.dia+a.hora));
+window.batidasHTML=(L,mostrarDia)=>{if(!L.length)return '<p class="note">Nenhuma batida neste filtro.</p>';
+  return L.map(c=>{const tp=c.itens.reduce((a,x)=>a+(+x.prev||0),0),tr=c.itens.reduce((a,x)=>a+(+x.real||0),0),d=tr-tp,cls=(dd,p)=>typeof classeDesv==='function'?classeDesv(dd,p):'';
+    return `<details class="gMais gCarga"><summary><b>${mostrarDia?diaBR(c.dia).slice(0,5)+' ':''}${esc(c.hora||'')}</b> · ${c.tratos&&c.tratos.length>1?'Tratos '+c.tratos.join('+'):'Trato '+c.trato}${c.local?' · '+(c.local==='C'?'Confinamento':'Pasto'):''} · ${esc(c.racNome||'')} <span class="num">${nf(tr)} kg <i class="${cls(d,tp)}">(${d>0?'+':''}${nf(d)})</i></span></summary>
+      <div class="tablebox"><table class="gTab"><thead><tr><th>Ingrediente</th><th>Hora</th><th>Previsto</th><th>Carreg.</th><th>Dif.</th></tr></thead><tbody>${c.itens.map(x=>{const dd=x.real-x.prev;return `<tr><td class="c">${esc(x.nome)}</td><td>${esc(x.hora||'')}</td><td>${nf(x.prev)}</td><td>${ok(+x.real)?nf(+x.real):'—'}</td><td class="${ok(+x.real)?cls(dd,x.prev):''}">${ok(+x.real)?(dd>0?'+':'')+nf(dd):''}</td></tr>`;}).join('')}
+      <tr class="grp"><td>Total</td><td></td><td>${nf(tp)}</td><td>${nf(tr)}</td><td>${(d>0?'+':'')+nf(d)}</td></tr></tbody></table></div>
+      <button class="mini danger" data-hbdel="${c.uid}">Apagar esta batida</button></details>`;}).join('');};
+window.imgBatidas=(L,rot)=>enviarImg(`Batidas do vagão · ${rot}`,L.map(c=>{const tp=c.itens.reduce((a,x)=>a+x.prev,0),tr=c.itens.reduce((a,x)=>a+(+x.real||0),0);
+    return {cab:`${diaBR(c.dia).slice(0,5)} ${c.hora} · Trato ${c.trato}${c.local?' · '+(c.local==='C'?'Confinamento':'Pasto'):''} · ${c.racNome}`,cols:[['Ingrediente',330,'l'],['Previsto',170,'r'],['Carregado',170,'r'],['Diferença',170,'r']],
+      linhas:c.itens.map(x=>[x.nome,nf(x.prev),ok(+x.real)?nf(+x.real):'—',ok(+x.real)?((x.real-x.prev)>0?'+':'')+nf(x.real-x.prev):'']),
+      cores:c.itens.map(x=>{const d=x.real-x.prev;return [null,null,null,!ok(+x.real)?null:Math.abs(d)/x.prev<=.03?'#5f7a00':Math.abs(d)/x.prev<=.08?'#b26a00':'#b3261e'];}),
+      total:['TOTAL',nf(tp),nf(tr),(tr-tp>0?'+':'')+nf(tr-tp)]};}),`Batidas ${rot.replace(/\//g,'-')}`);
+window.xlsBatidas=(L,rot)=>{const r=[];L.slice().reverse().forEach(c=>c.itens.forEach(x=>r.push([xc(c.dia,'dia'),xc(c.hora),xc(x.hora||''),xc(c.trato,'int'),xc(c.local==='C'?'Confinamento':c.local==='P'?'Pasto':''),xc(c.racNome),xc(x.nome),xc(x.prev,'int'),xc(ok(+x.real)?+x.real:NaN,'int'),xc(ok(+x.real)?x.real-x.prev:NaN,'int'),xc(ok(+x.ini)?+x.ini:NaN,'int'),xc(ok(+x.fim)?+x.fim:NaN,'int')])));
+  gExcel(`Batidas ${rot.replace(/\//g,'-')}`,[['Batidas',['Data','Início batida','Hora ingrediente','Trato','Local','Ração','Ingrediente','Previsto (kg)','Carregado (kg)','Diferença (kg)','Balança início','Balança final'],r,[11,9,9,7,13,16,22,12,13,13,13,13]]]);};
+document.addEventListener('click',e=>{const b=e.target.closest('[data-hbdel]');if(!b)return;if(typeof bloqueado==='function'&&bloqueado())return;if(!confirm('Apagar esta batida?'))return;gDel(b.dataset.hbdel);if(typeof renderHist==='function')renderHist();});

@@ -99,6 +99,15 @@ select.trato{font-family:var(--display);font-stretch:condensed;font-size:1.4rem;
 tr.grp td{background:var(--chip);font-weight:600;text-align:left;font-size:.85rem}
 tr.grp td span{float:right;font-variant-numeric:tabular-nums}
 .danger{border-color:var(--bad);color:var(--bad)}
+.emSetup>section:not(.fornSetup){display:none!important}
+#aBox.emSetup>section:first-of-type{display:block!important}
+.fBar{display:flex;justify-content:space-between;align-items:center;gap:8px;background:#eef4e0;border-radius:10px;padding:8px 10px;margin-bottom:10px;font-weight:700;font-size:.92rem}
+body.somenteVer .fBar{display:none!important}
+.tSeta{display:grid;grid-template-columns:56px 1fr 56px;gap:8px;align-items:center;margin:4px 0 10px}.tSeta button{padding:12px 0;font-size:1.2rem;font-weight:700;background:var(--lima);border-color:var(--lima)}.tSeta button:disabled{opacity:.3}.tSeta select{text-align:center;text-align-last:center;font-weight:700;font-size:1.1rem}
+.cJunto{display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin:-2px 0 10px}.cJunto>small{width:100%;color:var(--muted);font-weight:600}.cJunto button{padding:6px 10px;font-weight:700;line-height:1.1}.cJunto button small{display:block;font-weight:500;font-size:.72rem}.cJunto button.sel{background:var(--lima);border-color:var(--lima)}.cJunto button:disabled{opacity:.35}
+.naoForn{margin-top:8px;border-color:#b26a00;color:#b26a00;font-weight:700}
+body.somenteVer .naoForn{display:none!important}
+.escolhaModo p{margin:6px 0;text-align:center;font-size:1.05rem;font-weight:600;color:var(--muted)}
 .stat{display:flex;gap:10px;flex-wrap:wrap}
 .stat div{flex:1 1 90px;background:var(--chip);border-radius:10px;padding:8px 12px}
 .stat small{display:block;font-size:.72rem;color:var(--muted);text-transform:uppercase;letter-spacing:.05em}
@@ -250,7 +259,7 @@ input.big.sel{border-color:var(--accent);border-width:3px;background:#fff}
 /* tela inicial */
 .inicio{display:none;flex-direction:column;gap:14px;padding-top:10px}
 body.naInicio .inicio{display:flex}
-body.naInicio .wrap>.menu,body.naInicio #viewGest,body.naInicio #viewCarga,body.naInicio #viewPrev,body.naInicio #viewTrato,body.naInicio #viewHist,body.naInicio #viewAuto,body.naInicio #viewAutoC,body.naInicio #subModo{display:none!important}
+body.naInicio .wrap>.menu,body.naInicio #viewEscolha,body.naInicio #viewGest,body.naInicio #viewCarga,body.naInicio #viewPrev,body.naInicio #viewTrato,body.naInicio #viewHist,body.naInicio #viewAuto,body.naInicio #viewAutoC,body.naInicio #subModo{display:none!important}
 button.grande{font-size:1.5rem;padding:26px 14px;border-radius:16px;font-weight:700}
 button.gExec{background:#1f8f4e;border-color:#1f8f4e;color:#fff}
 button.gVer{background:var(--accent);border-color:var(--accent);color:#fff}
@@ -331,6 +340,8 @@ table.trat button.editq,#tbHist button.editq{font-size:.9rem}
 #hCal .calDias button.faixa{background:var(--lima-claro)}
 .senhaFundo{position:fixed;inset:0;z-index:5;background:rgba(17,37,61,.6)}
 .hLocal{margin-top:10px}
+.hModo{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px}.hModo button{padding:12px;font-weight:700;font-size:1rem}.hModo button.sel{background:var(--lima);border-color:var(--lima)}
+.gLocal{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:4px 0 10px}.gLocal button{padding:12px 6px;font-weight:700}.gLocal button.sel{background:var(--lima);border-color:var(--lima)}
 body.somenteVer .fimHist{display:none!important}
 #btnRestaurar,#lblRestaurar{width:100%}
 body.somenteVer #btnRestaurar{display:none!important}
@@ -402,6 +413,7 @@ table:has(#tbHist) td.c{text-align:left}
 .gCocho.feito{border-color:var(--lima);background:var(--lima-claro)}
 .gCoTopo{display:flex;justify-content:space-between;gap:8px;align-items:baseline;flex-wrap:wrap}.gCoTopo b{font-family:var(--display);font-stretch:condensed;font-size:1.35rem}
 .gCoTopo span,.gCoBase small{font-size:.8rem;color:var(--muted)}.gCoBase{font-size:.9rem}
+.gBaseOp{margin:2px 0 6px}.gBaseOp summary{font-size:.82rem;color:var(--muted);cursor:pointer}.gBaseF{display:grid;gap:6px;margin-top:6px}.gBaseChips{display:flex;flex-wrap:wrap;gap:6px}.gBaseChips .mini.sel{background:var(--lima);border-color:var(--lima)}
 .gNotas{display:flex;gap:6px}.gNotas button{flex:1;padding:6px 2px;font-size:1.25rem;line-height:1.1;display:flex;flex-direction:column;align-items:center}
 .gNotas button small{font-size:.68rem;font-weight:600;color:var(--muted)}
 .gNotas button.sel{background:var(--accent);border-color:var(--accent);color:#fff}.gNotas button.sel small{color:#c9d3df}
@@ -658,15 +670,15 @@ body.menuFechado .menuSeta{background:#2e6b2f;color:#fff;padding:9px 12px;font-s
     <button id="tabPrev" aria-selected="false">Previsto</button>
     <button id="tabLeit" aria-selected="false">Leitura</button>
     <button id="tabHist" aria-selected="false">Histórico</button>
-    <button id="tabMan" aria-selected="true">✋ Manual</button>
     <button id="tabModoAuto" aria-selected="false">⚡ Automação</button>
+    <button id="tabMan" aria-selected="false">✋ Manual</button>
   </div>
   <div class="subModo" id="subModo" hidden>
     <span id="modoTit">Manual</span>
-    <button id="tabTrato" aria-selected="true">Tratar</button>
+    <button id="tabTrato" aria-selected="true">Fornecer</button>
     <button id="tabCarga" aria-selected="false">Carregar</button>
     <button id="tabAutoC" aria-selected="false" hidden>Carregar</button>
-    <button id="tabAuto" aria-selected="false" hidden>Tratar</button>
+    <button id="tabAuto" aria-selected="false" hidden>Fornecer</button>
   </div>
   <div class="subtabs sub4" id="subGest" hidden>
     <button data-gt="home" id="tabGest">Resumo</button>
@@ -678,6 +690,7 @@ body.menuFechado .menuSeta{background:#2e6b2f;color:#fff;padding:9px 12px;font-s
   </div>
   </div>
 
+<div id="viewEscolha" hidden><section class="panel escolhaModo"><p id="escolhaTxt">Escolha ⚡ Automação ou ✋ Manual no menu acima.</p></section></div>
 <div id="viewPrev" hidden>
   <section class="panel">
     <div class="curhead"><h2>Previsto e currais</h2><span class="note num" id="pvTot"></span></div>
@@ -735,7 +748,9 @@ body.menuFechado .menuSeta{background:#2e6b2f;color:#fff;padding:9px 12px;font-s
 </div>
 
 <div id="viewTrato">
+  <section class="panel fornSetup" id="fSetupM" hidden></section>
   <section class="panel" id="painel">
+    <div class="fBar" id="fBarM" hidden></div>
     <div class="dataLinha" id="dataLinha"><button class="dataBox" id="dataEsc" aria-label="Data do trato">—</button><button class="mini lima" id="btnHoje" hidden>Voltar para hoje</button></div>
     <div class="cal" id="cal" hidden></div>
     <div class="linhaTrato">
@@ -767,6 +782,7 @@ body.menuFechado .menuSeta{background:#2e6b2f;color:#fff;padding:9px 12px;font-s
       <div><small>Diferença do previsto</small><b class="num" id="desv">—</b></div>
     </div>
     <button class="primary" id="btnReg" disabled>Registrar trato</button>
+    <button class="naoForn" id="btnNaoForn" type="button">🚫 Não fornecer neste curral</button>
     <div class="row navtrato"><button id="btnAnterior">◀ Trato anterior</button><button class="lima" id="btnProximo">Ir para o Trato 2 ▶</button></div>
     <p class="note">Recarregou o vagão? É só corrigir o peso de início antes de começar o curral.</p>
   </section>
@@ -789,6 +805,7 @@ body.menuFechado .menuSeta{background:#2e6b2f;color:#fff;padding:9px 12px;font-s
 </div>
 
 <div id="viewHist" hidden>
+  <div class="linhas hModo" id="hModo"><button data-hm="T" class="sel">🐂 Tratos</button><button data-hm="B">🚜 Batidas</button></div>
   <section class="panel">
     <h2>Filtrar</h2>
     <div id="hData"></div>
@@ -801,7 +818,12 @@ body.menuFechado .menuSeta{background:#2e6b2f;color:#fff;padding:9px 12px;font-s
     </div>
   </section>
 
-  <section class="panel">
+  <section class="panel" id="hBatSec" hidden>
+    <div class="curhead"><h2>Batidas do vagão</h2><span class="note num" id="hBatN"></span></div>
+    <div id="hBat"></div>
+    <div class="row compart"><button class="verde" id="hBatImg">🖼 Imagem</button><button class="verde" id="hBatXls">📊 Excel</button></div>
+  </section>
+  <section class="panel hSoTratos">
     <div class="curhead"><h2>Registros</h2><span class="note num" id="hN"></span></div>
     <div class="tablebox"><table>
       <thead><tr><th class="hora">Hora</th><th>Curral</th><th>Previsto</th><th>Realiz.</th><th>Dif.</th></tr></thead>
@@ -819,7 +841,7 @@ body.menuFechado .menuSeta{background:#2e6b2f;color:#fff;padding:9px 12px;font-s
     </div>
   </section>
 
-  <section class="panel">
+  <section class="panel hSoTratos">
     <h2>Nuvem</h2>
     <p class="note" id="nuvemInfo"></p>
     <div class="row"><button class="lima" id="btnEnviar">Enviar agora</button><button id="btnPuxar">Buscar tratos da nuvem</button></div>
@@ -920,7 +942,7 @@ body.menuFechado .menuSeta{background:#2e6b2f;color:#fff;padding:9px 12px;font-s
 <div class="toast" id="toast" hidden></div>
 <script>
 'use strict';
-const APP_VERSAO='28';
+const APP_VERSAO='31';
 const APP_DATA='19/10/2026';
 const KEY='confinamento-completo-v1';
 const $=id=>document.getElementById(id);
@@ -1042,7 +1064,10 @@ async function iniciar(){
 function toast(t){const el=$('toast');el.textContent=t;el.hidden=false;clearTimeout(toast.t);toast.t=setTimeout(()=>el.hidden=true,2600);}
 /* Lista do trato = currais do cadastro (na ordem) que têm previsto maior que zero nesse trato */
 function mapaPrev(k){k=String(k);if(!S.prev[k])S.prev[k]={};return S.prev[k];}
-function lista(k){const m=(S.prev&&S.prev[String(k||S.tratoSel)])||{};return S.cadastro.filter(n=>typeof m[n]==='number'&&m[n]>0).map(n=>({nome:n,prev:m[n]}));}
+function lista(k){const m=(S.prev&&S.prev[String(k||S.tratoSel)])||{};const f=k?null:filtroForn();
+  return S.cadastro.filter(n=>typeof m[n]==='number'&&m[n]>0&&(!f||(linhaDe(n)===f.local&&(!f.rac||(window.racaoDoCurral&&racaoDoCurral(n)===f.rac))))).map(n=>({nome:n,prev:m[n]}));}
+/* Fornecer: antes de abrir, escolhe Local (confinamento/pasto), Ração e Trato; a lista mostra só esses currais */
+function filtroForn(){if(typeof modoVer!=='undefined'&&modoVer)return null;const f=S&&S.forn;return f&&f.ativo&&f.dia===hojeKey()?f:null;}
 /* ================= Previsto por dia · nº de tratos por curral · divisão em % =================
    S.prev = previsto de HOJE (o que o Tratar usa e vai para a nuvem).
    Cada dia fica guardado na Gestão (item 'prev-AAAA-MM-DD') para consultar depois; o de AMANHÃ fica lá até virar o dia. */
@@ -1059,7 +1084,7 @@ function totalCurral(c,obj){obj=obj||S.prev||{};let t=0;for(let k=1;k<=MAXT;k++)
 function arredPrev(v){let a=gOk()&&typeof gCfg==='function'?+gCfg().arred:10;if(!(a>0))a=10;return Math.round(v/a)*a;}
 /* divide o total do curral nos tratos pela % configurada; o último trato fica com a sobra do arredondamento */
 /* tudo em dezena (ou no arredondamento do Config.): unidade 1–4 desce, 5–9 sobe; o total também, então a soma dos tratos fecha certinho */
-function distribuir(c,total,n,obj){obj=obj||S.prev;n=n||nTratos(c,obj);const pc=divisao(n);let resto=Math.max(0,arredPrev(total||0));
+function distribuir(c,total,n,obj){obj=obj||S.prev;if(obj===S.prev&&S.prevOrig&&S.prevOrig.v){delete S.prevOrig.v[c];delete S.prevOrig.set[c];}n=n||nTratos(c,obj);const pc=divisao(n);let resto=Math.max(0,arredPrev(total||0));
   for(let k=1;k<=MAXT;k++){const key=String(k);if(!obj[key])obj[key]={};
     if(k>n||!total){delete obj[key][c];continue;}
     const v=k===n?resto:Math.max(0,arredPrev(total*pc[k-1]/100));obj[key][c]=v;resto-=v;}
@@ -1079,6 +1104,95 @@ function virarDiaPrev(){if(!S)return;const hj=hojeKey();if(S.prevDia===hj)return
 /* trato do dia terminado: todos os tratos com previsto já têm registro */
 function diaFinalizado(d){d=d||hojeKey();const regs=HIST.filter(r=>r.dia===d);let tem=false;
   for(let k=1;k<=MAXT;k++){const L=lista(k);if(!L.length)continue;tem=true;if(!L.every(x=>regs.some(r=>r.trato===k&&r.curral===x.nome)))return false;}return tem;}
+/* Compensar no último trato: o total do dia do curral fica o mesmo. O que foi a mais ou a menos nos tratos
+   anteriores é tirado ou somado no ÚLTIMO trato do curral (arredondado).
+   Ex.: total 2.000 em 2 tratos (1.000 + 1.000); tratou 1.200 no 1º → o 2º vira 800. */
+function compensarCurral(c){try{
+  const cfgG=gOk()&&typeof gCfg==='function'?gCfg():{};if(cfgG.compensa===false)return null;
+  const hj=hojeKey();if(diaAtivo()!==hj||!S.prev)return null;
+  if(!S.prevOrig||S.prevOrig.dia!==hj)S.prevOrig={dia:hj,v:{},set:{}};
+  const O=S.prevOrig;let orig=O.v[c],setv=O.set[c];
+  let mao=false;if(orig&&setv){for(const k in setv){if(((S.prev[k]||{})[c])!==setv[k]){orig=null;mao=true;break;}}}  // mudaram o previsto à mão: vale o que digitaram
+  const regs=HIST.filter(r=>r.dia===hj&&r.curral===c);const feitos=new Set(regs.map(r=>+r.trato));
+  if(!orig){orig={};for(let k=1;k<=MAXT;k++){const v=(S.prev[k]||{})[c];if(typeof v==='number'&&v>0)orig[k]=v;
+      if(mao&&feitos.has(k))orig[k]=regs.filter(r=>+r.trato===k).reduce((a,r)=>a+(+r.forn||0),0);}}
+  const ks=Object.keys(orig).map(Number).sort((a,b)=>a-b);if(ks.length<2)return null;
+  /* "não fornecer" conta como 0 kg: o que faltou vai para o último trato (se quiser menos, ajusta o previsto na hora) */
+  const pulou=new Set();
+  const T=ks.filter(k=>!pulou.has(k)).reduce((a,k)=>a+orig[k],0);
+  const real=regs.reduce((a,r)=>a+(+r.forn||0),0);
+  const pend=ks.filter(k=>!feitos.has(k));if(!pend.length||!feitos.size)return null;
+  /* o ajuste é sempre no ÚLTIMO trato do curral; os do meio ficam como estavam */
+  const ult=ks[ks.length-1];if(feitos.has(ult))return null;
+  const meio=pend.filter(k=>k!==ult).reduce((a,k)=>a+orig[k],0);
+  const novo={};pend.filter(k=>k!==ult).forEach(k=>novo[k]=orig[k]);novo[ult]=Math.max(0,arredPrev(T-real-meio));
+  let mudou=false;pend.forEach(k=>{if(!S.prev[k])S.prev[k]={};if(S.prev[k][c]!==novo[k]){S.prev[k][c]=novo[k];mudou=true;}});
+  O.v[c]=orig;O.set[c]=novo;save();
+  if(mudou){marcarPrev();const d=real-ks.filter(k=>feitos.has(k)&&!pulou.has(k)).reduce((a,k)=>a+orig[k],0);
+    try{window.diagLog&&diagLog('compensou',{curral:c,total:T,realizado:real,dif:d,novo});}catch(e){}
+    toast(`${c}: último trato (Trato ${ult}) → ${fmt(novo[ult])} kg (${d>0?'+':''}${fmt(d)} kg compensados)`);}
+  return novo;}catch(e){return null;}}
+window.compensarCurral=compensarCurral;
+const FS={local:'C',rac:null,trato:null};
+/* trato com setinhas: ◀ [Trato N ▾] ▶ (toca no meio para escolher, ou nas setas para ir e voltar) */
+function tratoSeta(id,v){v=+v||1;return `<div class="tSeta"><button type="button" data-tsd="-1" aria-label="Trato anterior"${v<=1?' disabled':''}>◀</button><select class="trato" id="${id}">${[1,2,3,4,5,6].map(k=>`<option value="${k}"${v===k?' selected':''}>Trato ${k}</option>`).join('')}</select><button type="button" data-tsd="1" aria-label="Próximo trato"${v>=6?' disabled':''}>▶</button></div>`;}
+window.tratoSeta=tratoSeta;
+document.addEventListener('click',e=>{const b=e.target.closest('.tSeta [data-tsd]');if(!b)return;const sel=b.parentElement.querySelector('select');const v=Math.max(1,Math.min(6,(+sel.value||1)+(+b.dataset.tsd)));if(v===+sel.value)return;sel.value=String(v);sel.dispatchEvent(new Event('change',{bubbles:true}));});
+function fornCurrais(loc,rac,k){const m=(S.prev&&S.prev[String(k)])||{};return S.cadastro.filter(n=>typeof m[n]==='number'&&m[n]>0&&linhaDe(n)===loc&&(!rac||(window.racaoDoCurral&&racaoDoCurral(n)===rac))).map(n=>({nome:n,prev:m[n]}));}
+function fornPendentes(loc,rac,k){const L=fornCurrais(loc,rac,k),hj=diaAtivo();return L.filter(x=>!HIST.some(r=>r.dia===hj&&+r.trato===k&&r.curral===x.nome));}
+function fornSetupHTML(){const R=window.racoesDoLocal?racoesDoLocal(FS.local):[];
+  if(FS.rac==null||(FS.rac&&!R.some(r=>r.uid===FS.rac)))FS.rac=R.length?R[0].uid:'';
+  if(!FS.trato||!fornCurrais(FS.local,FS.rac,FS.trato).length||!fornPendentes(FS.local,FS.rac,FS.trato).length){let k0=null;for(let k=1;k<=6;k++){if(fornPendentes(FS.local,FS.rac,k).length){k0=k;break;}}FS.trato=k0||FS.trato||1;}
+  const L=fornCurrais(FS.local,FS.rac,FS.trato),pend=fornPendentes(FS.local,FS.rac,FS.trato),tot=L.reduce((a,x)=>a+x.prev,0);
+  return `<h2>Fornecer no cocho</h2>
+    <label>1. Local</label>${window.escolhaLocal?escolhaLocal('data-floc',FS.local):''}
+    <label for="fRac">2. Ração que vai distribuir</label><select id="fRac">${R.map(r=>`<option value="${r.uid}"${r.uid===FS.rac?' selected':''}>${esc(r.nome)}</option>`).join('')}<option value=""${FS.rac===''?' selected':''}>Todas as rações</option></select>
+    ${R.length===1?`<p class="note">Única ração ativa no ${FS.local==='C'?'confinamento':'pasto'}: já selecionada.</p>`:''}
+    <label for="fTrato">3. Trato</label>${tratoSeta('fTrato',FS.trato)}
+    <p class="note">${L.length?`<b>${L.length} curral(is)</b> · ${fmt(tot)} kg previstos · ${pend.length===L.length?'nenhum fornecido ainda':pend.length?`faltam ${pend.length}`:'✓ todos já fornecidos'}<br>${L.map(x=>esc(x.nome)).join(', ')}`:'Nenhum curral com previsto neste trato para este local e ração.'}</p>
+    <button class="primary" id="fIniciar"${L.length?'':' disabled'}>▶ Iniciar fornecimento</button>`;}
+function fornBarHTML(){const f=filtroForn();if(!f)return '';const r=f.rac&&typeof G!=='undefined'&&G.it[f.rac];
+  return `<span>${f.local==='C'?'🏠 Confinamento':'🌾 Pasto'} · ${r?esc(r.nome):'Todas as rações'} · Trato ${S.tratoSel}</span><button class="mini" data-ftrocar="1">Trocar</button>`;}
+function mostrarFornecimento(){try{const setup=!modoVer&&!filtroForn();
+  const vm=$('viewTrato'),va=$('aBox');
+  if(vm){vm.classList.toggle('emSetup',setup);$('fSetupM').hidden=!setup;if(setup)$('fSetupM').innerHTML=fornSetupHTML();$('fBarM').hidden=setup||modoVer;$('fBarM').innerHTML=fornBarHTML();}
+  if(va&&$('fSetupA')){va.classList.toggle('emSetup',setup);$('fSetupA').hidden=!setup;if(setup)$('fSetupA').innerHTML=fornSetupHTML();$('fBarA').hidden=setup;$('fBarA').innerHTML=fornBarHTML();}
+}catch(e){}}
+window.mostrarFornecimento=mostrarFornecimento;
+async function iniciarFornecimentoChecado(){const pend=fornPendentes(FS.local,FS.rac,FS.trato),prec=pend.reduce((a,x)=>a+x.prev,0);
+  const peso=window.pesoBalanca?pesoBalanca():null;
+  if(peso!=null&&prec>0&&peso<prec){const ok=window.confirmaVermelho?await confirmaVermelho('Pouca ração no vagão',`A balança mostra ${fmt(peso)} kg e o fornecimento precisa de ${fmt(prec)} kg (${pend.length} curral(is)). Faltam ${fmt(prec-peso)} kg.`,'Iniciar mesmo assim','Voltar para carregar mais'):confirm('Pouca ração no vagão. Iniciar mesmo assim?');if(!ok)return;}
+  iniciarFornecimento();}
+function iniciarFornecimento(){S.forn={ativo:true,dia:hojeKey(),local:FS.local,rac:FS.rac||'',trato:+FS.trato};S.ini='';S.fim='';
+  if(+S.tratoSel!==+FS.trato){S.tratoSel=+FS.trato;$('tratoSel').value=String(S.tratoSel);if($('aTrato'))$('aTrato').value=String(S.tratoSel);}
+  const L=lista(),regs=regsAtuais();setAtual(Math.max(0,L.findIndex(x=>!feito(x.nome,regs))));save();
+  if(window.aRenderFora)aRenderFora();render();mostrarFornecimento();window.scrollTo({top:0});}
+document.addEventListener('click',e=>{const lb=e.target.closest('[data-floc]');if(lb){FS.local=lb.dataset.floc;FS.rac=null;FS.trato=null;mostrarFornecimento();return;}
+  if(e.target.closest('#fIniciar'))return iniciarFornecimentoChecado();
+  if(e.target.closest('[data-ftrocar]')){if(window.autoDescarregando&&autoDescarregando()){toast('Está fornecendo num curral: registre antes de trocar.');return;}const f=S.forn||{};FS.local=f.local||'C';FS.rac=f.rac==null?null:f.rac;FS.trato=null;S.forn=Object.assign({},f,{ativo:false});save();mostrarFornecimento();window.scrollTo({top:0});}});
+document.addEventListener('change',e=>{if(e.target.id==='fRac'){FS.rac=e.target.value;FS.trato=null;mostrarFornecimento();}if(e.target.id==='fTrato'){FS.trato=+e.target.value;mostrarFornecimento();}});
+/* terminou todos os currais do trato (fornecidos ou "não fornecer"): já passa para o próximo trato */
+function proximoTratoSeCompleto(){try{const f=filtroForn();
+  if(f){const L=lista(),regs=regsAtuais();if(!L.length||!L.every(x=>feito(x.nome,regs)))return false;
+    toast(`✓ Fornecimento completo · ${f.local==='C'?'Confinamento':'Pasto'} · Trato ${S.tratoSel}`);FS.local=f.local;FS.rac=f.rac;FS.trato=null;S.forn=Object.assign({},f,{ativo:false});save();mostrarFornecimento();return true;}
+  if(!tratoCompleto(S.tratoSel))return false;const antes=S.tratoSel;
+  let alvo=null;for(let k=antes+1;k<=6;k++){if(lista(k).length&&!tratoCompleto(k)){alvo=k;break;}}
+  if(alvo==null)return false;$('tratoSel').value=String(alvo);$('tratoSel').dispatchEvent(new Event('change'));
+  if($('aTrato'))$('aTrato').value=String(alvo);toast(`✓ Trato ${antes} completo · agora Trato ${alvo}`);return true;}catch(e){return false;}}
+window.proximoTratoSeCompleto=proximoTratoSeCompleto;
+/* "Não fornecer neste curral": lança 0 kg, conta como passado no curral */
+async function naoFornecer(){if(bloqueado())return;const L=lista(),c=L[S.atual];if(!c)return;
+  if(regsAtuais().some(x=>x.curral===c.nome)){toast(c.nome+' já tem registro neste trato');return;}
+  if(!confirm(`Não fornecer no ${c.nome} neste Trato ${S.tratoSel}?\n\nFica registrado 0 kg e passa para o próximo curral.`))return;
+  const now=new Date();const r={ts:now.getTime(),dia:diaAtivo(),trato:S.tratoSel,hora:now.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'}),
+    curral:c.nome,prev:c.prev,ini:0,fim:0,forn:0,uid:`${S.aparelho}-${now.getTime()}`,enviado:false,origem:'nao_forneceu'};
+  try{r.id=await dbAdd(r);}catch(e){toast('Erro ao salvar');return;}
+  HIST.push(r);try{window.diagLog&&diagLog('nao_forneceu',{curral:c.nome,trato:S.tratoSel,prev:c.prev});}catch(e){}
+  const regs=regsAtuais();let nx=L.findIndex((x,i)=>i>S.atual&&!feito(x.nome,regs));if(nx<0)nx=L.findIndex(x=>!feito(x.nome,regs));
+  setAtual(nx<0?L.length:nx);S.fim='';save();toast(`${c.nome}: não fornecido (0 kg)`);
+  setTimeout(()=>{compensarCurral(c.nome);proximoTratoSeCompleto();render();if(window.aRenderFora)aRenderFora();},600);
+  render();if(window.aRenderFora)aRenderFora();sincronizar();}
+window.naoFornecer=naoFornecer;
 window.prevApi={MAXT,divisao,nTratos,setNTratos,totalCurral,distribuir,prevDoDia,prevGuardado,guardarPrevDia,guardarPrevHoje,diaFinalizado,arredPrev};
 function duvidas(k){const m=(S.prev&&S.prev[String(k||S.tratoSel)])||{};return S.cadastro.filter(n=>m[n]==='?');}
 /* Ao abrir: no 1º acesso do dia começa no Trato 1; se o trato atual já foi todo feito, passa para o próximo que falta */
@@ -1110,7 +1224,7 @@ function render(){
   const ant=man&&!amh;
   $('dataEsc').textContent=amh?`⚠ DIA SEGUINTE · ${diaBR(diaAtivo())}`:ant?`⚠ DIA ANTERIOR · ${diaBR(diaAtivo())}`:'📅 Hoje · '+diaBR(diaAtivo());
   $('dataLinha').classList.toggle('manual',man);$('dataLinha').classList.toggle('amanha',man);$('btnHoje').hidden=!man;
-  $('hoje').textContent=new Date().toLocaleDateString('pt-BR',{weekday:'short',day:'2-digit',month:'2-digit',year:'numeric'});
+  pintarHoje();
   const L=lista(),regs=regsAtuais();
   if(S.atualNome!=null){const i=L.findIndex(x=>x.nome===S.atualNome);if(i>=0)S.atual=i;}
   if(modoVer){const i=L.findIndex(x=>!feito(x.nome,regs));S.atual=i<0?L.length:i;}
@@ -1177,7 +1291,7 @@ function mostrarX(){document.querySelectorAll('.limparX').forEach(b=>{b.hidden=!
 $('fim').addEventListener('input',e=>{S.fim=e.target.value;save();calc();});
 $('tratoSel').addEventListener('change',e=>{
   $('escolhaCur').hidden=true;
-  S.tratoSel=+e.target.value;S.ini='';S.fim='';
+  S.tratoSel=+e.target.value;if(S.forn&&S.forn.ativo)S.forn.trato=S.tratoSel;setTimeout(()=>{try{$('fBarM').innerHTML=fornBarHTML();if($('fBarA'))$('fBarA').innerHTML=fornBarHTML();}catch(x){}},0);S.ini='';S.fim='';
   const L=lista(),regs=regsAtuais();setAtual(Math.max(0,L.findIndex(x=>!feito(x.nome,regs))));
   save();render();toast(`Trato ${S.tratoSel}`);
 });
@@ -1200,6 +1314,7 @@ $('btnReg').onclick=async()=>{
   try{r.id=await dbAdd(r);}catch(e){toast('Erro ao salvar no banco. Tente de novo.');calc();return;}
   HIST.push(r);
   toast(`${c.nome}: ${fmt(r.forn)} kg salvo`);
+  setTimeout(()=>{compensarCurral(c.nome);proximoTratoSeCompleto();render();},1200);
   S.ini=String(fim);S.fim='';
   const regs=regsAtuais();
   let nx=L.findIndex((x,i)=>i>S.atual&&!feito(x.nome,regs));
@@ -1245,13 +1360,14 @@ $('cal').addEventListener('click',e=>{const b=e.target.closest('button');if(!b||
 $('btnHoje').onclick=()=>{S.dataManual=null;S.fim='';const L=lista(),regs=regsAtuais();setAtual(Math.max(0,L.findIndex(x=>!feito(x.nome,regs))));save();render();toast('Voltou para a data de hoje');};
 $('tbCur').addEventListener('click',e=>{if(modoVer)return;const td=e.target.closest('td[data-i]');if(!td)return;setAtual(+td.dataset.i);S.fim='';save();render();window.scrollTo({top:0,behavior:'smooth'});});
 
+$('btnNaoForn').onclick=()=>naoFornecer();
 $('btnDesfazer').onclick=async()=>{
   const regs=regsAtuais();const r=regs[regs.length-1];if(!r)return;
   try{await dbDel(r.id);}catch(e){toast('Erro ao apagar');return;}
   HIST=HIST.filter(x=>x!==r);
   if(r.enviado){S.apagarNuvem=(S.apagarNuvem||[]).concat(r.uid);sincronizar();}
   setAtual(Math.max(0,lista().findIndex(x=>x.nome===r.curral)));
-  S.ini=String(r.ini);S.fim=String(r.fim);save();render();toast(`Registro do ${r.curral} desfeito`);
+  S.ini=String(r.ini);S.fim=String(r.fim);save();compensarCurral(r.curral);render();toast(`Registro do ${r.curral} desfeito`);
 };
 
 /* ---------- Aba Previsto ---------- */
@@ -1706,10 +1822,14 @@ $('escolhaImg').addEventListener('click',async e=>{const b=e.target.closest('but
     blobs.push(await desenharTabela([secaoCurralImg(f,cab)]));nomes.push(`${nomeBase(f)} - Por curral.png`);}
   compartilharVarios(blobs,nomes);
 });
+$('hModo').addEventListener('click',e=>{const b=e.target.closest('[data-hm]');if(!b)return;hModo=b.dataset.hm;renderHist();});
+$('hBatImg').onclick=()=>{const [pa,pb]=intervaloHist();const L=batidasLista(pa,pb,localSel,HD.per?0:HD.t);if(!L.length)return toast('Nenhuma batida');imgBatidas(L,pa===pb?diaBR(pa):diaBR(pa)+' a '+diaBR(pb));};
+$('hBatXls').onclick=()=>{const [pa,pb]=intervaloHist();const L=batidasLista(pa,pb,localSel,HD.per?0:HD.t);if(!L.length)return toast('Nenhuma batida');xlsBatidas(L,pa===pb?diaBR(pa):diaBR(pa)+' a '+diaBR(pb));};
 $('hXls').onclick=()=>{const f=filtrados();if(f.length)compartilharArquivo(gerarXlsx(f),nomeArquivo(f),XT);};
 
 /* ---------- Abas ---------- */
 function aba(qual){
+  $('viewEscolha').hidden=true;
   if(window.cFecha&&$('tecCarga')&&!$('tecCarga').hidden)cFecha();
   if(typeof modoRemover!=='undefined'&&modoRemover&&qual!=='prev')$('btnRemoverCurral').click();
   if(typeof fecharTeclado==='function')fecharTeclado();
@@ -1730,6 +1850,7 @@ function aba(qual){
   $('tabPrev').setAttribute('aria-selected',String(qual==='prev'));$('tabTrato').setAttribute('aria-selected',String(qual==='trato'));$('tabHist').setAttribute('aria-selected',String(qual==='hist'));if(menuAberto)abrirMenu(qual==='gest'?'gest':'trato');if(qual!=='gest')abaTrato=qual;if(qual==='gest'&&window.gAbrir)gAbrir('gest');
   if(qual==='hist')renderHist();if(qual==='prev')renderPrev();window.scrollTo({top:0});
   lembrarTela();
+  if(qual==='auto'||qual==='trato'){mostrarFornecimento();setTimeout(()=>oferecerContinuar(qual),900);}
 }
 /* lembra a tela aberta: se a página recarregar (arrastar para baixo, atualização do app), volta para ela */
 function lembrarTela(){try{const ini=document.body.classList.contains('naInicio');
@@ -1749,8 +1870,17 @@ function tocarGrupo(g){if(menuAberto===g){abrirMenu(null);return;}abrirMenu(g);a
 $('tabGrpTrato').onclick=()=>tocarGrupo('trato');
 $('tabPrev').onclick=()=>aba('prev');
 $('tabLeit').onclick=()=>aba('leit');
-$('tabMan').onclick=()=>aba(ultModo.man||'trato');
-$('tabModoAuto').onclick=()=>aba(ultModo.auto||'auto');
+/* Manual / Automação: só abre as opções (Carregar e Tratar), sem abrir a tela sozinho */
+function telaEscolha(txt){['viewPrev','viewTrato','viewHist','viewGest','viewCarga','viewAuto','viewAutoC'].forEach(i=>{const e=$(i);if(e)e.hidden=true;});
+  $('escolhaTxt').textContent=txt;$('viewEscolha').hidden=false;window.abaAtual='';
+  ['tabPrev','tabLeit','tabHist','tabTrato','tabCarga','tabAuto','tabAutoC'].forEach(i=>$(i).setAttribute('aria-selected','false'));window.scrollTo({top:0});}
+function escolherModo(m){if(m!=='man'&&m!=='auto'){modoAtual=null;$('subModo').hidden=true;$('tabMan').setAttribute('aria-selected','false');$('tabModoAuto').setAttribute('aria-selected','false');
+    telaEscolha('Escolha ⚡ Automação ou ✋ Manual no menu acima.');return;}
+  modoAtual=m;$('tabMan').setAttribute('aria-selected',String(m==='man'));$('tabModoAuto').setAttribute('aria-selected',String(m==='auto'));
+  $('tabTrato').hidden=$('tabCarga').hidden=m!=='man';$('tabAuto').hidden=$('tabAutoC').hidden=m!=='auto';$('modoTit').textContent=m==='auto'?'⚡ Automação':'✋ Manual';
+  $('subModo').hidden=false;telaEscolha(m==='auto'?'⚡ Automação: escolha Carregar ou Fornecer.':'✋ Manual: escolha Carregar ou Fornecer.');}
+$('tabMan').onclick=()=>escolherModo('man');
+$('tabModoAuto').onclick=()=>escolherModo('auto');
 $('tabTrato').onclick=()=>aba('trato');
 $('tabHist').onclick=()=>aba('hist');
 
@@ -1799,8 +1929,16 @@ function filtrados(){
 /* período: só o total de cada curral, sem separar os tratos */
 function totaisPorCurral(regs){const m=new Map();regs.forEach(r=>{const x=m.get(r.curral)||{curral:r.curral,prev:0,forn:0,n:0};x.prev+=r.prev||0;x.forn+=r.forn||0;x.n++;m.set(r.curral,x);});
   const ordem=S.cadastro;return [...m.values()].sort((a,b)=>{const ia=ordem.indexOf(a.curral),ib=ordem.indexOf(b.curral);return (ia<0?999:ia)-(ib<0?999:ib)||alfa(a.curral,b.curral);});}
+let hModo='T';
 function renderHist(){
   pintarFiltrosHist();
+  document.querySelectorAll('#hModo [data-hm]').forEach(b=>b.classList.toggle('sel',b.dataset.hm===hModo));
+  document.querySelectorAll('#viewHist .hSoTratos').forEach(e=>e.hidden=hModo!=='T');$('hBatSec').hidden=hModo!=='B';
+  if(hModo==='B'){document.querySelectorAll('#hLocal button[data-loc]').forEach(b=>b.classList.toggle('sel',b.dataset.loc===localSel));
+    const [pa,pb]=intervaloHist(),L=window.batidasLista?batidasLista(pa,pb,localSel,HD.per?0:HD.t):[];
+    const tp=L.reduce((a,c)=>a+c.itens.reduce((s,x)=>s+(+x.prev||0),0),0),tr=L.reduce((a,c)=>a+c.itens.reduce((s,x)=>s+(+x.real||0),0),0);
+    $('hPrev').textContent=L.length?fmt(tp):'—';$('hReal').textContent=L.length?fmt(tr):'—';$('hDif').textContent=L.length?sgn(tr-tp):'—';$('hDif').className='num '+(L.length?classeDesv(tr-tp,tp):'');
+    $('hBatN').textContent=L.length?`${L.length} batida(s)`:'';$('hBat').innerHTML=window.batidasHTML?batidasHTML(L,pa!==pb):'';return;}
   document.querySelectorAll('#hLocal button[data-loc]').forEach(b=>b.classList.toggle('sel',b.dataset.loc===localSel));
   const regs=filtrados();
   const p=regs.reduce((a,r)=>a+r.prev,0),f=regs.reduce((a,r)=>a+r.forn,0);
@@ -1903,10 +2041,11 @@ async function editarQtd(uid){
   if(isNaN(v)||v<=0||v>30000){toast('Digite uma quantidade válida');return;}
   if(v===r.forn)return;
   if(r.fornOriginal==null)r.fornOriginal=r.forn;
+  try{window.diagLog&&diagLog('edicao',{curral:r.curral,trato:r.trato,dia:r.dia,hora:r.hora,de:r.forn,para:v,ini:r.ini,fim:r.fim,origem:r.origem||''});}catch(e){}
   r.forn=v;r.editado=true;
   try{await dbPutMany([r]);}catch(e){toast('Erro ao salvar');return;}
   if(r.enviado){S.editarNuvem=(S.editarNuvem||[]).filter(x=>x.uid!==uid).concat({uid,forn:v});save();}
-  render();renderHist();sincronizar();toast(`${r.curral}: realizado agora ${fmt(v)} kg`);
+  compensarCurral(r.curral);render();renderHist();sincronizar();toast(`${r.curral}: realizado agora ${fmt(v)} kg`);
 }
 document.addEventListener('click',e=>{const b=e.target.closest('button.editq');if(b)editarQtd(b.dataset.uid);});
 
@@ -1968,6 +2107,12 @@ async function puxarRegistros(forcar){
   if(mudados.length)await dbPutMany(mudados);
   if(novos.length||mudados.length||apagou){HIST=await dbAll();render();if(!$('viewHist').hidden)renderHist();}
 }
+/* topo: "20/10 às 16:42" = data de hoje e hora da última atualização com a nuvem */
+let ultAtualiz=0;try{ultAtualiz=+localStorage.getItem('ultAtualiz')||0;}catch(e){}
+function pintarHoje(){const el=$('hoje');if(!el)return;const d=new Date(),dd=d.toLocaleDateString('pt-BR',{day:'2-digit',month:'2-digit'});
+  const u=ultAtualiz?new Date(ultAtualiz):null;const mesmoDia=u&&u.toDateString()===d.toDateString();
+  el.textContent=u?(mesmoDia?`${dd} às ${u.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'})}`:`${dd} · atualizado ${u.toLocaleString('pt-BR',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'})}`):dd;}
+setInterval(pintarHoje,30000);
 async function sincronizar(avisar){
   if(!apiUrl()||sincronizando){statusNuvem();return;}
   if(!navigator.onLine){statusNuvem();if(avisar)toast('Sem sinal. Os dados sobem quando tiver internet.');return;}
@@ -1990,7 +2135,8 @@ async function sincronizar(avisar){
   try{await puxarRegistros(avisar);}catch(e){}
   try{if(typeof gSync==='function')await gSync(avisar);}catch(e){erro=erro||e;}
   if(avisar)toast(erro?'Não consegui enviar: '+(erro.message||erro):'Tudo salvo na nuvem');
-  sincronizando=false;statusNuvem();
+  if(!erro&&navigator.onLine){ultAtualiz=Date.now();try{localStorage.setItem('ultAtualiz',String(ultAtualiz));}catch(e){}}
+  sincronizando=false;statusNuvem();pintarHoje();
   if(S.backupPend)fazerBackup(false);
 }
 async function puxarNuvem(){
@@ -2463,7 +2609,7 @@ $('tecSenha').addEventListener('click',e=>{const b=e.target.closest('button[data
 /* entra só na parte escolhida: 'trato' (padrão) ou 'gest' */
 function entrarExec(m){m=m==='gest'?'gest':'trato';modoVer=false;document.body.classList.remove('naInicio','somenteVer','modoTrato','modoGest');document.body.classList.add(m==='gest'?'modoGest':'modoTrato');$('faixaVer').hidden=true;
   menuAberto=null;abrirMenu(m==='gest'?'gest':'trato');
-  if(m==='gest'){try{GT={t:'home'};}catch(e){}aba('gest');}else{aba(abaTrato&&abaTrato!=='gest'?abaTrato:'trato');enviarAoVivo(true);}
+  if(m==='gest'){try{GT={t:'home'};}catch(e){}aba('gest');}else{try{if(escolherTratoDoDia()){$('tratoSel').value=String(S.tratoSel);}render();}catch(e){}escolherModo(null);}
   if(window.menuCaminho)menuCaminho();}
 $('btnModoVer').onclick=()=>{verSenha(false);if(typeof fecharTeclado==='function')fecharTeclado();if(balCampo)fecharBal();
   guardarExec();modoVer=true;document.body.classList.remove('naInicio','modoTrato','modoGest');document.body.classList.add('somenteVer');$('faixaVer').hidden=false;menuAberto=null;abrirMenu('trato');
@@ -2522,6 +2668,37 @@ async function puxarAoVivo(){if(avBuscando||!apiUrl())return;avBuscando=true;
     if(j&&j.ok){avDados=j.dados||{};avAgora=+j.agora||Date.now();avRecebido=Date.now();avErro=false;}else avErro=true;}
   catch(x){avErro=true;}
   avBuscando=false;renderAoVivo();}
+/* Outro aparelho parou no meio de um curral (bateria, travou)? Ao abrir o Tratar aqui, oferece continuar de onde parou */
+let contOferecido={};
+async function oferecerContinuar(tela){
+  try{if(modoVer||!apiUrl()||!navigator.onLine||!S)return;
+    if(tela==='trato'&&(S.ini||S.fim))return;
+    if(tela==='auto'&&window.autoDescarregando&&autoDescarregando())return;
+    const j=await (await fetch(apiUrl()+'?acao=aovivo',{cache:'no-store'})).json();if(!j||!j.ok)return;
+    const agora=+j.agora||Date.now(),dia=diaAtivo();
+    const cands=Object.entries(j.dados||{}).filter(([ap,d])=>ap!==S.aparelho&&d&&d.modo==='trato'&&d.dia===dia&&d.curral&&+d.ini>0&&agora-(+d.tsServ||0)>60000&&agora-(+d.tsServ||0)<3*3600e3
+      &&!contOferecido[ap+'|'+d.tsServ]&&!HIST.some(r=>r.dia===d.dia&&+r.trato===+d.trato&&r.curral===d.curral))
+      .sort((x,y)=>(+y[1].tsServ)-(+x[1].tsServ));
+    if(!cands.length)return;const [ap,d]=cands[0];contOferecido[ap+'|'+d.tsServ]=1;
+    if(window.abaAtual!==tela)return;
+    const min=Math.max(0,Math.round((agora-(+d.tsServ))/60000));
+    const sim=await caixaContinuar(`Continuar o trato de outro aparelho?`,
+      `Trato ${d.trato} · ${d.curral} (previsto ${fmt(+d.prev||0)} kg)\nPeso inicial na balança: ${fmt(+d.ini)} kg\n${d.fim!==''&&d.fim!=null?'Último peso visto: '+fmt(+d.fim)+' kg · ':''}há ${min} min`);
+    if(!sim||window.abaAtual!==tela)return;
+    if(+S.tratoSel!==+d.trato){$('tratoSel').value=String(d.trato);$('tratoSel').dispatchEvent(new Event('change'));}
+    if(!lista().some(x=>x.nome===d.curral)){S.forn={ativo:true,dia:hojeKey(),local:linhaDe(d.curral),rac:(window.racaoDoCurral&&racaoDoCurral(d.curral))||'',trato:+d.trato};mostrarFornecimento();}
+    const L=lista(),i=L.findIndex(x=>x.nome===d.curral);if(i>=0)setAtual(i);
+    if(tela==='auto'){save();render();if(window.aContinuar)aContinuar(+d.ini);}
+    else{S.ini=String(Math.round(+d.ini));S.fim='';save();render();}
+    toast(`Continuando ${d.curral} · início ${fmt(+d.ini)} kg`);
+  }catch(e){}}
+function caixaContinuar(tit,txt){return new Promise(res=>{const f=document.createElement('div');
+  f.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:9999;display:flex;align-items:center;justify-content:center;padding:16px';
+  f.innerHTML=`<div style="background:var(--card,#fff);border-radius:16px;max-width:420px;width:100%;padding:20px;border:3px solid #1565c0"><h3 style="margin:0 0 10px;color:#1565c0">🔄 ${esc(tit)}</h3><p style="margin:0 0 16px;white-space:pre-line;font-weight:600;line-height:1.4">${esc(txt)}</p><div style="display:grid;gap:10px"><button class="primary" data-r="1" style="padding:14px">Continuar daqui</button><button data-r="0" style="padding:14px">Não, começar novo</button></div></div>`;
+  f.addEventListener('click',e=>{const b=e.target.closest('[data-r]');if(b||e.target===f){f.remove();res(!!(b&&b.dataset.r==='1'));}});document.body.appendChild(f);});}
+/* bateria baixa: avisa para carregar antes de apagar no meio do trato */
+try{navigator.getBattery&&navigator.getBattery().then(bt=>{let av=0;const ver=()=>{if(!bt.charging&&bt.level<=0.15&&Date.now()-av>5*60000&&!document.body.classList.contains('naInicio')){av=Date.now();toast(`🔋 Bateria em ${Math.round(bt.level*100)}%: coloque para carregar. Se apagar, outro aparelho pode continuar o trato.`);}};
+  bt.addEventListener('levelchange',ver);bt.addEventListener('chargingchange',ver);setInterval(ver,60000);ver();});}catch(e){}
 /* cartão ao vivo do Carregar (batida do vagão), manual ou pela balança */
 function cardCargaAoVivo(d){const ini=parseFloat(d.ini),fim=parseFloat(d.fim),pv=d.prev,auto=d.origem==='auto';
   const fora=d.dia!==hojeKey()?` · ${diaBR(d.dia)}`:'',topo=`<div class="avTopo"><span><i class="avPonto"></i>Ao vivo · ${auto?'⚡':'✋'} Carregar · Trato ${d.trato}${fora}${d.nProd?` · ${d.feitos||0}/${d.nProd}`:''}</span><span class="avIdade">${idadeTxt(d.idade)}</span></div>`;

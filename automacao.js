@@ -13,7 +13,7 @@ const A={fonte:null,status:'Desconectado',peso:null,amostras:[],estavel:false,va
   est:'aguardando',base:null,menor:null,avisou1:false,avisou2:false,bruto:[],buf:'',
   bt:null,btChars:[],ws:null,sim:null,wake:null,ultDado:0};
 window.AUTO=A;
-const CFG_PADRAO={bleUuid:'',bleCmd:'',tol:10,tempo:4,minDesc:30,amarelo:100,vermelho:50,continuo:20,antecipa:1,ws:'ws://10.10.100.254:6432',som:true};
+const CFG_PADRAO={bleUuid:'',bleCmd:'',tol:10,tempo:4,minDesc:30,amarelo:100,vermelho:50,continuo:20,antecipa:1,ws:'ws://10.10.100.254:6432',som:true,filtro:3};
 /* Ajustes da balança: ficam na nuvem (item 'cfgBalanca' da Gestão), então mudar num aparelho muda em todos */
 function cfgNuvem(){try{return (typeof G!=='undefined'&&G.it&&G.it.cfgBalanca)||null;}catch(e){return null;}}
 function cfg(){if(!S.auto)S.auto={};
@@ -24,11 +24,18 @@ function salvarCfg(){const c=cfg(),v={};for(const k in CFG_PADRAO)v[k]=c[k];
   save();}
 
 /* não atualiza o app sozinho enquanto a balança está conectada ou descarregando */
-window.autoOcupado=()=>!!A.fonte||A.est==='descarregando';
+window.autoOcupado=()=>!!A.fonte||A.est==='descarregando';window.autoDescarregando=()=>A.est==='descarregando';
 
 /* ---------------- Tela ---------------- */
 const css=`
-:is(#aBox,#acBox) .aConn{display:grid;grid-template-columns:1fr;gap:6px}
+:is(#aBox,#acBox) .aConn{display:grid;grid-template-columns:3fr 2fr;gap:6px}
+:is(#aBox,#acBox) .aConn .aDescBt{border-color:var(--bad);color:var(--bad)}
+:is(#aBox,#acBox) .aConn .aDescBt:disabled{opacity:.35}
+:is(#aBox,#acBox) .aSinal{margin-top:6px;border-radius:10px;padding:8px 10px;font-weight:700;font-size:.95rem;text-align:center;background:#e9ecef;color:#495057}
+:is(#aBox,#acBox) .aSinal.ok{background:#e3f5e1;color:#1b5e20}
+:is(#aBox,#acBox) .aSinal.ok i{display:inline-block;width:10px;height:10px;border-radius:50%;background:#2e7d32;margin-right:6px;animation:aPulsa 1.2s infinite}
+:is(#aBox,#acBox) .aSinal.ruim{background:#c62828;color:#fff;animation:aPisca .8s steps(2) infinite}
+@keyframes aPulsa{50%{opacity:.25}}
 :is(#aBox,#acBox) .aConn button{padding:14px 6px;font-size:1rem}
 :is(#aBox,#acBox) .aConn button.on{background:var(--lima);border-color:var(--lima);color:var(--fg);font-weight:700}
 :is(#aBox,#acBox) .aStatus{display:flex;align-items:center;gap:8px;font-size:.9rem;color:var(--muted)}
@@ -43,6 +50,8 @@ const css=`
 :is(#aBox,#acBox) .aFalta.vermelho{background:#c62828}
 :is(#aBox,#acBox) .aFalta.continuo{background:#c62828;animation:aPisca .5s steps(2) infinite}
 :is(#aBox,#acBox) .aFalta.cinza{background:#7c8794}
+:is(#aBox,#acBox) .aFalta.passou{background:#6a1b9a;animation:aPisca2 .4s steps(2) infinite}
+@keyframes aPisca2{50%{background:#38006b}}
 @keyframes aPisca{50%{background:#7f0000}}
 :is(#aBox,#acBox) .aMini{display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px}
 :is(#aBox,#acBox) .aMini div{background:var(--chip);border-radius:10px;padding:6px 8px}
@@ -53,13 +62,14 @@ const css=`
 :is(#aBox,#acBox) .aPeso b{font-family:var(--display);font-stretch:condensed;font-weight:700;color:var(--led);font-size:2.2rem;line-height:1;font-variant-numeric:tabular-nums}
 :is(#aBox,#acBox) .aPeso em{font-style:normal;font-size:.85rem;color:#c9d3df}
 :is(#aBox,#acBox) .aPeso em.est{color:#8be08f}
+:is(#aBox,#acBox) .aPeso em.atraso{color:#ff8a80;font-weight:700}
 :is(#aBox,#acBox) .aBarra{height:18px;border-radius:99px;background:var(--chip);overflow:hidden;border:1px solid var(--line)}
 :is(#aBox,#acBox) .aBarra div{height:100%;width:0;background:var(--lima);transition:width .3s}
 :is(#aBox,#acBox) .aBarra div.passou{background:var(--bad)}
 :is(#aBox,#acBox) .aEtapa{text-align:center;font-weight:700;padding:6px;border-radius:10px;background:var(--chip);font-size:.92rem}
 :is(#aBox,#acBox) .aEtapa.desc{background:#fff4d6;color:var(--warn)}
 :is(#aBox,#acBox) .aEtapa.pronto{background:#e5f4e3;color:var(--ok)}
-:is(#aBox,#acBox) .aBruto{font-family:ui-monospace,Menlo,monospace;font-size:.75rem;background:#0f1d2e;color:#cfe;padding:8px;border-radius:8px;max-height:150px;overflow:auto;white-space:pre-wrap;word-break:break-all}
+:is(#aBox,#acBox,#cfgTBox) .aBruto{font-family:ui-monospace,Menlo,monospace;font-size:.75rem;background:#0f1d2e;color:#cfe;padding:8px;border-radius:8px;max-height:150px;overflow:auto;white-space:pre-wrap;word-break:break-all}
 :is(#aBox,#acBox) .aCfg{display:grid;grid-template-columns:1fr 1fr;gap:8px}
 :is(#aBox,#acBox) .aCfg label{font-size:.8rem;margin:0}
 :is(#aBox,#acBox) .aCfg input{width:100%}
@@ -83,8 +93,9 @@ function montar(){
       <button id="aBtBt">🔷 Conectar balança (Bluetooth)</button>
       <button id="aBtWs" hidden>📶 Caixinha Wi-Fi</button>
       <button id="aBtSim" hidden>🧪 Simulador</button>
+      <button id="aDesc" class="aDescBt" disabled>Desconectar</button>
     </div>
-    <button id="aDesc" hidden>Desconectar</button>
+    <div class="aSinal" id="aSinal">⚪ Balança desconectada</div>
     <div class="aTeclas" id="aTeclas" hidden><button data-tecla="43">▸0◂<br>Zero</button><button data-tecla="40">▸T◂<br>Tara</button><button data-tecla="10">Líquido/<br>Bruto</button><button data-tecla="23">🖨<br>Imprimir</button></div>
     <div class="aSim" id="aSimBox" hidden>
       <button class="lima" id="aSimCarga">+ Carregar 1.000</button>
@@ -94,7 +105,9 @@ function montar(){
     <div class="aPeso"><div><small>Balança (kg)</small><em id="aEstTxt">sem leitura</em></div><b class="num" id="aPeso">—</b></div>
   </section>
 
+  <section class="panel fornSetup" id="fSetupA" hidden></section>
   <section class="panel">
+    <div class="fBar" id="fBarA" hidden></div>
     <div class="linhaTrato">
       <label for="aTrato">Trato</label>
       <select class="trato" id="aTrato">
@@ -115,7 +128,8 @@ function montar(){
     </div>
     <button class="primary" id="aReg" disabled>Registrar trato</button>
     <button id="aTestarSom">🔊 Testar apito (amarelo, vermelho e direto)</button>
-    <div class="row"><button id="aRecomecar">↺ Pegar peso inicial</button><button id="aPular">Pular curral ▶</button></div>
+    <button id="aRecomecar" hidden>↺ Pegar peso inicial</button><button id="aPular">Pular curral ▶</button>
+    <button class="naoForn" id="aNaoForn" type="button">🚫 Não fornecer neste curral</button>
   </section>
 
   <section class="panel">
@@ -129,8 +143,8 @@ function montar(){
   </section>
 
   <section class="panel">
-    <p class="note">Ajustes da balança e dos apitos: Gestão › Config.</p>
-    <details>
+    <p class="note">Ajustes da balança e dos apitos: Gestão › Config. › Balança.</p>
+    <details hidden>
       <summary>🔧 Dados recebidos (para teste)</summary>
       <p class="note" id="aBtInfo"></p>
       <div class="aBruto" id="aBruto">Nada recebido ainda.</div>
@@ -145,7 +159,7 @@ function ligar(){
   $('aBtBt').onclick=conectarBt;$('aBtSer').onclick=conectarSerial;
   $('aBtWs').onclick=()=>conectarWs();
   $('aBtSim').onclick=conectarSim;
-  $('aDesc').onclick=()=>desconectar(true);
+  $('aDesc').onclick=()=>perguntarDesconectar();
   $('aSimCarga').onclick=()=>{if(A.sim){A.sim.modo='parado';A.sim.peso+=1000;}};
   $('aSimDesc').onclick=()=>{if(A.sim)A.sim.modo='desc';};
   $('aSimPara').onclick=()=>{if(A.sim)A.sim.modo='parado';};
@@ -156,6 +170,7 @@ function ligar(){
     if(A.est==='descarregando'&&!confirm('Está fornecendo. Trocar de curral mesmo assim?'))return;
     setAtual(+b.dataset.i);save();$('aEscolha').hidden=true;novoCurral(true);render();aRender();});
   $('aReg').onclick=()=>registrarAuto();
+  $('aNaoForn').onclick=()=>{if(A.est==='descarregando'){toast('Está fornecendo neste curral: registre o trato.');return;}if(window.naoFornecer)naoFornecer();};
   $('aRecomecar').onclick=()=>{if(A.peso==null){toast('Sem leitura da balança');return;}novoCurral(true);aRender();toast('Peso inicial: '+fmt(A.base)+' kg');};
   $('aPular').onclick=()=>{const L=lista(),regs=regsAtuais();let nx=L.findIndex((x,i)=>i>S.atual&&!feito(x.nome,regs));if(nx<0)nx=Math.min(S.atual+1,L.length);
     setAtual(nx);save();novoCurral(true);render();aRender();};
@@ -169,14 +184,26 @@ function ligar(){
 function setStatus(t,tipo){A.status=t;A.statusTipo=tipo||'';const el=$('aStatus');if(el){$('aStatusTxt').textContent=t;el.className='aStatus '+(tipo||'');}acSyncTopo();}
 function marcarFonte(){['aBtSer','aBtBt','aBtWs','aBtSim'].forEach(id=>$(id).classList.remove('on'));
   const m={ser:'aBtSer',bt:'aBtBt',ws:'aBtWs',sim:'aBtSim'}[A.fonte];if(m)$(m).classList.add('on');
-  $('aDesc').hidden=!A.fonte;$('aSimBox').hidden=A.fonte!=='sim';$('aTeclas').hidden=!(A.fonte==='bt'&&A.digiStar);acSyncTopo();}
+  $('aDesc').disabled=!A.fonte;$('aSimBox').hidden=A.fonte!=='sim';$('aTeclas').hidden=!(A.fonte==='bt'&&A.digiStar);acSyncTopo();}
+/* Desconectar pede confirmação (para não desligar a balança no meio do trato sem querer) */
+async function perguntarDesconectar(){if(!A.fonte)return false;
+  const ok=window.confirmaVermelho?await confirmaVermelho('Desconectar a balança?',`O app para de receber o peso.${A.est==='descarregando'?' Você está FORNECENDO agora: o curral não será acompanhado.':''} Para voltar, toque em Conectar balança.`,'Sim, desconectar','Não, manter conectada'):confirm('Desconectar a balança?');
+  if(!ok)return false;desconectar(true);return true;}
+/* sinal da balança ao lado dos botões: recebendo peso, conectada mas sem peso (perigo), ou desconectada */
+function pintarSinal(){const segs=A.ultDado?(Date.now()-A.ultDado)/1000:null;let t,cl='';
+  if(!A.fonte){t='⚪ Balança desconectada · toque em Conectar antes de tratar';}
+  else if(A.btReconectando){t='🔄 Reconectando a balança… não forneça agora';cl='ruim';}
+  else if(segs==null||segs>3){t=segs==null?'⏳ Conectada, esperando o primeiro peso…':`⚠ SEM PESO há ${Math.round(segs)} s · não forneça agora`;cl=segs==null&&Date.now()-(A.tCon||0)<6000?'':'ruim';}
+  else{t=`<i></i>Recebendo peso · ao vivo`;cl='ok';}
+  ['aSinal','acSinal'].forEach(id=>{const e=$(id);if(!e)return;if(e.innerHTML!==t)e.innerHTML=t;e.className='aSinal '+cl;});}
+setInterval(pintarSinal,700);
 function desconectar(manual){
   try{if(A.bt&&A.bt.gatt&&A.bt.gatt.connected){A.bt._manual=true;A.bt.gatt.disconnect();}}catch(e){}
   try{if(A.ws){A.ws._manual=true;A.ws.close();}}catch(e){}
   if(A.sim){clearInterval(A.sim.t);A.sim=null;}
   clearInterval(A.btPoll);clearInterval(A.dsPoll);A.digiStar=false;A.dsEsc=null;A.btLer=[];A.btNotif=0;
   if(A.ser){const sr=A.ser;A.ser=null;(async()=>{try{if(sr.leitor)await sr.leitor.cancel();}catch(e){}try{await sr.port.close();}catch(e){}})();}
-  A.bt=null;A.ws=null;A.btChars=[];A.fonte=null;A.peso=null;A.amostras=[];A.suaves=[];A.suave=NaN;A.ultDado=0;A.temFim=false;A.tCon=0;A.estavel=false;A.valEst=null;
+  A.bt=null;A.ws=null;A.btChars=[];A.fonte=null;A.peso=null;A.brutos=[];A.amostras=[];A.suaves=[];A.suave=NaN;A.ultDado=0;A.temFim=false;A.tCon=0;A.estavel=false;A.valEst=null;
   soltarTela();if(manual)setStatus('Desconectado');marcarFonte();aRender();
 }
 
@@ -213,17 +240,17 @@ async function conectarBt(){
 function ligarQueda(dev){if(dev._queda)return;dev._queda=true;
   dev.addEventListener('gattserverdisconnected',()=>{if(dev._manual||A.bt!==dev||A.btReconectando)return;reconectarBt('Bluetooth caiu');});}
 async function reconectarBt(motivo){const dev=A.bt;if(!dev||A.btReconectando)return;A.btReconectando=true;let n=0;
-  try{while(A.bt===dev&&A.fonte==='bt'){n++;setStatus(`${motivo} · reconectando${n>1?' (tentativa '+n+')':''}…`,'wait');bruto(motivo+': reconectando (tentativa '+n+')');
+  try{while(A.bt===dev&&A.fonte==='bt'){n++;setStatus(`${motivo} · reconectando${n>1?' (tentativa '+n+')':''}…`,'wait');bruto(motivo+': reconectando (tentativa '+n+')');if(n===1)diagLog('reconectando',{motivo});
       try{dev._manual=true;if(dev.gatt.connected)dev.gatt.disconnect();}catch(e){}dev._manual=false;
       await new Promise(r=>setTimeout(r,n===1?700:3000));if(A.bt!==dev)break;
-      try{await btAbrir(dev);A.ultDado=Date.now();A.btCutucou=0;toast('Balança reconectada');break;}catch(e){bruto('não reconectou: '+(e.message||e));}}}
+      try{await btAbrir(dev);A.ultDado=Date.now();A.btCutucou=0;toast('Balança reconectada');diagLog('reconectou',{tentativas:n});break;}catch(e){bruto('não reconectou: '+(e.message||e));}}}
   finally{A.btReconectando=false;}}
-/* vigia: a balança Digi-Star manda o peso o tempo todo (umas 2 vezes por segundo). Se parar de chegar,
-   primeiro chama de novo (05); se continuar parada, reconecta sozinho — mesmo que pareça "conectado". */
+/* vigia: a balança Digi-Star manda o peso o tempo todo (umas 2 vezes por segundo). Se parar 2,5 s,
+   chama de novo (05); se chegar a 5 s sem peso, reconecta sozinho — mesmo que pareça "conectado". */
 setInterval(()=>{if(A.fonte!=='bt'||!A.bt||!A.digiStar||A.btReconectando)return;
   const parado=Date.now()-Math.max(A.ultDado||0,A.tCon||0);
-  if(parado>5000&&!A.btCutucou&&A.dsEsc){A.btCutucou=Date.now();bruto('sem peso há 5 s: chamando a balança de novo');A.dsEsc.writeValue(new Uint8Array([5])).catch(()=>{});}
-  if(parado>10000)reconectarBt('Balança parou de mandar o peso');},2000);
+  if(parado>2500&&!A.btCutucou&&A.dsEsc){A.btCutucou=Date.now();bruto('sem peso há 2,5 s: chamando a balança de novo');diagLog('sem_peso',{});A.dsEsc.writeValue(new Uint8Array([5])).catch(()=>{});}
+  if(parado>5000)reconectarBt('Balança parou de mandar o peso');},1000);
 /* ao abrir o app de novo (ou depois de atualizar), tenta voltar sozinho para a última balança, se o Chrome deixar */
 window.btAutoVoltar=async()=>{try{if(A.fonte||!navigator.bluetooth||!navigator.bluetooth.getDevices)return;const id=localStorage.getItem('btUltimo');if(!id)return;
   const dev=(await navigator.bluetooth.getDevices()).find(d=>d.id===id);if(!dev)return;
@@ -355,7 +382,7 @@ function hexDe(v){try{if(typeof v==='string')return '';const u=v instanceof Data
   return Array.from(u).map(b=>b.toString(16).padStart(2,'0')).join(' ');}catch(e){return '';}}
 function bruto(l){A.bruto.push(new Date().toLocaleTimeString('pt-BR')+'  '+l);if(A.bruto.length>60)A.bruto.splice(0,A.bruto.length-60);
   const el=$('aBruto');if(el&&el.closest('details').open){el.textContent=A.bruto.join('\n');el.scrollTop=el.scrollHeight;}
-  const e2=$('acBruto');if(e2&&e2.closest('details').open){e2.textContent=(A.btInfo?A.btInfo+'\n\n':'')+A.bruto.join('\n');e2.scrollTop=e2.scrollHeight;}}
+  const e2=$('cfgBruto');if(e2&&e2.closest('details').open){e2.textContent=(A.btInfo?A.btInfo+'\n\n':'')+A.bruto.join('\n');e2.scrollTop=e2.scrollHeight;}}
 let ultBruto=0;
 window.autoReceber=(v,o)=>receber(v,o||"sim");window.autoPeso=()=>({peso:A.peso,visor:A.visor});
 function receber(v,origem){
@@ -396,8 +423,19 @@ function refProvisoria(sinal){const c=cfg(),agora=Date.now(),ss=(A.suaves||[]).f
   if(sinal>0?A.suave>ext+c.minDesc:A.suave<ext-c.minDesc)return {v:Math.round(ext),mexendo:true};
   const k=Math.max(1,Math.floor(vs.length/3));if(Math.abs(med(vs.slice(-k))-med(vs.slice(0,k)))<=c.tol)return {v:Math.round(med(vs.slice(-k))),mexendo:false};
   return null;}
+/* mostra se a leitura está chegando em dia: "ao vivo" ou "sem leitura há X s" (em vermelho) */
+const atrasada=()=>!!(A.fonte&&A.ultDado&&Date.now()-A.ultDado>2000);
+function idadeLeitura(){if(!A.fonte||!A.ultDado)return '';const s=(Date.now()-A.ultDado)/1000;return s<=2?' · ao vivo':` · ⚠ sem leitura há ${Math.round(s)} s`;}
+setInterval(()=>{if(!atrasada())return;[['aEstTxt','aPeso'],['acEstTxt','acPeso']].forEach(([i,p])=>{const e=$(i);if(!e)return;
+  e.textContent=(A.estavel?'● parado (estável)':'○ mexendo…')+idadeLeitura();e.className='atraso';const b=$(p);if(b)b.style.opacity='.45';});},1000);
 function novoPeso(n){
   const c=cfg(),agora=Date.now();
+  /* ajuste fino: mediana das últimas leituras (1 = sem filtro, 3 normal, 5 forte) — tira o "pula pra cima e pra baixo"
+     de uma leitura isolada sem atrasar muito (a Digi-Star manda ~1,6 leitura por segundo) */
+  A.brutos=(A.brutos||[]).concat(n).slice(-9);const kf=Math.max(1,Math.min(9,Math.round(+c.filtro||1)));
+  if(kf>1&&A.brutos.length>1){const u=A.brutos.slice(-kf).slice().sort((x,y)=>x-y);n=u[Math.floor((u.length-1)/2)];}
+  ['aPeso','acPeso'].forEach(i=>{const b=$(i);if(b&&b.style.opacity)b.style.opacity='';});
+  if(A.tUlt){const dt=agora-A.tUlt;if(dt>0&&dt<3000)A.dtMed=A.dtMed?A.dtMed*0.8+dt*0.2:dt;}A.tUlt=agora;
   A.peso=n;A.amostras.push({t:agora,v:n});
   const ini=agora-c.tempo*1000;A.amostras=A.amostras.filter(a=>a.t>=agora-Math.max(c.tempo*1000,3000)-1500);
   const jan=A.amostras.filter(a=>a.t>=ini);
@@ -430,7 +468,8 @@ function maquina(){
   if(A.est==='aguardando'){
     const lim=cur?Math.min(c.minDesc,Math.max(c.tol,cur.prev/2)):c.minDesc; // curral pequeno: começa com menos
     if(A.base!=null&&cur&&A.suave<A.base-lim){A.est='descarregando';A.menor=A.peso;A.avisou1=false;A.avisou2=false;A.ancV=A.suave;A.ancT=Date.now();A.fpMin=null;return;}
-    if(A.estavel&&(A.base==null||Math.abs(A.valEst-A.base)>c.tol))A.base=A.valEst;  // parado: atualiza inicial (recarga, ajuste)
+    /* parado: o peso inicial é sempre o peso real da balança agora (não o final do curral anterior, que pode variar) */
+    if(A.estavel&&(A.base==null||A.valEst!==A.base)){if(A.base!=null&&A.baseConf===false&&Math.abs(A.valEst-A.base)>=5)diagLog('ini_ajustado',{curral:cur?cur.nome:'',de:A.base,para:A.valEst});A.base=A.valEst;A.baseConf=true;}
     if(A.base==null){const r=refProvisoria(-1);if(r)A.base=r.v;}  // balança tremendo ou já começou a descer: não fica esperando
     return;
   }
@@ -466,8 +505,10 @@ async function registrarAuto(){
   const regs=regsAtuais();
   let nx=L.findIndex((x,i)=>i>S.atual&&!feito(x.nome,regs));if(nx<0)nx=L.findIndex(x=>!feito(x.nome,regs));
   setAtual(nx<0?L.length:nx);
-  novoCurral();A.base=fim; // o final deste curral é o início do próximo
+  diagLog('trato',Object.assign({curral:cur.nome,trato:S.tratoSel,prev:cur.prev,ini,fim,forn:ini-fim,iniConf:A.baseConf!==false},resumoBal()));
+  novoCurral();A.base=fim;A.baseConf=false; // provisório: o final deste curral; troca pelo peso real da balança assim que firmar
   save();render();aRender();registrando=false;
+  setTimeout(()=>{if(window.compensarCurral){compensarCurral(cur.nome);if(window.proximoTratoSeCompleto&&proximoTratoSeCompleto()){$('aTrato').value=String(S.tratoSel);novoCurral(true);}render();aRender();}},1200);
   sincronizar();
 }
 
@@ -506,15 +547,17 @@ function tocar(tipo){try{criarSons();const pool=SONS[tipo];const a=pool[pool.i=(
   a.currentTime=0;const p=a.play();if(p&&p.catch)p.catch(()=>{});}catch(e){}}
 function pararSom(){todosSons().forEach(a=>{try{if(!a.paused){a.pause();a.currentTime=0;}}catch(e){}});}
 /* velocidade de queda (kg/s) pela reta das leituras do último 1,5 s */
-function taxaQueda(sinal){sinal=sinal||1;const agora=Date.now();if(!A.amostras.length||agora-A.ultDado>1500)return 0;
-  const p=A.amostras.filter(a=>a.t>=agora-1500);if(p.length<2)return 0;
+/* janelas que se ajustam à velocidade da balança (a Digi-Star manda 1 leitura a cada ~0,6 s) */
+const jCaindo=()=>Math.max(800,2.6*(A.dtMed||300)),jTaxa=()=>Math.max(1500,4.5*(A.dtMed||300)),jVivo=()=>Math.max(1500,3.5*(A.dtMed||300));
+function taxaQueda(sinal){sinal=sinal||1;const agora=Date.now();if(!A.amostras.length||agora-A.ultDado>jVivo())return 0;
+  const p=A.amostras.filter(a=>a.t>=agora-jTaxa());if(p.length<2)return 0;
   const t0=p[0].t,n=p.length;let sx=0,sy=0,sxx=0,sxy=0;
   p.forEach(a=>{const x=(a.t-t0)/1000;sx+=x;sy+=a.v;sxx+=x*x;sxy+=x*a.v;});
   const den=n*sxx-sx*sx;if(den<=0)return 0;
   return Math.max(0,-sinal*(n*sxy-sx*sy)/den);}
 /* "está caindo": o peso fez um novo mínimo (pelo menos metade da variação aceita) há menos de 0,9 s.
    Parou o vagão → em menos de 1 s o apito para. */
-function caindoAgora(){return A.est==='descarregando'&&A.ancT>0&&Date.now()-A.ancT<800&&Date.now()-A.ultDado<1500;}
+function caindoAgora(){return A.est==='descarregando'&&A.ancT>0&&Date.now()-A.ancT<jCaindo()&&Date.now()-A.ultDado<jVivo();}
 function zona(){const cur=curralAtual();if(!cur||A.base==null||A.peso==null)return null;
   const c=cfg(),falta=cur.prev-Math.max(0,A.base-A.peso),caindo=caindoAgora();
   const taxa=caindo?taxaQueda():0;
@@ -522,10 +565,11 @@ function zona(){const cur=curralAtual();if(!cur||A.base==null||A.peso==null)retu
   if(caindo){fp=falta-taxa*(+c.antecipa||0); // onde vai estar daqui a "antecipa" segundos
     if(A.fpMin!=null&&A.fpMin<fp)fp=A.fpMin;A.fpMin=fp;} // não volta de cor no meio da descarga
   else A.fpMin=null;
-  return {falta,fp,taxa,caindo,z:fp<=c.continuo?'continuo':fp<=c.vermelho?'vermelho':fp<=c.amarelo?'amarelo':'verde'};}
+  return {falta,fp,taxa,caindo,z:falta<0?'passou':fp<=c.continuo?'continuo':fp<=c.vermelho?'vermelho':fp<=c.amarelo?'amarelo':'verde'};}
 /* intervalo entre apitos (ms), apertando aos poucos dentro de cada faixa */
 function intervalo(fp,c){const am=+c.amarelo,ve=+c.vermelho,co=+c.continuo;
   const lerp=(x,x0,x1,y0,y1)=>x1===x0?y1:y0+(y1-y0)*Math.min(1,Math.max(0,(x0-x)/(x0-x1)));
+  if(fp<0)return {ms:60,som:'direto'};
   if(fp<=co)return {ms:85,som:'direto'};
   if(fp<=ve)return {ms:lerp(fp,ve,co,330,160),som:'rapido'};
   if(fp<=am)return {ms:lerp(fp,am,ve,700,380),som:'lento'};
@@ -564,7 +608,7 @@ function pintarPeso(){
   if(!$('aPeso')||$('viewAuto').hidden)return;
   const c=cfg(),cur=curralAtual();
   $('aPeso').textContent=A.peso==null?'—':fmt(A.peso);
-  const e=$('aEstTxt');e.textContent=A.peso==null?'sem leitura':A.estavel?'● parado (estável)':'○ mexendo…';e.className=A.estavel?'est':'';
+  const e=$('aEstTxt');e.textContent=(A.peso==null?'sem leitura':A.estavel?'● parado (estável)':'○ mexendo…')+idadeLeitura();e.className=atrasada()?'atraso':A.estavel?'est':'';
   $('aIni').textContent=A.base==null?'—':fmt(A.base);
   const alvo=(cur&&A.base!=null)?A.base-cur.prev:null;
   $('aAlvo').textContent=alvo==null?'—':fmt(alvo);
@@ -615,6 +659,21 @@ function mostrarAEscolha(){const L=lista(),regs=regsAtuais();
   $('aEscolha').innerHTML=L.length?L.map((x,i)=>`<button data-i="${i}" class="${i===S.atual?'atual':''} ${feito(x.nome,regs)?'feito':''}">${feito(x.nome,regs)?'✓ ':''}${esc(x.nome)}<small>${fmt(x.prev)} kg</small></button>`).join(''):'<p class="note">Sem previsto neste trato.</p>';}
 
 /* abrir a aba */
+/* continuar o trato que outro aparelho deixou no meio (bateria acabou, etc.): usa o peso inicial que ele tinha */
+/* ---------- Diário da balança: guarda na nuvem o que aconteceu (registros, ajustes, reconexões, correções)
+   em um item por dia e por aparelho, para analisar depois ---------- */
+let diagT=null;
+window.diagLog=function(tipo,d){try{if(typeof gPut!=='function'||typeof G==='undefined'||!S)return;
+  const dia=typeof diaAtivo==='function'?diaAtivo():new Date().toISOString().slice(0,10),uid='diag-'+dia+'-'+S.aparelho;
+  const it=G.it[uid]&&!G.it[uid].del?G.it[uid]:{uid,tipo:'diag',dia,aparelho:S.aparelho,ev:[]};
+  const h=new Date();it.ev=(it.ev||[]).concat([Object.assign({t:h.toTimeString().slice(0,8),tipo},d||{})]).slice(-400);
+  it.cfg=(()=>{const c=cfg(),o={};['tol','tempo','minDesc','amarelo','vermelho','continuo','antecipa','filtro'].forEach(k=>o[k]=c[k]);return o;})();
+  G.it[uid]=it;clearTimeout(diagT);diagT=setTimeout(()=>{try{gPut(JSON.parse(JSON.stringify(G.it[uid])));}catch(e){}},4000);}catch(e){}};
+const resumoBal=()=>{const vs=(A.amostras||[]).map(a=>a.v);return {estavel:!!A.estavel,varia:vs.length?Math.max(...vs)-Math.min(...vs):null,leit_s:A.dtMed?+(1000/A.dtMed).toFixed(2):null};};
+window.pesoBalanca=()=>A.fonte&&A.peso!=null&&A.ultDado&&Date.now()-A.ultDado<3000?Math.round(A.peso):null;
+window.aRenderFora=()=>{try{if($('viewAuto')&&!$('viewAuto').hidden){novoCurral(true);$('aTrato').value=String(S.tratoSel);aRender();}}catch(e){}};
+window.aContinuar=v=>{diagLog('continuou_outro_aparelho',{ini:+v,peso:A.peso});A.est='aguardando';A.ancV=null;A.ancT=0;A.fpMin=null;A.menor=null;A.base=+v;
+  if(A.peso!=null&&A.peso<A.base-cfg().minDesc){A.est='descarregando';A.menor=A.peso;A.ancV=A.suave;A.ancT=0;}aRender();};
 window.aAoAbrir=()=>{montar();aRender();try{if(typeof gSync==='function')gSync(true).catch(()=>{});}catch(e){}};
 /* quando a aba Tratar ou a nuvem mudam algo, a tela da Automação acompanha */
 const renderOriginal=window.render;
@@ -638,7 +697,7 @@ function maquinaCarga(){
   if(AC.est==='aguardando'){
     const lim=Math.min(c.minDesc,Math.max(c.tol,it.prev/2)); // produto pequeno (núcleo): começa com menos
     if(ok(it.ini)&&A.suave>it.ini+lim){AC.est='carregando';AC.ancV=A.suave;AC.ancT=Date.now();AC.fpMin=null;return;}
-    if(A.estavel&&(!ok(it.ini)||Math.abs(A.valEst-it.ini)>c.tol)){it.ini=A.valEst;it.fim=null;cSave();}  // parado: pega o peso inicial
+    if(A.estavel&&(!ok(it.ini)||A.valEst!==it.ini)){if(ok(it.ini)&&Math.abs(A.valEst-it.ini)>=5)diagLog('ini_ajustado_carga',{produto:it.nome,de:it.ini,para:A.valEst});it.ini=A.valEst;it.fim=null;cSave();}  // parado: o peso inicial é sempre o peso real da balança agora
     if(!ok(it.ini)){const r=refProvisoria(1);if(r){it.ini=r.v;it.fim=null;cSave();}}  // balança tremendo ou já começou a carregar: não fica esperando
   }else{
     const passo=Math.max(4,(+c.tol||0)/2);
@@ -646,23 +705,21 @@ function maquinaCarga(){
     if(A.estavel&&A.valEst<it.ini-c.minDesc){AC.est='aguardando';it.ini=A.valEst;cSave();toast('Peso caiu abaixo do início: peso inicial atualizado.');}
   }
 }
-function subindoAgora(){return AC.est==='carregando'&&AC.ancT>0&&Date.now()-AC.ancT<800&&Date.now()-A.ultDado<1500;}
+function subindoAgora(){return AC.est==='carregando'&&AC.ancT>0&&Date.now()-AC.ancT<jCaindo()&&Date.now()-A.ultDado<jVivo();}
 function zonaC(){const it=acItem();if(!naCargaAuto()||!it||!ok(it.ini)||A.peso==null||ok(it.real))return null;
   const c=cfg(),carregado=Math.max(0,A.peso-it.ini),falta=it.prev-carregado,sub=subindoAgora(),taxa=sub?taxaQueda(-1):0;
   let fp=falta;
   if(sub){fp=falta-taxa*(+c.antecipa||0);if(AC.fpMin!=null&&AC.fpMin<fp)fp=AC.fpMin;AC.fpMin=fp;}else AC.fpMin=null;
-  return {falta,fp,taxa,carregado,caindo:sub,z:fp<=c.continuo?'continuo':fp<=c.vermelho?'vermelho':fp<=c.amarelo?'amarelo':'verde'};}
+  return {falta,fp,taxa,carregado,caindo:sub,z:falta<0?'passou':fp<=c.continuo?'continuo':fp<=c.vermelho?'vermelho':fp<=c.amarelo?'amarelo':'verde'};}
 window.acTela=(nova,dia)=>{
   const topo=`<section class="panel">
     <div class="curhead"><h2>Carregar com a balança</h2><span class="note">⚡ Automação</span></div>
     <div class="aStatus" id="acStatus"><i></i><span id="acStatusTxt">Desconectado</span></div>
-    <div class="aConn"><button data-ac="ser" id="acBtSer" hidden>🔵 Bluetooth</button><button data-ac="bt" id="acBtBt">🔷 Conectar balança (Bluetooth)</button><button data-ac="ws" id="acBtWs" hidden>📶 Caixinha Wi-Fi</button><button data-ac="sim" id="acBtSim" hidden>🧪 Simulador</button></div>
-    <button data-ac="desc" id="acDesc" hidden>Desconectar</button>
+    <div class="aConn"><button data-ac="ser" id="acBtSer" hidden>🔵 Bluetooth</button><button data-ac="bt" id="acBtBt">🔷 Conectar balança (Bluetooth)</button><button data-ac="ws" id="acBtWs" hidden>📶 Caixinha Wi-Fi</button><button data-ac="sim" id="acBtSim" hidden>🧪 Simulador</button><button data-ac="desc" id="acDesc" class="aDescBt" disabled>Desconectar</button></div>
+    <div class="aSinal" id="acSinal">⚪ Balança desconectada</div>
     <div class="aTeclas" id="acTeclas" hidden><button data-tecla="43">▸0◂<br>Zero</button><button data-tecla="40">▸T◂<br>Tara</button><button data-tecla="10">Líquido/<br>Bruto</button><button data-tecla="23">🖨<br>Imprimir</button></div>
     <div class="aSim" id="acSimBox" hidden><button class="lima" data-ac="simSobe">▲ Carregar</button><button data-ac="simPara">■ Parar</button><button data-ac="simZera">Esvaziar</button></div>
     <div class="aPeso"><div><small>Balança (kg)</small><em id="acEstTxt">sem leitura</em></div><b class="num" id="acPeso">—</b></div>
-    <details id="acDados"><summary>🔧 Dados recebidos (para teste)</summary><pre class="aBruto" id="acBruto">${esc((A.btInfo?A.btInfo+'\n\n':'')+(A.bruto.join('\n')||'Nada recebido ainda.'))}</pre>
-      <button data-ac="copiar" style="margin-top:6px">Copiar dados para enviar ao suporte</button></details>
   </section>`;
   if(nova)return topo+nova+dia;
   const B=acB(),i=B.atual,it=B.itens[i];
@@ -672,7 +729,7 @@ window.acTela=(nova,dia)=>{
     <div class="curBox2"><div class="cbCur" data-c="escolher" role="button"><span>Produto ${i+1} de ${B.itens.length} <i class="seta">▼</i></span><b>${esc(it?it.nome:'—')}</b></div>
       <div class="cbPrev"><span>Carregar</span><b class="num">${it?nf(it.prev):'—'}</b></div></div>
     ${B.escolha?`<div class="escolha">${B.itens.map((x,j)=>`<button data-c="ir" data-i="${j}" class="${j===i?'sel':''}">${ok(x.real)?'✓ ':''}${esc(x.nome)} · ${nf(x.prev)} kg</button>`).join('')}</div>`:''}
-    ${it&&ok(it.real)?`<p class="avisoJa">Este produto já foi carregado (${nf(it.real)} kg). Para refazer, toque em ↺ Pegar peso inicial.</p>`:''}
+    ${it&&ok(it.real)?`<p class="avisoJa">Este produto já foi carregado (${nf(it.real)} kg). Para refazer, toque em Desfazer último, lá embaixo.</p>`:''}
     <div class="aEtapa" id="acEtapa"></div>
     <div class="aFalta" id="acFaltaBox"><small id="acFaltaTit">Carregar</small><b class="num" id="acFalta">—</b><em id="acFaltaTxt">&nbsp;</em></div>
     <div class="aMini">
@@ -680,24 +737,24 @@ window.acTela=(nova,dia)=>{
       <div><small>Peso inicial</small><b class="num" id="acIni">—</b></div>
       <div><small>Parar com</small><b class="num" id="acAlvo">—</b></div>
     </div>
-    ${todosC?`<p class="avisoJa">✓ Todos os produtos foram carregados.</p><button class="primary" data-c="concluir">✓ Concluir batida</button>`
+    ${todosC?`<p class="avisoJa">✓ Todos os produtos foram carregados.</p><button class="primary" data-c="concluir">✓ Finalizar batida</button>`
       :`<button class="primary" data-c="registrar" id="acReg" disabled>${ultimoC?'✓ Registrar último produto':'✓ Registrar e ir para o próximo ▶'}</button>`}
-    <div class="row"><button data-ac="pegar">↺ Pegar peso inicial</button><button class="lima" data-c="prox"${i<B.itens.length-1?'':' disabled'}>Próximo produto ▶</button></div>
-    <button data-c="ant"${i>0?'':' disabled'}>◀ Produto anterior</button>
+    <div class="row"><button data-c="ant"${i>0?'':' disabled'}>◀ Produto anterior</button><button class="lima" data-c="prox"${i<B.itens.length-1?'':' disabled'}>Próximo produto ▶</button></div>
   </section>`+tabela+dia;};
 window.acDepois=()=>{acSyncTopo();const B=acB();if(B&&AC.idx!==B.atual){AC.idx=B.atual;acNovoProduto();}pintarCarga();};
 window.acIniciou=()=>{acNovoProduto();const B=acB();AC.idx=B?B.atual:null;const it=acItem();if(it&&A.estavel){it.ini=A.valEst;cSave();}pintarCarga();
   if(!A.fonte)toast('Conecte a balança para carregar pela Automação');};
 window.acRegistrar=()=>{const B=acB(),it=acItem();if(!B||!it)return;
-  if(ok(it.real)){toast('Este produto já foi registrado. Para refazer, toque em ↺ Pegar peso inicial.');return;}
+  if(ok(it.real)){toast('Este produto já foi registrado. Para refazer, toque em Desfazer último.');return;}
   if(!ok(it.ini)){toast('Sem peso inicial ainda');return;}
   const fim=A.estavel?A.valEst:A.peso;if(fim==null){toast('Sem leitura da balança');return;}
   if(!(fim>it.ini)){toast('O peso não subiu desde o início');return;}
   it.fim=fim;it.real=fim-it.ini;it.hora=new Date().toTimeString().slice(0,5);it.tsReg=Date.now();
+  diagLog('carga',Object.assign({produto:it.nome,trato:B.trato,prev:it.prev,ini:it.ini,fim,real:it.real},resumoBal()));
   const k=B.itens.findIndex((x,j)=>j>B.atual&&!ok(x.real)),nx=k>=0?k:B.itens.findIndex(x=>!ok(x.real));
   if(nx>=0){B.atual=nx;const n=B.itens[nx];if(!ok(n.real)){n.ini=fim;n.fim=null;}}
   AC.idx=B.atual;acNovoProduto();pararSom();cSave();toast(`${it.nome}: ${nf(it.real)} kg`);cRender();
-  if(nx<0)toast('Todos os produtos carregados. Toque em ✓ Concluir batida.');};
+  if(nx<0)toast('Todos os produtos carregados. Toque em ✓ Finalizar batida.');};
 /* "Próximo produto": se já carregou este produto, registra (e vai para o próximo); senão só passa para o próximo */
 window.acProximo=()=>{const B=acB(),it=acItem();if(!B||!it)return;const c=cfg();
   if(!ok(it.real)&&ok(it.ini)&&A.peso!=null&&(A.estavel?A.valEst:A.peso)>it.ini+Math.max(c.tol,5))return acRegistrar();
@@ -708,11 +765,11 @@ window.acProximo=()=>{const B=acB(),it=acItem();if(!B||!it)return;const c=cfg();
 function acSyncTopo(){if(!$('acStatus'))return;
   $('acStatusTxt').textContent=A.status;$('acStatus').className='aStatus '+(A.statusTipo||'');
   ['ser','bt','ws','sim'].forEach(f=>$({ser:'acBtSer',bt:'acBtBt',ws:'acBtWs',sim:'acBtSim'}[f]).classList.toggle('on',A.fonte===f));
-  $('acDesc').hidden=!A.fonte;$('acSimBox').hidden=A.fonte!=='sim';const tk=$('acTeclas');if(tk)tk.hidden=!(A.fonte==='bt'&&A.digiStar);}
+  $('acDesc').disabled=!A.fonte;$('acSimBox').hidden=A.fonte!=='sim';const tk=$('acTeclas');if(tk)tk.hidden=!(A.fonte==='bt'&&A.digiStar);}
 function pintarCarga(){
   if(!naCargaAuto()||!$('acPeso'))return;
   $('acPeso').textContent=A.peso==null?'—':fmt(A.peso);
-  const e=$('acEstTxt');e.textContent=A.peso==null?'sem leitura':A.estavel?'● parado (estável)':'○ mexendo…';e.className=A.estavel?'est':'';
+  const e=$('acEstTxt');e.textContent=(A.peso==null?'sem leitura':A.estavel?'● parado (estável)':'○ mexendo…')+idadeLeitura();e.className=atrasada()?'atraso':A.estavel?'est':'';
   if(!$('acFaltaBox'))return;
   const it=acItem(),z=zonaC(),fb=$('acFaltaBox');
   $('acIni').textContent=it&&ok(it.ini)?fmt(it.ini):'—';
@@ -736,7 +793,7 @@ function pintarCarga(){
 }
 $('acBox').addEventListener('click',e=>{const b=e.target.closest('[data-ac]');if(!b)return;const a=b.dataset.ac;
   if(a==='ser')return conectarSerial();if(a==='bt')return conectarBt();if(a==='ws')return conectarWs();if(a==='sim'){conectarSim();return cRender();}
-  if(a==='desc'){desconectar(true);return cRender();}
+  if(a==='desc'){perguntarDesconectar().then(f=>{if(f)cRender();});return;}
   if(a==='simSobe'){if(A.sim)A.sim.modo='sobe';return;}if(a==='simPara'){if(A.sim)A.sim.modo='parado';return;}
   if(a==='copiar'){copiar((A.btInfo?A.btInfo+'\n\n':'')+A.bruto.join('\n'),'Dados copiados');return;}
   if(a==='simZera'){if(A.sim){A.sim.modo='parado';A.sim.peso=0;}return;}
@@ -748,7 +805,7 @@ $('tabAutoC').addEventListener('click',()=>aba('autoc'));
 /* ---------------- Gestão › Config. (ajustes da balança, iguais em todos os aparelhos) ---------------- */
 const CAMPOS=[['amarelo','🟡 Apito lento','kg faltando · fica amarelo'],['vermelho','🔴 Apito rápido','kg faltando · fica vermelho'],['continuo','🚨 Apito direto (bem rápido)','kg faltando · pisca'],
   ['antecipa','⏩ Antecipar cor e apito','segundos · compensa o atraso da balança'],
-  ['tol','Variação aceita parado','kg'],['tempo','Tempo parado para firmar','segundos'],['minDesc','Mínimo que conta como descarga','kg']];
+  ['filtro','🎚 Suavizar leituras','nº de leituras · 1 = sem filtro, 3 normal, 5 forte'],['tol','Variação aceita parado','kg'],['tempo','Tempo parado para firmar','segundos'],['minDesc','Mínimo que conta como descarga','kg']];
 function montarCfgT(){const box=$('cfgTBox');if(!box||box.dataset.ok)return;box.dataset.ok='1';
   const st=document.createElement('style');st.textContent=`
 #cfgTBox .aCfg{display:grid;gap:6px}
@@ -779,6 +836,11 @@ function montarCfgT(){const box=$('cfgTBox');if(!box||box.dataset.ok)return;box.
   </section>
   <section class="panel">
     <div class="curhead"><h2>📖 Como conectar a balança</h2></div>
+    <ol class="note" style="padding-left:18px;margin:6px 0">
+      <li>Feche o app <b>TAP Feed</b> (a balança aceita um aparelho por vez).</li>
+      <li>Use o <b>Chrome</b>. Na Automação, toque em <b>🔷 Conectar balança (Bluetooth)</b> e escolha <b>NEW EZ</b>.</li>
+      <li>Se o peso parar de chegar, o app reconecta sozinho. Se não voltar, toque em Desconectar e conecte de novo.</li></ol>
+    <p class="note" style="margin-top:8px"><b>Outras formas de conectar</b> (se um dia precisar):</p>
     <details><summary>🔵 Bluetooth (indicador com Bluetooth)</summary><ol class="note" style="padding-left:18px;margin:6px 0">
       <li>No celular: Configurações › Bluetooth › parear com a balança (senha costuma ser 1234 ou 0000).</li>
       <li>Use o <b>Chrome</b> atualizado. Na Automação, toque em <b>🔵 Bluetooth</b> e escolha a balança na lista.</li>
@@ -789,10 +851,17 @@ function montarCfgT(){const box=$('cfgTBox');if(!box||box.dataset.ok)return;box.
       <li>Na Automação, toque em <b>📶 Caixinha Wi-Fi</b>. O app tenta o endereço salvo e as portas 8000 e 6432; a que responder fica salva.</li>
       <li>Se o Chrome bloquear: toque no cadeado ao lado do endereço › Configurações do site › Conteúdo não seguro › <b>Permitir</b>.</li>
       <li>Na caixinha (página 10.10.100.254) o WebSocket precisa estar ligado e a velocidade da serial igual à do indicador.</li></ol></details>
-    <p class="note">Para conferir o que chega da balança: Automação › 🔧 Dados recebidos › Copiar.</p>
+  </section>
+  <section class="panel">
+    <details id="cfgDados"><summary>🔧 Dados recebidos da balança (para teste)</summary>
+      <p class="note">O que chegou da balança neste aparelho (últimas leituras, reconexões). O histórico do dia também fica salvo na nuvem.</p>
+      <pre class="aBruto" id="cfgBruto">Nada recebido ainda.</pre>
+      <button id="cfgCopiar" style="margin-top:6px">Copiar dados</button></details>
   </section>`;
   CAMPOS.forEach(([k])=>{$('cfgT_'+k).onchange=e=>{const c=cfg(),v=parseFloat(String(e.target.value).replace(',','.'));
     if(!isNaN(v)&&v>=0){c[k]=v;salvarCfg();avisoCfg();}else e.target.value=c[k];};});
+  $('cfgDados').addEventListener('toggle',()=>{if($('cfgDados').open){const e=$('cfgBruto');e.textContent=(A.btInfo?A.btInfo+'\n\n':'')+(A.bruto.join('\n')||'Nada recebido ainda.');e.scrollTop=e.scrollHeight;}});
+  $('cfgCopiar').onclick=()=>copiar((A.btInfo?A.btInfo+'\n\n':'')+A.bruto.join('\n'),'Dados copiados');
   $('cfgT_cmd').onchange=e=>{const c=cfg();c.bleCmd=e.target.value;salvarCfg();avisoCfg();toast('Comando salvo. Conecte de novo pelo 🔷 Bluetooth BLE.');};
   $('cfgT_ble').onchange=e=>{const c=cfg();c.bleUuid=e.target.value.trim();salvarCfg();avisoCfg();toast('UUID salvo. Conecte de novo pelo 🔷 Bluetooth BLE.');};
   $('cfgT_ws').onchange=e=>{const c=cfg();c.ws=e.target.value.trim()||CFG_PADRAO.ws;e.target.value=c.ws;salvarCfg();avisoCfg();};
