@@ -555,11 +555,9 @@ html,body{background:var(--bg)}
 .panel>h2:first-child,.panel>.curhead:first-child h2{border-left:0;padding-left:0;color:#2e6b2f}
 .cbCur,.cbPrev{background:#1f3d20}
 button.primary{background:#2e6b2f;border-color:#2e6b2f}
-/* menu fixo no rodapé, perto do dedão; a setinha esconde e mostra */
-.wrap>.menu{position:fixed;top:auto;bottom:0;left:0;right:0;margin:0 auto;max-width:640px;z-index:30;background:#fff;
-  border-radius:18px 18px 0 0;box-shadow:0 -4px 16px rgba(17,37,61,.14);padding:4px 10px calc(8px + env(safe-area-inset-bottom,0px));
-  flex-direction:column-reverse;transition:transform .25s ease}
-.wrap{padding-bottom:calc(var(--menuH) + 24px)}
+/* menu em cima, dentro da tela (empurra o conteúdo para baixo, não fica por cima);
+   escondido vira uma barrinha fina presa no topo, com o caminho da tela atual */
+.wrap>.menu{position:static;background:#fff;border-radius:14px;box-shadow:0 1px 5px rgba(0,0,0,.07);padding:8px;flex-direction:column}
 .menu .tabs{background:#e3ead6;border-radius:12px;padding:4px}
 .menu .tabs button{border:0;border-radius:9px;background:transparent;padding:9px}
 .menu .tabs button[aria-selected="true"]{background:#2e6b2f;color:#fff}
@@ -568,13 +566,10 @@ button.primary{background:#2e6b2f;border-color:#2e6b2f}
 .subModo{background:#2e6b2f;border-radius:12px;margin-top:0}
 .subModo button{background:#3f7d3a;border-color:#3f7d3a}
 .subModo button[aria-selected="true"]{background:#d8f06a;border-color:#d8f06a;color:#1f3d20}
-.menuSeta{align-self:center;border:0;background:transparent;padding:2px 26px;margin:-2px 0 0;font-size:.85rem;font-weight:700;color:#5d6b7a;line-height:1;border-radius:99px}
-.menuSeta::before{content:'▼  esconder menu'}
-body.menuFechado .wrap>.menu{transform:translateY(calc(100% - 30px))}
-body.menuFechado .menuSeta::before{content:'▲  menu'}
-body.menuFechado .menuSeta{color:#2e6b2f}
-body.menuFechado .wrap{padding-bottom:60px}
-body.comteclado .wrap>.menu{display:none}
+.menuSeta{align-self:stretch;border:0;background:transparent;padding:4px 8px 0;font-size:.85rem;font-weight:700;color:#5d6b7a;line-height:1.2;border-radius:10px;text-align:center}
+body.menuFechado .wrap>.menu{position:sticky;top:env(safe-area-inset-top,0px);z-index:30;padding:4px;box-shadow:0 3px 10px rgba(17,37,61,.18)}
+body.menuFechado .wrap>.menu>*:not(.menuSeta){display:none!important}
+body.menuFechado .menuSeta{background:#2e6b2f;color:#fff;padding:9px 12px;font-size:.92rem;text-align:left;display:flex;justify-content:space-between;gap:8px}
 </style>
 </head>
 <body>
@@ -864,7 +859,7 @@ body.comteclado .wrap>.menu{display:none}
 <div class="toast" id="toast" hidden></div>
 <script>
 'use strict';
-const APP_VERSAO='16';
+const APP_VERSAO='17';
 const APP_DATA='19/10/2026';
 const KEY='confinamento-completo-v1';
 const $=id=>document.getElementById(id);
@@ -1232,7 +1227,7 @@ function fecharTeclado(){
 /* Teclado do app para a balança: OK fecha (espera o curral terminar para digitar o final) */
 let balCampo=null,balBuf='',balNovo=false;
 /* altura ocupada pelo menu fixo no topo: o campo digitado para logo abaixo dele */
-function topoLivre(){const m=document.getElementById('menu');if(m&&getComputedStyle(m).position==='fixed'&&getComputedStyle(m).bottom==='0px')return 12;return (m&&!document.body.classList.contains('naInicio')?m.getBoundingClientRect().bottom:0)+12;}
+function topoLivre(){const m=document.getElementById('menu');return (m&&!document.body.classList.contains('naInicio')?Math.max(0,m.getBoundingClientRect().bottom):0)+12;}
 function abrirBal(id){
   if(bloqueado())return;
   if(typeof fecharTeclado==='function'&&tecIdx!=null)fecharTeclado();
@@ -2423,15 +2418,21 @@ if('serviceWorker' in navigator){
 <script src="gestao.js"></script>
 <script src="automacao.js"></script>
 <script>
-/* menu do rodapé: setinha esconde/mostra (lembra no aparelho) e a altura reserva espaço no fim da tela */
+/* menu de cima: a setinha esconde e mostra; tocou no último botão (o que abre a tela) ele se esconde sozinho
+   e fica a barrinha com o caminho da tela; ao abrir de novo, volta como estava */
 (function(){const m=$('menu');if(!m)return;const b=document.createElement('button');b.className='menuSeta';b.type='button';b.setAttribute('aria-label','Esconder ou mostrar o menu');m.appendChild(b);
-    b.onclick=()=>document.body.classList.toggle('menuFechado');
-  /* tocou num botão que já abre a tela (o último do caminho): o menu se esconde sozinho e fica a setinha */
+  const sel=q=>{const x=document.querySelector(q+' button[aria-selected="true"]:not([hidden])');return x?x.textContent.replace(/[✋⚡⚙]/g,'').trim():'';};
+  const caminho=()=>{const g=$('tabGrpGest').getAttribute('aria-selected')==='true'?'Gestão':'Tratos';
+    const p=[g];if(g==='Gestão'){p.push(sel('#subGest'));}else{const t=sel('#subTrato');p.push(t);if(/Manual|Automação/.test(t))p.push(sel('#subModo'));}
+    return p.filter(Boolean).join(' › ');};
+  const pinta=()=>{const f=document.body.classList.contains('menuFechado');b.innerHTML=f?`<span>☰ ${esc(caminho())}</span><span>▼ menu</span>`:'▲ esconder menu';};
+  const fecha=()=>{document.body.classList.add('menuFechado');pinta();};
+  const abre=()=>{document.body.classList.remove('menuFechado');pinta();const y=m.getBoundingClientRect().top+scrollY-8;if(scrollY>y)window.scrollTo({top:Math.max(0,y)});};
+  b.onclick=()=>document.body.classList.contains('menuFechado')?abre():fecha();
   m.addEventListener('click',e=>{const t=e.target.closest('button');if(!t||t===b)return;
     const final=t.closest('#subGest')||t.closest('#subModo')||['tabPrev','tabHist','tabCfgT'].includes(t.id);
-    if(final)setTimeout(()=>document.body.classList.add('menuFechado'),150);});
-  const ajusta=()=>document.documentElement.style.setProperty('--menuH',m.offsetHeight+'px');
-  try{new ResizeObserver(ajusta).observe(m);}catch(e){}ajusta();})();
+    if(final)setTimeout(fecha,150);else setTimeout(pinta,0);});
+  window.menuCaminho=pinta;pinta();})();
 </script>
 </body>
 </html>
