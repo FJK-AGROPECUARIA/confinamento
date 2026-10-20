@@ -103,6 +103,11 @@ tr.grp td span{float:right;font-variant-numeric:tabular-nums}
 #aBox.emSetup>section:first-of-type{display:block!important}
 .fBar{display:flex;justify-content:space-between;align-items:center;gap:8px;background:#eef4e0;border-radius:10px;padding:8px 10px;margin-bottom:10px;font-weight:700;font-size:.92rem}
 body.somenteVer .fBar{display:none!important}
+.gLote2{display:block;text-align:left}.gLoteCur{font-weight:700}.gLoteNums4{display:grid;grid-template-columns:repeat(4,1fr);gap:4px;margin-top:6px;font-size:.78rem;color:var(--muted)}.gLoteNums4 b{display:block;font-size:1rem;color:var(--fg)}.gLoteNums4.gMed{background:#eef4e0;border-radius:8px;padding:4px}.gLoteDica{display:block;margin-top:4px;color:var(--muted);font-size:.72rem}
+.gSub{margin:14px 0 6px;font-size:.9rem;color:var(--muted);text-transform:uppercase;letter-spacing:.06em}
+#tbPrev .cell.feito{background:#eef1ec;color:var(--muted);text-decoration:none;pointer-events:none}
+#tbPrev td.pvReal{font-weight:700}#tbPrev td.pvFalta{color:#b26a00;font-weight:700}
+#tbPrev td.num{font-size:.9rem;white-space:nowrap}
 .gInativa{opacity:.6}
 .fBarVelha{background:#fdecea;color:#b3261e}
 .tSeta{display:grid;grid-template-columns:56px 1fr 56px;gap:8px;align-items:center;margin:4px 0 10px}.tSeta button{padding:12px 0;font-size:1.2rem;font-weight:700;background:var(--lima);border-color:var(--lima)}.tSeta button:disabled{opacity:.3}.tSeta select{text-align:center;text-align-last:center;font-weight:700;font-size:1.1rem}
@@ -684,10 +689,11 @@ body.menuFechado .menuSeta{background:#2e6b2f;color:#fff;padding:9px 12px;font-s
   </div>
   <div class="subtabs sub4" id="subGest" hidden>
     <button data-gt="home" id="tabGest">Resumo</button>
-    <button data-gt="lotes">Lotes</button>
     <button data-gt="rels">Relatórios</button>
-    <button data-gt="racoes">Rações</button>
     <button data-gt="insumos">Insumos</button>
+    <button data-gt="racoes">Rações</button>
+    <button data-gt="currais">Currais</button>
+    <button data-gt="lotes">Lotes</button>
     <button data-gt="cfg">Config.</button>
   </div>
   </div>
@@ -742,7 +748,7 @@ body.menuFechado .menuSeta{background:#2e6b2f;color:#fff;padding:9px 12px;font-s
     </table></div>
     <button class="danger" id="btnLimparPrev">Limpar previsto deste trato</button>
     <button class="lima" id="btnIms">% Alterar trato por % de IMS</button>
-    <button id="btnOrdem">↕ Alterar ordem ou nome</button>
+    <button id="btnOrdem">↕ Alterar ordem</button>
     <button class="lima" id="btnCadastrar">+ Adicionar curral</button>
     <button class="dangerfill" id="btnRemoverCurral">− Remover curral</button>
   </section>
@@ -944,7 +950,7 @@ body.menuFechado .menuSeta{background:#2e6b2f;color:#fff;padding:9px 12px;font-s
 <div class="toast" id="toast" hidden></div>
 <script>
 'use strict';
-const APP_VERSAO='32';
+const APP_VERSAO='33';
 const APP_DATA='19/10/2026';
 const KEY='confinamento-completo-v1';
 const $=id=>document.getElementById(id);
@@ -1067,7 +1073,7 @@ function toast(t){const el=$('toast');el.textContent=t;el.hidden=false;clearTime
 /* Lista do trato = currais do cadastro (na ordem) que têm previsto maior que zero nesse trato */
 function mapaPrev(k){k=String(k);if(!S.prev[k])S.prev[k]={};return S.prev[k];}
 function lista(k){const m=(S.prev&&S.prev[String(k||S.tratoSel)])||{};const f=k?null:filtroForn();
-  return S.cadastro.filter(n=>typeof m[n]==='number'&&m[n]>0&&(!f||(linhaDe(n)===f.local&&(!f.rac||(window.racaoDoCurral&&racaoDoCurral(n)===f.rac))))).map(n=>({nome:n,prev:m[n]}));}
+  return S.cadastro.filter(n=>curralAtivo(n)&&typeof m[n]==='number'&&m[n]>0&&(!f||(linhaDe(n)===f.local&&(!f.rac||(window.racaoDoCurral&&racaoDoCurral(n)===f.rac))))).map(n=>({nome:n,prev:m[n]}));}
 /* Fornecer: antes de abrir, escolhe Local (confinamento/pasto), Ração e Trato; a lista mostra só esses currais */
 function filtroForn(){if(typeof modoVer!=='undefined'&&modoVer)return null;const f=S&&S.forn;return f&&f.ativo&&f.dia===hojeKey()?f:null;}
 /* ================= Previsto por dia · nº de tratos por curral · divisão em % =================
@@ -1102,6 +1108,7 @@ function guardarPrevDia(d,obj){if(gOk()&&typeof gPut==='function')gPut({uid:idPr
 /* virou o dia: se o previsto de hoje já foi feito ontem (pela leitura de amanhã), ele passa a valer */
 function virarDiaPrev(){if(!S)return;const hj=hojeKey();if(S.prevDia===hj)return;
   const g=prevGuardado(hj);if(g&&S.prevDia&&S.prevDia<hj){S.prev=JSON.parse(JSON.stringify(g));marcarPrev();if(typeof render==='function')render();}
+  else if(!g&&S.prevDia&&S.prevDia<hj){S.prev={};S.prevOrig=null;marcarPrev();if(typeof render==='function')render();} // virou o dia sem leitura: sem previsto até fazer a leitura
   S.prevDia=hj;save();}
 /* trato do dia terminado: todos os tratos com previsto já têm registro */
 function diaFinalizado(d){d=d||hojeKey();const regs=HIST.filter(r=>r.dia===d);let tem=false;
@@ -1140,7 +1147,7 @@ const FS={local:'C',rac:null,trato:null};
 function tratoSeta(id,v){v=+v||1;return `<div class="tSeta"><button type="button" data-tsd="-1" aria-label="Trato anterior"${v<=1?' disabled':''}>◀</button><select class="trato" id="${id}">${[1,2,3,4,5,6].map(k=>`<option value="${k}"${v===k?' selected':''}>Trato ${k}</option>`).join('')}</select><button type="button" data-tsd="1" aria-label="Próximo trato"${v>=6?' disabled':''}>▶</button></div>`;}
 window.tratoSeta=tratoSeta;
 document.addEventListener('click',e=>{const b=e.target.closest('.tSeta [data-tsd]');if(!b)return;const sel=b.parentElement.querySelector('select');const v=Math.max(1,Math.min(6,(+sel.value||1)+(+b.dataset.tsd)));if(v===+sel.value)return;sel.value=String(v);sel.dispatchEvent(new Event('change',{bubbles:true}));});
-function fornCurrais(loc,rac,k){const m=(S.prev&&S.prev[String(k)])||{};return S.cadastro.filter(n=>typeof m[n]==='number'&&m[n]>0&&linhaDe(n)===loc&&(!rac||(window.racaoDoCurral&&racaoDoCurral(n)===rac))).map(n=>({nome:n,prev:m[n]}));}
+function fornCurrais(loc,rac,k){const m=(S.prev&&S.prev[String(k)])||{};return S.cadastro.filter(n=>curralAtivo(n)&&typeof m[n]==='number'&&m[n]>0&&linhaDe(n)===loc&&(!rac||(window.racaoDoCurral&&racaoDoCurral(n)===rac))).map(n=>({nome:n,prev:m[n]}));}
 function fornPendentes(loc,rac,k){const L=fornCurrais(loc,rac,k),hj=diaAtivo();return L.filter(x=>!HIST.some(r=>r.dia===hj&&+r.trato===k&&r.curral===x.nome));}
 function fornSetupHTML(){const R=window.racoesDoLocal?racoesDoLocal(FS.local):[];
   if(FS.rac==null||(FS.rac&&!R.some(r=>r.uid===FS.rac)))FS.rac=R.length?R[0].uid:'';
@@ -1151,7 +1158,7 @@ function fornSetupHTML(){const R=window.racoesDoLocal?racoesDoLocal(FS.local):[]
     <label for="fRac">2. Ração que vai distribuir</label><select id="fRac">${R.map(r=>`<option value="${r.uid}"${r.uid===FS.rac?' selected':''}>${esc(r.nome)}</option>`).join('')}<option value=""${FS.rac===''?' selected':''}>Todas as rações</option></select>
     ${R.length===1?`<p class="note">Única ração ativa no ${FS.local==='C'?'confinamento':'pasto'}: já selecionada.</p>`:''}
     <label for="fTrato">3. Trato</label>${tratoSeta('fTrato',FS.trato)}
-    <p class="note">${L.length?`<b>${L.length} curral(is)</b> · ${fmt(tot)} kg previstos · ${pend.length===L.length?'nenhum fornecido ainda':pend.length?`faltam ${pend.length}`:'✓ todos já fornecidos'}<br>${L.map(x=>esc(x.nome)).join(', ')}`:'Nenhum curral com previsto neste trato para este local e ração.'}</p>
+    <p class="note">${L.length?`<b>${L.length} curral(is)</b> · ${fmt(tot)} kg previstos · ${pend.length===L.length?'nenhum fornecido ainda':pend.length?`faltam ${pend.length}`:'✓ todos já fornecidos'}<br>${L.map(x=>esc(x.nome)).join(', ')}`:(Object.keys(S.prev||{}).some(k=>Object.keys(S.prev[k]||{}).length)?'Nenhum curral com previsto neste trato para este local e ração.':'Ainda não tem previsto hoje: faça a leitura de cocho (Tratos › Leitura).')}</p>
     <button class="primary" id="fIniciar"${L.length?'':' disabled'}>▶ Iniciar fornecimento</button>`;}
 function fornBarHTML(){const f=filtroForn();if(!f)return '';const r=f.rac&&typeof G!=='undefined'&&G.it[f.rac];
   return `<span>${f.local==='C'?'🏠 Confinamento':'🌾 Pasto'} · ${r?esc(r.nome):'Todas as rações'} · Trato ${S.tratoSel}</span><button class="mini" data-ftrocar="1">Trocar</button>`;}
@@ -1382,7 +1389,7 @@ function pvIni(){if(!PV.dia){PV.dia=hojeKey();PV.ini=PV.fim=PV.dia;}}
 function temLeitura(d){try{return gOk()&&typeof gTodos==='function'&&gTodos('leitura').some(x=>x.dia===d);}catch(e){return false;}}
 function pvEditavel(){pvIni();if(PV.per||modoVer)return false;if(PV.dia===hojeKey())return true;return PV.dia===amanhaKey()&&temLeitura(PV.dia);}
 function pvObj(){pvIni();if(PV.dia===hojeKey())return S.prev;
-  if(PV.dia===amanhaKey()){if(!PV.am)PV.am=JSON.parse(JSON.stringify(prevGuardado(PV.dia)||S.prev||{}));return PV.am;}return prevDoDia(PV.dia);}
+  if(PV.dia===amanhaKey()){if(!PV.am)PV.am=JSON.parse(JSON.stringify(prevGuardado(PV.dia)||(temLeitura(PV.dia)?S.prev:null)||{}));return PV.am;}return prevDoDia(PV.dia);} // sem leitura: dia futuro fica sem previsto
 function mapaPv(k){const o=pvObj();k=String(k);if(!o[k])o[k]={};return o[k];}
 function marcarPv(){if(PV.dia===hojeKey())marcarPrev();else if(PV.dia===amanhaKey())guardarPrevDia(PV.dia,PV.am);}
 /* o que a tabela mostra: total de cada curral (Todos), um trato, ou o total do período */
@@ -1398,25 +1405,30 @@ function pvEstado(){const e=$('pvEstado'),hj=hojeKey();let t='';
   e.textContent=t;e.hidden=!t;}
 function renderPrev(){
   pvIni();if(PV.t>0){$('pvTrato').value=String(PV.t);S.pvTrato=PV.t;}
-  $('pvData').innerHTML=navDiaHTML(PV);$('pvTN').innerHTML=PV.per?'':tratoNavHTML(PV.t);pvEstado();
+  PV.per=false;$('pvData').innerHTML=navDiaHTML(PV,true);$('pvTN').innerHTML=PV.per?'':tratoNavHTML(PV.t);pvEstado();
   const ed=pvEditavel(),hoje=PV.dia===hojeKey()&&!PV.per,o=pvObj(),m=pvMapa(),ims=PV.ims&&ed&&PV.t===0&&!PV.per;
+  /* realizado do dia (todos os tratos) ou do trato escolhido; curral já tratado não deixa mais mudar o previsto */
+  const comReal=!PV.per&&PV.dia<=hojeKey(),realDe=c=>{const rs=HIST.filter(r=>r.dia===PV.dia&&r.curral===c&&(PV.t===0||+r.trato===PV.t));return rs.length?rs.reduce((a,r)=>a+(+r.forn||0),0):null;};
+  const travado=c=>PV.t>0&&HIST.some(r=>r.dia===PV.dia&&r.curral===c&&+r.trato===PV.t);
   $('viewPrev').classList.toggle('pvSoVer',!ed);
   $('listaBtns').hidden=!(ed&&hoje&&PV.t>0);$('btnLimparPrev').hidden=!ed;$('btnIms').hidden=!(ed&&PV.t===0);
-  ['btnOrdem','btnCadastrar','btnRemoverCurral'].forEach(id=>$(id).hidden=!hoje);
+  $('btnOrdem').hidden=!hoje;$('btnCadastrar').hidden=true;$('btnRemoverCurral').hidden=true;
   $('pvImsBar').hidden=!ims;$('viewPrev').classList.toggle('pvImsOn',ims);$('viewPrev').classList.toggle('pvTodos',PV.t===0&&!PV.per);$('btnIms').classList.toggle('on',ims);
   $('pvHead').innerHTML=PV.per?'<tr><th></th><th>Curral</th><th>Total do período (kg)</th><th></th></tr>':
-    PV.t===0?`<tr><th></th><th>Curral</th>${ims?'<th>% IMS</th>':''}<th>Total do dia (kg)</th><th></th></tr>`:`<tr><th></th><th>Curral</th><th>Trato ${PV.t} (kg)</th><th></th></tr>`;
-  $('tbPrev').innerHTML=S.cadastro.map((c,i)=>{const v=m[c],esc_=esc(c);
-    const ocultar=linhaSel!=='T'&&linhaDe(c)!==linhaSel;
-    const nome=`<td class="c" style="cursor:default">${esc_}${hoje?`<button class="mini edNome" tabindex="-1" data-a="ed" data-i="${i}" aria-label="Editar nome ${esc_}">✎</button>`:''}</td>`;
-    const cel=`<td><input class="cell${v==='?'?' duv':''}" type="text" readonly tabindex="-1" inputmode="none" data-n="${i}" value="${esc(valPrev(typeof v==='number'?(v||null):v))}" placeholder="—" aria-label="Previsto ${esc_}"${ed?'':' disabled'}></td>`;
+    PV.t===0?`<tr><th></th><th>Curral</th>${ims?'<th>% IMS</th>':''}<th>Previsto do dia</th>${comReal?'<th>Realiz.</th><th>Falta</th>':''}<th></th></tr>`:`<tr><th></th><th>Curral</th><th>Previsto T${PV.t}</th>${comReal?'<th>Realiz.</th><th>Dif.</th>':''}<th></th></tr>`;
+  $('tbPrev').innerHTML=S.cadastro.map((c,i)=>{const v=m[c],esc_=esc(c),tr=travado(c),rl=comReal?realDe(c):null,pvN=typeof v==='number'?v:0;
+    const colR=comReal?(PV.t===0?`<td class="num pvReal">${rl!=null?fmt(rl):''}</td><td class="num pvFalta">${rl!=null&&pvN?fmt(Math.max(0,pvN-rl)):''}</td>`
+      :`<td class="num pvReal">${rl!=null?fmt(rl):''}</td><td class="num ${rl!=null&&pvN?classeDesv(rl-pvN,pvN):''}">${rl!=null&&pvN?sgn(rl-pvN):''}</td>`):'';
+    const ocultar=!curralAtivo(c)||(linhaSel!=='T'&&linhaDe(c)!==linhaSel);
+    const nome=`<td class="c" style="cursor:default">${esc_}</td>`;
+    const cel=`<td><input class="cell${v==='?'?' duv':''}${tr?' feito':''}" type="text" readonly tabindex="-1" inputmode="none" data-n="${i}" value="${esc(valPrev(typeof v==='number'?(v||null):v))}" placeholder="—" aria-label="Previsto ${esc_}"${ed&&!tr?'':' disabled'}${tr?' title="Já tratado: não muda mais"':''}></td>`;
     const ac=`<td class="acoes">${modoRemover&&hoje?`<button class="mini danger" tabindex="-1" data-a="rm" data-i="${i}" aria-label="Excluir ${esc_}">✕</button>`:''}</td>`;
     if(PV.per)return `<tr${ocultar?' hidden':''}><td></td>${nome}<td class="num"><b>${v?fmt(v):'—'}</b></td><td></td></tr>`;
     if(PV.t===0){const n=nTratos(c,o);
       const sel=ed?`<select class="mini ntSel" data-nt="${esc_}">${[1,2,3,4,5,6].map(x=>`<option value="${x}"${x===n?' selected':''}>${x}</option>`).join('')}</select>`:`<b>${n}</b>`;
       const imsC=ims?`<td><input class="cell imsIn" type="text" inputmode="decimal" data-ims="${esc_}" placeholder="${(()=>{const p=window.gImsDe?gImsDe(c,PV.dia,v||0):null;return p?nf(p,2):'%';})()}" value="${PV.imsV&&PV.imsV[c]!=null?esc(PV.imsV[c]):''}"><small class="imsKg" data-imskg="${esc_}"></small></td>`:'';
-      return `<tr${ocultar?' hidden':''}><td class="alca" title="Arraste para mudar a ordem" aria-label="Arrastar ${esc_}">☰</td>${nome}${ims?imsC:''}${cel}${ac}</tr>`;}
-    return `<tr${ocultar?' hidden':''}><td class="alca" title="Arraste para mudar a ordem" aria-label="Arrastar ${esc_}">☰</td>${nome}${cel}${ac}</tr>`;}).join('');
+      return `<tr${ocultar?' hidden':''}><td class="alca" title="Arraste para mudar a ordem" aria-label="Arrastar ${esc_}">☰</td>${nome}${ims?imsC:''}${cel}${colR}${ac}</tr>`;}
+    return `<tr${ocultar?' hidden':''}><td class="alca" title="Arraste para mudar a ordem" aria-label="Arrastar ${esc_}">☰</td>${nome}${cel}${colR}${ac}</tr>`;}).join('');
   if(ims)document.querySelectorAll('#tbPrev .imsIn').forEach(calcIms);
   $('pvTot').title=`${S.cadastro.length} currais cadastrados`;
   resumoPrev();
@@ -1441,7 +1453,9 @@ $('pvImsAplicar').onclick=()=>{if(!pvEditavel())return;const o=pvObj();let n=0,s
   toast(`Previsto calculado por % IMS em ${n} curral(is)`+(sem.length?` · sem lote: ${sem.join(', ')}`:''));};
 function snapTratos(c,o){const r={};for(let k=1;k<=MAXT;k++){const v=(o[k]||{})[c];if(v!==undefined)r[k]=v;}return r;}
 /* Soma do previsto por linha: C = confinamento, P = pasto TIP */
-const linhaDe=n=>/^C-/.test(n)?'C':/^P-/.test(n)?'P':'O';
+function infoCurral(n){try{const it=gOk()&&G.it.currais;return (it&&!it.del&&it.v&&it.v[n])||{};}catch(e){return {};}}
+const curralAtivo=n=>infoCurral(n).inativo!==true;
+const linhaDe=n=>{const t=infoCurral(n).tipo;if(t==='C'||t==='P')return t;return /^C-/.test(n)?'C':/^P-/.test(n)?'P':'O';};
 function localDe(n){const l=linhaDe(n);return l==='C'?'Confinamento':l==='P'?'Pasto':'';}
 let linhaSel='T';
 function somaLinhas(){
@@ -1474,7 +1488,16 @@ function campoPrev(i){return document.querySelector(`#tbPrev input[data-n="${i}"
 function aplicarPrev(i,t){
   const nome=S.cadastro[i];if(nome==null||!pvEditavel())return true;
   if(PV.t===0){const o=pvObj();t=String(t).trim();const v=t===''?0:parseNum(t);if(isNaN(v)||v<0||t==='?'){toast('Digite uma quantidade válida');return false;}
-    const antesT=totalCurral(nome,o);if(Math.round(v)!==Math.round(antesT)){const antes=snapTratos(nome,o);distribuir(nome,v,nTratos(nome,o),o);desfPrev.push({d:PV.dia,k:'T',nome,antes});if(desfPrev.length>100)desfPrev.shift();
+    const antesT=totalCurral(nome,o);if(Math.round(v)!==Math.round(antesT)){const antes=snapTratos(nome,o);
+      /* já tem trato feito hoje: os tratos feitos não mudam; a diferença vai para o último trato que falta */
+      const feitosK=new Set(HIST.filter(r=>r.dia===PV.dia&&r.curral===nome).map(r=>+r.trato)),nt=nTratos(nome,o);
+      if(feitosK.size){const pend=[];for(let k=1;k<=nt;k++)if(!feitosK.has(k))pend.push(k);
+        if(!pend.length){toast(`${nome}: todos os tratos de hoje já foram feitos`);const x=campoPrev(i);if(x)x.value=valPrev(antesT||null);return true;}
+        const real=HIST.filter(r=>r.dia===PV.dia&&r.curral===nome).reduce((a,r)=>a+(+r.forn||0),0);
+        const fixo=real+pend.slice(0,-1).reduce((a,k)=>a+(+((o[k]||{})[nome])||0),0);
+        const ult=pend[pend.length-1];if(!o[ult])o[ult]={};o[ult][nome]=Math.max(0,arredPrev(v-fixo));
+        if(S.prevOrig&&S.prevOrig.v){delete S.prevOrig.v[nome];delete S.prevOrig.set[nome];}}
+      else distribuir(nome,v,nt,o);desfPrev.push({d:PV.dia,k:'T',nome,antes});if(desfPrev.length>100)desfPrev.shift();
       marcarPv();if(PV.dia===hojeKey()){editandoPrev=true;render();editandoPrev=false;}}
     const x=campoPrev(i);if(x)x.value=valPrev(totalCurral(nome,o)||null);resumoPrev();return true;}
   const k=String(PV.t);const m=mapaPv(k);
@@ -1492,6 +1515,7 @@ function abrirTeclado(i){
   if(tecIdx!=null&&tecIdx!==i&&!aplicarPrev(tecIdx,tecBuf))return;
   document.querySelectorAll('#tbPrev input.sel').forEach(x=>x.classList.remove('sel'));
   const x=campoPrev(i);if(!x){fecharTeclado();return;}
+  if(x.classList.contains('feito')){toast(`${S.cadastro[i]}: Trato ${PV.t} já tratado, o previsto não muda mais`);fecharTeclado();return;}
   tecIdx=i;tecBuf=x.value==='—'?'':x.value;tecOrig=tecBuf;tecNovo=true;x.classList.add('sel');marcarVoltar();
   $('teclado').hidden=false;document.body.classList.add('comteclado');
   $('tecNome').textContent=S.cadastro[i];$('tecValor').textContent=tecBuf||'—';
@@ -1551,7 +1575,7 @@ function teclar(k){
   else{if(tecBuf==='?')tecBuf='';if(tecBuf.length<6)tecBuf+=k;}
   const x=campoPrev(tecIdx);if(x)x.value=tecBuf;$('tecValor').textContent=tecBuf||'—';marcarVoltar();
 }
-$('tbPrev').addEventListener('click',e=>{const x=e.target.closest('input[data-n]');if(x){e.preventDefault();x.blur();abrirTeclado(+x.dataset.n);}});
+$('tbPrev').addEventListener('click',e=>{const td=e.target.closest('td'),f=td&&td.querySelector('input.feito[data-n]');if(f&&!e.target.closest('input:not(.feito)')){toast(`${S.cadastro[+f.dataset.n]}: Trato ${PV.t} já tratado, o previsto não muda mais`);return;}const x=e.target.closest('input[data-n]');if(x){e.preventDefault();x.blur();abrirTeclado(+x.dataset.n);}});
 $('teclado').addEventListener('pointerdown',e=>{const b=e.target.closest('button[data-k]');if(!b)return;e.preventDefault();teclar(b.dataset.k);});
 document.addEventListener('keydown',e=>{if(tecIdx==null)return;
   if(/^[0-9]$/.test(e.key))teclar(e.key);else if(e.key==='Backspace')teclar('del');else if(e.key==='Enter'||e.key==='Tab'){e.preventDefault();teclar('ok');}else if(e.key==='Escape')teclar('fechar');else if(e.key==='?')teclar('?');});
@@ -1584,6 +1608,18 @@ $('tbPrev').addEventListener('click',e=>{
   }else return;
   marcarPrev();render();renderPrev();
 });
+/* Currais (Gestão › Currais): cadastrar, mudar nome, tipo e situação */
+function renomearCurral(n,novo){const C=S.cadastro,i=C.indexOf(n);if(i<0)return false;
+  C[i]=novo;Object.values(S.prev).forEach(m=>{if(m&&n in m){m[novo]=m[n];delete m[n];}});if(S.atualNome===n)S.atualNome=novo;
+  if(window.gRenomearCurral)gRenomearCurral(n,novo);
+  try{const it=G.it.currais;if(it&&it.v&&it.v[n]){const x=JSON.parse(JSON.stringify(it));x.v[novo]=x.v[n];delete x.v[n];gPut(x);}}catch(e){}
+  marcarPrev();render();return true;}
+function salvarInfoCurral(n,info){const it=G.it.currais&&!G.it.currais.del?JSON.parse(JSON.stringify(G.it.currais)):{uid:'currais',tipo:'currais',v:{}};
+  it.v=it.v||{};it.v[n]=Object.assign({},it.v[n]||{},info);gPut(it);render();}
+window.curraisApi={
+  lista:()=>S.cadastro.slice(),info:n=>Object.assign({tipo:linhaDe(n),inativo:false},infoCurral(n)),achar:acharCadastro,limpo:nomeLimpo,
+  novo(n,info){n=nomeLimpo(n||'');if(!n)return 'Coloque o nome';const ja=acharCadastro(n);if(ja)return `${ja} já está cadastrado`;S.cadastro.push(n);marcarPrev();salvarInfoCurral(n,info||{});return '';},
+  salvar(n,novo,info){novo=nomeLimpo(novo||'');if(!novo)return 'Coloque o nome';if(novo!==n){const ja=acharCadastro(novo);if(ja&&ja!==n)return `${ja} já está cadastrado`;renomearCurral(n,novo);}salvarInfoCurral(novo,info||{});return '';}};
 $('btnCadastrar').onclick=()=>{
   const n=nomeLimpo(prompt('Nome do curral que quer adicionar (ex.: C-11):')||'');if(!n)return;
   const ja=acharCadastro(n);if(ja){toast(`${ja} já está cadastrado`);return;}
@@ -2629,7 +2665,7 @@ function voltarInicio(){
 }
 $('btnSairVer').onclick=voltarInicio;
 /* ↕ Alterar ordem: só mostra o ☰ de arrastar quando liga */
-function modoOrdem(v){$('viewPrev').classList.toggle('ordem',v);$('btnOrdem').textContent=v?'✓ Concluir':'↕ Alterar ordem ou nome';if(v)toast('Arraste pelo ☰ para mudar a ordem ou toque no ✎ para mudar o nome');}
+function modoOrdem(v){$('viewPrev').classList.toggle('ordem',v);$('btnOrdem').textContent=v?'✓ Concluir':'↕ Alterar ordem';if(v)toast('Arraste pelo ☰ para mudar a ordem');}
 $('btnOrdem').onclick=()=>{if(bloqueado())return;modoOrdem(!$('viewPrev').classList.contains('ordem'));};
 /* ⟳ Atualizar agora: no Visualizar busca tudo na hora; em Executar envia o que falta e busca o que os outros lançaram */
 let atualizando=false;
