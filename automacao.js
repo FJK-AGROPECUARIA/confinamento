@@ -724,8 +724,8 @@ window.acTela=(nova,dia)=>{
   if(nova)return topo+nova+dia;
   const B=acB(),i=B.atual,it=B.itens[i];
   const pend=B.itens.filter(x=>!ok(x.real)).length,todosC=!pend,ultimoC=pend===1&&it&&!ok(it.real);
-  const h=cTelaBatida(),k=h.indexOf('<section',8),tabela=k>0?h.slice(k):'';
-  return topo+`<section class="panel"><div class="curhead"><h2>Batida · Trato ${B.trato}</h2><span class="note">${esc(B.racNome)} · ${nf(B.total)} kg</span></div>
+  const h=cTelaBatida(),k=h.indexOf('<section',h.indexOf('<section')+8),tabela=k>0?h.slice(k):'';
+  return topo+(window.barraBatida?barraBatida(B):'')+`<section class="panel"><div class="curhead"><h2>Batida · Trato ${B.trato}</h2><span class="note">${esc(B.racNome)} · ${nf(B.total)} kg</span></div>
     <div class="curBox2"><div class="cbCur" data-c="escolher" role="button"><span>Produto ${i+1} de ${B.itens.length} <i class="seta">▼</i></span><b>${esc(it?it.nome:'—')}</b></div>
       <div class="cbPrev"><span>Carregar</span><b class="num">${it?nf(it.prev):'—'}</b></div></div>
     ${B.escolha?`<div class="escolha">${B.itens.map((x,j)=>`<button data-c="ir" data-i="${j}" class="${j===i?'sel':''}">${ok(x.real)?'✓ ':''}${esc(x.nome)} · ${nf(x.prev)} kg</button>`).join('')}</div>`:''}

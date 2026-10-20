@@ -103,6 +103,8 @@ tr.grp td span{float:right;font-variant-numeric:tabular-nums}
 #aBox.emSetup>section:first-of-type{display:block!important}
 .fBar{display:flex;justify-content:space-between;align-items:center;gap:8px;background:#eef4e0;border-radius:10px;padding:8px 10px;margin-bottom:10px;font-weight:700;font-size:.92rem}
 body.somenteVer .fBar{display:none!important}
+.gInativa{opacity:.6}
+.fBarVelha{background:#fdecea;color:#b3261e}
 .tSeta{display:grid;grid-template-columns:56px 1fr 56px;gap:8px;align-items:center;margin:4px 0 10px}.tSeta button{padding:12px 0;font-size:1.2rem;font-weight:700;background:var(--lima);border-color:var(--lima)}.tSeta button:disabled{opacity:.3}.tSeta select{text-align:center;text-align-last:center;font-weight:700;font-size:1.1rem}
 .cJunto{display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin:-2px 0 10px}.cJunto>small{width:100%;color:var(--muted);font-weight:600}.cJunto button{padding:6px 10px;font-weight:700;line-height:1.1}.cJunto button small{display:block;font-weight:500;font-size:.72rem}.cJunto button.sel{background:var(--lima);border-color:var(--lima)}.cJunto button:disabled{opacity:.35}
 .naoForn{margin-top:8px;border-color:#b26a00;color:#b26a00;font-weight:700}
@@ -675,8 +677,8 @@ body.menuFechado .menuSeta{background:#2e6b2f;color:#fff;padding:9px 12px;font-s
   </div>
   <div class="subModo" id="subModo" hidden>
     <span id="modoTit">Manual</span>
-    <button id="tabTrato" aria-selected="true">Fornecer</button>
     <button id="tabCarga" aria-selected="false">Carregar</button>
+    <button id="tabTrato" aria-selected="true">Fornecer</button>
     <button id="tabAutoC" aria-selected="false" hidden>Carregar</button>
     <button id="tabAuto" aria-selected="false" hidden>Fornecer</button>
   </div>
@@ -942,7 +944,7 @@ body.menuFechado .menuSeta{background:#2e6b2f;color:#fff;padding:9px 12px;font-s
 <div class="toast" id="toast" hidden></div>
 <script>
 'use strict';
-const APP_VERSAO='31';
+const APP_VERSAO='32';
 const APP_DATA='19/10/2026';
 const KEY='confinamento-completo-v1';
 const $=id=>document.getElementById(id);
@@ -1850,6 +1852,8 @@ function aba(qual){
   $('tabPrev').setAttribute('aria-selected',String(qual==='prev'));$('tabTrato').setAttribute('aria-selected',String(qual==='trato'));$('tabHist').setAttribute('aria-selected',String(qual==='hist'));if(menuAberto)abrirMenu(qual==='gest'?'gest':'trato');if(qual!=='gest')abaTrato=qual;if(qual==='gest'&&window.gAbrir)gAbrir('gest');
   if(qual==='hist')renderHist();if(qual==='prev')renderPrev();window.scrollTo({top:0});
   lembrarTela();
+  /* abriu uma tela com conteúdo: o menu se esconde (fica a barrinha para abrir de novo) */
+  if(window.menuFecha&&!document.body.classList.contains('naInicio'))setTimeout(()=>{try{if(window.abaAtual)menuFecha();}catch(e){}},150);
   if(qual==='auto'||qual==='trato'){mostrarFornecimento();setTimeout(()=>oferecerContinuar(qual),900);}
 }
 /* lembra a tela aberta: se a página recarregar (arrastar para baixo, atualização do app), volta para ela */
@@ -1872,7 +1876,7 @@ $('tabPrev').onclick=()=>aba('prev');
 $('tabLeit').onclick=()=>aba('leit');
 /* Manual / Automação: só abre as opções (Carregar e Tratar), sem abrir a tela sozinho */
 function telaEscolha(txt){['viewPrev','viewTrato','viewHist','viewGest','viewCarga','viewAuto','viewAutoC'].forEach(i=>{const e=$(i);if(e)e.hidden=true;});
-  $('escolhaTxt').textContent=txt;$('viewEscolha').hidden=false;window.abaAtual='';
+  $('escolhaTxt').textContent=txt;$('viewEscolha').hidden=false;window.abaAtual='';if(window.menuAbre)menuAbre();
   ['tabPrev','tabLeit','tabHist','tabTrato','tabCarga','tabAuto','tabAutoC'].forEach(i=>$(i).setAttribute('aria-selected','false'));window.scrollTo({top:0});}
 function escolherModo(m){if(m!=='man'&&m!=='auto'){modoAtual=null;$('subModo').hidden=true;$('tabMan').setAttribute('aria-selected','false');$('tabModoAuto').setAttribute('aria-selected','false');
     telaEscolha('Escolha ⚡ Automação ou ✋ Manual no menu acima.');return;}
@@ -2808,7 +2812,7 @@ if('serviceWorker' in navigator){
   m.addEventListener('click',e=>{const t=e.target.closest('button');if(!t||t===b)return;
     const final=t.closest('#subGest')||t.closest('#subModo')||['tabPrev','tabLeit','tabHist'].includes(t.id);
     if(final)setTimeout(fecha,150);else setTimeout(pinta,0);});
-  window.menuCaminho=pinta;window.menuFecha=fecha;pinta();})();
+  window.menuCaminho=pinta;window.menuFecha=fecha;window.menuAbre=()=>{if(document.body.classList.contains('menuFechado'))abre();};pinta();})();
 </script>
 </body>
 </html>
