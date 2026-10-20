@@ -28,7 +28,7 @@ window.autoOcupado=()=>!!A.fonte||A.est==='descarregando';
 
 /* ---------------- Tela ---------------- */
 const css=`
-:is(#aBox,#acBox) .aConn{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
+:is(#aBox,#acBox) .aConn{display:grid;grid-template-columns:repeat(2,1fr);gap:6px}
 :is(#aBox,#acBox) .aConn button{padding:10px 4px;font-size:.9rem}
 :is(#aBox,#acBox) .aConn button.on{background:var(--lima);border-color:var(--lima);color:var(--fg);font-weight:700}
 :is(#aBox,#acBox) .aStatus{display:flex;align-items:center;gap:8px;font-size:.9rem;color:var(--muted)}
@@ -77,7 +77,8 @@ function montar(){
     <div class="curhead"><h2>Balança automática</h2><span class="note" id="aData"></span></div>
     <div class="aStatus" id="aStatus"><i></i><span id="aStatusTxt">Desconectado</span></div>
     <div class="aConn">
-      <button id="aBtBt">🔵 Bluetooth</button>
+      <button id="aBtSer">🔵 Bluetooth</button>
+      <button id="aBtBt">🔷 Bluetooth BLE</button>
       <button id="aBtWs">📶 Caixinha Wi-Fi</button>
       <button id="aBtSim">🧪 Simulador</button>
     </div>
@@ -138,8 +139,8 @@ function montar(){
 
 function ligar(){
   const c=cfg();
-  $('aBtBt').onclick=conectarBt;
-  $('aBtWs').onclick=conectarWs;
+  $('aBtBt').onclick=conectarBt;$('aBtSer').onclick=conectarSerial;
+  $('aBtWs').onclick=()=>conectarWs();
   $('aBtSim').onclick=conectarSim;
   $('aDesc').onclick=()=>desconectar(true);
   $('aSimCarga').onclick=()=>{if(A.sim){A.sim.modo='parado';A.sim.peso+=1000;}};
@@ -163,14 +164,15 @@ function ligar(){
 
 /* ---------------- Conexões ---------------- */
 function setStatus(t,tipo){A.status=t;A.statusTipo=tipo||'';const el=$('aStatus');if(el){$('aStatusTxt').textContent=t;el.className='aStatus '+(tipo||'');}acSyncTopo();}
-function marcarFonte(){['aBtBt','aBtWs','aBtSim'].forEach(id=>$(id).classList.remove('on'));
-  const m={bt:'aBtBt',ws:'aBtWs',sim:'aBtSim'}[A.fonte];if(m)$(m).classList.add('on');
+function marcarFonte(){['aBtSer','aBtBt','aBtWs','aBtSim'].forEach(id=>$(id).classList.remove('on'));
+  const m={ser:'aBtSer',bt:'aBtBt',ws:'aBtWs',sim:'aBtSim'}[A.fonte];if(m)$(m).classList.add('on');
   $('aDesc').hidden=!A.fonte;$('aSimBox').hidden=A.fonte!=='sim';acSyncTopo();}
 function desconectar(manual){
   try{if(A.bt&&A.bt.gatt&&A.bt.gatt.connected){A.bt._manual=true;A.bt.gatt.disconnect();}}catch(e){}
   try{if(A.ws){A.ws._manual=true;A.ws.close();}}catch(e){}
   if(A.sim){clearInterval(A.sim.t);A.sim=null;}
-  A.bt=null;A.ws=null;A.btChars=[];A.fonte=null;A.peso=null;A.amostras=[];A.suaves=[];A.suave=NaN;A.ultDado=0;A.temFim=false;A.estavel=false;A.valEst=null;
+  if(A.ser){const sr=A.ser;A.ser=null;(async()=>{try{if(sr.leitor)await sr.leitor.cancel();}catch(e){}try{await sr.port.close();}catch(e){}})();}
+  A.bt=null;A.ws=null;A.btChars=[];A.fonte=null;A.peso=null;A.amostras=[];A.suaves=[];A.suave=NaN;A.ultDado=0;A.temFim=false;A.tCon=0;A.estavel=false;A.valEst=null;
   soltarTela();if(manual)setStatus('Desconectado');marcarFonte();aRender();
 }
 
@@ -180,7 +182,7 @@ const SERVICOS=['6e400001-b5a3-f393-e0a9-e50e24dcca9e','0000ffe0-0000-1000-8000-
   '0000181d-0000-1000-8000-00805f9b34fb','0000180a-0000-1000-8000-00805f9b34fb','0000180f-0000-1000-8000-00805f9b34fb',
   '0000ffd0-0000-1000-8000-00805f9b34fb','0000ff00-0000-1000-8000-00805f9b34fb','0000fe59-0000-1000-8000-00805f9b34fb'];
 async function conectarBt(){
-  if(!navigator.bluetooth){toast('Este celular/navegador não tem Bluetooth para apps. Use o Chrome no Android.');setStatus('Bluetooth indisponível neste navegador','err');return;}
+  if(!navigator.bluetooth){toast('Este celular/navegador não tem Bluetooth BLE para apps. Use o Chrome no Android.');setStatus('Bluetooth indisponível neste navegador','err');return;}
   desconectar(false);
   try{
     setStatus('Escolha a balança na lista…','wait');
@@ -207,25 +209,69 @@ async function btAbrir(dev){
     }}
   $('aBtInfo').textContent=info.join('\n');
   if(!servs.length){setStatus('Conectou, mas a balança não mostrou nenhum serviço conhecido. Veja "Dados recebidos".','err');return;}
-  setStatus(n?`Bluetooth conectado (${dev.name||'aparelho'}) · aguardando peso…`:'Conectou, mas nenhum canal envia dados. Veja "Dados recebidos".',n?'ok':'err');
+  if(n)A.tCon=Date.now();setStatus(n?`Bluetooth conectado (${dev.name||'aparelho'}) · aguardando peso…`:'Conectou, mas nenhum canal envia dados. Veja "Dados recebidos".',n?'ok':'err');
   pedirTelaLigada();
 }
 
-function conectarWs(){
-  desconectar(false);
-  const url=cfg().ws;
-  if(location.protocol==='https:'&&url.startsWith('ws://'))bruto('Aviso: app em https conectando em ws:// — alguns navegadores bloqueiam.');
-  setStatus('Conectando na caixinha '+url+'…','wait');A.fonte='ws';marcarFonte();
+/* Caixinha Wi-Fi (USR-W610) em modo WebSocket. Tenta o endereço dos Ajustes e, se não abrir,
+   as portas de WebSocket mais comuns dessa caixinha (8000 e 6432). A que funcionar fica salva. */
+const AVISO_INSEGURO='Se o Chrome bloquear: toque no cadeado ao lado do endereço › Configurações do site › Conteúdo não seguro › Permitir, e tente de novo.';
+function candidatosWs(){const u=cfg().ws||CFG_PADRAO.ws,l=[u];let host='10.10.100.254';try{host=new URL(u).hostname||host;}catch(e){}
+  ['8000','6432'].forEach(pt=>{const x=`ws://${host}:${pt}`;if(!l.includes(x))l.push(x);});return l;}
+function conectarWs(lista,k){
+  if(!lista){desconectar(false);lista=candidatosWs();k=0;A.wsFalhas=[];}
+  const url=lista[k];
+  setStatus(`Conectando na caixinha ${url}…${lista.length>1?` (tentativa ${k+1} de ${lista.length})`:''}`,'wait');A.fonte='ws';marcarFonte();
   let ws;
-  try{ws=new WebSocket(url);}catch(e){setStatus('Navegador bloqueou a conexão com a caixinha ('+(e.message||e)+'). Vamos precisar do app Android.','err');A.fonte=null;marcarFonte();return;}
-  ws.binaryType='arraybuffer';A.ws=ws;
-  const t=setTimeout(()=>{if(ws.readyState!==1){try{ws.close();}catch(e){}}},8000);
-  ws.onopen=()=>{clearTimeout(t);setStatus('Caixinha conectada · aguardando peso…','ok');pedirTelaLigada();};
+  try{ws=new WebSocket(url);}catch(e){bruto('Bloqueado: '+url+' · '+(e.message||e));A.wsFalhas.push(url);
+    if(k+1<lista.length)return conectarWs(lista,k+1);
+    setStatus('O navegador bloqueou a conexão com a caixinha. '+AVISO_INSEGURO,'err');A.fonte=null;marcarFonte();return;}
+  ws.binaryType='arraybuffer';A.ws=ws;let abriu=false;
+  const t=setTimeout(()=>{if(ws.readyState!==1){try{ws.close();}catch(e){}}},6000);
+  ws.onopen=()=>{clearTimeout(t);abriu=true;A.tCon=Date.now();A.wsOk=url;setStatus('Caixinha conectada ('+url.replace('ws://','')+') · aguardando peso…','ok');pedirTelaLigada();
+    bruto('Conectado em '+url);
+    if(url!==cfg().ws){cfg().ws=url;salvarCfg();toast('Caixinha respondeu em '+url.replace('ws://','')+' (salvo nos Ajustes)');}};
   ws.onmessage=ev=>receber(ev.data,'ws');
   ws.onerror=()=>{};
   ws.onclose=()=>{clearTimeout(t);if(ws._manual||A.ws!==ws)return;
-    setStatus('Sem conexão com a caixinha. Confira se o celular está no Wi-Fi dela e o endereço nos Ajustes. Tentando de novo…','err');
-    setTimeout(()=>{if(A.ws===ws&&A.fonte==='ws')conectarWs();},5000);};
+    if(!abriu&&k+1<lista.length){bruto('Não abriu: '+url);return conectarWs(lista,k+1);}
+    setStatus(abriu?'A caixinha desconectou. Tentando de novo…':'Sem conexão com a caixinha. Confira se o celular está no Wi-Fi dela (USR-W610…) e se o WebSocket está ligado nela. '+AVISO_INSEGURO+' Tentando de novo…','err');
+    setTimeout(()=>{if(A.ws===ws&&A.fonte==='ws'){A.ws=null;conectarWs(abriu?[url]:candidatosWs(),0);}},5000);};
+}
+
+/* Bluetooth "clássico" (porta serial SPP): é o tipo mais comum em indicador de balança.
+   Funciona no Chrome do Android (versão 137 ou mais nova) e no computador. Parear a balança antes nas configurações do celular. */
+const SPP='00001101-0000-1000-8000-00805f9b34fb';
+async function conectarSerial(){
+  if(!('serial' in navigator)){toast('Este navegador não tem Bluetooth serial. Use o Chrome atualizado no Android, ou tente o Bluetooth BLE.');setStatus('Bluetooth serial indisponível neste navegador (atualize o Chrome)','err');return;}
+  desconectar(false);
+  try{
+    setStatus('Escolha a balança na lista (ela precisa estar pareada no Bluetooth do celular)…','wait');
+    let port;
+    try{port=await navigator.serial.requestPort({allowedBluetoothServiceClassIds:[SPP],filters:[{bluetoothServiceClassId:SPP}]});}
+    catch(e){if(e&&e.name==='NotFoundError')throw e;port=await navigator.serial.requestPort({allowedBluetoothServiceClassIds:[SPP]});}
+    A.fonte='ser';A.ser={port,leitor:null};marcarFonte();
+    setStatus('Abrindo a porta da balança…','wait');
+    await port.open({baudRate:9600});
+    setStatus('Bluetooth conectado · aguardando peso…','ok');A.tCon=Date.now();pedirTelaLigada();
+    try{const inf=port.getInfo();$('aBtInfo').textContent='Bluetooth serial · '+JSON.stringify(inf);}catch(e){}
+    lerSerial(port);
+  }catch(e){
+    if(e&&e.name==='NotFoundError'){setStatus('Nenhuma balança escolhida. Pareie a balança no Bluetooth do celular e tente de novo.');}
+    else setStatus('Bluetooth: '+(e.message||e),'err');
+    A.fonte=null;A.ser=null;marcarFonte();
+  }
+}
+async function lerSerial(port){
+  while(A.ser&&A.ser.port===port&&port.readable){
+    const r=port.readable.getReader();A.ser.leitor=r;
+    try{for(;;){const {value,done}=await r.read();if(done)break;if(value&&value.length)receber(value,'ser');}}
+    catch(e){if(A.ser&&A.ser.port===port){setStatus('Bluetooth caiu: '+(e.message||e)+' · tentando ler de novo…','err');bruto('Erro de leitura: '+(e.message||e));}}
+    finally{try{r.releaseLock();}catch(e){}}
+    if(!(A.ser&&A.ser.port===port))return;
+    await new Promise(ok=>setTimeout(ok,1500));
+  }
+  if(A.ser&&A.ser.port===port)setStatus('Bluetooth desconectado. Toque em Bluetooth de novo.','err');
 }
 
 function conectarSim(){
@@ -262,7 +308,8 @@ function receber(v,origem){
 /* pega o último número da linha: "GR  12.345 kg", "+012345", "ST,GS,+0012345kg" */
 function numeroDaLinha(l){
   const s=String(l).replace(/\s+/g,' ');
-  const m=s.match(/[+-]?\s?\d[\d.,]*/g);if(!m)return null;
+  const u=s.match(/([+-]?\s?\d[\d.,]*)\s*(kg|lb)/i); // número logo antes de "kg"/"lb" tem preferência
+  const m=u?[u[1]]:s.match(/[+-]?\s?\d[\d.,]*/g);if(!m)return null;
   let x=m[m.length-1].replace(/\s/g,'');const neg=x.startsWith('-');x=x.replace(/^[+-]/,'');
   if(/^\d{1,3}(\.\d{3})+(,\d+)?$/.test(x))x=x.replace(/\./g,'').replace(',','.');      // 12.345 ou 12.345,5
   else if(/^\d{1,3}(,\d{3})+(\.\d+)?$/.test(x))x=x.replace(/,/g,'');                  // 12,345
@@ -430,7 +477,8 @@ async function pedirTelaLigada(){try{if('wakeLock' in navigator&&!A.wake){A.wake
 function soltarTela(){try{A.wake&&A.wake.release();}catch(e){}A.wake=null;}
 
 /* aviso se a balança parou de mandar dados */
-setInterval(()=>{if(A.fonte&&A.fonte!=='sim'&&A.ultDado&&Date.now()-A.ultDado>5000&&!A.status.startsWith('Sem dados')&&!A.status.includes('reconect')){setStatus('Sem dados da balança há mais de 5 s','err');A.estavel=false;aRenderLeve();}
+setInterval(()=>{if(A.fonte&&A.fonte!=='sim'&&!A.ultDado&&A.tCon&&Date.now()-A.tCon>8000&&!A.status.startsWith('Conectado, mas')){setStatus('Conectado, mas a balança não mandou nenhum peso ainda. No indicador, a saída de dados (porta serial/remota) precisa estar ligada em modo contínuo.','err');}
+  else if(A.fonte&&A.fonte!=='sim'&&A.ultDado&&Date.now()-A.ultDado>5000&&!A.status.startsWith('Sem dados')&&!A.status.includes('reconect')){setStatus('Sem dados da balança há mais de 5 s','err');A.estavel=false;aRenderLeve();}
   else if(A.fonte&&A.ultDado&&Date.now()-A.ultDado<2000&&A.status.startsWith('Sem dados')){setStatus('Recebendo peso','ok');}},2000);
 
 /* ---------------- Desenho da tela ---------------- */
@@ -536,7 +584,7 @@ window.acTela=(nova,dia)=>{
   const topo=`<section class="panel">
     <div class="curhead"><h2>Carregar com a balança</h2><span class="note">⚡ Automação</span></div>
     <div class="aStatus" id="acStatus"><i></i><span id="acStatusTxt">Desconectado</span></div>
-    <div class="aConn"><button data-ac="bt" id="acBtBt">🔵 Bluetooth</button><button data-ac="ws" id="acBtWs">📶 Caixinha Wi-Fi</button><button data-ac="sim" id="acBtSim">🧪 Simulador</button></div>
+    <div class="aConn"><button data-ac="ser" id="acBtSer">🔵 Bluetooth</button><button data-ac="bt" id="acBtBt">🔷 Bluetooth BLE</button><button data-ac="ws" id="acBtWs">📶 Caixinha Wi-Fi</button><button data-ac="sim" id="acBtSim">🧪 Simulador</button></div>
     <button data-ac="desc" id="acDesc" hidden>Desconectar</button>
     <div class="aSim" id="acSimBox" hidden><button class="lima" data-ac="simSobe">▲ Carregar</button><button data-ac="simPara">■ Parar</button><button data-ac="simZera">Esvaziar</button></div>
     <div class="aPeso"><div><small>Balança (kg)</small><em id="acEstTxt">sem leitura</em></div><b class="num" id="acPeso">—</b></div>
@@ -575,7 +623,7 @@ window.acRegistrar=()=>{const B=acB(),it=acItem();if(!B||!it)return;
   if(nx<0)toast('Todos os produtos carregados. Toque em ✓ Concluir batida.');};
 function acSyncTopo(){if(!$('acStatus'))return;
   $('acStatusTxt').textContent=A.status;$('acStatus').className='aStatus '+(A.statusTipo||'');
-  ['bt','ws','sim'].forEach(f=>$({bt:'acBtBt',ws:'acBtWs',sim:'acBtSim'}[f]).classList.toggle('on',A.fonte===f));
+  ['ser','bt','ws','sim'].forEach(f=>$({ser:'acBtSer',bt:'acBtBt',ws:'acBtWs',sim:'acBtSim'}[f]).classList.toggle('on',A.fonte===f));
   $('acDesc').hidden=!A.fonte;$('acSimBox').hidden=A.fonte!=='sim';}
 function pintarCarga(){
   if(!naCargaAuto()||!$('acPeso'))return;
@@ -603,7 +651,7 @@ function pintarCarga(){
   $('acReg').disabled=!(it&&!ok(it.real)&&ok(it.ini)&&A.peso!=null&&A.peso>it.ini)||modoVer;
 }
 $('acBox').addEventListener('click',e=>{const b=e.target.closest('[data-ac]');if(!b)return;const a=b.dataset.ac;
-  if(a==='bt')return conectarBt();if(a==='ws')return conectarWs();if(a==='sim'){conectarSim();return cRender();}
+  if(a==='ser')return conectarSerial();if(a==='bt')return conectarBt();if(a==='ws')return conectarWs();if(a==='sim'){conectarSim();return cRender();}
   if(a==='desc'){desconectar(true);return cRender();}
   if(a==='simSobe'){if(A.sim)A.sim.modo='sobe';return;}if(a==='simPara'){if(A.sim)A.sim.modo='parado';return;}
   if(a==='simZera'){if(A.sim){A.sim.modo='parado';A.sim.peso=0;}return;}
@@ -639,6 +687,20 @@ function montarCfgT(){const box=$('cfgTBox');if(!box||box.dataset.ok)return;box.
     <p class="note">Funciona como sensor de ré: começa espaçado no amarelo e vai apertando até o direto, que é um bip bem rápido. Quando o peso para de cair, o apito para na hora.</p>
     <button id="cfgT_teste">🔊 Testar apito (lento → rápido → direto)</button>
     <button id="cfgT_padrao" style="margin-top:6px">Voltar ao padrão</button>
+  </section>
+  <section class="panel">
+    <div class="curhead"><h2>📖 Como conectar a balança</h2></div>
+    <details><summary>🔵 Bluetooth (indicador com Bluetooth)</summary><ol class="note" style="padding-left:18px;margin:6px 0">
+      <li>No celular: Configurações › Bluetooth › parear com a balança (senha costuma ser 1234 ou 0000).</li>
+      <li>Use o <b>Chrome</b> atualizado. Na Automação, toque em <b>🔵 Bluetooth</b> e escolha a balança na lista.</li>
+      <li>Se a balança não aparecer, tente <b>🔷 Bluetooth BLE</b>.</li>
+      <li>Conectou e o peso não chega: no indicador, ligue a saída de dados (serial/remota) em modo contínuo.</li></ol></details>
+    <details><summary>📶 Caixinha Wi-Fi (USR-W610)</summary><ol class="note" style="padding-left:18px;margin:6px 0">
+      <li>No celular: Configurações › Wi-Fi › conectar na rede da caixinha (USR-W610…). Se perguntar "sem internet", escolha manter conectado.</li>
+      <li>Na Automação, toque em <b>📶 Caixinha Wi-Fi</b>. O app tenta o endereço salvo e as portas 8000 e 6432; a que responder fica salva.</li>
+      <li>Se o Chrome bloquear: toque no cadeado ao lado do endereço › Configurações do site › Conteúdo não seguro › <b>Permitir</b>.</li>
+      <li>Na caixinha (página 10.10.100.254) o WebSocket precisa estar ligado e a velocidade da serial igual à do indicador.</li></ol></details>
+    <p class="note">Para conferir o que chega da balança: Automação › 🔧 Dados recebidos › Copiar.</p>
   </section>`;
   CAMPOS.forEach(([k])=>{$('cfgT_'+k).onchange=e=>{const c=cfg(),v=parseFloat(String(e.target.value).replace(',','.'));
     if(!isNaN(v)&&v>=0){c[k]=v;salvarCfg();avisoCfg();}else e.target.value=c[k];};});

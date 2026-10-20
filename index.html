@@ -542,6 +542,39 @@ body.comteclado .wrap{padding-bottom:300px!important}
 .gCoTopo .gSelo b.t1{font-size:1.9rem}
 
 .gLeg{background:var(--chip);border-radius:10px;padding:8px 12px}
+
+/* ===================== Visual verde + menu embaixo (v16) ===================== */
+:root{--bg:#f6f8f3;--accent:#2e6b2f;--lima:#8fb31d;--chip:#eef4e0;--lima-claro:#eef4e0;--led-bg:#1f3d20;--led:#d8f06a;--menuH:150px}
+html,body{background:var(--bg)}
+.topo{background:linear-gradient(135deg,#2e6b2f,#4f8f2a);border-bottom:0;color:#fff;padding-top:8px;padding-bottom:10px;border-radius:0 0 20px 20px}
+.topo img{height:30px;width:auto;filter:brightness(0) invert(1)}
+.topo h1{color:#fff;font-size:16px}.topo h1 br{display:none}
+.topo .sub,.topo #hoje{color:#e7f5c2}.topo #nuvem{background:#fff;padding:1px 8px;border-radius:99px;white-space:nowrap}
+.topo button{color:#fff;background:transparent;border-color:rgba(255,255,255,.35)}
+.panel{border:0;border-left:6px solid var(--lima);border-radius:12px;box-shadow:0 1px 5px rgba(0,0,0,.07)}
+.panel>h2:first-child,.panel>.curhead:first-child h2{border-left:0;padding-left:0;color:#2e6b2f}
+.cbCur,.cbPrev{background:#1f3d20}
+button.primary{background:#2e6b2f;border-color:#2e6b2f}
+/* menu fixo no rodapé, perto do dedão; a setinha esconde e mostra */
+.wrap>.menu{position:fixed;top:auto;bottom:0;left:0;right:0;margin:0 auto;max-width:640px;z-index:30;background:#fff;
+  border-radius:18px 18px 0 0;box-shadow:0 -4px 16px rgba(17,37,61,.14);padding:4px 10px calc(8px + env(safe-area-inset-bottom,0px));
+  flex-direction:column-reverse;transition:transform .25s ease}
+.wrap{padding-bottom:calc(var(--menuH) + 24px)}
+.menu .tabs{background:#e3ead6;border-radius:12px;padding:4px}
+.menu .tabs button{border:0;border-radius:9px;background:transparent;padding:9px}
+.menu .tabs button[aria-selected="true"]{background:#2e6b2f;color:#fff}
+.menu .subtabs button{border-radius:9px}
+.menu .subtabs button[aria-selected="true"]{background:var(--lima);border-color:var(--lima)}
+.subModo{background:#2e6b2f;border-radius:12px;margin-top:0}
+.subModo button{background:#3f7d3a;border-color:#3f7d3a}
+.subModo button[aria-selected="true"]{background:#d8f06a;border-color:#d8f06a;color:#1f3d20}
+.menuSeta{align-self:center;border:0;background:transparent;padding:2px 26px;margin:-2px 0 0;font-size:.85rem;font-weight:700;color:#5d6b7a;line-height:1;border-radius:99px}
+.menuSeta::before{content:'▼  esconder menu'}
+body.menuFechado .wrap>.menu{transform:translateY(calc(100% - 30px))}
+body.menuFechado .menuSeta::before{content:'▲  menu'}
+body.menuFechado .menuSeta{color:#2e6b2f}
+body.menuFechado .wrap{padding-bottom:60px}
+body.comteclado .wrap>.menu{display:none}
 </style>
 </head>
 <body>
@@ -831,7 +864,7 @@ body.comteclado .wrap{padding-bottom:300px!important}
 <div class="toast" id="toast" hidden></div>
 <script>
 'use strict';
-const APP_VERSAO='15';
+const APP_VERSAO='16';
 const APP_DATA='19/10/2026';
 const KEY='confinamento-completo-v1';
 const $=id=>document.getElementById(id);
@@ -1199,7 +1232,7 @@ function fecharTeclado(){
 /* Teclado do app para a balança: OK fecha (espera o curral terminar para digitar o final) */
 let balCampo=null,balBuf='',balNovo=false;
 /* altura ocupada pelo menu fixo no topo: o campo digitado para logo abaixo dele */
-function topoLivre(){const m=document.getElementById('menu');return (m&&!document.body.classList.contains('naInicio')?m.getBoundingClientRect().bottom:0)+12;}
+function topoLivre(){const m=document.getElementById('menu');if(m&&getComputedStyle(m).position==='fixed'&&getComputedStyle(m).bottom==='0px')return 12;return (m&&!document.body.classList.contains('naInicio')?m.getBoundingClientRect().bottom:0)+12;}
 function abrirBal(id){
   if(bloqueado())return;
   if(typeof fecharTeclado==='function'&&tecIdx!=null)fecharTeclado();
@@ -2389,5 +2422,16 @@ if('serviceWorker' in navigator){
 </script>
 <script src="gestao.js"></script>
 <script src="automacao.js"></script>
+<script>
+/* menu do rodapé: setinha esconde/mostra (lembra no aparelho) e a altura reserva espaço no fim da tela */
+(function(){const m=$('menu');if(!m)return;const b=document.createElement('button');b.className='menuSeta';b.type='button';b.setAttribute('aria-label','Esconder ou mostrar o menu');m.appendChild(b);
+    b.onclick=()=>document.body.classList.toggle('menuFechado');
+  /* tocou num botão que já abre a tela (o último do caminho): o menu se esconde sozinho e fica a setinha */
+  m.addEventListener('click',e=>{const t=e.target.closest('button');if(!t||t===b)return;
+    const final=t.closest('#subGest')||t.closest('#subModo')||['tabPrev','tabHist','tabCfgT'].includes(t.id);
+    if(final)setTimeout(()=>document.body.classList.add('menuFechado'),150);});
+  const ajusta=()=>document.documentElement.style.setProperty('--menuH',m.offsetHeight+'px');
+  try{new ResizeObserver(ajusta).observe(m);}catch(e){}ajusta();})();
+</script>
 </body>
 </html>
