@@ -83,7 +83,7 @@ pre.msg{background:var(--chip);border-radius:10px;padding:12px;margin:0;white-sp
 
 .menu{position:sticky;top:env(safe-area-inset-top,0px);z-index:4;background:var(--bg);padding-block:6px;display:flex;flex-direction:column;gap:6px;box-shadow:0 6px 8px -8px rgba(17,37,61,.25)}
 .tabs{display:flex;gap:6px}
-.subtabs{display:grid;gap:6px}.subtabs.sub3{grid-template-columns:repeat(3,1fr)}.subtabs.sub4{grid-template-columns:repeat(4,1fr)}.subtabs.sub5{grid-template-columns:repeat(5,1fr)}.subtabs.sub5 button{font-size:.8rem;padding:7px 2px}.subtabs.sub6{grid-template-columns:repeat(6,minmax(0,1fr))}.subtabs.sub6 button{grid-column:span 2;font-size:.86rem;padding:7px 2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.subtabs.sub6 #tabHist,.subtabs.sub6 #tabCfgT{grid-column:span 3}
+.subtabs{display:grid;gap:6px}.subtabs.sub3{grid-template-columns:repeat(3,1fr)}.subtabs.sub4{grid-template-columns:repeat(4,1fr)}.subtabs.sub5{grid-template-columns:repeat(5,1fr)}.subtabs.sub5 button{font-size:.8rem;padding:7px 2px}.subtabs.sub6{grid-template-columns:repeat(6,minmax(0,1fr))}.subtabs.sub6 button{grid-column:span 2;font-size:.86rem;padding:7px 2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.subtabs.sub6 #tabMan,.subtabs.sub6 #tabModoAuto{grid-column:span 3}
 .subModo{display:grid;grid-template-columns:auto 1fr 1fr;gap:6px;align-items:center;margin-top:6px;background:#11253d;border-radius:99px;padding:4px 4px 4px 12px}
 .subModo span{color:#fff;font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em}
 .subModo button{border-radius:99px;padding:7px 4px;font-size:.9rem;font-weight:700;background:#2a3f58;border-color:#2a3f58;color:#fff}
@@ -250,7 +250,7 @@ input.big.sel{border-color:var(--accent);border-width:3px;background:#fff}
 /* tela inicial */
 .inicio{display:none;flex-direction:column;gap:14px;padding-top:10px}
 body.naInicio .inicio{display:flex}
-body.naInicio .wrap>.menu,body.naInicio #viewGest,body.naInicio #viewCarga,body.naInicio #viewPrev,body.naInicio #viewTrato,body.naInicio #viewHist,body.naInicio #viewAuto,body.naInicio #viewCfgT,body.naInicio #viewAutoC,body.naInicio #subModo{display:none!important}
+body.naInicio .wrap>.menu,body.naInicio #viewGest,body.naInicio #viewCarga,body.naInicio #viewPrev,body.naInicio #viewTrato,body.naInicio #viewHist,body.naInicio #viewAuto,body.naInicio #viewAutoC,body.naInicio #subModo{display:none!important}
 button.grande{font-size:1.5rem;padding:26px 14px;border-radius:16px;font-weight:700}
 button.gExec{background:#1f8f4e;border-color:#1f8f4e;color:#fff}
 button.gVer{background:var(--accent);border-color:var(--accent);color:#fff}
@@ -580,6 +580,37 @@ body.menuFechado .menuSeta{background:#2e6b2f;color:#fff;padding:9px 12px;font-s
   .topo h1{font-size:20px}
 }
 @media (min-width:1100px){.wrap{max-width:1040px}}
+#cfgBalHost,#cfgBalHost>#cfgTBox{display:contents}
+
+.dLinha{display:flex;gap:8px;align-items:center}.dSoPer{justify-content:space-between;margin-top:6px}.dSoPer .gHoje{margin:0}.dSoPer .dPer{margin-left:auto;padding:6px 10px}
+.dPer{display:flex;align-items:center;gap:6px;margin:0;padding:0 10px;border:2px solid var(--line);border-radius:10px;background:var(--surface);text-transform:none;letter-spacing:0;font-size:.88rem;font-weight:700;color:var(--fg);white-space:nowrap;cursor:pointer}
+.dPer input{width:20px;height:20px;margin:0}
+.dPerCampos{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:8px;margin-top:8px}
+.tNav{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,2fr);gap:6px}
+.tNav>button{border-radius:12px}
+.tSel{display:flex;align-items:center;border:2px solid var(--line);border-radius:12px;background:var(--surface);overflow:hidden}
+.tSel button{border:0;background:transparent;padding:9px 16px;font-size:1rem;border-radius:0}
+.tSel b{flex:1;text-align:center;cursor:pointer;font-family:var(--display);font-stretch:condensed;font-size:1.15rem}
+.tNav>button.sel,.tSel.sel{background:var(--accent);color:#fff;border-color:var(--accent)}.tSel.sel button{color:#fff}
+.tSel button:disabled{opacity:.3}
+
+.pvEstado{background:#fff4d6;color:#7a4b00;border-radius:10px;padding:8px 10px}
+#viewPrev.pvSoVer #tbPrev input.cell{background:transparent;border-color:transparent;color:var(--fg);opacity:1}
+.ntSel{min-width:0;width:48px;font-weight:700;font-size:1rem;padding:6px 2px}
+.imsIn{width:64px!important;text-align:center}
+.imsKg{display:block;font-size:.75rem;color:var(--ok);font-weight:700;white-space:nowrap}
+#btnIms.on{background:var(--accent);border-color:var(--accent);color:#fff}
+.pvImsBar{background:var(--chip);border-radius:12px;padding:10px;display:flex;flex-direction:column;gap:8px}
+
+.gDiv{display:grid;grid-template-columns:70px minmax(0,1fr) 54px;gap:8px;align-items:center;border-bottom:1px solid var(--line);padding:6px 0}
+.gDivIn{display:grid;gap:4px}.gDivIn label{margin:0;text-align:center}.gDivIn small{display:block;font-size:.65rem;color:var(--muted)}
+.gDivIn input{width:100%;text-align:center;padding:6px 2px;font-size:.95rem}
+.gDivSoma{font-weight:700;text-align:right}.gDivSoma.bad{color:var(--bad)}
+.gLeitTrava{pointer-events:none;opacity:.6}
+#viewPrev.pvImsOn #tbPrev input.cell{width:64px;min-width:0;padding-left:4px;padding-right:4px}#viewPrev.pvImsOn #tbPrev .alca{display:none}#viewPrev.pvImsOn #pvHead th:first-child{display:none}#viewPrev.pvImsOn .imsIn{width:54px!important}
+#viewPrev.pvImsOn #tbPrev td.acoes,#viewPrev.pvImsOn #pvHead th:last-child{display:none}
+#viewPrev.pvImsOn #tbPrev td.c{white-space:normal;word-break:break-word;font-size:.95rem}#viewPrev.pvImsOn #tbPrev input.cell{width:58px}
+#viewPrev.pvTodos #tbPrev td.c{white-space:normal;word-break:break-word}
 </style>
 </head>
 <body>
@@ -603,22 +634,21 @@ body.menuFechado .menuSeta{background:#2e6b2f;color:#fff;padding:9px 12px;font-s
   </nav>
   <div class="subtabs sub6" id="subTrato" hidden>
     <button id="tabPrev" aria-selected="false">Previsto</button>
+    <button id="tabLeit" aria-selected="false">Leitura</button>
+    <button id="tabHist" aria-selected="false">Histórico</button>
     <button id="tabMan" aria-selected="true">✋ Manual</button>
     <button id="tabModoAuto" aria-selected="false">⚡ Automação</button>
-    <button id="tabHist" aria-selected="false">Histórico</button>
-    <button id="tabCfgT" aria-selected="false">⚙ Config.</button>
   </div>
   <div class="subModo" id="subModo" hidden>
     <span id="modoTit">Manual</span>
     <button id="tabTrato" aria-selected="true">Tratar</button>
     <button id="tabCarga" aria-selected="false">Carregar</button>
-    <button id="tabAuto" aria-selected="false" hidden>Tratar</button>
     <button id="tabAutoC" aria-selected="false" hidden>Carregar</button>
+    <button id="tabAuto" aria-selected="false" hidden>Tratar</button>
   </div>
   <div class="subtabs sub4" id="subGest" hidden>
     <button data-gt="home" id="tabGest">Resumo</button>
     <button data-gt="lotes">Lotes</button>
-    <button data-gt="cocho">Leitura</button>
     <button data-gt="rels">Relatórios</button>
     <button data-gt="racoes">Rações</button>
     <button data-gt="insumos">Insumos</button>
@@ -629,10 +659,11 @@ body.menuFechado .menuSeta{background:#2e6b2f;color:#fff;padding:9px 12px;font-s
 <div id="viewPrev" hidden>
   <section class="panel">
     <div class="curhead"><h2>Previsto e currais</h2><span class="note num" id="pvTot"></span></div>
-    <div>
-      <label for="pvTrato">Trato</label>
+    <div id="pvData"></div>
+    <p class="note pvEstado" id="pvEstado" hidden></p>
+    <div hidden>
       <select class="trato" id="pvTrato">
-        <option value="1">Trato 1</option><option value="2">Trato 2</option><option value="3">Trato 3</option><option value="4">Trato 4</option><option value="5">Trato 5</option>
+        <option value="1">Trato 1</option><option value="2">Trato 2</option><option value="3">Trato 3</option><option value="4">Trato 4</option><option value="5">Trato 5</option><option value="6">Trato 6</option>
       </select>
     </div>
     <p class="aviso bad" id="pvAviso" hidden></p>
@@ -665,11 +696,15 @@ body.menuFechado .menuSeta{background:#2e6b2f;color:#fff;padding:9px 12px;font-s
       <button data-l="T" class="sel">Todos</button><button data-l="C">Confinamento</button><button data-l="P">Pasto</button>
       <div class="somaLinha" id="somaLinha"></div>
     </div>
+    <div id="pvTN"></div>
+    <div class="pvImsBar" id="pvImsBar" hidden><p class="note">Digite o % de IMS (consumo de matéria seca em % do peso vivo) de cada curral. O total em kg de matéria natural aparece ao lado e, ao aplicar, é dividido nos tratos.</p>
+      <div class="row"><button class="primary" id="pvImsAplicar">✓ Aplicar % IMS</button><button id="pvImsCanc">Cancelar</button></div></div>
     <div class="tablebox"><table>
-      <thead><tr><th></th><th>Curral</th><th>Previsto (kg)</th><th></th></tr></thead>
+      <thead id="pvHead"><tr><th></th><th>Curral</th><th>Previsto (kg)</th><th></th></tr></thead>
       <tbody id="tbPrev"></tbody>
     </table></div>
     <button class="danger" id="btnLimparPrev">Limpar previsto deste trato</button>
+    <button class="lima" id="btnIms">% Alterar trato por % de IMS</button>
     <button id="btnOrdem">↕ Alterar ordem ou nome</button>
     <button class="lima" id="btnCadastrar">+ Adicionar curral</button>
     <button class="dangerfill" id="btnRemoverCurral">− Remover curral</button>
@@ -684,7 +719,7 @@ body.menuFechado .menuSeta{background:#2e6b2f;color:#fff;padding:9px 12px;font-s
     <div class="linhaTrato">
       <label for="tratoSel">Selecionar trato</label>
       <select class="trato" id="tratoSel">
-        <option value="1">Trato 1</option><option value="2">Trato 2</option><option value="3">Trato 3</option><option value="4">Trato 4</option><option value="5">Trato 5</option>
+        <option value="1">Trato 1</option><option value="2">Trato 2</option><option value="3">Trato 3</option><option value="4">Trato 4</option><option value="5">Trato 5</option><option value="6">Trato 6</option>
       </select>
     </div>
     <div class="aoVivo" id="aoVivo"></div>
@@ -734,16 +769,9 @@ body.menuFechado .menuSeta{background:#2e6b2f;color:#fff;padding:9px 12px;font-s
 <div id="viewHist" hidden>
   <section class="panel">
     <h2>Filtrar</h2>
-    <div class="filtros">
-      <div><label for="fDia">Data</label><select id="fDia"><option value="ontem">Ontem</option><option value="hoje">Hoje</option><option value="amanha">Amanhã</option><option value="semana">Semana</option><option value="mes">Mês</option><option value="ano">Ano</option><option value="todos">Todos</option><option value="periodo">Período</option></select></div>
-      <div><label for="fTrato">Trato</label><select id="fTrato"><option value="">Todos</option><option value="1">Trato 1</option><option value="2">Trato 2</option><option value="3">Trato 3</option><option value="4">Trato 4</option><option value="5">Trato 5</option></select></div>
-    </div>
+    <div id="hData"></div>
     <div class="linhas hLocal" id="hLocal"><button data-loc="T" class="sel">Todos</button><button data-loc="C">Confinamento</button><button data-loc="P">Pasto</button></div>
-    <div class="periodo" id="fPeriodo" hidden>
-      <div><label for="fIni">Data inicial</label><button class="dataBox" id="fIni">—</button></div>
-      <div><label for="fFim">Data final</label><button class="dataBox" id="fFim">—</button></div>
-    </div>
-    <div class="cal" id="hCal" hidden></div>
+    <div id="hTN"></div>
     <div class="stat">
       <div><small>Previsto</small><b class="num" id="hPrev">—</b></div>
       <div><small>Realizado</small><b class="num" id="hReal">—</b></div>
@@ -796,7 +824,7 @@ body.menuFechado .menuSeta{background:#2e6b2f;color:#fff;padding:9px 12px;font-s
   <div id="viewCarga" hidden><div class="gTela" id="cBox"></div></div>
   <div id="viewGest" hidden><div class="gTela" id="gBox"></div></div>
   <div id="viewAuto" hidden><div class="gTela" id="aBox"></div></div>
-  <div id="viewCfgT" hidden><div class="gTela" id="cfgTBox"></div></div>
+  <div id="cfgTParque" hidden><div class="gTela" id="cfgTBox"></div></div>
   <div id="viewAutoC" hidden><div class="gTela" id="acBox"></div></div>
   <textarea id="copiaFallback" hidden readonly></textarea>
 </div>
@@ -870,7 +898,7 @@ body.menuFechado .menuSeta{background:#2e6b2f;color:#fff;padding:9px 12px;font-s
 <div class="toast" id="toast" hidden></div>
 <script>
 'use strict';
-const APP_VERSAO='18';
+const APP_VERSAO='20';
 const APP_DATA='19/10/2026';
 const KEY='confinamento-completo-v1';
 const $=id=>document.getElementById(id);
@@ -993,6 +1021,42 @@ function toast(t){const el=$('toast');el.textContent=t;el.hidden=false;clearTime
 /* Lista do trato = currais do cadastro (na ordem) que têm previsto maior que zero nesse trato */
 function mapaPrev(k){k=String(k);if(!S.prev[k])S.prev[k]={};return S.prev[k];}
 function lista(k){const m=(S.prev&&S.prev[String(k||S.tratoSel)])||{};return S.cadastro.filter(n=>typeof m[n]==='number'&&m[n]>0).map(n=>({nome:n,prev:m[n]}));}
+/* ================= Previsto por dia · nº de tratos por curral · divisão em % =================
+   S.prev = previsto de HOJE (o que o Tratar usa e vai para a nuvem).
+   Cada dia fica guardado na Gestão (item 'prev-AAAA-MM-DD') para consultar depois; o de AMANHÃ fica lá até virar o dia. */
+const MAXT=6;
+const gOk=()=>typeof G!=='undefined'&&G&&G.it;
+function divisao(n){n=Math.max(1,Math.min(MAXT,+n||1));const c=gOk()&&typeof gCfg==='function'?gCfg():{};const v=c.div&&c.div[n];
+  if(Array.isArray(v)&&v.length===n&&Math.abs(v.reduce((a,b)=>a+(+b||0),0)-100)<0.6)return v.map(Number);
+  const base=Math.floor(1000/n)/10,r=[];for(let i=0;i<n;i++)r.push(base);r[0]=Math.round((100-base*(n-1))*10)/10;return r;}
+function ntMapa(){return (gOk()&&G.it.prevNTr&&G.it.prevNTr.v)||{};}
+/* nº de tratos do curral: o escolhido; senão, quantos tratos têm previsto hoje; senão 1 */
+function nTratos(c,obj){const m=ntMapa();if(+m[c]>=1)return Math.min(MAXT,+m[c]);obj=obj||S.prev||{};let n=0;for(let k=1;k<=MAXT;k++){const v=(obj[k]||{})[c];if(typeof v==='number'&&v>0)n=k;}return n||1;}
+function setNTratos(c,n){const m=Object.assign({},ntMapa());m[c]=Math.max(1,Math.min(MAXT,+n||1));if(gOk()&&typeof gPut==='function')gPut({uid:'prevNTr',tipo:'prevNTr',v:m});}
+function totalCurral(c,obj){obj=obj||S.prev||{};let t=0;for(let k=1;k<=MAXT;k++){const v=(obj[k]||{})[c];if(typeof v==='number')t+=v;}return t;}
+function arredPrev(v){const a=gOk()&&typeof gCfg==='function'?(+gCfg().arred||0):0;return a>0?Math.round(v/a)*a:Math.round(v);}
+/* divide o total do curral nos tratos pela % configurada; o último trato fica com a sobra do arredondamento */
+function distribuir(c,total,n,obj){obj=obj||S.prev;n=n||nTratos(c,obj);const pc=divisao(n);let resto=Math.max(0,Math.round(total||0));
+  for(let k=1;k<=MAXT;k++){const key=String(k);if(!obj[key])obj[key]={};
+    if(k>n||!total){delete obj[key][c];continue;}
+    const v=k===n?resto:Math.max(0,arredPrev(total*pc[k-1]/100));obj[key][c]=v;resto-=v;}
+  return obj;}
+/* previsto guardado de um dia (cópia); para dias sem cópia monta pelos registros do Histórico */
+const idPrevDia=d=>'prev-'+d;
+function prevGuardado(d){const it=gOk()&&G.it[idPrevDia(d)];if(it&&!it.del&&it.prev)return it.prev;return null;}
+function prevPelosRegistros(d){const o={};HIST.filter(r=>r.dia===d).forEach(r=>{const k=String(r.trato);if(!o[k])o[k]={};if(typeof r.prev==='number')o[k][r.curral]=r.prev;});return o;}
+function prevDoDia(d){if(d===hojeKey())return S.prev;return prevGuardado(d)||(d<hojeKey()?prevPelosRegistros(d):{});}
+let snapTimer=null;
+function guardarPrevHoje(){clearTimeout(snapTimer);snapTimer=setTimeout(()=>{try{if(gOk()&&typeof gPut==='function')gPut({uid:idPrevDia(hojeKey()),tipo:'prevdia',dia:hojeKey(),prev:JSON.parse(JSON.stringify(S.prev||{}))});}catch(e){}},1500);}
+function guardarPrevDia(d,obj){if(gOk()&&typeof gPut==='function')gPut({uid:idPrevDia(d),tipo:'prevdia',dia:d,prev:JSON.parse(JSON.stringify(obj||{}))});}
+/* virou o dia: se o previsto de hoje já foi feito ontem (pela leitura de amanhã), ele passa a valer */
+function virarDiaPrev(){if(!S)return;const hj=hojeKey();if(S.prevDia===hj)return;
+  const g=prevGuardado(hj);if(g&&S.prevDia&&S.prevDia<hj){S.prev=JSON.parse(JSON.stringify(g));marcarPrev();if(typeof render==='function')render();}
+  S.prevDia=hj;save();}
+/* trato do dia terminado: todos os tratos com previsto já têm registro */
+function diaFinalizado(d){d=d||hojeKey();const regs=HIST.filter(r=>r.dia===d);let tem=false;
+  for(let k=1;k<=MAXT;k++){const L=lista(k);if(!L.length)continue;tem=true;if(!L.every(x=>regs.some(r=>r.trato===k&&r.curral===x.nome)))return false;}return tem;}
+window.prevApi={MAXT,divisao,nTratos,setNTratos,totalCurral,distribuir,prevDoDia,prevGuardado,guardarPrevDia,guardarPrevHoje,diaFinalizado,arredPrev};
 function duvidas(k){const m=(S.prev&&S.prev[String(k||S.tratoSel)])||{};return S.cadastro.filter(n=>m[n]==='?');}
 /* Ao abrir: no 1º acesso do dia começa no Trato 1; se o trato atual já foi todo feito, passa para o próximo que falta */
 function tratoCompleto(k){const L=lista(k),hj=diaAtivo();return L.length>0&&L.every(x=>HIST.some(r=>r.dia===hj&&r.trato===k&&r.curral===x.nome));}
@@ -1000,7 +1064,7 @@ function escolherTratoDoDia(){
   const hj=hojeKey(),novoDia=S.diaAberto!==hj;
   if(novoDia)S.dataManual=null; // dia novo: volta para a data automática
   if(!novoDia&&!tratoCompleto(S.tratoSel))return false;
-  let alvo=null;for(let k=1;k<=5;k++){if(lista(k).length&&!tratoCompleto(k)){alvo=k;break;}}
+  let alvo=null;for(let k=1;k<=6;k++){if(lista(k).length&&!tratoCompleto(k)){alvo=k;break;}}
   if(alvo==null)alvo=novoDia?1:S.tratoSel;
   const mudou=alvo!==S.tratoSel||novoDia;
   S.diaAberto=hj;S.tratoSel=alvo;
@@ -1094,7 +1158,7 @@ $('tratoSel').addEventListener('change',e=>{
   const L=lista(),regs=regsAtuais();setAtual(Math.max(0,L.findIndex(x=>!feito(x.nome,regs))));
   save();render();toast(`Trato ${S.tratoSel}`);
 });
-function irTrato(k){if(k<1||k>5)return;$('tratoSel').value=String(k);$('tratoSel').dispatchEvent(new Event('change'));window.scrollTo({top:0,behavior:'smooth'});}
+function irTrato(k){if(k<1||k>6)return;$('tratoSel').value=String(k);$('tratoSel').dispatchEvent(new Event('change'));window.scrollTo({top:0,behavior:'smooth'});}
 $('btnProximo').onclick=()=>irTrato(S.tratoSel+1);
 $('btnAnterior').onclick=()=>irTrato(S.tratoSel-1);
 
@@ -1169,23 +1233,78 @@ $('btnDesfazer').onclick=async()=>{
 
 /* ---------- Aba Previsto ---------- */
 let prevTimer,editandoPrev=false;
-function marcarPrev(){S.prevPend=true;S.prevTs=Date.now();save();clearTimeout(prevTimer);prevTimer=setTimeout(()=>sincronizar(),2000);}
+function marcarPrev(){S.prevPend=true;S.prevTs=Date.now();save();clearTimeout(prevTimer);prevTimer=setTimeout(()=>sincronizar(),2000);guardarPrevHoje();}
 const valPrev=v=>v==null?'':(v==='?'?'?':String(v));
+/* ---- Previsto: data (hoje edita; amanhã só depois da leitura de cocho de amanhã; antes só consulta), Todos/Trato N, % IMS ---- */
+const PV={dia:null,per:false,ini:null,fim:null,t:0,ims:false,am:null};
+function pvIni(){if(!PV.dia){PV.dia=hojeKey();PV.ini=PV.fim=PV.dia;}}
+function temLeitura(d){try{return gOk()&&typeof gTodos==='function'&&gTodos('leitura').some(x=>x.dia===d);}catch(e){return false;}}
+function pvEditavel(){pvIni();if(PV.per||modoVer)return false;if(PV.dia===hojeKey())return true;return PV.dia===amanhaKey()&&temLeitura(PV.dia);}
+function pvObj(){pvIni();if(PV.dia===hojeKey())return S.prev;
+  if(PV.dia===amanhaKey()){if(!PV.am)PV.am=JSON.parse(JSON.stringify(prevGuardado(PV.dia)||S.prev||{}));return PV.am;}return prevDoDia(PV.dia);}
+function mapaPv(k){const o=pvObj();k=String(k);if(!o[k])o[k]={};return o[k];}
+function marcarPv(){if(PV.dia===hojeKey())marcarPrev();else if(PV.dia===amanhaKey())guardarPrevDia(PV.dia,PV.am);}
+/* o que a tabela mostra: total de cada curral (Todos), um trato, ou o total do período */
+function pvMapa(){const o=pvObj(),m={};
+  if(PV.per){let d=PV.ini,n=0;while(d<=PV.fim&&n<400){const od=prevDoDia(d);S.cadastro.forEach(c=>{const t=totalCurral(c,od);if(t)m[c]=(m[c]||0)+t;});d=somaDias(d,1);n++;}return m;}
+  if(PV.t===0){S.cadastro.forEach(c=>{const t=totalCurral(c,o);if(t)m[c]=t;});return m;}
+  return Object.assign({},o[String(PV.t)]||{});}
+function pvEstado(){const e=$('pvEstado'),hj=hojeKey();let t='';
+  if(PV.per)t='Período: total previsto de cada curral, somando os dias. Só consulta.';
+  else if(PV.dia<hj)t='Dia que já passou: só consulta.';
+  else if(PV.dia===amanhaKey())t=pvEditavel()?'Previsto de amanhã (vem da leitura de cocho de amanhã). Passa a valer quando virar o dia.':'Previsto de amanhã: faça antes a leitura de cocho de amanhã (Tratos › Leitura). Ela libera quando o trato de hoje terminar.';
+  else if(PV.dia>hj)t='Ainda não dá para lançar: depende da leitura de cocho.';
+  e.textContent=t;e.hidden=!t;}
 function renderPrev(){
-  const k=$('pvTrato').value,m=(S.prev[k])||{};
-  let tot=0,n=0;
-  $('tbPrev').innerHTML=S.cadastro.map((c,i)=>{const v=m[c];if(typeof v==='number'&&v>0){tot+=v;n++;}
-    return `<tr${linhaSel!=='T'&&linhaDe(c)!==linhaSel?' hidden':''}><td class="alca" title="Arraste para mudar a ordem" aria-label="Arrastar ${esc(c)}">☰</td><td class="c" style="cursor:default">${esc(c)}<button class="mini edNome" tabindex="-1" data-a="ed" data-i="${i}" aria-label="Editar nome ${esc(c)}">✎</button></td><td><input class="cell${v==='?'?' duv':''}" type="text" readonly tabindex="-1" inputmode="none" data-n="${i}" value="${esc(valPrev(v))}" placeholder="—" aria-label="Previsto ${esc(c)}"></td><td class="acoes">${modoRemover?`<button class="mini danger" tabindex="-1" data-a="rm" data-i="${i}" aria-label="Excluir ${esc(c)}">✕</button>`:''}</td></tr>`;}).join('');
+  pvIni();if(PV.t>0){$('pvTrato').value=String(PV.t);S.pvTrato=PV.t;}
+  $('pvData').innerHTML=navDiaHTML(PV);$('pvTN').innerHTML=PV.per?'':tratoNavHTML(PV.t);pvEstado();
+  const ed=pvEditavel(),hoje=PV.dia===hojeKey()&&!PV.per,o=pvObj(),m=pvMapa(),ims=PV.ims&&ed&&PV.t===0&&!PV.per;
+  $('viewPrev').classList.toggle('pvSoVer',!ed);
+  $('listaBtns').hidden=!(ed&&hoje&&PV.t>0);$('btnLimparPrev').hidden=!ed;$('btnIms').hidden=!(ed&&PV.t===0);
+  ['btnOrdem','btnCadastrar','btnRemoverCurral'].forEach(id=>$(id).hidden=!hoje);
+  $('pvImsBar').hidden=!ims;$('viewPrev').classList.toggle('pvImsOn',ims);$('viewPrev').classList.toggle('pvTodos',PV.t===0&&!PV.per);$('btnIms').classList.toggle('on',ims);
+  $('pvHead').innerHTML=PV.per?'<tr><th></th><th>Curral</th><th>Total do período (kg)</th><th></th></tr>':
+    PV.t===0?`<tr><th></th><th>Curral</th>${ims?'<th>% IMS</th>':'<th>Tratos</th>'}<th>Total (kg)</th><th></th></tr>`:`<tr><th></th><th>Curral</th><th>Trato ${PV.t} (kg)</th><th></th></tr>`;
+  $('tbPrev').innerHTML=S.cadastro.map((c,i)=>{const v=m[c],esc_=esc(c);
+    const ocultar=linhaSel!=='T'&&linhaDe(c)!==linhaSel;
+    const nome=`<td class="c" style="cursor:default">${esc_}${hoje?`<button class="mini edNome" tabindex="-1" data-a="ed" data-i="${i}" aria-label="Editar nome ${esc_}">✎</button>`:''}</td>`;
+    const cel=`<td><input class="cell${v==='?'?' duv':''}" type="text" readonly tabindex="-1" inputmode="none" data-n="${i}" value="${esc(valPrev(typeof v==='number'?(v||null):v))}" placeholder="—" aria-label="Previsto ${esc_}"${ed?'':' disabled'}></td>`;
+    const ac=`<td class="acoes">${modoRemover&&hoje?`<button class="mini danger" tabindex="-1" data-a="rm" data-i="${i}" aria-label="Excluir ${esc_}">✕</button>`:''}</td>`;
+    if(PV.per)return `<tr${ocultar?' hidden':''}><td></td>${nome}<td class="num"><b>${v?fmt(v):'—'}</b></td><td></td></tr>`;
+    if(PV.t===0){const n=nTratos(c,o);
+      const sel=ed?`<select class="mini ntSel" data-nt="${esc_}">${[1,2,3,4,5,6].map(x=>`<option value="${x}"${x===n?' selected':''}>${x}</option>`).join('')}</select>`:`<b>${n}</b>`;
+      const imsC=ims?`<td><input class="cell imsIn" type="text" inputmode="decimal" data-ims="${esc_}" placeholder="${(()=>{const p=window.gImsDe?gImsDe(c,PV.dia,v||0):null;return p?nf(p,2):'%';})()}" value="${PV.imsV&&PV.imsV[c]!=null?esc(PV.imsV[c]):''}"><small class="imsKg" data-imskg="${esc_}"></small></td>`:'';
+      return `<tr${ocultar?' hidden':''}><td class="alca" title="Arraste para mudar a ordem" aria-label="Arrastar ${esc_}">☰</td>${nome}${ims?imsC:`<td>${sel}</td>`}${cel}${ac}</tr>`;}
+    return `<tr${ocultar?' hidden':''}><td class="alca" title="Arraste para mudar a ordem" aria-label="Arrastar ${esc_}">☰</td>${nome}${cel}${ac}</tr>`;}).join('');
+  if(ims)document.querySelectorAll('#tbPrev .imsIn').forEach(calcIms);
   $('pvTot').title=`${S.cadastro.length} currais cadastrados`;
   resumoPrev();
   if(tecIdx!=null){const x=campoPrev(tecIdx);if(x){x.classList.add('sel');x.value=tecBuf;}}
 }
+ligarNavDia($('pvData'),PV,()=>{fecharTeclado();PV.am=null;PV.ims=false;PV.imsV={};renderPrev();});
+ligarTratoNav($('pvTN'),PV,()=>{fecharTeclado();PV.ims=false;renderPrev();});
+/* nº de tratos do curral: muda e já redivide o total */
+$('tbPrev').addEventListener('change',e=>{const s_=e.target.closest('select[data-nt]');if(!s_||!pvEditavel())return;const c=s_.dataset.nt,n=+s_.value,o=pvObj();
+  setNTratos(c,n);const t=totalCurral(c,o);if(t>0)distribuir(c,t,n,o);marcarPv();if(PV.dia===hojeKey()){editandoPrev=true;render();editandoPrev=false;}renderPrev();toast(`${c}: ${n} trato(s)`);});
+/* % IMS: calcula na hora o total em kg de matéria natural */
+function calcIms(inp){const c=inp.dataset.ims,p=parseNum(inp.value),out=document.querySelector(`#tbPrev [data-imskg="${CSS.escape(c)}"]`);PV.imsV=PV.imsV||{};PV.imsV[c]=inp.value;
+  if(!out)return;if(!(p>0)){out.textContent='';return;}const kg=window.gMnIms?gMnIms(c,p,PV.dia):null;out.textContent=kg==null?'sem lote':'→ '+fmt(arredPrev(kg))+' kg';}
+$('tbPrev').addEventListener('input',e=>{if(e.target.matches('.imsIn'))calcIms(e.target);});
+$('btnIms').onclick=()=>{if(!pvEditavel())return;PV.ims=!PV.ims;PV.imsV={};renderPrev();};
+$('pvImsCanc').onclick=()=>{PV.ims=false;PV.imsV={};renderPrev();};
+$('pvImsAplicar').onclick=()=>{if(!pvEditavel())return;const o=pvObj();let n=0,sem=[];
+  document.querySelectorAll('#tbPrev .imsIn').forEach(inp=>{const c=inp.dataset.ims,p=parseNum(inp.value);if(!(p>0))return;const kg=window.gMnIms?gMnIms(c,p,PV.dia):null;if(kg==null){sem.push(c);return;}
+    const antes=snapTratos(c,o);distribuir(c,arredPrev(kg),nTratos(c,o),o);desfPrev.push({d:PV.dia,k:'T',nome:c,antes});n++;});
+  if(!n){toast(sem.length?'Sem lote/ração cadastrado para: '+sem.join(', '):'Digite o % de IMS de algum curral');return;}
+  marcarPv();if(PV.dia===hojeKey()){editandoPrev=true;render();editandoPrev=false;}PV.ims=false;PV.imsV={};renderPrev();
+  toast(`Previsto calculado por % IMS em ${n} curral(is)`+(sem.length?` · sem lote: ${sem.join(', ')}`:''));};
+function snapTratos(c,o){const r={};for(let k=1;k<=MAXT;k++){const v=(o[k]||{})[c];if(v!==undefined)r[k]=v;}return r;}
 /* Soma do previsto por linha: C = confinamento, P = pasto TIP */
 const linhaDe=n=>/^C-/.test(n)?'C':/^P-/.test(n)?'P':'O';
 function localDe(n){const l=linhaDe(n);return l==='C'?'Confinamento':l==='P'?'Pasto':'';}
 let linhaSel='T';
 function somaLinhas(){
-  const k=$('pvTrato').value,m=S.prev[k]||{},t={T:[0,0],C:[0,0],P:[0,0]};
+  const m=pvMapa(),t={T:[0,0],C:[0,0],P:[0,0]};
   S.cadastro.forEach(c=>{const v=m[c];if(typeof v==='number'&&v>0){t.T[0]+=v;t.T[1]++;const l=linhaDe(c);if(t[l]){t[l][0]+=v;t[l][1]++;}}});
   const nome={T:'Todos',C:'Confinamento',P:'Pasto'}[linhaSel],x=t[linhaSel];
   $('somaLinha').innerHTML=`<b>${fmt(x[0])} kg</b> <span>${x[1]} ${x[1]===1?'curral':'currais'}</span>`+
@@ -1194,34 +1313,41 @@ function somaLinhas(){
 }
 $('linhas').addEventListener('click',e=>{const b=e.target.closest('button[data-l]');if(!b)return;linhaSel=b.dataset.l;if(typeof fecharTeclado==='function')fecharTeclado();renderPrev();});
 function resumoPrev(){
-  const k=$('pvTrato').value,m=(S.prev[k])||{};let tot=0,n=0;
+  const k=PV.t||'',m=pvMapa();let tot=0,n=0;
   S.cadastro.forEach(c=>{const v=m[c];if(typeof v==='number'&&v>0){tot+=v;n++;}});
   $('pvTot').textContent=`${n} curral(is) · ${fmt(tot)} kg`;
   somaLinhas();
-  {const loc=linhaSel==='C'?' do Confinamento':linhaSel==='P'?' do Pasto':'';$('btnLimparPrev').textContent=`Limpar previsto${loc} do Trato ${k}`;
+  {const loc=linhaSel==='C'?' do Confinamento':linhaSel==='P'?' do Pasto':'';$('btnLimparPrev').textContent=PV.t?`Limpar previsto${loc} do Trato ${k}`:`Limpar previsto${loc} (todos os tratos)`;
    $('btnLimparPrev').disabled=!Object.keys(m).some(c=>linhaSel==='T'||linhaDe(c)===linhaSel);}
-  const dv=duvidas(k);
+  const dv=PV.t&&PV.dia===hojeKey()?duvidas(k):[];
   $('pvAviso').hidden=!dv.length;$('pvAviso').textContent=dv.length?`${dv.length} curral(is) com "?": corrija o número.`:'';
 }
-$('pvTrato').addEventListener('change',()=>{fecharTeclado();S.pvTrato=+$('pvTrato').value;save();fecharEdicao();renderPrev();});
+
 /* Teclado numérico do próprio app: não fecha ao passar para o próximo curral */
 let tecIdx=null,tecBuf='',tecNovo=false,tecOrig='';
 /* Voltar: guarda as alterações do Previsto para desfazer uma a uma */
 const desfPrev=[];
-function marcarVoltar(){const b=$('tecVoltar');if(b)b.disabled=!(tecIdx!=null&&tecBuf!==tecOrig)&&!desfPrev.some(d=>d.k===$('pvTrato').value);}
+const desfChave=()=>PV.t?String(PV.t):'T';
+function marcarVoltar(){const b=$('tecVoltar');if(b)b.disabled=!(tecIdx!=null&&tecBuf!==tecOrig)&&!desfPrev.some(d=>d.k===desfChave()&&d.d===PV.dia);}
 function campoPrev(i){return document.querySelector(`#tbPrev input[data-n="${i}"]`);}
 function aplicarPrev(i,t){
-  const nome=S.cadastro[i];if(nome==null)return true;const k=$('pvTrato').value;const m=mapaPrev(k);
+  const nome=S.cadastro[i];if(nome==null||!pvEditavel())return true;
+  if(PV.t===0){const o=pvObj();t=String(t).trim();const v=t===''?0:parseNum(t);if(isNaN(v)||v<0||t==='?'){toast('Digite uma quantidade válida');return false;}
+    const antesT=totalCurral(nome,o);if(Math.round(v)!==Math.round(antesT)){const antes=snapTratos(nome,o);distribuir(nome,v,nTratos(nome,o),o);desfPrev.push({d:PV.dia,k:'T',nome,antes});if(desfPrev.length>100)desfPrev.shift();
+      marcarPv();if(PV.dia===hojeKey()){editandoPrev=true;render();editandoPrev=false;}}
+    const x=campoPrev(i);if(x)x.value=valPrev(totalCurral(nome,o)||null);resumoPrev();return true;}
+  const k=String(PV.t);const m=mapaPv(k);
   t=String(t).trim();const antes=m[nome];
   if(t===''){delete m[nome];}
   else if(t==='?'){m[nome]='?';}
   else{const v=parseNum(t);if(isNaN(v)||v<0){toast('Digite uma quantidade válida');return false;}m[nome]=v;}
-  if(antes!==m[nome]){desfPrev.push({k:String(k),nome,antes});if(desfPrev.length>100)desfPrev.shift();marcarPrev();editandoPrev=true;render();editandoPrev=false;}
+  if(antes!==m[nome]){desfPrev.push({d:PV.dia,k:String(k),nome,antes});if(desfPrev.length>100)desfPrev.shift();marcarPv();if(PV.dia===hojeKey()){editandoPrev=true;render();editandoPrev=false;}}
   const x=campoPrev(i);if(x){x.value=valPrev(m[nome]);x.classList.toggle('duv',m[nome]==='?');}
   resumoPrev();return true;
 }
 function abrirTeclado(i){
   if(bloqueado())return;
+  if(!pvEditavel()){toast(PV.per?'Período: só consulta':PV.dia<hojeKey()?'Dia que já passou: só consulta':'Previsto de amanhã: faça antes a leitura de cocho de amanhã');return;}
   if(tecIdx!=null&&tecIdx!==i&&!aplicarPrev(tecIdx,tecBuf))return;
   document.querySelectorAll('#tbPrev input.sel').forEach(x=>x.classList.remove('sel'));
   const x=campoPrev(i);if(!x){fecharTeclado();return;}
@@ -1266,11 +1392,12 @@ function teclar(k){
   if(k==='fechar'){fecharTeclado();return;}
   if(k==='voltar'){
     if(tecBuf!==tecOrig){tecBuf=tecOrig;tecNovo=true;const x=campoPrev(tecIdx);if(x)x.value=tecBuf;$('tecValor').textContent=tecBuf||'—';marcarVoltar();toast('Voltou para o valor anterior');return;}
-    const kk=$('pvTrato').value;let j=desfPrev.length-1;while(j>=0&&desfPrev[j].k!==kk)j--;
+    const kk=desfChave();let j=desfPrev.length-1;while(j>=0&&!(desfPrev[j].k===kk&&desfPrev[j].d===PV.dia))j--;
     if(j<0){toast('Nada para voltar');marcarVoltar();return;}
-    const d=desfPrev.splice(j,1)[0],m=mapaPrev(kk);
-    if(d.antes===undefined)delete m[d.nome];else m[d.nome]=d.antes;
-    marcarPrev();editandoPrev=true;render();editandoPrev=false;
+    const d=desfPrev.splice(j,1)[0],o=pvObj();let m;
+    if(kk==='T'){for(let q=1;q<=MAXT;q++){const mm=mapaPv(q);if(d.antes[q]===undefined)delete mm[d.nome];else mm[d.nome]=d.antes[q];}m={[d.nome]:totalCurral(d.nome,o)||undefined};d.antes=Object.values(d.antes).reduce((a,b)=>a+(+b||0),0)||undefined;}
+    else{m=mapaPv(kk);if(d.antes===undefined)delete m[d.nome];else m[d.nome]=d.antes;}
+    marcarPv();if(PV.dia===hojeKey()){editandoPrev=true;render();editandoPrev=false;}
     const i=S.cadastro.indexOf(d.nome),cx=campoPrev(i);if(cx){cx.value=valPrev(m[d.nome]);cx.classList.toggle('duv',m[d.nome]==='?');}
     resumoPrev();
     if(cx&&!cx.closest('tr').hidden){tecIdx=null;abrirTeclado(i);}else marcarVoltar();
@@ -1289,13 +1416,17 @@ document.addEventListener('keydown',e=>{if(tecIdx==null)return;
   if(/^[0-9]$/.test(e.key))teclar(e.key);else if(e.key==='Backspace')teclar('del');else if(e.key==='Enter'||e.key==='Tab'){e.preventDefault();teclar('ok');}else if(e.key==='Escape')teclar('fechar');else if(e.key==='?')teclar('?');});
 document.addEventListener('pointerdown',e=>{if(tecIdx!=null&&!e.target.closest('#teclado,#tbPrev input'))fecharTeclado();},true);
 const nomeLocal=()=>linhaSel==='C'?'do Confinamento':linhaSel==='P'?'do Pasto':'';
-$('btnLimparPrev').onclick=()=>{
-  const k=$('pvTrato').value,m=S.prev[k]||{};
+$('btnLimparPrev').onclick=()=>{if(!pvEditavel())return;
+  if(PV.t===0){const o=pvObj(),loc=nomeLocal();const alvo=S.cadastro.filter(c=>totalCurral(c,o)>0&&(linhaSel==='T'||linhaDe(c)===linhaSel));
+    if(!alvo.length){toast('Nada para limpar');return;}
+    if(!confirm(`Limpar o previsto ${loc?loc+' ':''}de TODOS os tratos? São ${alvo.length} curral(is).`))return;
+    alvo.forEach(c=>{for(let q=1;q<=MAXT;q++){if(o[q])delete o[q][c];}});marcarPv();render();renderPrev();toast('Previsto limpo');return;}
+  const k=String(PV.t),m=pvObj()[k]||{};
   const alvo=Object.keys(m).filter(c=>linhaSel==='T'||linhaDe(c)===linhaSel),n=alvo.length,loc=nomeLocal();
   if(!n){toast(`Nada para limpar${loc?' '+loc:''} no Trato ${k}`);return;}
   if(!confirm(`Limpar o previsto ${loc?loc+' ':'(todos os currais) '}do Trato ${k}? São ${n} curral(is).\nOs currais cadastrados e a ordem continuam.`))return;
-  if(linhaSel==='T')S.prev[k]={};else{const nv=Object.assign({},m);alvo.forEach(c=>delete nv[c]);S.prev[k]=nv;}
-  marcarPrev();render();renderPrev();toast(`Previsto ${loc?loc+' ':''}do Trato ${k} limpo`);
+  const o_=pvObj();if(linhaSel==='T')o_[k]={};else{const nv=Object.assign({},m);alvo.forEach(c=>delete nv[c]);o_[k]=nv;}
+  marcarPv();render();renderPrev();toast(`Previsto ${loc?loc+' ':''}do Trato ${k} limpo`);
 };
 $('tbPrev').addEventListener('click',e=>{
   const b=e.target.closest('button[data-a]');if(!b)return;if(bloqueado())return;const i=+b.dataset.i,C=S.cadastro,n=C[i];
@@ -1541,13 +1672,13 @@ async function enviarImagem(secoes,nome){if(!secoes.length||!secoes.some(s=>s.li
 $('btnImg').onclick=()=>enviarImagem(secaoTratar(),`Trato ${S.tratoSel} - ${dataArq(diaAtivo())}.png`);
 $('btnXls').onclick=()=>{const r=regsAtuais();if(r.length)compartilharArquivo(gerarXlsx(r),nomeArquivo(r),XT);};
 // Histórico: escolhe Por trato / Por curral / Todos
-$('hImg').onclick=()=>{if(filtrados().length)$('escolhaImg').hidden=false;};
+$('hImg').onclick=()=>{if(!filtrados().length)return;if(HD.per){const b=document.querySelector('#escolhaImg button[data-img="curral"]');if(b){b.click();return;}}$('escolhaImg').hidden=false;};
 $('escolhaImg').addEventListener('click',async e=>{const b=e.target.closest('button[data-img]');if(!b){if(e.target.id==='escolhaImg')$('escolhaImg').hidden=true;return;}
   const tipo=b.dataset.img;$('escolhaImg').hidden=true;if(tipo==='cancelar')return;
   const f=filtrados();if(!f.length)return;
   const blobs=[],nomes=[];
   if(tipo==='trato'||tipo==='todos'){for(const g of secoesHist()){blobs.push(await desenharTabela([secaoTratoImg(g.cab,g.linhas)]));nomes.push(`Trato ${g.trato} - ${dataArq(g.dia)}.png`);}}
-  if(tipo==='curral'||tipo==='todos'){const t=$('fTrato').value;
+  if(tipo==='curral'||tipo==='todos'){const t=HD.per?'':(HD.t||'');
     const cab=`Por curral · ${rotuloData()} · ${t?'Trato '+t:'todos os tratos'}${localSel==='C'?' · Confinamento':localSel==='P'?' · Pasto':''}`;
     blobs.push(await desenharTabela([secaoCurralImg(f,cab)]));nomes.push(`${nomeBase(f)} - Por curral.png`);}
   compartilharVarios(blobs,nomes);
@@ -1562,10 +1693,10 @@ function aba(qual){
   if(typeof fecharBal==='function'&&balCampo)fecharBal();
   if(qual!=='prev'&&typeof modoOrdem==='function')modoOrdem(false);
   if(typeof camStream!=='undefined'&&camStream)fecharCamera();
-  $('viewPrev').hidden=qual!=='prev';$('viewTrato').hidden=qual!=='trato';$('viewHist').hidden=qual!=='hist';$('viewGest').hidden=qual!=='gest';$('viewCarga').hidden=qual!=='carga';$('viewAuto').hidden=qual!=='auto';$('viewCfgT').hidden=qual!=='cfgt';$('viewAutoC').hidden=qual!=='autoc';$('tabAutoC').setAttribute('aria-selected',String(qual==='autoc'));if(qual==='autoc'&&window.acAoAbrir)acAoAbrir();$('tabCfgT').setAttribute('aria-selected',String(qual==='cfgt'));if(qual==='cfgt'&&window.cfgTAoAbrir)cfgTAoAbrir();$('tabAuto').setAttribute('aria-selected',String(qual==='auto'));if(qual==='auto'&&window.aAoAbrir)aAoAbrir();$('tabCarga').setAttribute('aria-selected',String(qual==='carga'));if(qual==='carga'&&window.cAoAbrir)cAoAbrir();
-  if(qual==='hist'&&$('viewHist').dataset.aberta!=='1'){$('fDia').value='hoje';$('hCal').hidden=true;localSel='T';}
+  $('viewPrev').hidden=qual!=='prev';$('viewTrato').hidden=qual!=='trato';$('viewHist').hidden=qual!=='hist';$('viewGest').hidden=!(qual==='gest'||qual==='leit');window.abaAtual=qual;$('tabLeit').setAttribute('aria-selected',String(qual==='leit'));if(qual==='leit'&&window.gAbrir)gAbrir('leit');$('viewCarga').hidden=qual!=='carga';$('viewAuto').hidden=qual!=='auto';$('viewAutoC').hidden=qual!=='autoc';$('tabAutoC').setAttribute('aria-selected',String(qual==='autoc'));if(qual==='autoc'&&window.acAoAbrir)acAoAbrir();$('tabAuto').setAttribute('aria-selected',String(qual==='auto'));if(qual==='auto'&&window.aAoAbrir)aAoAbrir();$('tabCarga').setAttribute('aria-selected',String(qual==='carga'));if(qual==='carga'&&window.cAoAbrir)cAoAbrir();
+  if(qual==='hist'&&$('viewHist').dataset.aberta!=='1'){HD.dia=HD.ini=HD.fim=hojeKey();HD.per=false;HD.t=0;localSel='T';}
   $('viewHist').dataset.aberta=qual==='hist'?'1':'';
-  if(qual==='prev'&&$('viewPrev').dataset.aberta!=='1')linhaSel='T'; // filtro do Previsto volta para Todos
+  if(qual==='prev'&&$('viewPrev').dataset.aberta!=='1'){linhaSel='T';PV.dia=PV.ini=PV.fim=hojeKey();PV.per=false;PV.t=0;PV.ims=false;PV.am=null;virarDiaPrev();} // Previsto abre em hoje, Todos
   $('viewPrev').dataset.aberta=qual==='prev'?'1':'';
   if(qual==='trato')caberTabela($('tbCur'));if(qual==='hist')caberTabela($('tbHist'));
   if(['trato','carga','auto','autoc'].includes(qual)&&avModo!==qual){avModo=qual;if(typeof agendarAoVivo==='function')agendarAoVivo();}
@@ -1573,11 +1704,11 @@ function aba(qual){
   $('tabMan').setAttribute('aria-selected',String(modoAtual==='man'));$('tabModoAuto').setAttribute('aria-selected',String(modoAtual==='auto'));
   $('tabTrato').hidden=$('tabCarga').hidden=modoAtual!=='man';$('tabAuto').hidden=$('tabAutoC').hidden=modoAtual!=='auto';$('modoTit').textContent=modoAtual==='auto'?'⚡ Automação':'✋ Manual';
   if(!menuAberto)$('subModo').hidden=true;
-  $('tabPrev').setAttribute('aria-selected',String(qual==='prev'));$('tabTrato').setAttribute('aria-selected',String(qual==='trato'));$('tabHist').setAttribute('aria-selected',String(qual==='hist'));if(menuAberto)abrirMenu(qual==='gest'?'gest':'trato');if(qual!=='gest')abaTrato=qual;if(qual==='gest'&&window.gAoAbrir)gAoAbrir();
+  $('tabPrev').setAttribute('aria-selected',String(qual==='prev'));$('tabTrato').setAttribute('aria-selected',String(qual==='trato'));$('tabHist').setAttribute('aria-selected',String(qual==='hist'));if(menuAberto)abrirMenu(qual==='gest'?'gest':'trato');if(qual!=='gest')abaTrato=qual;if(qual==='gest'&&window.gAbrir)gAbrir('gest');
   if(qual==='hist')renderHist();if(qual==='prev')renderPrev();window.scrollTo({top:0});
 }
 let abaTrato='trato';
-var modoAtual='man';const ultModo={man:'trato',auto:'auto'};
+var modoAtual='man';const ultModo={man:'trato',auto:'autoc'};
 /* menu de cima: começa só com Gestão e Tratos; toca para abrir os botões, toca de novo para esconder */
 var menuAberto=null;
 function abrirMenu(g){menuAberto=g;$('subGest').hidden=g!=='gest';$('subTrato').hidden=g!=='trato';$('subModo').hidden=g!=='trato'||!modoAtual;
@@ -1585,6 +1716,7 @@ function abrirMenu(g){menuAberto=g;$('subGest').hidden=g!=='gest';$('subTrato').
 function tocarGrupo(g){if(menuAberto===g){abrirMenu(null);return;}abrirMenu(g);aba(g==='gest'?'gest':(abaTrato||'trato'));}
 $('tabGrpTrato').onclick=()=>tocarGrupo('trato');
 $('tabPrev').onclick=()=>aba('prev');
+$('tabLeit').onclick=()=>aba('leit');
 $('tabMan').onclick=()=>aba(ultModo.man||'trato');
 $('tabModoAuto').onclick=()=>aba(ultModo.auto||'auto');
 $('tabTrato').onclick=()=>aba('trato');
@@ -1592,55 +1724,61 @@ $('tabHist').onclick=()=>aba('hist');
 
 /* ---------- Histórico ---------- */
 /* Filtro de data do Histórico: Hoje, Semana, Mês, Ano, Todos ou Período (data inicial e final) */
-const HF={ini:null,fim:null,campo:null,mes:null};let localSel='T';
+/* ---------- data com setas (igual ao Resumo do dia) + caixinha de Período ---------- */
+const SEMN=['dom.','seg.','ter.','qua.','qui.','sex.','sáb.'];
+function rotDia(d){const hj=hojeKey(),[y,m,dd]=d.split('-').map(Number),sem=SEMN[new Date(y,m-1,dd).getDay()];
+  const tag=d===hj?'Hoje':d===somaDias(hj,-1)?'Ontem':d===somaDias(hj,1)?'Amanhã':'';
+  return `${sem} ${diaBR(d).slice(0,6)}${diaBR(d).slice(8)}${tag?` <i>${tag}</i>`:''}`;}
+function navDiaHTML(st,semPer){const hj=hojeKey();
+  const per=semPer?'':`<label class="dPer"><input type="checkbox" data-dp ${st.per?'checked':''}> Período</label>`;
+  if(st.per)return `<div class="dLinha dSoPer">${per}</div><div class="dPerCampos">
+    <div><label>Data inicial</label><label class="gDataBox"><span>${rotDia(st.ini)}</span><input type="date" data-di value="${st.ini}"></label></div>
+    <div><label>Data final</label><label class="gDataBox"><span>${rotDia(st.fim)}</span><input type="date" data-df value="${st.fim}"></label></div></div>`;
+  return `<div class="gNavData"><button class="gSeta" data-dn="-1" aria-label="Dia anterior">◀</button>
+    <label class="gDataBox"><span>${rotDia(st.dia)}</span><input type="date" data-dd value="${st.dia}"></label>
+    <button class="gSeta" data-dn="1" aria-label="Dia seguinte">▶</button></div>
+    <div class="dLinha dSoPer">${st.dia!==hj?'<button class="mini gHoje" data-dh>Voltar para hoje</button>':''}${per}</div>`;}
+function ligarNavDia(box,st,mudou){
+  box.addEventListener('click',e=>{const i=e.target.closest('.gDataBox input');if(i&&i.showPicker){try{i.showPicker();}catch(_){}}
+    const b=e.target.closest('[data-dn],[data-dh]');if(!b)return;
+    st.dia=b.dataset.dh!=null?hojeKey():somaDias(st.dia,+b.dataset.dn);mudou();});
+  box.addEventListener('change',e=>{const t=e.target;
+    if(t.matches('[data-dd]')){if(t.value){st.dia=t.value;mudou();}}
+    else if(t.matches('[data-dp]')){st.per=t.checked;if(st.per){st.ini=st.dia;st.fim=st.dia;}mudou();
+      if(st.per)setTimeout(()=>{const x=box.querySelector('[data-di]');if(x&&x.showPicker){try{x.showPicker();}catch(_){}}},50);}
+    else if(t.matches('[data-di]')){if(t.value){st.ini=t.value;if(st.fim<st.ini)st.fim=st.ini;mudou();
+      setTimeout(()=>{const x=box.querySelector('[data-df]');if(x&&x.showPicker){try{x.showPicker();}catch(_){}}},80);}}  // escolheu a inicial: já abre a final
+    else if(t.matches('[data-df]')){if(t.value){st.fim=t.value;if(st.fim<st.ini)st.ini=st.fim;mudou();}}});}
+/* Todos | ◀ Trato N ▶ */
+function tratoNavHTML(t){return `<div class="tNav"><button data-tt="0" class="${t===0?'sel':''}">Todos</button>
+  <div class="tSel ${t>0?'sel':''}"><button data-tp="-1" ${t===0?'disabled':''} aria-label="Trato anterior">◀</button><b data-tt="${t||1}">Trato ${t||1}</b><button data-tp="1" ${t>=MAXT?'disabled':''} aria-label="Próximo trato">▶</button></div></div>`;}
+function ligarTratoNav(box,st,mudou){box.addEventListener('click',e=>{const b=e.target.closest('[data-tt],[data-tp]');if(!b||b.disabled)return;
+  st.t=b.dataset.tt!=null?+b.dataset.tt:Math.max(0,Math.min(MAXT,(st.t||0)+(+b.dataset.tp)));mudou();});}
+const HD={dia:null,per:false,ini:null,fim:null,t:0};let localSel='T';
+function pintarFiltrosHist(){if(!HD.dia){HD.dia=hojeKey();HD.ini=HD.fim=HD.dia;}$('hData').innerHTML=navDiaHTML(HD);$('hTN').innerHTML=HD.per?'':tratoNavHTML(HD.t);}
+ligarNavDia($('hData'),HD,()=>renderHist());ligarTratoNav($('hTN'),HD,()=>renderHist());
 $('hLocal').addEventListener('click',e=>{const b=e.target.closest('button[data-loc]');if(!b)return;localSel=b.dataset.loc;renderHist();});
-function intervaloHist(){const hj=hojeKey(),d=new Date(),v=$('fDia').value;
-  if(v==='hoje')return [hj,hj];
-  if(v==='ontem'||v==='amanha'){const x=new Date(d);x.setDate(d.getDate()+(v==='ontem'?-1:1));const o=diaKey(x);return [o,o];}
-  if(v==='semana'){const x=new Date(d);x.setDate(d.getDate()-6);return [diaKey(x),null];} // últimos 7 dias (hoje e os 6 anteriores)
-  if(v==='mes')return [diaKey(new Date(d.getFullYear(),d.getMonth(),1)),null];
-  if(v==='ano')return [diaKey(new Date(d.getFullYear(),0,1)),null];
-  if(v==='periodo'){const a=HF.ini||hj,b=HF.fim||a;return a<=b?[a,b]:[b,a];}
-  return [null,null];}
-function rotuloData(){const v=$('fDia').value,[a,b]=intervaloHist(),hj=hojeKey();
-  if(v==='todos')return 'todos os dias';if(v==='hoje')return diaBR(hj);if(v==='ontem')return 'Ontem '+diaBR(a);if(v==='amanha')return 'Amanhã '+diaBR(a);
-  const nome={semana:'Semana',mes:'Mês',ano:'Ano',periodo:'Período'}[v]||'';
-  const f=b||hj;return `${nome} ${diaBR(a)}${a===f?'':' a '+diaBR(f)}`;}
+function intervaloHist(){if(!HD.dia){HD.dia=hojeKey();HD.ini=HD.fim=HD.dia;}return HD.per?[HD.ini,HD.fim]:[HD.dia,HD.dia];}
+function rotuloData(){const [a,b]=intervaloHist();return HD.per?`Período ${diaBR(a)}${a===b?'':' a '+diaBR(b)}`:diaBR(a);}
 function filtrados(){
-  const [a,b]=intervaloHist(),t=$('fTrato').value;
-  return HIST.filter(r=>(!a||r.dia>=a)&&(!b||r.dia<=b)&&(!t||r.trato===+t)&&(localSel==='T'||linhaDe(r.curral)===localSel));
+  const [a,b]=intervaloHist(),t=HD.per?0:HD.t;
+  return HIST.filter(r=>(!a||r.dia>=a)&&(!b||r.dia<=b)&&(!t||r.trato===t)&&(localSel==='T'||linhaDe(r.curral)===localSel));
 }
-function mostrarPeriodo(){const p=$('fDia').value==='periodo';$('fPeriodo').hidden=!p;if(!p)$('hCal').hidden=true;
-  if(p){if(!HF.ini)HF.ini=hojeKey();if(!HF.fim)HF.fim=HF.ini;$('fIni').textContent='📅 '+diaBR(HF.ini);$('fFim').textContent='📅 '+diaBR(HF.fim);
-    $('fIni').classList.toggle('ativo',HF.campo==='ini'&&!$('hCal').hidden);$('fFim').classList.toggle('ativo',HF.campo==='fim'&&!$('hCal').hidden);}}
-function desenharHCal(){const [y,m]=HF.mes,primeiro=new Date(y,m,1),dias=new Date(y,m+1,0).getDate(),ini=primeiro.getDay(),hj=hojeKey(),am=amanhaKey(),sel=HF[HF.campo];
-  let h=`<div class="calTopo"><button data-c="ant" aria-label="Mês anterior">◀</button><b>${HF.campo==='ini'?'Data inicial':'Data final'} · ${MESES[m]} ${y}</b><button data-c="prox" aria-label="Próximo mês" ${diaKey(new Date(y,m+1,1))>am?'disabled':''}>▶</button></div>
-    <div class="calSem"><span>D</span><span>S</span><span>T</span><span>Q</span><span>Q</span><span>S</span><span>S</span></div><div class="calDias">`;
-  for(let i=0;i<ini;i++)h+='<span></span>';
-  for(let d=1;d<=dias;d++){const k=diaKey(new Date(y,m,d));const dentro=HF.ini&&HF.fim&&k>=HF.ini&&k<=HF.fim;
-    h+=`<button data-d="${k}" class="${k===sel?'sel':''} ${k===hj?'hoje':''} ${dentro&&k!==sel?'faixa':''}" ${k>am?'disabled':''}>${d}</button>`;}
-  h+=`</div><div class="row"><button data-c="hoje" class="lima">Hoje</button><button data-c="fechar">Fechar</button></div>`;
-  $('hCal').innerHTML=h;}
-function abrirHCal(campo){const c=$('hCal');if(!c.hidden&&HF.campo===campo){c.hidden=true;mostrarPeriodo();return;}
-  HF.campo=campo;const [y,m]=(HF[campo]||hojeKey()).split('-').map(Number);HF.mes=[y,m-1];desenharHCal();c.hidden=false;mostrarPeriodo();}
-$('fIni').onclick=()=>abrirHCal('ini');$('fFim').onclick=()=>abrirHCal('fim');
-$('hCal').addEventListener('click',e=>{const b=e.target.closest('button');if(!b||b.disabled)return;let k=b.dataset.d;const c=b.dataset.c;
-  if(c==='ant'){HF.mes=HF.mes[1]?[HF.mes[0],HF.mes[1]-1]:[HF.mes[0]-1,11];desenharHCal();return;}
-  if(c==='prox'){HF.mes=HF.mes[1]<11?[HF.mes[0],HF.mes[1]+1]:[HF.mes[0]+1,0];desenharHCal();return;}
-  if(c==='fechar'){$('hCal').hidden=true;mostrarPeriodo();return;}
-  if(c==='hoje')k=hojeKey();
-  if(!k)return;
-  if(HF.campo==='ini'){HF.ini=k;HF.fim=k;}   // data inicial já vira a final também; muda a final se quiser
-  else{HF.fim=k;if(HF.ini&&k<HF.ini)HF.ini=k;}
-  $('hCal').hidden=true;mostrarPeriodo();renderHist();});
+/* período: só o total de cada curral, sem separar os tratos */
+function totaisPorCurral(regs){const m=new Map();regs.forEach(r=>{const x=m.get(r.curral)||{curral:r.curral,prev:0,forn:0,n:0};x.prev+=r.prev||0;x.forn+=r.forn||0;x.n++;m.set(r.curral,x);});
+  const ordem=S.cadastro;return [...m.values()].sort((a,b)=>{const ia=ordem.indexOf(a.curral),ib=ordem.indexOf(b.curral);return (ia<0?999:ia)-(ib<0?999:ib)||alfa(a.curral,b.curral);});}
 function renderHist(){
-  mostrarPeriodo();
+  pintarFiltrosHist();
   document.querySelectorAll('#hLocal button[data-loc]').forEach(b=>b.classList.toggle('sel',b.dataset.loc===localSel));
   const regs=filtrados();
   const p=regs.reduce((a,r)=>a+r.prev,0),f=regs.reduce((a,r)=>a+r.forn,0);
   $('hPrev').textContent=regs.length?fmt(p):'—';$('hReal').textContent=regs.length?fmt(f):'—';
   $('hDif').textContent=regs.length?sgn(f-p):'—';$('hDif').className='num '+(regs.length?classeDesv(f-p,p):'');
   $('hN').textContent=regs.length?`${regs.length} registro(s)`:'';
+  if(HD.per){selModo=false;const L=totaisPorCurral(regs),[pa,pb]=intervaloHist();
+    $('tbHist').innerHTML=regs.length?`<tr class="grp"><td colspan="5">Total do período · ${diaBR(pa)} a ${diaBR(pb)}<span>${fmt(f)} kg (${sgn(f-p)})</span></td></tr>`+
+      L.map(x=>`<tr><td class="hora">${x.n}×</td><td class="c">${esc(x.curral)}</td><td>${fmt(x.prev)}</td><td><b>${fmt(x.forn)}</b></td><td class="${classeDesv(x.forn-x.prev,x.prev)}">${sgn(x.forn-x.prev)}</td></tr>`).join(''):`<tr><td colspan="5" class="note" style="text-align:left">Nenhum registro nesse período.</td></tr>`;}
+  else
   $('tbHist').innerHTML=regs.length?grupos(regs).reverse().map(g=>{
     const gp=g.rs.reduce((a,r)=>a+r.prev,0),gf=g.rs.reduce((a,r)=>a+r.forn,0);
     return `<tr class="grp"><td colspan="5">${diaBR(g.dia)} · Trato ${g.trato}<span>${fmt(gf)} kg (${sgn(gf-gp)})</span></td></tr>`+
@@ -1648,15 +1786,13 @@ function renderHist(){
   }).join(''):`<tr><td colspan="5" class="note" style="text-align:left">Nenhum registro para esse filtro.</td></tr>`;
   caberTabela($('tbHist'));
   ['hWa','hCopiar','hExcel','hShare','hApagar','hImg','hXls'].forEach(id=>$(id).disabled=!regs.length);
-  $('hApagar').hidden=selModo;$('selBar').hidden=!selModo;
+  $('hApagar').hidden=selModo||HD.per;$('selBar').hidden=!selModo;
   if(selModo){$('selInfo').textContent=sel.size?`${sel.size} registro(s) selecionado(s).`:'Toque nos registros que quer apagar.';$('selApagar').disabled=!sel.size;$('selApagar').textContent=sel.size?`Apagar selecionados (${sel.size})`:'Apagar selecionados';}
   const nd=new Set(HIST.map(r=>r.dia)).size;
   $('dbInfo').textContent=`${HIST.length.toLocaleString('pt-BR')} registros guardados neste celular, de ${nd} dia(s).`;
   infoBackup();
   statusNuvem();
 }
-$('fDia').addEventListener('change',()=>{if($('fDia').value==='periodo'){HF.ini=HF.ini||hojeKey();HF.fim=HF.fim||HF.ini;}else $('hCal').hidden=true;renderHist();if($('fDia').value==='periodo')abrirHCal('ini');});
-$('fTrato').addEventListener('change',renderHist);
 $('hCopiar').onclick=()=>copiar(mensagem(filtrados()),'Lista copiada');
 $('hWa').onclick=()=>whats(mensagem(filtrados()));
 $('hExcel').onclick=()=>exportar(filtrados());
@@ -2163,7 +2299,7 @@ async function fotoBase64(file){
 let REV=[];
 function renderRev(){
   $('tbRev').innerHTML=REV.map((x,i)=>`<tr><td class="c" style="cursor:default">${esc(x.nome)}${x.obs?`<br><small class="note">${esc(x.obs)}</small>`:''}</td>
-    <td><select class="mini" data-t="${i}">${[1,2,3,4,5].map(t=>`<option value="${t}" ${t===x.trato?'selected':''}>${t}</option>`).join('')}</select></td>
+    <td><select class="mini" data-t="${i}">${[1,2,3,4,5,6].map(t=>`<option value="${t}" ${t===x.trato?'selected':''}>${t}</option>`).join('')}</select></td>
     <td><input class="cell${x.prev==='?'?' duv':''}" type="text" inputmode="decimal" data-v="${i}" value="${esc(valPrev(x.prev))}"></td>
     <td><button class="mini" data-x="${i}" aria-label="Tirar ${esc(x.nome)}">✕</button></td></tr>`).join('');
 }
@@ -2418,7 +2554,7 @@ async function checarVersao(){
     try{sessionStorage.setItem('recarregadoPara',v+'|'+Date.now());}catch(e){}recarregarQuandoPuder();
   }catch(e){}
 }
-setTimeout(checarVersao,3000);setInterval(checarVersao,3*60000);
+setTimeout(checarVersao,3000);setTimeout(()=>{try{virarDiaPrev();}catch(e){}},2500);setInterval(()=>{try{virarDiaPrev();}catch(e){}},60000);setInterval(checarVersao,3*60000);
 $('btnAtualizarApp').onclick=()=>{if(window.autoOcupado&&autoOcupado()&&!confirm('A balança está conectada. Atualizar agora vai desconectar. Continuar?'))return;try{save();sessionStorage.setItem('voltarPara',modoVer?'ver':document.body.classList.contains('naInicio')?'':'exec');}catch(e){}location.reload();};
 document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')checarVersao();});
 if('serviceWorker' in navigator){
@@ -2447,7 +2583,7 @@ if('serviceWorker' in navigator){
   const abre=()=>{document.body.classList.remove('menuFechado');pinta();const y=m.getBoundingClientRect().top+scrollY-8;if(scrollY>y)window.scrollTo({top:Math.max(0,y)});};
   b.onclick=()=>document.body.classList.contains('menuFechado')?abre():fecha();
   m.addEventListener('click',e=>{const t=e.target.closest('button');if(!t||t===b)return;
-    const final=t.closest('#subGest')||t.closest('#subModo')||['tabPrev','tabHist','tabCfgT'].includes(t.id);
+    const final=t.closest('#subGest')||t.closest('#subModo')||['tabPrev','tabLeit','tabHist'].includes(t.id);
     if(final)setTimeout(fecha,150);else setTimeout(pinta,0);});
   window.menuCaminho=pinta;pinta();})();
 </script>

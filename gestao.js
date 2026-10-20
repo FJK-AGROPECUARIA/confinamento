@@ -156,13 +156,19 @@ const UNID_V=[['arroba','R$ por @ (carcaça ÷ 15)'],['cab','R$ por cabeça'],['
 
 const RAIZ={home:'home',lotes:'lotes',lote:'lotes',loteForm:'lotes',pesForm:'lotes',saiForm:'lotes',mudForm:'lotes',rel:'lotes',custoForm:'lotes',
   cocho:'cocho',cochoGraf:'cocho',rels:'rels',dia:'rels',periodo:'rels',comp:'rels',racoes:'racoes',racForm:'racoes',insumos:'insumos',insForm:'insumos',cfg:'cfg'};
-function gRaiz(t){GT={t};gPilha.length=0;if($('viewGest').hidden)aba('gest');else gRender();window.scrollTo({top:0});}
+/* Leitura de cocho fica no menu Tratos (aba 'leit'); o resto da Gestão na aba 'gest' — as duas usam a mesma tela */
+function gRaiz(t){GT={t};gPilha.length=0;const alvo=RAIZ[t]==='cocho'?'leit':'gest';if(window.abaAtual!==alvo)aba(alvo);else gRender();window.scrollTo({top:0});}
+window.gAbrir=modo=>{const leit=RAIZ[GT.t]==='cocho';if(modo==='leit'&&!leit)GT={t:'cocho'};if(modo==='gest'&&leit)GT={t:'home'};gRender();if(navigator.onLine)gSync(true).catch(()=>{});};
 function gRender(){
   const b=$('gBox');if(!b)return;
+  if(window.abaAtual==='gest'&&RAIZ[GT.t]==='cocho'){aba('leit');return;}  // leitura abre no menu Tratos
+  if(window.abaAtual==='leit'&&RAIZ[GT.t]!=='cocho'){aba('gest');return;}
   const f={home:tHome,lotes:tLotes,lote:tLote,loteForm:tLoteForm,pesForm:tPesForm,saiForm:tSaiForm,mudForm:tMudForm,rel:tRelLote,custoForm:tCustoForm,
     cocho:tCocho,cochoGraf:tCochoGraf,rels:tRels,dia:tDia,periodo:tPeriodo,comp:tComp,racoes:tRacoes,racForm:tRacForm,insumos:tInsumos,insForm:tInsForm,cfg:tCfg}[GT.t]||tHome;
   const raiz=RAIZ[GT.t]||'home';document.querySelectorAll('#subGest button[data-gt]').forEach(x=>x.setAttribute('aria-selected',String(x.dataset.gt===raiz)));
+  const cb=$('cfgTBox');if(cb&&$('cfgTParque')&&cb.parentNode!==$('cfgTParque'))$('cfgTParque').appendChild(cb); // ajustes da balança: guarda antes de redesenhar
   b.innerHTML=f(GT);
+  if(GT.t==='cfg'&&cb&&$('cfgBalHost')){$('cfgBalHost').appendChild(cb);if(window.cfgTAoAbrir)cfgTAoAbrir();}
   if(GT.t==='racForm')calcRacao();
   if(GT.t==='rel')calcSimul();
   if(GT.t==='pesForm')calcPes();
@@ -483,13 +489,18 @@ function gradeNotas(notas,nota,c){const cima=notas.filter(x=>x.n>=0).sort((a,b)=
   /* o 0 ocupa a 1ª coluna nas duas linhas e fica no meio, na altura entre positivos e negativos */
   const z=tem0?bt(cima[0]).replace('<button class="','<button style="grid-column:1;grid-row:1 / span 2;align-self:center" class="gZero '):'',pos=tem0?cima.slice(1):cima;
   return `<div class="gNotas" style="grid-template-columns:repeat(${cols},1fr)">${z}${pos.map(bt).join('')}${'<span></span>'.repeat(Math.max(0,cols-(tem0?1:0)-pos.length))}${baixo.map(bt).join('')}</div>`;}
+/* leitura: hoje edita; amanhã libera quando o trato de hoje terminar; leituras antigas não mudam */
+function leitPode(dia){const hj=hojeKey();if(dia===hj)return {ok:true};
+  if(dia===somaDias(hj,1))return window.prevApi&&prevApi.diaFinalizado(hj)?{ok:true}:{ok:false,msg:'A leitura de amanhã libera quando o trato de hoje terminar (todos os tratos registrados).'};
+  if(dia<hj)return {ok:false,msg:'Leitura de dia que já passou: só consulta, não muda.',ver:true};
+  return {ok:false,msg:'Só dá para fazer a leitura de hoje ou de amanhã.'};}
 function tCocho(t){
-  const dia=t.dia||hojeKey(),ont=somaDias(dia,-1),ix=gIndice(),cfg=gCfg(),Cs=cochoCurrais(dia),hoje=dia===hojeKey();
+  const dia=t.dia||hojeKey(),ont=somaDias(dia,-1),ix=gIndice(),cfg=gCfg(),Cs=cochoCurrais(dia),hoje=dia===hojeKey(),pode=leitPode(dia),amanha=dia===somaDias(hojeKey(),1);
   const notas=cfg.notas.slice().sort((a,b)=>a.n-b.n);
   GT.dia=dia;GT.sel=GT.sel||{};
   const rows=Cs.map(c=>{const L=gTodos('lote').filter(l=>curralEm(l,dia)===c&&cabPres(l,dia)>0);
     const ontem=ix.get(ont+'|'+c)||0,pt=prevTotal(c),cab=L.reduce((a,l)=>a+cabPres(l,dia),0);
-    let base=ontem,orig='realizado ontem';
+    let base=ontem,orig=dia===hojeKey()?'realizado ontem':'realizado do dia anterior';
     if(!base&&pt){base=pt;orig='previsto atual';}
     if(!base){const ms=L.reduce((a,l)=>{const r=racaoEm(l,dia),cp=r&&compRacao(r,dia);return a+(cp?cabPres(l,dia)*pesoEm(l,dia)*cfg.pvIni/100/(cp.ms/100):0);},0);base=Math.round(ms);orig=`sugestão ${nf(cfg.pvIni,1)}% PV`;}
     const lt=G.it[idLeit(dia,c)],sel=GT.sel[c]||(lt&&!lt.del?{n:lt.nota,kg:lt.novo}:null);
@@ -504,33 +515,33 @@ function tCocho(t){
   return `<section class="panel"><h2>Leitura de cocho</h2>
     ${navData('gCoDia',dia,'Data da leitura')}
     <details class="gLeg"><summary class="note">Ver as notas</summary>${notas.map(x=>`<p class="note"><b>${notaTxt(x.n)}</b> — ${esc(x.t)}: ${x.p>0?'+':''}${nf(x.p,0)}%</p>`).join('')}<p class="note">Para mudar as notas: Config.</p></details>
-    ${rows||'<p class="note">Nenhum lote ativo nesta data. Cadastre os lotes primeiro.</p>'}
-    ${rows?`<button class="primary" data-g="salvaCocho">${hoje?'Salvar e ajustar o previsto':'Salvar leitura'}</button>
-    <p class="note">${hoje?'O total do dia de cada curral é dividido entre os tratos na mesma proporção do previsto atual.':'Data diferente de hoje: só guarda a leitura, sem mexer no previsto.'}</p>`:''}
+    ${pode.ok?'':`<p class="aviso">${esc(pode.msg)}</p>`}
+    <div class="${pode.ok?'':'gLeitTrava'}">${rows||'<p class="note">Nenhum lote ativo nesta data. Cadastre os lotes primeiro.</p>'}</div>
+    ${rows&&pode.ok?`<button class="primary" data-g="salvaCocho">${amanha?'Salvar e montar o previsto de amanhã':'Salvar e ajustar o previsto de hoje'}</button>
+    <p class="note">O total do dia de cada curral (realizado de ontem ± a nota) é dividido nos tratos pela quantidade de tratos do curral e pela divisão em % do Config.${amanha?' O previsto de amanhã fica guardado e passa a valer quando virar o dia.':''}</p>`:''}
     <button class="verde" data-g="ir" data-t="cochoGraf">📈 Gráfico dos últimos 10 dias</button></section>`;
 }
 const arred=(v,a)=>a>0?Math.round(v/a)*a:Math.round(v);
 function salvaCocho(){
   const dia=GT.dia,hoje=dia===hojeKey(),cfg=gCfg();let n=0,ap=0;
+  const pode=leitPode(dia);if(!pode.ok)return toast(pode.msg);
+  const amanha=dia===somaDias(hojeKey(),1),obj=hoje?S.prev:JSON.parse(JSON.stringify(prevApi.prevGuardado(dia)||S.prev||{}));
   document.querySelectorAll('#gBox .gCocho').forEach(el=>{const c=el.dataset.c,s=GT.sel[c];const inp=el.querySelector('input[data-kg]');const kg=gNum(inp.value);
     const lt=G.it[idLeit(dia,c)];const nota=s?s.n:(lt&&!lt.del?lt.nota:null);if(nota==null)return;
     const cn=cfg.notas.find(x=>x.n===nota);
     gPut({uid:idLeit(dia,c),tipo:'leitura',dia,curral:c,nota,pct:cn?cn.p:0,base:+el.dataset.base||0,novo:ok(kg)?kg:null});n++;
-    if(hoje&&ok(kg)&&kg>0&&aplicaPrev(c,kg))ap++;});
+    if(ok(kg)&&kg>0&&aplicaPrev(c,kg,obj))ap++;});
   if(!n)return toast('Marque a nota de pelo menos um curral');
-  if(ap){marcarPrev();if(typeof render==='function')render();}
-  GT.sel={};toast(hoje?`Leitura salva · previsto ajustado em ${ap} curral(is)`:'Leitura salva');gRender();
+  if(ap){if(hoje){marcarPrev();if(typeof render==='function')render();}else prevApi.guardarPrevDia(dia,obj);}
+  GT.sel={};toast(`Leitura salva · previsto ${hoje?'de hoje':'de amanhã'} ajustado em ${ap} curral(is)`);gRender();
 }
-function aplicaPrev(c,total){
-  const ks=['1','2','3','4','5'];S.prev=S.prev||{};
-  const atual=ks.map(k=>{const m=S.prev[k]||{};return typeof m[c]==='number'?m[c]:0;});
-  let soma=atual.reduce((a,b)=>a+b,0),pesos=atual;
-  if(!soma){const usados=ks.map(k=>lista(k).length>0?1:0);pesos=usados.some(Boolean)?usados:[1,0,0,0,0];soma=pesos.reduce((a,b)=>a+b,0);}
-  const a=gCfg().arred||1;let resto=total;const novos=pesos.map(()=>0);
-  const idx=pesos.map((p,i)=>p>0?i:-1).filter(i=>i>=0);
-  idx.forEach((i,j)=>{if(j===idx.length-1)novos[i]=Math.max(0,resto);else{novos[i]=Math.max(0,arred(total*pesos[i]/soma,a));resto-=novos[i];}});
-  let mud=false;idx.forEach(i=>{const m=mapaPrev(ks[i]);if(m[c]!==novos[i]){m[c]=novos[i];mud=true;}});return mud;
-}
+function aplicaPrev(c,total,obj){obj=obj||S.prev;const antes=JSON.stringify([1,2,3,4,5,6].map(k=>(obj[k]||{})[c]));
+  prevApi.distribuir(c,total,prevApi.nTratos(c,obj),obj);return JSON.stringify([1,2,3,4,5,6].map(k=>(obj[k]||{})[c]))!==antes;}
+/* % IMS: kg de matéria natural do curral para um % de IMS (peso projetado do lote × cabeças ÷ %MS da ração) */
+function baseIms(c,dia){const L=gTodos('lote').filter(l=>curralEm(l,dia)===c&&cabPres(l,dia)>0);let b=0,tem=false;
+  L.forEach(l=>{const r=racaoEm(l,dia),cp=r&&compRacao(r,dia);if(!cp||!(cp.ms>0))return;b+=cabPres(l,dia)*pesoEm(l,dia)/100/(cp.ms/100);tem=true;});return tem?b:null;}
+window.gMnIms=(c,pct,dia)=>{const b=baseIms(c,dia||hojeKey());return b==null?null:b*pct;};
+window.gImsDe=(c,dia,mn)=>{const b=baseIms(c,dia||hojeKey());return b&&mn>0?mn/b:null;};
 
 /* ---------- gráfico da leitura de cocho (10 dias) ---------- */
 /* cores divergentes: azul = aumentar, vermelho = diminuir, cinza = manter (o número vai escrito em cada quadro) */
@@ -831,9 +842,19 @@ function tCfg(){const c=gCfg(),hj=hojeKey(),tx=vig(c.taxa,hj);
   <section class="panel"><h2>Outros</h2><div class="gForm">${[
     {k:'arred',l:'Arredondar o previsto de',suf:'kg',t:'num',v:c.arred,meia:1},{k:'rc',l:'Rendimento de carcaça padrão',suf:'%',t:'num',v:c.rc,meia:1},
     {k:'pvIni',l:'Consumo inicial sugerido',suf:'% do PV em MS',t:'num',v:c.pvIni,ajuda:'Usado na leitura de cocho quando o curral ainda não tem trato.'}].map(campo).join('')}</div>
-    <button class="primary" data-g="salvaCfg">Salvar configurações</button></section>`;}
+    <button class="primary" data-g="salvaCfg">Salvar configurações</button></section>
+  <section class="panel"><h2>Divisão do trato por quantidade de tratos</h2>
+    <p class="note">Quando o curral tem 2 ou mais tratos no dia, o total é dividido assim (em % do total). 1 trato = 100% no Trato 1.</p>
+    ${[2,3,4,5,6].map(n=>{const v=window.prevApi?prevApi.divisao(n):[];return `<div class="gDiv"><b>${n} tratos</b><div class="gDivIn" style="grid-template-columns:repeat(${Math.min(n,3)},minmax(0,1fr))">${v.map((x,k)=>`<label><small>T${k+1}</small><input class="cell" inputmode="decimal" data-div="${n}" value="${String(x).replace('.',',')}"></label>`).join('')}</div><small class="gDivSoma" data-divsoma="${n}">${nf(v.reduce((a,b)=>a+b,0),1)}%</small></div>`;}).join('')}
+    <button class="primary" data-g="salvaDiv">Salvar divisão dos tratos</button></section>
+  <div id="cfgBalHost"></div>`;}
 function lerNotasEd(){(GT.notasEd||[]).forEach((x,k)=>{const n=document.querySelector(`#gBox [data-nn="${k}"]`),t=document.querySelector(`#gBox [data-nt="${k}"]`),p=document.querySelector(`#gBox [data-np="${k}"]`);
   if(n)x.n=gNum(n.value);if(t)x.t=t.value.trim();if(p)x.p=gNum(p.value);});}
+function salvaDiv(){const c=JSON.parse(JSON.stringify(gCfg()));c.div=c.div||{};let ruim=[];
+  [2,3,4,5,6].forEach(n=>{const v=[...document.querySelectorAll(`#gBox [data-div="${n}"]`)].map(i=>gNum(i.value));
+    if(v.length!==n||v.some(x=>!ok(x)||x<0)||Math.abs(v.reduce((a,b)=>a+b,0)-100)>0.5){ruim.push(n);return;}c.div[n]=v;});
+  if(ruim.length)return toast(`A soma precisa dar 100% (confira: ${ruim.map(n=>n+' tratos').join(', ')})`);
+  gPut(c);toast('Divisão dos tratos salva');gRender();}
 function salvaCfg(){const c=JSON.parse(JSON.stringify(gCfg()));const t=fn('taxa'),d=fv('tdesde')||hojeKey();
   if(ok(t)){const v=vig(c.taxa,d);if(!v||+v.rs!==t)setHist(c.taxa,d,{rs:t});}
   lerNotasEd();const ns=GT.notasEd.filter(x=>ok(x.n)&&ok(x.p));
@@ -911,10 +932,12 @@ $('gBox').addEventListener('click',e=>{
   if(a==='apagaIns'){const i=G.it[id],usam=gTodos('racao').filter(r=>(r.versoes||[]).some(v=>v.itens.some(x=>x.ins===id)));
     if(usam.length)return toast(`Usado nas rações: ${usam.map(r=>r.nome).join(', ')}. Não dá para apagar.`);if(!confirm(`Apagar ${i.nome}?`))return;gDel(id);return gVoltar();}
   if(a==='salvaCfg')return salvaCfg();
+  if(a==='salvaDiv')return salvaDiv();
 });
 ['pointerdown','pointermove'].forEach(ev=>$('gBox').addEventListener(ev,e=>{const r=e.target.closest&&e.target.closest('.gEvHit');if(r)evolMostrar(+r.dataset.ev);}));
 $('gBox').addEventListener('click',e=>{const i=e.target.closest('.gDataBox input');if(i&&i.showPicker){try{i.showPicker();}catch(_){}}});
 $('gBox').addEventListener('input',e=>{
+  if(e.target.matches('[data-div]')){const n=e.target.dataset.div,v=[...document.querySelectorAll(`#gBox [data-div="${n}"]`)].map(i=>gNum(i.value)||0),t=v.reduce((a,b)=>a+b,0),el=document.querySelector(`#gBox [data-divsoma="${n}"]`);if(el){el.textContent=nf(t,1)+'%';el.classList.toggle('bad',Math.abs(t-100)>0.5);}}
   const t=e.target;
   if(t.classList.contains('gRs'))mascaraRs(t);
   if(GT.t==='racForm'&&(t.matches('[data-rp]')||t.id==='gVag'))calcRacao();
@@ -982,7 +1005,7 @@ function cTelaNova(){const R=gTodos('racao').sort(porNome);if(!CG.trato)CG.trato
   const sg=sugestaoCarga(CG.trato,CG.rac);if(CG.totalDe!==CG.trato+'|'+CG.rac){CG.total=sg.tot||CG.total||0;CG.totalDe=CG.trato+'|'+CG.rac;cSave();}
   const its=itensCarga(CG.rac,CG.total||0);
   return `<section class="panel"><h2>Carregar vagão</h2>
-    <div class="linhaTrato"><label for="cTrato">Trato</label><select class="trato" id="cTrato">${[1,2,3,4,5].map(k=>`<option value="${k}"${+CG.trato===k?' selected':''}>Trato ${k}</option>`).join('')}</select></div>
+    <div class="linhaTrato"><label for="cTrato">Trato</label><select class="trato" id="cTrato">${[1,2,3,4,5,6].map(k=>`<option value="${k}"${+CG.trato===k?' selected':''}>Trato ${k}</option>`).join('')}</select></div>
     <div><label for="cRac">Ração</label><select id="cRac">${R.map(r=>`<option value="${r.uid}"${r.uid===CG.rac?' selected':''}>${esc(r.nome)}</option>`).join('')}</select></div>
     <div><label>Total a carregar (kg)</label><div class="campoX"><input class="big num" id="cTotal" type="text" readonly inputmode="none" value="${CG.total?nf(CG.total):''}" data-ct="total"></div>
       <p class="note">${sg.cs.length?`Previsto do Trato ${CG.trato} para esta ração: <b>${nf(sg.tot)} kg</b> (${sg.cs.join(', ')})`:`Nenhum curral com esta ração no previsto do Trato ${CG.trato}. Digite o total.`}</p></div>

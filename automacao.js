@@ -95,7 +95,7 @@ function montar(){
     <div class="linhaTrato">
       <label for="aTrato">Trato</label>
       <select class="trato" id="aTrato">
-        <option value="1">Trato 1</option><option value="2">Trato 2</option><option value="3">Trato 3</option><option value="4">Trato 4</option><option value="5">Trato 5</option>
+        <option value="1">Trato 1</option><option value="2">Trato 2</option><option value="3">Trato 3</option><option value="4">Trato 4</option><option value="5">Trato 5</option><option value="6">Trato 6</option>
       </select>
     </div>
     <div class="curBox2">
@@ -126,7 +126,7 @@ function montar(){
   </section>
 
   <section class="panel">
-    <p class="note">Ajustes da balança e dos apitos: Tratos › ⚙ Config.</p>
+    <p class="note">Ajustes da balança e dos apitos: Gestão › Config.</p>
     <details>
       <summary>🔧 Dados recebidos (para teste)</summary>
       <p class="note" id="aBtInfo"></p>
@@ -459,7 +459,7 @@ function intervalo(fp,c){const am=+c.amarelo,ve=+c.vermelho,co=+c.continuo;
   if(fp<=am)return {ms:lerp(fp,am,ve,700,380),som:'lento'};
   return null;}
 function testarSom(){liberarSom();
-  if(!cfg().som){toast('O apito está desligado em Tratos › Config.');return;}
+  if(!cfg().som){toast('O apito está desligado em Gestão › Config.');return;}
   const c=cfg(),seq=[];let t=300;
   // simula uma descarga de 25 kg/s indo do amarelo até passar o direto
   for(let fp=+c.amarelo;fp>-15;){const iv=intervalo(fp,c);if(!iv)break;seq.push([t,iv.som]);t+=iv.ms;fp-=25*iv.ms/1000;}
@@ -660,7 +660,7 @@ $('acBox').addEventListener('click',e=>{const b=e.target.closest('[data-ac]');if
 window.acAoAbrir=()=>{montar();cRender();window.scrollTo({top:0});try{if(typeof gSync==='function')gSync(true).catch(()=>{});}catch(e){}};
 $('tabAutoC').addEventListener('click',()=>aba('autoc'));
 
-/* ---------------- Tratos › Config. (ajustes da balança, iguais em todos os aparelhos) ---------------- */
+/* ---------------- Gestão › Config. (ajustes da balança, iguais em todos os aparelhos) ---------------- */
 const CAMPOS=[['amarelo','🟡 Apito lento','kg faltando · fica amarelo'],['vermelho','🔴 Apito rápido','kg faltando · fica vermelho'],['continuo','🚨 Apito direto (bem rápido)','kg faltando · pisca'],
   ['antecipa','⏩ Antecipar cor e apito','segundos · compensa o atraso da balança'],
   ['tol','Variação aceita parado','kg'],['tempo','Tempo parado para firmar','segundos'],['minDesc','Mínimo que conta como descarga','kg']];
@@ -718,6 +718,5 @@ function preencherCfgT(){if(!$('cfgT_tol'))return;const c=cfg();
 window.cfgTAoAbrir=()=>{montarCfgT();preencherCfgT();avisoCfg();
   try{if(typeof gSync==='function')gSync(true).then(()=>{if(!cfgNuvem())salvarCfg();preencherCfgT();avisoCfg();}).catch(()=>{});}catch(e){}};
 /* puxa da nuvem ao abrir a Automação também, para pegar ajustes feitos em outro aparelho */
-setInterval(()=>{if($('viewCfgT')&&!$('viewCfgT').hidden)preencherCfgT();},3000);
-$('tabCfgT').addEventListener('click',()=>aba('cfgt'));
+setInterval(()=>{const b=$('cfgTBox');if(b&&b.offsetParent)preencherCfgT();},3000);
 })();
