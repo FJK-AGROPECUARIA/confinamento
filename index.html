@@ -696,7 +696,7 @@ body.comteclado .wrap{padding-bottom:300px!important}
   <section class="panel">
     <h2>Filtrar</h2>
     <div class="filtros">
-      <div><label for="fDia">Data</label><select id="fDia"><option value="hoje">Hoje</option><option value="ontem">Ontem</option><option value="semana">Semana</option><option value="mes">Mês</option><option value="ano">Ano</option><option value="todos">Todos</option><option value="periodo">Período</option></select></div>
+      <div><label for="fDia">Data</label><select id="fDia"><option value="ontem">Ontem</option><option value="hoje">Hoje</option><option value="amanha">Amanhã</option><option value="semana">Semana</option><option value="mes">Mês</option><option value="ano">Ano</option><option value="todos">Todos</option><option value="periodo">Período</option></select></div>
       <div><label for="fTrato">Trato</label><select id="fTrato"><option value="">Todos</option><option value="1">Trato 1</option><option value="2">Trato 2</option><option value="3">Trato 3</option><option value="4">Trato 4</option><option value="5">Trato 5</option></select></div>
     </div>
     <div class="linhas hLocal" id="hLocal"><button data-loc="T" class="sel">Todos</button><button data-loc="C">Confinamento</button><button data-loc="P">Pasto</button></div>
@@ -831,7 +831,7 @@ body.comteclado .wrap{padding-bottom:300px!important}
 <div class="toast" id="toast" hidden></div>
 <script>
 'use strict';
-const APP_VERSAO='14';
+const APP_VERSAO='15';
 const APP_DATA='19/10/2026';
 const KEY='confinamento-completo-v1';
 const $=id=>document.getElementById(id);
@@ -1529,6 +1529,7 @@ function aba(qual){
   if(qual==='prev'&&$('viewPrev').dataset.aberta!=='1')linhaSel='T'; // filtro do Previsto volta para Todos
   $('viewPrev').dataset.aberta=qual==='prev'?'1':'';
   if(qual==='trato')caberTabela($('tbCur'));if(qual==='hist')caberTabela($('tbHist'));
+  if(['trato','carga','auto','autoc'].includes(qual)&&avModo!==qual){avModo=qual;if(typeof agendarAoVivo==='function')agendarAoVivo();}
   modoAtual=(qual==='trato'||qual==='carga')?'man':(qual==='auto'||qual==='autoc')?'auto':null;if(modoAtual)ultModo[modoAtual]=qual;
   $('tabMan').setAttribute('aria-selected',String(modoAtual==='man'));$('tabModoAuto').setAttribute('aria-selected',String(modoAtual==='auto'));
   $('tabTrato').hidden=$('tabCarga').hidden=modoAtual!=='man';$('tabAuto').hidden=$('tabAutoC').hidden=modoAtual!=='auto';$('modoTit').textContent=modoAtual==='auto'?'⚡ Automação':'✋ Manual';
@@ -1556,14 +1557,14 @@ const HF={ini:null,fim:null,campo:null,mes:null};let localSel='T';
 $('hLocal').addEventListener('click',e=>{const b=e.target.closest('button[data-loc]');if(!b)return;localSel=b.dataset.loc;renderHist();});
 function intervaloHist(){const hj=hojeKey(),d=new Date(),v=$('fDia').value;
   if(v==='hoje')return [hj,hj];
-  if(v==='ontem'){const x=new Date(d);x.setDate(d.getDate()-1);const o=diaKey(x);return [o,o];}
+  if(v==='ontem'||v==='amanha'){const x=new Date(d);x.setDate(d.getDate()+(v==='ontem'?-1:1));const o=diaKey(x);return [o,o];}
   if(v==='semana'){const x=new Date(d);x.setDate(d.getDate()-6);return [diaKey(x),null];} // últimos 7 dias (hoje e os 6 anteriores)
   if(v==='mes')return [diaKey(new Date(d.getFullYear(),d.getMonth(),1)),null];
   if(v==='ano')return [diaKey(new Date(d.getFullYear(),0,1)),null];
   if(v==='periodo'){const a=HF.ini||hj,b=HF.fim||a;return a<=b?[a,b]:[b,a];}
   return [null,null];}
 function rotuloData(){const v=$('fDia').value,[a,b]=intervaloHist(),hj=hojeKey();
-  if(v==='todos')return 'todos os dias';if(v==='hoje')return diaBR(hj);if(v==='ontem')return 'Ontem '+diaBR(a);
+  if(v==='todos')return 'todos os dias';if(v==='hoje')return diaBR(hj);if(v==='ontem')return 'Ontem '+diaBR(a);if(v==='amanha')return 'Amanhã '+diaBR(a);
   const nome={semana:'Semana',mes:'Mês',ano:'Ano',periodo:'Período'}[v]||'';
   const f=b||hj;return `${nome} ${diaBR(a)}${a===f?'':' a '+diaBR(f)}`;}
 function filtrados(){
@@ -2284,8 +2285,13 @@ $('btnVoltarIni').onclick=voltarInicio;
 setInterval(()=>{if(modoVer&&navigator.onLine&&document.visibilityState==='visible'){puxarRegistros(true).catch(()=>{});puxarPrevisto(true).catch(()=>{});}},15000);
 /* ---------- Ao vivo: quem está em Executar manda o que está fazendo; o Visualizar mostra ---------- */
 let avUlt='',avTimer=null,avUltEnvio=0;
-function estadoAoVivo(){const L=lista(),c=L[S.atual],regs=regsAtuais();
-  return {dia:diaAtivo(),trato:S.tratoSel,curral:c?c.nome:'',prev:c?c.prev:null,ini:S.ini||'',fim:S.fim||'',feitos:L.filter(x=>feito(x.nome,regs)).length,total:L.length};}
+/* qual tela de trabalho o celular está usando por último: tratar/carregar, manual/automação */
+var avModo='trato';
+function estadoAoVivo(){
+  if((avModo==='carga'||avModo==='autoc')&&window.cEstadoAoVivo){const e=cEstadoAoVivo(avModo==='autoc');if(e)return e;}
+  if(avModo==='auto'&&window.aEstadoAoVivo){const e=aEstadoAoVivo();if(e)return e;}
+  const L=lista(),c=L[S.atual],regs=regsAtuais();
+  return {modo:'trato',origem:'manual',dia:diaAtivo(),trato:S.tratoSel,curral:c?c.nome:'',prev:c?c.prev:null,ini:S.ini||'',fim:S.fim||'',feitos:L.filter(x=>feito(x.nome,regs)).length,total:L.length};}
 function avAtivo(){return !!(S&&!modoVer&&!document.body.classList.contains('naInicio')&&apiUrl()&&navigator.onLine);}
 function agendarAoVivo(){if(avTimer||!avAtivo())return;if(JSON.stringify(estadoAoVivo())===avUlt)return;
   avTimer=setTimeout(enviarAoVivo,Math.max(300,2500-(Date.now()-avUltEnvio)));}
@@ -2301,6 +2307,21 @@ async function puxarAoVivo(){if(avBuscando||!apiUrl())return;avBuscando=true;
     if(j&&j.ok){avDados=j.dados||{};avAgora=+j.agora||Date.now();avRecebido=Date.now();avErro=false;}else avErro=true;}
   catch(x){avErro=true;}
   avBuscando=false;renderAoVivo();}
+/* cartão ao vivo do Carregar (batida do vagão), manual ou pela balança */
+function cardCargaAoVivo(d){const ini=parseFloat(d.ini),fim=parseFloat(d.fim),pv=d.prev,auto=d.origem==='auto';
+  const fora=d.dia!==hojeKey()?` · ${diaBR(d.dia)}`:'',topo=`<div class="avTopo"><span><i class="avPonto"></i>Ao vivo · ${auto?'⚡':'✋'} Carregar · Trato ${d.trato}${fora}${d.nProd?` · ${d.feitos||0}/${d.nProd}`:''}</span><span class="avIdade">${idadeTxt(d.idade)}</span></div>`;
+  if(d.semBatida)return `<div class="avCard${d.idade>70000?' parado':''}">${topo}<div class="avVazio">Na tela de carregar, sem batida começada</div></div>`;
+  let real='—',dif='—',cls='',fl=false;if(!isNaN(ini)&&!isNaN(fim)){const f=fim-ini;real=fmt(f);if(pv!=null){const x=f-pv;fl=auto&&x<0;dif=fl?fmt(-x):sgn(x);cls=fl?'':classeDesv(x,pv);}}
+  return `<div class="avCard${d.idade>70000?' parado':''}">${topo}
+    <div class="curBox2"><div class="cbCur"><span>${esc(d.rac||'Ração')} · produto ${d.iProd||'—'}</span><b>${esc(d.prod||'—')}</b></div><div class="cbPrev"><span>Carregar</span><b class="num">${pv!=null?fmt(pv):'—'}</b></div></div>
+    <div class="avGrade">
+      <div><small>Bal. início</small><b class="num">${!isNaN(ini)?fmt(ini):'—'}</b></div>
+      <div class="avAlvo"><small>Parar em</small><b class="num">${!isNaN(ini)&&pv!=null?fmt(ini+pv):'—'}</b></div>
+      <div><small>${auto?'Bal. agora':'Bal. final'}</small><b class="num">${!isNaN(fim)?fmt(fim):'—'}</b></div>
+      <div><small>Carregado</small><b class="num">${real}</b></div>
+      <div><small>${fl?'Falta':'Diferença'}</small><b class="num ${cls}">${dif}</b></div>
+      <div><small>Batida</small><b class="num">${fmt(d.carregado||0)}<small style="display:inline;font-size:.7rem"> / ${fmt(d.totalPrev||0)}</small></b></div>
+    </div></div>`;}
 function idadeTxt(ms){const s=Math.max(0,Math.round(ms/1000));return s<60?`há ${s} s`:`há ${Math.round(s/60)} min`;}
 function renderAoVivo(){const box=$('aoVivo');if(!modoVer){box.innerHTML='';return;}
   if(!navigator.onLine){box.innerHTML='<div class="avVazio">Sem internet: não dá para ver ao vivo agora</div>';return;}
@@ -2309,20 +2330,20 @@ function renderAoVivo(){const box=$('aoVivo');if(!modoVer){box.innerHTML='';retu
   const lst=Object.keys(avDados).map(k=>Object.assign({ap:k},avDados[k])).map(d=>(d.idade=avAgora-d.tsServ+passou,d))
     .filter(d=>d.idade<3*60000).sort((a,b)=>a.idade-b.idade);
   if(!lst.length){box.innerHTML='<div class="avVazio">Ninguém executando trato agora</div>';return;}
-  box.innerHTML=lst.map(d=>{const ini=parseFloat(d.ini),fim=parseFloat(d.fim),pv=d.prev;
+  box.innerHTML=lst.map(d=>{if(d.modo==='carga')return cardCargaAoVivo(d);const ini=parseFloat(d.ini),fim=parseFloat(d.fim),pv=d.prev,auto=d.origem==='auto';
     const alvo=(pv!=null&&!isNaN(ini))?fmt(ini-pv):'—';
-    let real='—',dif='—',cls='';if(!isNaN(ini)&&!isNaN(fim)){const f=ini-fim;real=fmt(f);if(pv!=null){const x=f-pv;dif=sgn(x);cls=classeDesv(x,pv);}}
+    let real='—',dif='—',cls='';if(!isNaN(ini)&&!isNaN(fim)){const f=ini-fim;real=fmt(f);if(pv!=null){const x=f-pv;dif=auto&&x<0?fmt(-x):sgn(x);cls=auto&&x<0?'':classeDesv(x,pv);}}
     const fora=d.dia!==hojeKey()?` · ${diaBR(d.dia)}`:'';
     const nomeCur=d.curral||(d.total?'Trato completo':'—');
     return `<div class="avCard${d.idade>70000?' parado':''}">
-      <div class="avTopo"><span><i class="avPonto"></i>Ao vivo · Trato ${d.trato}${fora} · ${d.feitos||0}/${d.total||0}</span><span class="avIdade">${idadeTxt(d.idade)}</span></div>
+      <div class="avTopo"><span><i class="avPonto"></i>Ao vivo · ${auto?'⚡ Tratar':'✋ Tratar'} · Trato ${d.trato}${fora} · ${d.feitos||0}/${d.total||0}</span><span class="avIdade">${idadeTxt(d.idade)}</span></div>
       <div class="curBox2"><div class="cbCur"><span>Curral atual</span><b>${esc(nomeCur)}</b></div><div class="cbPrev"><span>Previsto</span><b class="num">${pv!=null&&d.curral?fmt(pv):'—'}</b></div></div>
       <div class="avGrade">
         <div><small>Bal. início</small><b class="num">${!isNaN(ini)?fmt(ini):'—'}</b></div>
         <div class="avAlvo"><small>Parar em</small><b class="num">${alvo}</b></div>
-        <div><small>Bal. final</small><b class="num">${!isNaN(fim)?fmt(fim):'—'}</b></div>
-        <div><small>Realizado</small><b class="num">${real}</b></div>
-        <div><small>Diferença</small><b class="num ${cls}">${dif}</b></div>
+        <div><small>${auto?'Bal. agora':'Bal. final'}</small><b class="num">${!isNaN(fim)?fmt(fim):'—'}</b></div>
+        <div><small>${auto?'Fornecido':'Realizado'}</small><b class="num">${real}</b></div>
+        <div><small>${auto&&!isNaN(ini)&&!isNaN(fim)&&pv!=null&&(ini-fim)<pv?'Falta':'Diferença'}</small><b class="num ${cls}">${dif}</b></div>
       </div></div>`;}).join('');
   box.querySelectorAll('.cbCur b').forEach(b=>{let f=parseFloat(getComputedStyle(b).fontSize),n=0;while(b.scrollWidth>b.clientWidth+1&&f>14&&n<30){f--;b.style.fontSize=f+'px';n++;}});
 }

@@ -18,7 +18,7 @@ const CFG_PADRAO={tol:10,tempo:4,minDesc:30,amarelo:100,vermelho:50,continuo:20,
 function cfgNuvem(){try{return (typeof G!=='undefined'&&G.it&&G.it.cfgBalanca)||null;}catch(e){return null;}}
 function cfg(){if(!S.auto)S.auto={};
   const n=cfgNuvem();if(n&&!n.del&&n.v&&(n.ts||0)>(S.auto._ts||0)){Object.assign(S.auto,n.v);S.auto._ts=n.ts;}
-  for(const k in CFG_PADRAO)if(S.auto[k]==null)S.auto[k]=CFG_PADRAO[k];return S.auto;}
+  for(const k in CFG_PADRAO)if(S.auto[k]==null)S.auto[k]=CFG_PADRAO[k];if(!(+S.auto.tempo>=2))S.auto.tempo=2;return S.auto;}
 function salvarCfg(){const c=cfg(),v={};for(const k in CFG_PADRAO)v[k]=c[k];
   try{if(typeof gPut==='function'){gPut({uid:'cfgBalanca',tipo:'cfgBalanca',v});c._ts=G.it.cfgBalanca.ts;}}catch(e){}
   save();}
@@ -170,7 +170,7 @@ function desconectar(manual){
   try{if(A.bt&&A.bt.gatt&&A.bt.gatt.connected){A.bt._manual=true;A.bt.gatt.disconnect();}}catch(e){}
   try{if(A.ws){A.ws._manual=true;A.ws.close();}}catch(e){}
   if(A.sim){clearInterval(A.sim.t);A.sim=null;}
-  A.bt=null;A.ws=null;A.btChars=[];A.fonte=null;A.peso=null;A.amostras=[];A.estavel=false;A.valEst=null;
+  A.bt=null;A.ws=null;A.btChars=[];A.fonte=null;A.peso=null;A.amostras=[];A.suaves=[];A.suave=NaN;A.ultDado=0;A.temFim=false;A.estavel=false;A.valEst=null;
   soltarTela();if(manual)setStatus('Desconectado');marcarFonte();aRender();
 }
 
@@ -236,7 +236,7 @@ function conectarSim(){
     if(s.modo==='sobe'){s.peso=Math.min(20000,s.peso+(5+Math.random()*3));}
     const ruido=s.modo!=='parado'?(Math.random()-.5)*6:(Math.random()-.5)*4;
     receber(`GR ${Math.round(s.peso+ruido)} kg\r\n`,'sim');},300);
-  setStatus('Simulador ligado (peso de mentira, para treinar)','ok');
+  setStatus('Simulador ligado (peso de mentira, para treinar)','ok');pedirTelaLigada();
 }
 
 /* ---------------- Leitura do peso ---------------- */
@@ -247,15 +247,16 @@ function hexDe(v){try{if(typeof v==='string')return '';const u=v instanceof Data
 function bruto(l){A.bruto.push(new Date().toLocaleTimeString('pt-BR')+'  '+l);if(A.bruto.length>60)A.bruto.splice(0,A.bruto.length-60);
   const el=$('aBruto');if(el&&el.closest('details').open){el.textContent=A.bruto.join('\n');el.scrollTop=el.scrollHeight;}}
 let ultBruto=0;
+window.autoReceber=(v,o)=>receber(v,o||"sim");
 function receber(v,origem){
   A.ultDado=Date.now();
   const t=txtDe(v);
   if(origem!=='sim'&&Date.now()-ultBruto>400){ultBruto=Date.now();bruto(JSON.stringify(t)+(typeof v!=='string'?'   ['+hexDe(v)+']':''));}
   A.buf+=t;
-  const partes=A.buf.split(/[\r\n]+/);A.buf=partes.pop();
+  const partes=A.buf.split(/[\r\n]+/);A.buf=partes.pop();if(partes.length)A.temFim=true; // a balança manda "enter" no fim da linha
   if(A.buf.length>80){partes.push(A.buf);A.buf='';}
   // quando a balança manda o número sem "enter" no fim (Bluetooth), usa o pedaço inteiro
-  if(!partes.length&&origem==='bt'&&/\d/.test(t)){partes.push(t);A.buf='';}
+  if(!partes.length&&origem==='bt'&&!A.temFim&&/\d/.test(t)){partes.push(t);A.buf='';}
   partes.forEach(p=>{const n=numeroDaLinha(p);if(n!=null)novoPeso(n);});
 }
 /* pega o último número da linha: "GR  12.345 kg", "+012345", "ST,GS,+0012345kg" */
@@ -269,14 +270,28 @@ function numeroDaLinha(l){
   const n=parseFloat(x);if(isNaN(n)||n>100000)return null;
   return neg?-n:n;
 }
+const med=a=>a.length?a.reduce((x,y)=>x+y,0)/a.length:NaN;
+/* peso de referência quando a balança ainda não firmou: menor/maior dos últimos 3 s, ou a média se estiver sem subir nem descer */
+function refProvisoria(sinal){const c=cfg(),agora=Date.now(),ss=(A.suaves||[]).filter(a=>a.t>=agora-3000);if(ss.length<4||A.amostras.length<4||agora-A.amostras[0].t<2500)return null;
+  const vs=ss.map(a=>a.v),ext=sinal>0?Math.min(...vs):Math.max(...vs);
+  if(sinal>0?A.suave>ext+c.minDesc:A.suave<ext-c.minDesc)return {v:Math.round(ext),mexendo:true};
+  const k=Math.max(1,Math.floor(vs.length/3));if(Math.abs(med(vs.slice(-k))-med(vs.slice(0,k)))<=c.tol)return {v:Math.round(med(vs.slice(-k))),mexendo:false};
+  return null;}
 function novoPeso(n){
   const c=cfg(),agora=Date.now();
   A.peso=n;A.amostras.push({t:agora,v:n});
-  const ini=agora-c.tempo*1000;A.amostras=A.amostras.filter(a=>a.t>=ini-1500);
+  const ini=agora-c.tempo*1000;A.amostras=A.amostras.filter(a=>a.t>=agora-Math.max(c.tempo*1000,3000)-1500);
   const jan=A.amostras.filter(a=>a.t>=ini);
   const cobre=A.amostras.length&&A.amostras[0].t<=ini+300;
+  /* peso suavizado (média das últimas leituras): tira o tremido do motor/vagão */
+  let ult=A.amostras.filter(a=>a.t>=agora-700);if(ult.length<3)ult=A.amostras.slice(-3);A.suave=med(ult.map(a=>a.v));
+  A.suaves=(A.suaves||[]).filter(a=>a.t>=agora-Math.max(c.tempo*1000,3000)-1500);A.suaves.push({t:agora,v:A.suave});
   if(cobre&&jan.length>=3){const vs=jan.map(a=>a.v),mx=Math.max(...vs),mn=Math.min(...vs);
-    A.estavel=(mx-mn)<=c.tol;A.valEst=A.estavel?Math.round(vs.reduce((a,b)=>a+b,0)/vs.length):null;}
+    const ss=A.suaves.filter(a=>a.t>=ini).map(a=>a.v),k=Math.max(1,Math.floor(vs.length/3));
+    const deriva=Math.abs(med(vs.slice(-k))-med(vs.slice(0,k)));
+    // parado: ou varia menos que o aceito, ou (com balança tremendo) não sobe/desce e a média fica firme
+    A.estavel=(mx-mn)<=c.tol||(deriva<=c.tol&&(Math.max(...ss)-Math.min(...ss))<=c.tol*2);
+    A.valEst=A.estavel?Math.round(med(vs)):null;}
   else{A.estavel=false;A.valEst=null;}
   if(A.status.includes('aguardando peso'))setStatus(A.status.replace(' · aguardando peso…',' · recebendo peso'),'ok');
   maquina();maquinaCarga();
@@ -287,21 +302,23 @@ function novoPeso(n){
    aguardando: balança parada → guarda o peso inicial
    começou a cair (mais que o mínimo) → descarregando
    parou de cair → registra (inicial − final) e passa para o próximo curral */
-function curralAtual(){return lista()[S.atual]||null;}
+function curralAtual(){try{return (S&&lista()[S.atual])||null;}catch(e){return null;}}
 /* troca de curral: o peso de agora vira o inicial */
 function novoCurral(manterPeso){A.est='aguardando';A.ancV=null;A.ancT=0;A.fpMin=null;A.menor=null;A.base=manterPeso&&A.peso!=null?(A.estavel?A.valEst:A.peso):null;}
 function maquina(){
-  if(naCargaAuto()){A.est='aguardando';A.base=null;return;} // carregando o vagão: o trato espera
+  if(naCargaAuto())return; // na tela de carregar o trato fica parado (não perde o que já estava fornecendo)
   const c=cfg(),cur=curralAtual();if(A.peso==null)return;
   if(A.est==='aguardando'){
+    const lim=cur?Math.min(c.minDesc,Math.max(c.tol,cur.prev/2)):c.minDesc; // curral pequeno: começa com menos
+    if(A.base!=null&&cur&&A.suave<A.base-lim){A.est='descarregando';A.menor=A.peso;A.avisou1=false;A.avisou2=false;A.ancV=A.suave;A.ancT=Date.now();A.fpMin=null;return;}
     if(A.estavel&&(A.base==null||Math.abs(A.valEst-A.base)>c.tol))A.base=A.valEst;  // parado: atualiza inicial (recarga, ajuste)
-    if(A.base!=null&&cur&&A.peso<A.base-c.minDesc){A.est='descarregando';A.menor=A.peso;A.avisou1=false;A.avisou2=false;A.ancV=A.peso;A.ancT=Date.now();A.fpMin=null;}
+    if(A.base==null){const r=refProvisoria(-1);if(r)A.base=r.v;}  // balança tremendo ou já começou a descer: não fica esperando
     return;
   }
   if(A.est==='descarregando'){
     A.menor=Math.min(A.menor,A.peso);
-    const passo=Math.max(3,(+c.tol||0)/2);
-    if(A.ancV==null||A.peso<A.ancV-passo){A.ancV=A.peso;A.ancT=Date.now();}
+    const passo=Math.max(4,(+c.tol||0)/2);
+    if(A.ancV==null||A.suave<A.ancV-passo){A.ancV=A.suave;A.ancT=Date.now();}
     if(A.estavel&&A.valEst>A.base+c.minDesc){ // subiu: recarregou o vagão sem registrar
       toast('Peso subiu: recarga? Peso inicial atualizado.');A.est='aguardando';A.base=A.valEst;}
   }
@@ -378,7 +395,7 @@ function taxaQueda(sinal){sinal=sinal||1;const agora=Date.now();if(!A.amostras.l
   return Math.max(0,-sinal*(n*sxy-sx*sy)/den);}
 /* "está caindo": o peso fez um novo mínimo (pelo menos metade da variação aceita) há menos de 0,9 s.
    Parou o vagão → em menos de 1 s o apito para. */
-function caindoAgora(){return A.est==='descarregando'&&A.ancT>0&&Date.now()-A.ancT<900&&Date.now()-A.ultDado<1500;}
+function caindoAgora(){return A.est==='descarregando'&&A.ancT>0&&Date.now()-A.ancT<800&&Date.now()-A.ultDado<1500;}
 function zona(){const cur=curralAtual();if(!cur||A.base==null||A.peso==null)return null;
   const c=cfg(),falta=cur.prev-Math.max(0,A.base-A.peso),caindo=caindoAgora();
   const taxa=caindo?taxaQueda():0;
@@ -418,7 +435,11 @@ setInterval(()=>{if(A.fonte&&A.fonte!=='sim'&&A.ultDado&&Date.now()-A.ultDado>50
 
 /* ---------------- Desenho da tela ---------------- */
 let leveT=null;
-function aRenderLeve(){if(leveT)return;leveT=setTimeout(()=>{leveT=null;pintarPeso();pintarCarga();},120);}
+function aRenderLeve(){if(leveT)return;leveT=setTimeout(()=>{leveT=null;pintarPeso();pintarCarga();if(typeof agendarAoVivo==='function')agendarAoVivo();},120);}
+/* acompanhamento ao vivo do Tratar pela balança */
+window.aEstadoAoVivo=()=>{const L=lista(),c=L[S.atual],regs=regsAtuais();
+  return {modo:'trato',origem:'auto',dia:diaAtivo(),trato:S.tratoSel,curral:c?c.nome:'',prev:c?c.prev:null,ini:A.base!=null?Math.round(A.base):'',fim:A.peso!=null?Math.round(A.peso):'',
+    feitos:L.filter(x=>feito(x.nome,regs)).length,total:L.length};};
 function pintarPeso(){
   if(!$('aPeso')||$('viewAuto').hidden)return;
   const c=cfg(),cur=curralAtual();
@@ -495,15 +516,17 @@ function maquinaCarga(){
   if(!naCargaAuto())return;const B=acB(),it=acItem(),c=cfg();if(!B||!it||A.peso==null||ok(it.real))return;
   if(AC.idx!==B.atual){AC.idx=B.atual;acNovoProduto();}
   if(AC.est==='aguardando'){
+    const lim=Math.min(c.minDesc,Math.max(c.tol,it.prev/2)); // produto pequeno (núcleo): começa com menos
+    if(ok(it.ini)&&A.suave>it.ini+lim){AC.est='carregando';AC.ancV=A.suave;AC.ancT=Date.now();AC.fpMin=null;return;}
     if(A.estavel&&(!ok(it.ini)||Math.abs(A.valEst-it.ini)>c.tol)){it.ini=A.valEst;it.fim=null;cSave();}  // parado: pega o peso inicial
-    if(ok(it.ini)&&A.peso>it.ini+c.minDesc){AC.est='carregando';AC.ancV=A.peso;AC.ancT=Date.now();AC.fpMin=null;}
+    if(!ok(it.ini)){const r=refProvisoria(1);if(r){it.ini=r.v;it.fim=null;cSave();}}  // balança tremendo ou já começou a carregar: não fica esperando
   }else{
-    const passo=Math.max(3,(+c.tol||0)/2);
-    if(A.peso>AC.ancV+passo){AC.ancV=A.peso;AC.ancT=Date.now();}
+    const passo=Math.max(4,(+c.tol||0)/2);
+    if(A.suave>AC.ancV+passo){AC.ancV=A.suave;AC.ancT=Date.now();}
     if(A.estavel&&A.valEst<it.ini-c.minDesc){AC.est='aguardando';it.ini=A.valEst;cSave();toast('Peso caiu abaixo do início: peso inicial atualizado.');}
   }
 }
-function subindoAgora(){return AC.est==='carregando'&&AC.ancT>0&&Date.now()-AC.ancT<900&&Date.now()-A.ultDado<1500;}
+function subindoAgora(){return AC.est==='carregando'&&AC.ancT>0&&Date.now()-AC.ancT<800&&Date.now()-A.ultDado<1500;}
 function zonaC(){const it=acItem();if(!naCargaAuto()||!it||!ok(it.ini)||A.peso==null||ok(it.real))return null;
   const c=cfg(),carregado=Math.max(0,A.peso-it.ini),falta=it.prev-carregado,sub=subindoAgora(),taxa=sub?taxaQueda(-1):0;
   let fp=falta;
@@ -541,10 +564,11 @@ window.acDepois=()=>{acSyncTopo();const B=acB();if(B&&AC.idx!==B.atual){AC.idx=B
 window.acIniciou=()=>{acNovoProduto();const B=acB();AC.idx=B?B.atual:null;const it=acItem();if(it&&A.estavel){it.ini=A.valEst;cSave();}pintarCarga();
   if(!A.fonte)toast('Conecte a balança para carregar pela Automação');};
 window.acRegistrar=()=>{const B=acB(),it=acItem();if(!B||!it)return;
+  if(ok(it.real)){toast('Este produto já foi registrado. Para refazer, toque em ↺ Pegar peso inicial.');return;}
   if(!ok(it.ini)){toast('Sem peso inicial ainda');return;}
   const fim=A.estavel?A.valEst:A.peso;if(fim==null){toast('Sem leitura da balança');return;}
   if(!(fim>it.ini)){toast('O peso não subiu desde o início');return;}
-  it.fim=fim;it.real=fim-it.ini;it.hora=new Date().toTimeString().slice(0,5);
+  it.fim=fim;it.real=fim-it.ini;it.hora=new Date().toTimeString().slice(0,5);it.tsReg=Date.now();
   const k=B.itens.findIndex((x,j)=>j>B.atual&&!ok(x.real)),nx=k>=0?k:B.itens.findIndex(x=>!ok(x.real));
   if(nx>=0){B.atual=nx;const n=B.itens[nx];if(!ok(n.real)){n.ini=fim;n.fim=null;}}
   AC.idx=B.atual;acNovoProduto();pararSom();cSave();toast(`${it.nome}: ${nf(it.real)} kg`);cRender();
@@ -576,7 +600,7 @@ function pintarCarga(){
   else if(AC.est==='carregando'){txt=A.estavel?'Parou de subir · confira e toque em Registrar':z&&z.caindo?`▲ Carregando ${it.nome} · ${fmt(z.taxa)} kg/s`:'■ Parou de subir · esperando o peso firmar';cl='desc';}
   else{txt='Pronto: pode carregar '+it.nome;cl='pronto';}
   $('acEtapa').textContent=txt;$('acEtapa').className='aEtapa '+cl;
-  $('acReg').disabled=!(it&&ok(it.ini)&&A.peso!=null&&A.peso>it.ini)||modoVer;
+  $('acReg').disabled=!(it&&!ok(it.real)&&ok(it.ini)&&A.peso!=null&&A.peso>it.ini)||modoVer;
 }
 $('acBox').addEventListener('click',e=>{const b=e.target.closest('[data-ac]');if(!b)return;const a=b.dataset.ac;
   if(a==='bt')return conectarBt();if(a==='ws')return conectarWs();if(a==='sim'){conectarSim();return cRender();}
