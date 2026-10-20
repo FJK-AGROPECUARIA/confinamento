@@ -171,6 +171,7 @@ function desconectar(manual){
   try{if(A.bt&&A.bt.gatt&&A.bt.gatt.connected){A.bt._manual=true;A.bt.gatt.disconnect();}}catch(e){}
   try{if(A.ws){A.ws._manual=true;A.ws.close();}}catch(e){}
   if(A.sim){clearInterval(A.sim.t);A.sim=null;}
+  clearInterval(A.btPoll);A.btLer=[];A.btNotif=0;
   if(A.ser){const sr=A.ser;A.ser=null;(async()=>{try{if(sr.leitor)await sr.leitor.cancel();}catch(e){}try{await sr.port.close();}catch(e){}})();}
   A.bt=null;A.ws=null;A.btChars=[];A.fonte=null;A.peso=null;A.amostras=[];A.suaves=[];A.suave=NaN;A.ultDado=0;A.temFim=false;A.tCon=0;A.estavel=false;A.valEst=null;
   soltarTela();if(manual)setStatus('Desconectado');marcarFonte();aRender();
@@ -184,7 +185,8 @@ const SERVICOS=['6e400001-b5a3-f393-e0a9-e50e24dcca9e','0000ffe0-0000-1000-8000-
   /* módulos serial-BLE comuns em indicadores: Laird/Ezurio vSP, u-blox, Telit TIO, Cypress, Dialog, ISSC, TI, Microchip */
   '569a1101-b87f-490c-92cb-11ba5ea5167c','2456e1b9-26e2-8f83-e744-f34f01e9d701','0000fefb-0000-1000-8000-00805f9b34fb',
   '0003cdd0-0000-1000-8000-00805f9b0131','0783b03e-8535-b5a0-7140-a304d2495cb7','0000fff0-0000-1000-8000-00805f9b34fb',
-  '0000ffe5-0000-1000-8000-00805f9b34fb','0000ffc0-0000-1000-8000-00805f9b34fb'];
+  '0000ffe5-0000-1000-8000-00805f9b34fb','0000ffc0-0000-1000-8000-00805f9b34fb',
+  'f0165585-6058-4c5d-a4b7-412dc08e9d8b'];  // Digi-Star EZ ("NEW EZ", indicador 3405 Bluetooth)
 /* UUID do serviço digitado em Gestão › Config. › Balança (descoberto com o app nRF Connect) */
 function servicosBle(){const l=SERVICOS.slice();String(cfg().bleUuid||'').split(/[\s,;]+/).map(x=>x.trim().toLowerCase()).filter(x=>/^[0-9a-f]{4}$|^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/.test(x)).forEach(x=>{const u=x.length===4?`0000${x}-0000-1000-8000-00805f9b34fb`:x;if(!l.includes(u))l.push(u);});return l;}
 async function conectarBt(){
@@ -205,15 +207,18 @@ async function btAbrir(dev){
   setStatus('Conectando em '+(dev.name||'aparelho')+'…','wait');
   const srv=await dev.gatt.connect();
   let servs=[];try{servs=await srv.getPrimaryServices();}catch(e){}
-  const info=['Aparelho: '+(dev.name||'(sem nome)')];let n=0;A.btChars=[];
+  const info=['Aparelho: '+(dev.name||'(sem nome)')];let n=0;A.btChars=[];A.btLer=[];
   for(const s of servs){let cs=[];try{cs=await s.getCharacteristics();}catch(e){}
     info.push('Serviço '+s.uuid);
     for(const c of cs){const p=c.properties,tem=[p.notify&&'notify',p.indicate&&'indicate',p.read&&'read',p.write&&'write',p.writeWithoutResponse&&'writeNR'].filter(Boolean).join(',');
       info.push('  · '+c.uuid+' ['+tem+']');
-      if(p.notify||p.indicate){try{await c.startNotifications();c.addEventListener('characteristicvaluechanged',ev=>receber(ev.target.value,'bt'));A.btChars.push(c);n++;}catch(e){}}
-      else if(p.read){try{const v=await c.readValue();bruto('lido '+c.uuid.slice(4,8)+': '+txtDe(v));}catch(e){}}
+      if(p.notify||p.indicate){try{await c.startNotifications();c.addEventListener('characteristicvaluechanged',ev=>{A.btNotif=Date.now();receber(ev.target.value,'bt');});A.btChars.push(c);n++;}catch(e){info.push('    (não deixou assinar: '+(e.message||e)+')');}}
+      if(p.read){A.btLer.push(c);try{const v=await c.readValue();bruto('lido '+c.uuid.slice(0,8)+': '+JSON.stringify(txtDe(v))+'   ['+hexDe(v)+']');}catch(e){}}
     }}
-  $('aBtInfo').textContent=info.join('\n');
+  $('aBtInfo').textContent=info.join('\n');A.btInfo=info.join('\n');
+  /* balança que não manda sozinha: lê os canais de leitura de tempos em tempos */
+  clearInterval(A.btPoll);if(A.btLer.length){n+=A.btLer.length;A.btPoll=setInterval(async()=>{if(A.bt!==dev||A.btLendo)return;if(A.btNotif&&Date.now()-A.btNotif<1500)return;A.btLendo=true;
+    try{for(const c of A.btLer){const v=await c.readValue();if(v&&v.byteLength){bruto('lido '+c.uuid.slice(0,8)+': '+JSON.stringify(txtDe(v))+'   ['+hexDe(v)+']');receber(v,'bt');}}}catch(e){}A.btLendo=false;},700);}
   if(!servs.length||!n){setStatus('Conectou, mas não achei o canal de peso desta balança. Descubra o UUID do serviço com o app nRF Connect e coloque em Gestão › Config. › Balança (UUID do Bluetooth). Ou tente o 🔵 Bluetooth.','err');return;}
   if(n)A.tCon=Date.now();setStatus(n?`Bluetooth conectado (${dev.name||'aparelho'}) · aguardando peso…`:'Conectou, mas nenhum canal envia dados. Veja "Dados recebidos".',n?'ok':'err');
   pedirTelaLigada();
@@ -297,7 +302,8 @@ function txtDe(v){try{if(typeof v==='string')return v;const u=v instanceof DataV
 function hexDe(v){try{if(typeof v==='string')return '';const u=v instanceof DataView?new Uint8Array(v.buffer,v.byteOffset,v.byteLength):new Uint8Array(v);
   return Array.from(u).map(b=>b.toString(16).padStart(2,'0')).join(' ');}catch(e){return '';}}
 function bruto(l){A.bruto.push(new Date().toLocaleTimeString('pt-BR')+'  '+l);if(A.bruto.length>60)A.bruto.splice(0,A.bruto.length-60);
-  const el=$('aBruto');if(el&&el.closest('details').open){el.textContent=A.bruto.join('\n');el.scrollTop=el.scrollHeight;}}
+  const el=$('aBruto');if(el&&el.closest('details').open){el.textContent=A.bruto.join('\n');el.scrollTop=el.scrollHeight;}
+  const e2=$('acBruto');if(e2&&e2.closest('details').open){e2.textContent=(A.btInfo?A.btInfo+'\n\n':'')+A.bruto.join('\n');e2.scrollTop=e2.scrollHeight;}}
 let ultBruto=0;
 window.autoReceber=(v,o)=>receber(v,o||"sim");
 function receber(v,origem){
@@ -594,6 +600,8 @@ window.acTela=(nova,dia)=>{
     <button data-ac="desc" id="acDesc" hidden>Desconectar</button>
     <div class="aSim" id="acSimBox" hidden><button class="lima" data-ac="simSobe">▲ Carregar</button><button data-ac="simPara">■ Parar</button><button data-ac="simZera">Esvaziar</button></div>
     <div class="aPeso"><div><small>Balança (kg)</small><em id="acEstTxt">sem leitura</em></div><b class="num" id="acPeso">—</b></div>
+    <details id="acDados"><summary>🔧 Dados recebidos (para teste)</summary><pre class="aBruto" id="acBruto">${esc((A.btInfo?A.btInfo+'\n\n':'')+(A.bruto.join('\n')||'Nada recebido ainda.'))}</pre>
+      <button data-ac="copiar" style="margin-top:6px">Copiar dados para enviar ao suporte</button></details>
   </section>`;
   if(nova)return topo+nova+dia;
   const B=acB(),i=B.atual,it=B.itens[i];
@@ -660,6 +668,7 @@ $('acBox').addEventListener('click',e=>{const b=e.target.closest('[data-ac]');if
   if(a==='ser')return conectarSerial();if(a==='bt')return conectarBt();if(a==='ws')return conectarWs();if(a==='sim'){conectarSim();return cRender();}
   if(a==='desc'){desconectar(true);return cRender();}
   if(a==='simSobe'){if(A.sim)A.sim.modo='sobe';return;}if(a==='simPara'){if(A.sim)A.sim.modo='parado';return;}
+  if(a==='copiar'){copiar((A.btInfo?A.btInfo+'\n\n':'')+A.bruto.join('\n'),'Dados copiados');return;}
   if(a==='simZera'){if(A.sim){A.sim.modo='parado';A.sim.peso=0;}return;}
   if(a==='pegar'){if(bloqueado())return;const it=acItem();if(!it)return;if(A.peso==null){toast('Sem leitura da balança');return;}
     it.ini=A.estavel?A.valEst:A.peso;it.fim=null;it.real=null;acNovoProduto();cSave();cRender();toast('Peso inicial: '+fmt(it.ini)+' kg');}});
