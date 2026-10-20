@@ -64,6 +64,8 @@ const css=`
 :is(#aBox,#acBox) .aCfg label{font-size:.8rem;margin:0}
 :is(#aBox,#acBox) .aCfg input{width:100%}
 :is(#aBox,#acBox) .aSim{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
+:is(#aBox,#acBox) .aTeclas{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-top:6px}
+:is(#aBox,#acBox) .aTeclas button{padding:9px 2px;font-size:.84rem;line-height:1.15}
 :is(#aBox,#acBox) .aSim button{padding:9px 4px;font-size:.88rem}
 :is(#aBox,#acBox) details summary{cursor:pointer;font-weight:600;padding:4px 0}
 :is(#aBox,#acBox) .aChk{display:flex;align-items:center;gap:8px;font-size:.95rem}
@@ -83,6 +85,7 @@ function montar(){
       <button id="aBtSim">🧪 Simulador</button>
     </div>
     <button id="aDesc" hidden>Desconectar</button>
+    <div class="aTeclas" id="aTeclas" hidden><button data-tecla="43">▸0◂<br>Zero</button><button data-tecla="40">▸T◂<br>Tara</button><button data-tecla="10">Líquido/<br>Bruto</button><button data-tecla="23">🖨<br>Imprimir</button></div>
     <div class="aSim" id="aSimBox" hidden>
       <button class="lima" id="aSimCarga">+ Carregar 1.000</button>
       <button id="aSimDesc">▼ Fornecer</button>
@@ -166,12 +169,12 @@ function ligar(){
 function setStatus(t,tipo){A.status=t;A.statusTipo=tipo||'';const el=$('aStatus');if(el){$('aStatusTxt').textContent=t;el.className='aStatus '+(tipo||'');}acSyncTopo();}
 function marcarFonte(){['aBtSer','aBtBt','aBtWs','aBtSim'].forEach(id=>$(id).classList.remove('on'));
   const m={ser:'aBtSer',bt:'aBtBt',ws:'aBtWs',sim:'aBtSim'}[A.fonte];if(m)$(m).classList.add('on');
-  $('aDesc').hidden=!A.fonte;$('aSimBox').hidden=A.fonte!=='sim';acSyncTopo();}
+  $('aDesc').hidden=!A.fonte;$('aSimBox').hidden=A.fonte!=='sim';$('aTeclas').hidden=!(A.fonte==='bt'&&A.digiStar);acSyncTopo();}
 function desconectar(manual){
   try{if(A.bt&&A.bt.gatt&&A.bt.gatt.connected){A.bt._manual=true;A.bt.gatt.disconnect();}}catch(e){}
   try{if(A.ws){A.ws._manual=true;A.ws.close();}}catch(e){}
   if(A.sim){clearInterval(A.sim.t);A.sim=null;}
-  clearInterval(A.btPoll);clearInterval(A.dsPoll);A.digiStar=false;A.btLer=[];A.btNotif=0;
+  clearInterval(A.btPoll);clearInterval(A.dsPoll);A.digiStar=false;A.dsEsc=null;A.btLer=[];A.btNotif=0;
   if(A.ser){const sr=A.ser;A.ser=null;(async()=>{try{if(sr.leitor)await sr.leitor.cancel();}catch(e){}try{await sr.port.close();}catch(e){}})();}
   A.bt=null;A.ws=null;A.btChars=[];A.fonte=null;A.peso=null;A.amostras=[];A.suaves=[];A.suave=NaN;A.ultDado=0;A.temFim=false;A.tCon=0;A.estavel=false;A.valEst=null;
   soltarTela();if(manual)setStatus('Desconectado');marcarFonte();aRender();
@@ -225,9 +228,9 @@ async function btAbrir(dev){
      igual ao app TAP Feed (descoberto no registro HCI do tablet). Manda logo ao conectar e a cada 3 s. */
   clearInterval(A.dsPoll);A.digiStar=false;
   const dsEsc=A.btEsc.find(c=>c.service&&/^f0165585-/i.test(c.service.uuid));
-  if(dsEsc){A.digiStar=true;const enq=new Uint8Array([5]);
+  if(dsEsc){A.digiStar=true;A.dsEsc=dsEsc;A.dsSeq=0;const enq=new Uint8Array([5]);
     const manda=async()=>{if(A.bt!==dev)return clearInterval(A.dsPoll);try{await dsEsc.writeValue(enq);}catch(e){bruto('erro ao pedir peso: '+(e.message||e));}};
-    await manda();A.dsPoll=setInterval(manda,3000);info.push('Digi-Star EZ: pedindo o peso (05) a cada 3 s');$('aBtInfo').textContent=info.join('\n');A.btInfo=info.join('\n');}
+    await manda();A.dsPoll=setInterval(manda,3000);info.push('Digi-Star EZ: pedindo o peso (05) a cada 3 s');$('aBtInfo').textContent=info.join('\n');A.btInfo=info.join('\n');marcarFonte();}
   /* balança que não manda sozinha: lê os canais de leitura de tempos em tempos */
   /* balança que não manda sozinha: lê os canais de leitura e/ou manda o "comando para pedir o peso" (Config › Balança) */
   clearInterval(A.btPoll);if(!A.digiStar&&(A.btLer.length||A.btEsc.length)){n+=A.btLer.length;A.btPoll=setInterval(async()=>{if(A.bt!==dev||A.btLendo)return;if(A.btNotif&&Date.now()-A.btNotif<1500)return;A.btLendo=true;
@@ -237,6 +240,20 @@ async function btAbrir(dev){
   if(n)A.tCon=Date.now();setStatus(n?`Bluetooth conectado (${dev.name||'aparelho'}) · aguardando peso…`:'Conectou, mas nenhum canal envia dados. Veja "Dados recebidos".',n?'ok':'err');
   pedirTelaLigada();
 }
+
+/* Teclas da Digi-Star EZ, iguais às do app TAP Feed: SUB (1A) + código da tecla + nº de sequência 01..99.
+   Zero "43", Tara "40", Líquido/Bruto "10", Imprimir "23" (descobertos no registro HCI do tablet). */
+const TECLAS={'43':'Zero','40':'Tara','10':'Líquido/Bruto','23':'Imprimir'};
+async function teclaBalanca(cod){
+  if(!(A.fonte==='bt'&&A.digiStar&&A.dsEsc)){toast('Conecte a balança Digi-Star pelo 🔷 Bluetooth BLE');return;}
+  if((cod==='43'||cod==='40')&&!confirm(TECLAS[cod]+' na balança: o peso do visor vai para 0. Confirmar?'))return;
+  A.dsSeq=(A.dsSeq%99)+1;const sq=String(A.dsSeq).padStart(2,'0'),txt=cod+sq;
+  const b=new Uint8Array([0x1a,...Array.from(txt).map(c=>c.charCodeAt(0))]);
+  try{await A.dsEsc.writeValue(b);bruto('tecla '+TECLAS[cod]+': '+hexDe(b));toast(TECLAS[cod]+' enviado à balança');}
+  catch(e){toast('Não consegui mandar '+TECLAS[cod]+': '+(e.message||e));}
+}
+window.teclaBalanca=teclaBalanca;
+document.addEventListener('click',e=>{const b=e.target.closest('.aTeclas [data-tecla]');if(b){e.preventDefault();e.stopPropagation();teclaBalanca(b.dataset.tecla);}},true);
 
 /* Caixinha Wi-Fi (USR-W610) em modo WebSocket. Tenta o endereço dos Ajustes e, se não abrir,
    as portas de WebSocket mais comuns dessa caixinha (8000 e 6432). A que funcionar fica salva. */
@@ -620,6 +637,7 @@ window.acTela=(nova,dia)=>{
     <div class="aStatus" id="acStatus"><i></i><span id="acStatusTxt">Desconectado</span></div>
     <div class="aConn"><button data-ac="ser" id="acBtSer">🔵 Bluetooth</button><button data-ac="bt" id="acBtBt">🔷 Bluetooth BLE</button><button data-ac="ws" id="acBtWs">📶 Caixinha Wi-Fi</button><button data-ac="sim" id="acBtSim">🧪 Simulador</button></div>
     <button data-ac="desc" id="acDesc" hidden>Desconectar</button>
+    <div class="aTeclas" id="acTeclas" hidden><button data-tecla="43">▸0◂<br>Zero</button><button data-tecla="40">▸T◂<br>Tara</button><button data-tecla="10">Líquido/<br>Bruto</button><button data-tecla="23">🖨<br>Imprimir</button></div>
     <div class="aSim" id="acSimBox" hidden><button class="lima" data-ac="simSobe">▲ Carregar</button><button data-ac="simPara">■ Parar</button><button data-ac="simZera">Esvaziar</button></div>
     <div class="aPeso"><div><small>Balança (kg)</small><em id="acEstTxt">sem leitura</em></div><b class="num" id="acPeso">—</b></div>
     <details id="acDados"><summary>🔧 Dados recebidos (para teste)</summary><pre class="aBruto" id="acBruto">${esc((A.btInfo?A.btInfo+'\n\n':'')+(A.bruto.join('\n')||'Nada recebido ainda.'))}</pre>
@@ -660,7 +678,7 @@ window.acRegistrar=()=>{const B=acB(),it=acItem();if(!B||!it)return;
 function acSyncTopo(){if(!$('acStatus'))return;
   $('acStatusTxt').textContent=A.status;$('acStatus').className='aStatus '+(A.statusTipo||'');
   ['ser','bt','ws','sim'].forEach(f=>$({ser:'acBtSer',bt:'acBtBt',ws:'acBtWs',sim:'acBtSim'}[f]).classList.toggle('on',A.fonte===f));
-  $('acDesc').hidden=!A.fonte;$('acSimBox').hidden=A.fonte!=='sim';}
+  $('acDesc').hidden=!A.fonte;$('acSimBox').hidden=A.fonte!=='sim';const tk=$('acTeclas');if(tk)tk.hidden=!(A.fonte==='bt'&&A.digiStar);}
 function pintarCarga(){
   if(!naCargaAuto()||!$('acPeso'))return;
   $('acPeso').textContent=A.peso==null?'—':fmt(A.peso);
