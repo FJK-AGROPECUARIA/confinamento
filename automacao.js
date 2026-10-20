@@ -13,7 +13,7 @@ const A={fonte:null,status:'Desconectado',peso:null,amostras:[],estavel:false,va
   est:'aguardando',base:null,menor:null,avisou1:false,avisou2:false,bruto:[],buf:'',
   bt:null,btChars:[],ws:null,sim:null,wake:null,ultDado:0};
 window.AUTO=A;
-const CFG_PADRAO={tol:10,tempo:4,minDesc:30,amarelo:100,vermelho:50,continuo:20,antecipa:1,ws:'ws://10.10.100.254:6432',som:true};
+const CFG_PADRAO={bleUuid:'',tol:10,tempo:4,minDesc:30,amarelo:100,vermelho:50,continuo:20,antecipa:1,ws:'ws://10.10.100.254:6432',som:true};
 /* Ajustes da balança: ficam na nuvem (item 'cfgBalanca' da Gestão), então mudar num aparelho muda em todos */
 function cfgNuvem(){try{return (typeof G!=='undefined'&&G.it&&G.it.cfgBalanca)||null;}catch(e){return null;}}
 function cfg(){if(!S.auto)S.auto={};
@@ -180,13 +180,19 @@ function desconectar(manual){
 const SERVICOS=['6e400001-b5a3-f393-e0a9-e50e24dcca9e','0000ffe0-0000-1000-8000-00805f9b34fb','0000fff0-0000-1000-8000-00805f9b34fb',
   '49535343-fe7d-4ae5-8fa9-9fafd205e455','0000ffb0-0000-1000-8000-00805f9b34fb','0000fee0-0000-1000-8000-00805f9b34fb',
   '0000181d-0000-1000-8000-00805f9b34fb','0000180a-0000-1000-8000-00805f9b34fb','0000180f-0000-1000-8000-00805f9b34fb',
-  '0000ffd0-0000-1000-8000-00805f9b34fb','0000ff00-0000-1000-8000-00805f9b34fb','0000fe59-0000-1000-8000-00805f9b34fb'];
+  '0000ffd0-0000-1000-8000-00805f9b34fb','0000ff00-0000-1000-8000-00805f9b34fb','0000fe59-0000-1000-8000-00805f9b34fb',
+  /* módulos serial-BLE comuns em indicadores: Laird/Ezurio vSP, u-blox, Telit TIO, Cypress, Dialog, ISSC, TI, Microchip */
+  '569a1101-b87f-490c-92cb-11ba5ea5167c','2456e1b9-26e2-8f83-e744-f34f01e9d701','0000fefb-0000-1000-8000-00805f9b34fb',
+  '0003cdd0-0000-1000-8000-00805f9b0131','0783b03e-8535-b5a0-7140-a304d2495cb7','0000fff0-0000-1000-8000-00805f9b34fb',
+  '0000ffe5-0000-1000-8000-00805f9b34fb','0000ffc0-0000-1000-8000-00805f9b34fb'];
+/* UUID do serviço digitado em Gestão › Config. › Balança (descoberto com o app nRF Connect) */
+function servicosBle(){const l=SERVICOS.slice();String(cfg().bleUuid||'').split(/[\s,;]+/).map(x=>x.trim().toLowerCase()).filter(x=>/^[0-9a-f]{4}$|^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/.test(x)).forEach(x=>{const u=x.length===4?`0000${x}-0000-1000-8000-00805f9b34fb`:x;if(!l.includes(u))l.push(u);});return l;}
 async function conectarBt(){
   if(!navigator.bluetooth){toast('Este celular/navegador não tem Bluetooth BLE para apps. Use o Chrome no Android.');setStatus('Bluetooth indisponível neste navegador','err');return;}
   desconectar(false);
   try{
     setStatus('Escolha a balança na lista…','wait');
-    const dev=await navigator.bluetooth.requestDevice({acceptAllDevices:true,optionalServices:SERVICOS});
+    const dev=await navigator.bluetooth.requestDevice({acceptAllDevices:true,optionalServices:servicosBle()});
     A.bt=dev;A.fonte='bt';marcarFonte();
     dev.addEventListener('gattserverdisconnected',()=>{if(dev._manual||A.bt!==dev)return;setStatus('Bluetooth caiu, reconectando…','wait');setTimeout(()=>{if(A.bt===dev)btAbrir(dev).catch(()=>setStatus('Bluetooth desconectado. Toque em Bluetooth de novo.','err'));},1500);});
     await btAbrir(dev);
@@ -208,7 +214,7 @@ async function btAbrir(dev){
       else if(p.read){try{const v=await c.readValue();bruto('lido '+c.uuid.slice(4,8)+': '+txtDe(v));}catch(e){}}
     }}
   $('aBtInfo').textContent=info.join('\n');
-  if(!servs.length){setStatus('Conectou, mas a balança não mostrou nenhum serviço conhecido. Veja "Dados recebidos".','err');return;}
+  if(!servs.length||!n){setStatus('Conectou, mas não achei o canal de peso desta balança. Descubra o UUID do serviço com o app nRF Connect e coloque em Gestão › Config. › Balança (UUID do Bluetooth). Ou tente o 🔵 Bluetooth.','err');return;}
   if(n)A.tCon=Date.now();setStatus(n?`Bluetooth conectado (${dev.name||'aparelho'}) · aguardando peso…`:'Conectou, mas nenhum canal envia dados. Veja "Dados recebidos".',n?'ok':'err');
   pedirTelaLigada();
 }
@@ -678,6 +684,8 @@ function montarCfgT(){const box=$('cfgTBox');if(!box||box.dataset.ok)return;box.
     <div class="curhead"><h2>⚙ Ajustes da balança</h2><span class="note" id="cfgTSinc"></span></div>
     <p class="note">Valem para todos os celulares: mudou aqui, muda nos outros (pela nuvem).</p>
     <div class="aCfg">${CAMPOS.map(([k,t,u])=>`<div><label for="cfgT_${k}">${t}<small>${u}</small></label><input id="cfgT_${k}" data-k="${k}" type="number" inputmode="decimal" step="any" min="0"></div>`).join('')}</div>
+    <label for="cfgT_ble" style="margin-top:8px">UUID do Bluetooth BLE (se a balança não for achada)</label>
+    <input id="cfgT_ble" type="text" autocapitalize="off" autocorrect="off" spellcheck="false" placeholder="ex.: 0000ffe0-0000-1000-8000-00805f9b34fb">
     <label for="cfgT_ws" style="margin-top:8px">Endereço da caixinha Wi-Fi</label>
     <input id="cfgT_ws" type="text" autocapitalize="off" autocorrect="off" spellcheck="false">
   </section>
@@ -704,6 +712,7 @@ function montarCfgT(){const box=$('cfgTBox');if(!box||box.dataset.ok)return;box.
   </section>`;
   CAMPOS.forEach(([k])=>{$('cfgT_'+k).onchange=e=>{const c=cfg(),v=parseFloat(String(e.target.value).replace(',','.'));
     if(!isNaN(v)&&v>=0){c[k]=v;salvarCfg();avisoCfg();}else e.target.value=c[k];};});
+  $('cfgT_ble').onchange=e=>{const c=cfg();c.bleUuid=e.target.value.trim();salvarCfg();avisoCfg();toast('UUID salvo. Conecte de novo pelo 🔷 Bluetooth BLE.');};
   $('cfgT_ws').onchange=e=>{const c=cfg();c.ws=e.target.value.trim()||CFG_PADRAO.ws;e.target.value=c.ws;salvarCfg();avisoCfg();};
   $('cfgT_som').onchange=e=>{const c=cfg();c.som=e.target.checked;salvarCfg();avisoCfg();if(c.som){liberarSom();tocar('lento');}};
   $('cfgT_teste').onclick=testarSom;
@@ -714,7 +723,7 @@ function avisoCfg(){const el=$('cfgTSinc');if(!el)return;const p=typeof G!=='und
   el.textContent=p?'⏳ enviando…':'✓ salvo na nuvem';if(p)setTimeout(avisoCfg,1500);}
 function preencherCfgT(){if(!$('cfgT_tol'))return;const c=cfg();
   CAMPOS.forEach(([k])=>{const el=$('cfgT_'+k);if(document.activeElement!==el)el.value=c[k];});
-  if(document.activeElement!==$('cfgT_ws'))$('cfgT_ws').value=c.ws;$('cfgT_som').checked=!!c.som;}
+  if(document.activeElement!==$('cfgT_ws'))$('cfgT_ws').value=c.ws;if(document.activeElement!==$('cfgT_ble'))$('cfgT_ble').value=c.bleUuid||'';$('cfgT_som').checked=!!c.som;}
 window.cfgTAoAbrir=()=>{montarCfgT();preencherCfgT();avisoCfg();
   try{if(typeof gSync==='function')gSync(true).then(()=>{if(!cfgNuvem())salvarCfg();preencherCfgT();avisoCfg();}).catch(()=>{});}catch(e){}};
 /* puxa da nuvem ao abrir a Automação também, para pegar ajustes feitos em outro aparelho */
