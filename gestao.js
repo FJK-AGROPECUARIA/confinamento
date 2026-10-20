@@ -157,11 +157,11 @@ const UNID_V=[['arroba','R$ por @ (carcaça ÷ 15)'],['cab','R$ por cabeça'],['
 const RAIZ={home:'home',lotes:'lotes',lote:'lotes',loteForm:'lotes',pesForm:'lotes',saiForm:'lotes',mudForm:'lotes',rel:'lotes',custoForm:'lotes',
   cocho:'cocho',cochoGraf:'cocho',rels:'rels',dia:'rels',periodo:'rels',comp:'rels',racoes:'racoes',racForm:'racoes',insumos:'insumos',insForm:'insumos',cfg:'cfg'};
 /* Leitura de cocho fica no menu Tratos (aba 'leit'); o resto da Gestão na aba 'gest' — as duas usam a mesma tela */
-function gRaiz(t){GT={t};gPilha.length=0;const alvo=RAIZ[t]==='cocho'?'leit':'gest';if(window.abaAtual!==alvo)aba(alvo);else gRender();window.scrollTo({top:0});}
-window.gAbrir=modo=>{const leit=RAIZ[GT.t]==='cocho';if(modo==='leit'&&!leit)GT={t:'cocho'};if(modo==='gest'&&leit)GT={t:'home'};gRender();if(navigator.onLine)gSync(true).catch(()=>{});};
+function gRaiz(t){GT={t};gPilha.length=0;const alvo=RAIZ[t]==='cocho'&&!document.body.classList.contains('modoGest')?'leit':'gest';if(window.abaAtual!==alvo)aba(alvo);else gRender();window.scrollTo({top:0});}
+window.gAbrir=modo=>{const leit=RAIZ[GT.t]==='cocho';if(modo==='leit'&&!leit)GT={t:'cocho'};if(modo==='gest'&&leit&&!document.body.classList.contains('modoGest'))GT={t:'home'};gRender();if(navigator.onLine)gSync(true).catch(()=>{});};
 function gRender(){
   const b=$('gBox');if(!b)return;
-  if(window.abaAtual==='gest'&&RAIZ[GT.t]==='cocho'){aba('leit');return;}  // leitura abre no menu Tratos
+  if(window.abaAtual==='gest'&&RAIZ[GT.t]==='cocho'&&!document.body.classList.contains('modoGest')){aba('leit');return;}  // leitura abre no menu Tratos
   if(window.abaAtual==='leit'&&RAIZ[GT.t]!=='cocho'){aba('gest');return;}
   const f={home:tHome,lotes:tLotes,lote:tLote,loteForm:tLoteForm,pesForm:tPesForm,saiForm:tSaiForm,mudForm:tMudForm,rel:tRelLote,custoForm:tCustoForm,
     cocho:tCocho,cochoGraf:tCochoGraf,rels:tRels,dia:tDia,periodo:tPeriodo,comp:tComp,racoes:tRacoes,racForm:tRacForm,insumos:tInsumos,insForm:tInsForm,cfg:tCfg}[GT.t]||tHome;
@@ -824,30 +824,39 @@ function salvaIns(id){const nome=fv('nome'),ms=fn('ms'),preco=fn('preco'),desde=
   gPut(i);toast('Insumo salvo');gVoltar();}
 
 /* ---------- configurações ---------- */
-function tCfg(){const c=gCfg(),hj=hojeKey(),tx=vig(c.taxa,hj);
+/* Config. da Gestão separado em botões: Custo · Notas · Raça · Tratos · Balança */
+const CFG_ABAS=[['custo','Custo'],['notas','Notas'],['raca','Raça'],['tratos','Tratos'],['balanca','Balança']];
+function tCfg(){const c=gCfg(),hj=hojeKey(),tx=vig(c.taxa,hj),ab=GT.cab||'custo';
   if(!GT.racasEd)GT.racasEd=c.racas.slice().sort(alfa);
   if(!GT.notasEd)GT.notasEd=c.notas.slice().sort((a,b)=>a.n-b.n).map(x=>Object.assign({},x));
-  return `<section class="panel"><h2>Custo operacional</h2><div class="gForm">${[
-    {k:'taxa',l:'Taxa operacional',suf:'por cabeça por dia',t:'rs',v:tx?tx.rs:'',meia:1},{k:'tdesde',l:'Vale a partir de',t:'dia',v:tx?hj:'2000-01-01',meia:1}].map(campo).join('')}</div>
-    ${(c.taxa||[]).length?`<p class="note">${c.taxa.map(x=>`Desde ${dB(x.desde)}: ${rs(+x.rs)}`).join(' · ')}</p>`:''}</section>
-  <section class="panel"><h2>Notas da leitura de cocho</h2>
+  const botoes=`<div class="gCfgAbas">${CFG_ABAS.map(([k,t])=>`<button data-g="cfgAba" data-k="${k}" class="${k===ab?'sel':''}">${t}</button>`).join('')}</div>`;
+  const salvar='<button class="primary" data-g="salvaCfg">Salvar</button>';
+  let h='';
+  if(ab==='custo')h=`<section class="panel gCfgP"><h2>Custo operacional</h2><div class="gForm">${[
+    {k:'taxa',l:'Taxa operacional',suf:'por cabeça por dia',t:'rs',v:tx?tx.rs:'',meia:1},{k:'tdesde',l:'Vale a partir de',t:'dia',v:tx?hj:'2000-01-01',meia:1},
+    {k:'rc',l:'Rendimento de carcaça padrão',suf:'%',t:'num',v:c.rc,meia:1}].map(campo).join('')}</div>
+    ${(c.taxa||[]).length?`<p class="note">${c.taxa.map(x=>`Desde ${dB(x.desde)}: ${rs(+x.rs)}`).join(' · ')}</p>`:''}${salvar}</section>`;
+  if(ab==='notas')h=`<section class="panel gCfgP"><h2>Notas da leitura de cocho</h2>
     <div class="gNotaCfg gNotaCab"><span>Nota</span><span>Descrição</span><span>Ajuste %</span><span></span></div>
     ${GT.notasEd.map((x,k)=>`<div class="gNotaCfg"><input class="cell num" inputmode="text" data-nn="${k}" value="${esc(vIn(x.n))}"><input type="text" data-nt="${k}" value="${esc(x.t)}"><input class="cell num" inputmode="text" data-np="${k}" value="${esc(vIn(x.p))}"><button class="mini danger" data-g="notaRm" data-i="${k}">✕</button></div>`).join('')}
     <div class="row"><button data-g="notaAdd">+ Adicionar nota</button><button data-g="notaPadrao">Voltar ao padrão (−4 a +4)</button></div>
-    <p class="note">Nota positiva aumenta o trato, negativa diminui. O ajuste é em cima do realizado de ontem. Use o sinal de menos (−) para diminuir.</p></section>
-  <section class="panel"><h2>Raças</h2>
+    <p class="note">Nota positiva aumenta o trato, negativa diminui. O ajuste é em cima do realizado do dia anterior. Use o sinal de menos (−) para diminuir.</p>
+    <div class="gForm">${campo({k:'pvIni',l:'Consumo inicial sugerido',suf:'% do PV em MS',t:'num',v:c.pvIni,meia:1,ajuda:'Usado na leitura de cocho quando o curral ainda não tem trato.'})}</div>${salvar}</section>`;
+  if(ab==='raca')h=`<section class="panel gCfgP"><h2>Raças</h2>
     <div class="gChips">${GT.racasEd.map((r,k)=>`<button class="sel" data-g="racaRm" data-i="${k}">${esc(r)} ✕</button>`).join('')}</div>
     <div class="gRacaAdd"><input type="text" id="gNovaRaca" placeholder="Nova raça" autocomplete="off"><button class="lima" data-g="racaAdd">+ Incluir</button></div>
-    <p class="note">Aparecem na ficha do lote. Toque numa raça para tirar.</p></section>
-  <section class="panel"><h2>Outros</h2><div class="gForm">${[
-    {k:'arred',l:'Arredondar o previsto de',suf:'kg',t:'num',v:c.arred,meia:1},{k:'rc',l:'Rendimento de carcaça padrão',suf:'%',t:'num',v:c.rc,meia:1},
-    {k:'pvIni',l:'Consumo inicial sugerido',suf:'% do PV em MS',t:'num',v:c.pvIni,ajuda:'Usado na leitura de cocho quando o curral ainda não tem trato.'}].map(campo).join('')}</div>
-    <button class="primary" data-g="salvaCfg">Salvar configurações</button></section>
-  <section class="panel"><h2>Divisão do trato por quantidade de tratos</h2>
-    <p class="note">Quando o curral tem 2 ou mais tratos no dia, o total é dividido assim (em % do total). 1 trato = 100% no Trato 1.</p>
-    ${[2,3,4,5,6].map(n=>{const v=window.prevApi?prevApi.divisao(n):[];return `<div class="gDiv"><b>${n} tratos</b><div class="gDivIn" style="grid-template-columns:repeat(${Math.min(n,3)},minmax(0,1fr))">${v.map((x,k)=>`<label><small>T${k+1}</small><input class="cell" inputmode="decimal" data-div="${n}" value="${String(x).replace('.',',')}"></label>`).join('')}</div><small class="gDivSoma" data-divsoma="${n}">${nf(v.reduce((a,b)=>a+b,0),1)}%</small></div>`;}).join('')}
-    <button class="primary" data-g="salvaDiv">Salvar divisão dos tratos</button></section>
-  <div id="cfgBalHost"></div>`;}
+    <p class="note">Aparecem na ficha do lote. Toque numa raça para tirar.</p>${salvar}</section>`;
+  if(ab==='tratos'){const P=window.prevApi,cads=(S.cadastro||[]);
+    h=`<section class="panel gCfgP"><h2>Quantidade de tratos por curral</h2>
+    <p class="note">Em quantas vezes o total do dia do curral é dividido. Mudou aqui, o previsto de hoje já é redividido.</p>
+    <div class="gNtLista">${cads.map(cu=>{const n=P?P.nTratos(cu):1;return `<label class="gNt"><span>${esc(cu)}</span><select data-ntc="${esc(cu)}">${[1,2,3,4,5,6].map(x=>`<option value="${x}"${x===n?' selected':''}>${x} trato${x>1?'s':''}</option>`).join('')}</select></label>`;}).join('')||'<p class="note">Cadastre os currais no Previsto.</p>'}</div></section>
+  <section class="panel gCfgP"><h2>Divisão do trato (%)</h2>
+    <p class="note">Quando o curral tem 2 ou mais tratos, o total do dia é dividido assim. 1 trato = 100% no Trato 1.</p>
+    ${[2,3,4,5,6].map(n=>{const v=P?P.divisao(n):[];return `<div class="gDiv"><b>${n} tratos</b><div class="gDivIn">${v.map((x,k)=>`<label><small>T${k+1}</small><input class="cell" inputmode="decimal" data-div="${n}" value="${String(x).replace('.',',')}"></label>`).join('')}</div><small class="gDivSoma" data-divsoma="${n}">${nf(v.reduce((a,b)=>a+b,0),1)}%</small></div>`;}).join('')}
+    <button class="primary" data-g="salvaDiv">Salvar divisão</button></section>
+  <section class="panel gCfgP"><h2>Arredondamento</h2><div class="gForm">${campo({k:'arred',l:'Arredondar o previsto de',suf:'kg',t:'num',v:c.arred,meia:1})}</div>${salvar}</section>`;}
+  if(ab==='balanca')h='<div id="cfgBalHost"></div>';
+  return botoes+h;}
 function lerNotasEd(){(GT.notasEd||[]).forEach((x,k)=>{const n=document.querySelector(`#gBox [data-nn="${k}"]`),t=document.querySelector(`#gBox [data-nt="${k}"]`),p=document.querySelector(`#gBox [data-np="${k}"]`);
   if(n)x.n=gNum(n.value);if(t)x.t=t.value.trim();if(p)x.p=gNum(p.value);});}
 function salvaDiv(){const c=JSON.parse(JSON.stringify(gCfg()));c.div=c.div||{};let ruim=[];
@@ -866,7 +875,7 @@ function salvaCfg(){const c=JSON.parse(JSON.stringify(gCfg()));const t=fn('taxa'
 /* =====================================================================================
    EVENTOS
    ===================================================================================== */
-const SO_VER=new Set(['evolN','imgDia','imgPer','imgComp','imgLote','xlsGraf','racaAdd','racaRm','grafLoc','grafCur','celGraf','imgGraf','filtroLoc','dataPasso','dataHoje','voltar','ir','lote','raiz','compRel','compDia','xlsDia','xlsPer','xlsComp','xlsLote','perAtalho','nota','racAdd','racRm','notaAdd','notaRm','notaPadrao']);
+const SO_VER=new Set(['cfgAba','evolN','imgDia','imgPer','imgComp','imgLote','xlsGraf','racaAdd','racaRm','grafLoc','grafCur','celGraf','imgGraf','filtroLoc','dataPasso','dataHoje','voltar','ir','lote','raiz','compRel','compDia','xlsDia','xlsPer','xlsComp','xlsLote','perAtalho','nota','racAdd','racRm','notaAdd','notaRm','notaPadrao']);
 $('gBox').addEventListener('click',e=>{
   const b=e.target.closest('[data-g]');if(!b)return;const a=b.dataset.g,id=b.dataset.id;
   if(!SO_VER.has(a)&&bloqueado())return;
@@ -933,9 +942,12 @@ $('gBox').addEventListener('click',e=>{
     if(usam.length)return toast(`Usado nas rações: ${usam.map(r=>r.nome).join(', ')}. Não dá para apagar.`);if(!confirm(`Apagar ${i.nome}?`))return;gDel(id);return gVoltar();}
   if(a==='salvaCfg')return salvaCfg();
   if(a==='salvaDiv')return salvaDiv();
+  if(a==='cfgAba'){lerNotasEd();GT.cab=b.dataset.k;gRender();window.scrollTo({top:0});return;}
 });
 ['pointerdown','pointermove'].forEach(ev=>$('gBox').addEventListener(ev,e=>{const r=e.target.closest&&e.target.closest('.gEvHit');if(r)evolMostrar(+r.dataset.ev);}));
 $('gBox').addEventListener('click',e=>{const i=e.target.closest('.gDataBox input');if(i&&i.showPicker){try{i.showPicker();}catch(_){}}});
+$('gBox').addEventListener('change',e=>{const s_=e.target.closest('select[data-ntc]');if(!s_||!window.prevApi)return;if(typeof bloqueado==='function'&&bloqueado())return;
+  const cu=s_.dataset.ntc,n=+s_.value;prevApi.setNTratos(cu,n);const t=prevApi.totalCurral(cu);if(t>0){prevApi.distribuir(cu,t,n,S.prev);if(typeof marcarPrev==='function')marcarPrev();if(typeof render==='function')render();}toast(`${cu}: ${n} trato${n>1?'s':''}`);});
 $('gBox').addEventListener('input',e=>{
   if(e.target.matches('[data-div]')){const n=e.target.dataset.div,v=[...document.querySelectorAll(`#gBox [data-div="${n}"]`)].map(i=>gNum(i.value)||0),t=v.reduce((a,b)=>a+b,0),el=document.querySelector(`#gBox [data-divsoma="${n}"]`);if(el){el.textContent=nf(t,1)+'%';el.classList.toggle('bad',Math.abs(t-100)>0.5);}}
   const t=e.target;

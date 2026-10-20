@@ -254,6 +254,10 @@ body.naInicio .wrap>.menu,body.naInicio #viewGest,body.naInicio #viewCarga,body.
 button.grande{font-size:1.5rem;padding:26px 14px;border-radius:16px;font-weight:700}
 button.gExec{background:#1f8f4e;border-color:#1f8f4e;color:#fff}
 button.gVer{background:var(--accent);border-color:var(--accent);color:#fff}
+button.gGest{background:#11253d;border-color:#11253d;color:#fff}
+button.grande small{display:block;font-size:.8rem;font-weight:500;opacity:.9;margin-top:4px}
+/* cada entrada mostra só a sua parte: Tratos (e Visualizar) sem Gestão; Gestão sem Tratos */
+body.modoTrato #tabGrpGest,body.somenteVer #tabGrpGest,body.modoGest #tabGrpTrato,body.modoTrato .menu>.tabs,body.somenteVer .menu>.tabs,body.modoGest .menu>.tabs{display:none!important}
 .faixaVer{display:flex;align-items:center;justify-content:space-between;gap:8px;background:#e8eef7;border:2px solid var(--accent);border-radius:10px;padding:8px 12px;font-weight:600;color:var(--accent)}
 /* modo visualização: esconde tudo que altera dados */
 body.somenteVer #escolhaCur,body.somenteVer .led,body.somenteVer .res,body.somenteVer #btnReg,body.somenteVer #painel>p.note,
@@ -611,6 +615,24 @@ body.menuFechado .menuSeta{background:#2e6b2f;color:#fff;padding:9px 12px;font-s
 #viewPrev.pvImsOn #tbPrev td.acoes,#viewPrev.pvImsOn #pvHead th:last-child{display:none}
 #viewPrev.pvImsOn #tbPrev td.c{white-space:normal;word-break:break-word;font-size:.95rem}#viewPrev.pvImsOn #tbPrev input.cell{width:58px}
 #viewPrev.pvTodos #tbPrev td.c{white-space:normal;word-break:break-word}
+
+/* Config.: botões das partes e quadros do tamanho do conteúdo */
+.gCfgAbas{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:5px;margin-bottom:10px}
+.gCfgAbas button{padding:8px 2px;font-size:.85rem;border-radius:10px}.gCfgAbas button.sel{background:var(--accent);border-color:var(--accent);color:#fff}
+.gCfgP .gForm{grid-template-columns:1fr!important}
+.gCfgP .gCampo input:not([type=checkbox]),.gCfgP .gCampo select{width:auto!important;max-width:100%;min-width:0}
+.gCfgP .gCampo input[inputmode=decimal],.gCfgP .gCampo input.gRs{width:9em!important}
+.gCfgP .gCampo input[type=date]{width:12em!important}
+.gCfgP .gNotaCfg{grid-template-columns:4em minmax(0,13em) 4.4em 2.4em!important}
+.gCfgP .gRacaAdd input{flex:0 1 14em}
+.gNtLista{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:6px}
+.gNt{display:flex;align-items:center;justify-content:space-between;gap:6px;margin:0;padding:6px 8px;border:1px solid var(--line);border-radius:10px;text-transform:none;letter-spacing:0;font-size:.95rem;color:var(--fg);font-weight:700}
+.gNt select{width:auto;font-size:.88rem;padding:5px 4px}
+.gCfgP .gDivIn{display:flex!important;flex-wrap:wrap;gap:4px}.gCfgP .gDivIn label{width:3.6em}
+.gCfgP .gDiv{grid-template-columns:4.6em minmax(0,1fr) 3.6em}
+#cfgTBox .aCfg>div{grid-template-columns:minmax(0,1fr) 5.5em!important}
+#cfgTBox input#cfgT_ws{width:auto!important;min-width:0;max-width:100%}
+.gRacaAdd button{white-space:nowrap}
 </style>
 </head>
 <body>
@@ -622,9 +644,9 @@ body.menuFechado .menuSeta{background:#2e6b2f;color:#fff;padding:9px 12px;font-s
 </header>
 <div class="wrap">
   <div class="inicio" id="inicio">
-    <button class="grande gExec" id="btnModoExec">▶ Executar tratos</button>
-    <button class="grande gVer" id="btnModoVer">👁 Visualizar</button>
-    <p class="note">Visualizar é só para acompanhar as informações, sem alterar nada. Atualiza automaticamente com internet.</p>
+    <button class="grande gExec" id="btnModoExec">🚜 Tratos<small>Executar e lançar · com senha</small></button>
+    <button class="grande gVer" id="btnModoVer">👁 Visualizar<small>Só acompanhar os tratos, sem alterar nada</small></button>
+    <button class="grande gGest" id="btnModoGest">📊 Gestão<small>Lotes, relatórios, rações e configurações · com senha</small></button>
   </div>
   <div class="faixaVer" id="faixaVer" hidden><span>👁 Modo visualização · atualiza aut.</span><button class="mini" id="btnSairVer">Sair</button></div>
   <div class="menu" id="menu">
@@ -850,7 +872,7 @@ body.menuFechado .menuSeta{background:#2e6b2f;color:#fff;padding:9px 12px;font-s
 </div>
 <div class="senhaFundo" id="senhaFundo" hidden></div>
 <div class="teclado" id="tecSenha" hidden>
-  <div class="tecTopo"><span>Senha para executar</span><b id="senhaValor">—</b></div>
+  <div class="tecTopo"><span id="senhaTit">Senha</span><b id="senhaValor">—</b></div>
   <div class="tecGrade">
     <button data-s="1">1</button><button data-s="2">2</button><button data-s="3">3</button>
     <button data-s="4">4</button><button data-s="5">5</button><button data-s="6">6</button>
@@ -898,7 +920,7 @@ body.menuFechado .menuSeta{background:#2e6b2f;color:#fff;padding:9px 12px;font-s
 <div class="toast" id="toast" hidden></div>
 <script>
 'use strict';
-const APP_VERSAO='20';
+const APP_VERSAO='22';
 const APP_DATA='19/10/2026';
 const KEY='confinamento-completo-v1';
 const $=id=>document.getElementById(id);
@@ -1034,9 +1056,10 @@ function ntMapa(){return (gOk()&&G.it.prevNTr&&G.it.prevNTr.v)||{};}
 function nTratos(c,obj){const m=ntMapa();if(+m[c]>=1)return Math.min(MAXT,+m[c]);obj=obj||S.prev||{};let n=0;for(let k=1;k<=MAXT;k++){const v=(obj[k]||{})[c];if(typeof v==='number'&&v>0)n=k;}return n||1;}
 function setNTratos(c,n){const m=Object.assign({},ntMapa());m[c]=Math.max(1,Math.min(MAXT,+n||1));if(gOk()&&typeof gPut==='function')gPut({uid:'prevNTr',tipo:'prevNTr',v:m});}
 function totalCurral(c,obj){obj=obj||S.prev||{};let t=0;for(let k=1;k<=MAXT;k++){const v=(obj[k]||{})[c];if(typeof v==='number')t+=v;}return t;}
-function arredPrev(v){const a=gOk()&&typeof gCfg==='function'?(+gCfg().arred||0):0;return a>0?Math.round(v/a)*a:Math.round(v);}
+function arredPrev(v){let a=gOk()&&typeof gCfg==='function'?+gCfg().arred:10;if(!(a>0))a=10;return Math.round(v/a)*a;}
 /* divide o total do curral nos tratos pela % configurada; o último trato fica com a sobra do arredondamento */
-function distribuir(c,total,n,obj){obj=obj||S.prev;n=n||nTratos(c,obj);const pc=divisao(n);let resto=Math.max(0,Math.round(total||0));
+/* tudo em dezena (ou no arredondamento do Config.): unidade 1–4 desce, 5–9 sobe; o total também, então a soma dos tratos fecha certinho */
+function distribuir(c,total,n,obj){obj=obj||S.prev;n=n||nTratos(c,obj);const pc=divisao(n);let resto=Math.max(0,arredPrev(total||0));
   for(let k=1;k<=MAXT;k++){const key=String(k);if(!obj[key])obj[key]={};
     if(k>n||!total){delete obj[key][c];continue;}
     const v=k===n?resto:Math.max(0,arredPrev(total*pc[k-1]/100));obj[key][c]=v;resto-=v;}
@@ -1264,7 +1287,7 @@ function renderPrev(){
   ['btnOrdem','btnCadastrar','btnRemoverCurral'].forEach(id=>$(id).hidden=!hoje);
   $('pvImsBar').hidden=!ims;$('viewPrev').classList.toggle('pvImsOn',ims);$('viewPrev').classList.toggle('pvTodos',PV.t===0&&!PV.per);$('btnIms').classList.toggle('on',ims);
   $('pvHead').innerHTML=PV.per?'<tr><th></th><th>Curral</th><th>Total do período (kg)</th><th></th></tr>':
-    PV.t===0?`<tr><th></th><th>Curral</th>${ims?'<th>% IMS</th>':'<th>Tratos</th>'}<th>Total (kg)</th><th></th></tr>`:`<tr><th></th><th>Curral</th><th>Trato ${PV.t} (kg)</th><th></th></tr>`;
+    PV.t===0?`<tr><th></th><th>Curral</th>${ims?'<th>% IMS</th>':''}<th>Total do dia (kg)</th><th></th></tr>`:`<tr><th></th><th>Curral</th><th>Trato ${PV.t} (kg)</th><th></th></tr>`;
   $('tbPrev').innerHTML=S.cadastro.map((c,i)=>{const v=m[c],esc_=esc(c);
     const ocultar=linhaSel!=='T'&&linhaDe(c)!==linhaSel;
     const nome=`<td class="c" style="cursor:default">${esc_}${hoje?`<button class="mini edNome" tabindex="-1" data-a="ed" data-i="${i}" aria-label="Editar nome ${esc_}">✎</button>`:''}</td>`;
@@ -1274,7 +1297,7 @@ function renderPrev(){
     if(PV.t===0){const n=nTratos(c,o);
       const sel=ed?`<select class="mini ntSel" data-nt="${esc_}">${[1,2,3,4,5,6].map(x=>`<option value="${x}"${x===n?' selected':''}>${x}</option>`).join('')}</select>`:`<b>${n}</b>`;
       const imsC=ims?`<td><input class="cell imsIn" type="text" inputmode="decimal" data-ims="${esc_}" placeholder="${(()=>{const p=window.gImsDe?gImsDe(c,PV.dia,v||0):null;return p?nf(p,2):'%';})()}" value="${PV.imsV&&PV.imsV[c]!=null?esc(PV.imsV[c]):''}"><small class="imsKg" data-imskg="${esc_}"></small></td>`:'';
-      return `<tr${ocultar?' hidden':''}><td class="alca" title="Arraste para mudar a ordem" aria-label="Arrastar ${esc_}">☰</td>${nome}${ims?imsC:`<td>${sel}</td>`}${cel}${ac}</tr>`;}
+      return `<tr${ocultar?' hidden':''}><td class="alca" title="Arraste para mudar a ordem" aria-label="Arrastar ${esc_}">☰</td>${nome}${ims?imsC:''}${cel}${ac}</tr>`;}
     return `<tr${ocultar?' hidden':''}><td class="alca" title="Arraste para mudar a ordem" aria-label="Arrastar ${esc_}">☰</td>${nome}${cel}${ac}</tr>`;}).join('');
   if(ims)document.querySelectorAll('#tbPrev .imsIn').forEach(calcIms);
   $('pvTot').title=`${S.cadastro.length} currais cadastrados`;
@@ -2410,31 +2433,38 @@ document.addEventListener('touchmove',e=>{if(e.scale!==undefined&&e.scale!==1)e.
 /* ---------- Tela inicial: Executar trato ou só Visualizar ---------- */
 document.body.classList.add('naInicio');
 /* Senha para entrar em Executar tratos */
-const SENHA_EXEC='0000';let senhaDig='';
-function mostrarSenha(){$('senhaValor').textContent='●'.repeat(senhaDig.length)+'○'.repeat(Math.max(0,SENHA_EXEC.length-senhaDig.length));}
+const SENHAS={trato:'0000',gest:'1010'};let senhaDig='',senhaModo='trato';const SENHA_EXEC=SENHAS.trato;
+const senhaAtual=()=>SENHAS[senhaModo];
+function mostrarSenha(){$('senhaValor').textContent='●'.repeat(senhaDig.length)+'○'.repeat(Math.max(0,senhaAtual().length-senhaDig.length));}
 function verSenha(v){$('tecSenha').hidden=!v;$('senhaFundo').hidden=!v;}
-$('btnModoExec').onclick=()=>{senhaDig='';mostrarSenha();verSenha(true);};
+function pedirSenha(m){senhaModo=m;senhaDig='';$('senhaTit').textContent=m==='gest'?'Senha da Gestão':'Senha dos Tratos';mostrarSenha();verSenha(true);}
+$('btnModoExec').onclick=()=>pedirSenha('trato');
+$('btnModoGest').onclick=()=>pedirSenha('gest');
 $('senhaFundo').onclick=()=>{verSenha(false);senhaDig='';};
 $('tecSenha').addEventListener('pointerdown',e=>e.preventDefault());
-$('tecSenha').addEventListener('click',e=>{const b=e.target.closest('button[data-s]');if(!b)return;const k=b.dataset.s;
+$('tecSenha').addEventListener('click',e=>{const b=e.target.closest('button[data-s]');if(!b)return;const k=b.dataset.s,sn=senhaAtual();
   if(k==='cancelar'){verSenha(false);senhaDig='';return;}
   if(k==='del')senhaDig=senhaDig.slice(0,-1);
-  else if(k!=='ok'&&senhaDig.length<SENHA_EXEC.length)senhaDig+=k;
+  else if(k!=='ok'&&senhaDig.length<sn.length)senhaDig+=k;
   mostrarSenha();
-  if(k==='ok'||senhaDig.length===SENHA_EXEC.length){
-    if(senhaDig===SENHA_EXEC){verSenha(false);senhaDig='';entrarExec();}
-    else if(k==='ok'||senhaDig.length>=SENHA_EXEC.length){toast('Senha errada');senhaDig='';mostrarSenha();}
+  if(k==='ok'||senhaDig.length===sn.length){
+    if(senhaDig===sn){verSenha(false);senhaDig='';entrarExec(senhaModo);}
+    else if(k==='ok'||senhaDig.length>=sn.length){toast('Senha errada');senhaDig='';mostrarSenha();}
   }});
-function entrarExec(){modoVer=false;document.body.classList.remove('naInicio','somenteVer');$('faixaVer').hidden=true;aba('trato');enviarAoVivo(true);}
+/* entra só na parte escolhida: 'trato' (padrão) ou 'gest' */
+function entrarExec(m){m=m==='gest'?'gest':'trato';modoVer=false;document.body.classList.remove('naInicio','somenteVer','modoTrato','modoGest');document.body.classList.add(m==='gest'?'modoGest':'modoTrato');$('faixaVer').hidden=true;
+  menuAberto=null;abrirMenu(m==='gest'?'gest':'trato');
+  if(m==='gest'){try{GT={t:'home'};}catch(e){}aba('gest');}else{aba(abaTrato&&abaTrato!=='gest'?abaTrato:'trato');enviarAoVivo(true);}
+  if(window.menuCaminho)menuCaminho();}
 $('btnModoVer').onclick=()=>{verSenha(false);if(typeof fecharTeclado==='function')fecharTeclado();if(balCampo)fecharBal();
-  guardarExec();modoVer=true;document.body.classList.remove('naInicio');document.body.classList.add('somenteVer');$('faixaVer').hidden=false;
+  guardarExec();modoVer=true;document.body.classList.remove('naInicio','modoTrato','modoGest');document.body.classList.add('somenteVer');$('faixaVer').hidden=false;menuAberto=null;abrirMenu('trato');
   S.dataManual=null;S.ini='';S.fim='';escolherTratoDoDia();$('tratoSel').value=String(S.tratoSel);$('pvTrato').value=String(S.tratoSel);S.pvTrato=S.tratoSel;
   $('ini').value='';$('fim').value='';aba('trato');render();renderPrev();avDados=null;avErro=false;renderAoVivo();if(navigator.onLine)puxarAoVivo();
   if(navigator.onLine){puxarRegistros(true).catch(()=>{});puxarPrevisto(true).catch(()=>{});}};
 function voltarInicio(){
   if(typeof fecharTeclado==='function')fecharTeclado();if(typeof balCampo!=='undefined'&&balCampo)fecharBal();
   if(selModo){selModo=false;sel.clear();}
-  const eraVer=modoVer;if(!eraVer&&!document.body.classList.contains('naInicio'))sairAoVivo();modoVer=false;document.body.classList.remove('somenteVer');document.body.classList.add('naInicio');$('faixaVer').hidden=true;$('cal').hidden=true;window.scrollTo({top:0});
+  const eraVer=modoVer;if(!eraVer&&!document.body.classList.contains('naInicio'))sairAoVivo();modoVer=false;document.body.classList.remove('somenteVer','modoTrato','modoGest');document.body.classList.add('naInicio');$('faixaVer').hidden=true;$('cal').hidden=true;window.scrollTo({top:0});
   if(eraVer){voltarExec();$('tratoSel').value=String(S.tratoSel);$('pvTrato').value=String(S.pvTrato||S.tratoSel);$('ini').value=S.ini||'';$('fim').value=S.fim||'';mostrarX();render();renderPrev();}
 }
 $('btnSairVer').onclick=voltarInicio;
@@ -2526,7 +2556,7 @@ setInterval(()=>{if(modoVer&&navigator.onLine&&document.visibilityState==='visib
 Promise.resolve(iniciar()).catch(()=>{}).then(()=>{
   // voltou de uma atualização: abre de novo onde estava
   try{const vp=sessionStorage.getItem('voltarPara');sessionStorage.removeItem('voltarPara');
-    if(vp==='exec')entrarExec();else if(vp==='ver')$('btnModoVer').onclick();}catch(e){}
+    if(vp==='exec')entrarExec('trato');else if(vp==='gest')entrarExec('gest');else if(vp==='ver')$('btnModoVer').onclick();}catch(e){}
 });
 
 /* ---------- Atualização automática do app ---------- */
@@ -2538,7 +2568,7 @@ function podeAtualizar(){
 let atualizarPend=false;
 function recarregarQuandoPuder(){
   if(!podeAtualizar()){if(!atualizarPend){atualizarPend=true;const t=setInterval(()=>{if(podeAtualizar()){clearInterval(t);recarregarQuandoPuder();}},5000);}return;}
-  try{save();sessionStorage.setItem('voltarPara',modoVer?'ver':document.body.classList.contains('naInicio')?'':'exec');}catch(e){}
+  try{save();sessionStorage.setItem('voltarPara',modoVer?'ver':document.body.classList.contains('naInicio')?'':document.body.classList.contains('modoGest')?'gest':'exec');}catch(e){}
   location.reload();}
 // Quando colocarmos melhoria: troque APP_VERSAO aqui, o número em versao.json e o CACHE do sw.js
 async function checarVersao(){
@@ -2555,7 +2585,7 @@ async function checarVersao(){
   }catch(e){}
 }
 setTimeout(checarVersao,3000);setTimeout(()=>{try{virarDiaPrev();}catch(e){}},2500);setInterval(()=>{try{virarDiaPrev();}catch(e){}},60000);setInterval(checarVersao,3*60000);
-$('btnAtualizarApp').onclick=()=>{if(window.autoOcupado&&autoOcupado()&&!confirm('A balança está conectada. Atualizar agora vai desconectar. Continuar?'))return;try{save();sessionStorage.setItem('voltarPara',modoVer?'ver':document.body.classList.contains('naInicio')?'':'exec');}catch(e){}location.reload();};
+$('btnAtualizarApp').onclick=()=>{if(window.autoOcupado&&autoOcupado()&&!confirm('A balança está conectada. Atualizar agora vai desconectar. Continuar?'))return;try{save();sessionStorage.setItem('voltarPara',modoVer?'ver':document.body.classList.contains('naInicio')?'':document.body.classList.contains('modoGest')?'gest':'exec');}catch(e){}location.reload();};
 document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')checarVersao();});
 if('serviceWorker' in navigator){
   const tinha=!!navigator.serviceWorker.controller;let recarregou=false;
