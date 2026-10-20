@@ -13,7 +13,7 @@ const A={fonte:null,status:'Desconectado',peso:null,amostras:[],estavel:false,va
   est:'aguardando',base:null,menor:null,avisou1:false,avisou2:false,bruto:[],buf:'',
   bt:null,btChars:[],ws:null,sim:null,wake:null,ultDado:0};
 window.AUTO=A;
-const CFG_PADRAO={bleUuid:'',tol:10,tempo:4,minDesc:30,amarelo:100,vermelho:50,continuo:20,antecipa:1,ws:'ws://10.10.100.254:6432',som:true};
+const CFG_PADRAO={bleUuid:'',bleCmd:'',tol:10,tempo:4,minDesc:30,amarelo:100,vermelho:50,continuo:20,antecipa:1,ws:'ws://10.10.100.254:6432',som:true};
 /* Ajustes da balança: ficam na nuvem (item 'cfgBalanca' da Gestão), então mudar num aparelho muda em todos */
 function cfgNuvem(){try{return (typeof G!=='undefined'&&G.it&&G.it.cfgBalanca)||null;}catch(e){return null;}}
 function cfg(){if(!S.auto)S.auto={};
@@ -171,7 +171,7 @@ function desconectar(manual){
   try{if(A.bt&&A.bt.gatt&&A.bt.gatt.connected){A.bt._manual=true;A.bt.gatt.disconnect();}}catch(e){}
   try{if(A.ws){A.ws._manual=true;A.ws.close();}}catch(e){}
   if(A.sim){clearInterval(A.sim.t);A.sim=null;}
-  clearInterval(A.btPoll);A.btLer=[];A.btNotif=0;
+  clearInterval(A.btPoll);clearInterval(A.dsPoll);A.digiStar=false;A.btLer=[];A.btNotif=0;
   if(A.ser){const sr=A.ser;A.ser=null;(async()=>{try{if(sr.leitor)await sr.leitor.cancel();}catch(e){}try{await sr.port.close();}catch(e){}})();}
   A.bt=null;A.ws=null;A.btChars=[];A.fonte=null;A.peso=null;A.amostras=[];A.suaves=[];A.suave=NaN;A.ultDado=0;A.temFim=false;A.tCon=0;A.estavel=false;A.valEst=null;
   soltarTela();if(manual)setStatus('Desconectado');marcarFonte();aRender();
@@ -187,6 +187,8 @@ const SERVICOS=['6e400001-b5a3-f393-e0a9-e50e24dcca9e','0000ffe0-0000-1000-8000-
   '0003cdd0-0000-1000-8000-00805f9b0131','0783b03e-8535-b5a0-7140-a304d2495cb7','0000fff0-0000-1000-8000-00805f9b34fb',
   '0000ffe5-0000-1000-8000-00805f9b34fb','0000ffc0-0000-1000-8000-00805f9b34fb',
   'f0165585-6058-4c5d-a4b7-412dc08e9d8b'];  // Digi-Star EZ ("NEW EZ", indicador 3405 Bluetooth)
+/* comando para pedir o peso (texto; \r = enter, \n = nova linha, <05> = byte em hexa) */
+function cmdBle(){const t=String(cfg().bleCmd||'');if(!t)return null;const out=[];t.replace(/\\r/g,'\r').replace(/\\n/g,'\n').replace(/<([0-9a-fA-F]{2})>|([\s\S])/g,(m,h,ch)=>{if(h)out.push(parseInt(h,16));else out.push(ch.charCodeAt(0)&255);return '';});return new Uint8Array(out);}
 /* UUID do serviço digitado em Gestão › Config. › Balança (descoberto com o app nRF Connect) */
 function servicosBle(){const l=SERVICOS.slice();String(cfg().bleUuid||'').split(/[\s,;]+/).map(x=>x.trim().toLowerCase()).filter(x=>/^[0-9a-f]{4}$|^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/.test(x)).forEach(x=>{const u=x.length===4?`0000${x}-0000-1000-8000-00805f9b34fb`:x;if(!l.includes(u))l.push(u);});return l;}
 async function conectarBt(){
@@ -207,18 +209,30 @@ async function btAbrir(dev){
   setStatus('Conectando em '+(dev.name||'aparelho')+'…','wait');
   const srv=await dev.gatt.connect();
   let servs=[];try{servs=await srv.getPrimaryServices();}catch(e){}
-  const info=['Aparelho: '+(dev.name||'(sem nome)')];let n=0;A.btChars=[];A.btLer=[];
+  const info=['Aparelho: '+(dev.name||'(sem nome)')];let n=0;A.btChars=[];A.btLer=[];A.btEsc=[];
+  const PADRAO=/^0000(180a|1800|1801|180f)-/;  // informações do aparelho (modelo, fabricante): não é peso
   for(const s of servs){let cs=[];try{cs=await s.getCharacteristics();}catch(e){}
-    info.push('Serviço '+s.uuid);
+    info.push('Serviço '+s.uuid);const soInfo=PADRAO.test(s.uuid);
     for(const c of cs){const p=c.properties,tem=[p.notify&&'notify',p.indicate&&'indicate',p.read&&'read',p.write&&'write',p.writeWithoutResponse&&'writeNR'].filter(Boolean).join(',');
       info.push('  · '+c.uuid+' ['+tem+']');
+      if(soInfo){if(p.read){try{const v=await c.readValue();info.push('    = '+JSON.stringify(txtDe(v)));}catch(e){}}continue;}
+      if(p.write||p.writeWithoutResponse)A.btEsc.push(c);
       if(p.notify||p.indicate){try{await c.startNotifications();c.addEventListener('characteristicvaluechanged',ev=>{A.btNotif=Date.now();receber(ev.target.value,'bt');});A.btChars.push(c);n++;}catch(e){info.push('    (não deixou assinar: '+(e.message||e)+')');}}
       if(p.read){A.btLer.push(c);try{const v=await c.readValue();bruto('lido '+c.uuid.slice(0,8)+': '+JSON.stringify(txtDe(v))+'   ['+hexDe(v)+']');}catch(e){}}
     }}
   $('aBtInfo').textContent=info.join('\n');A.btInfo=info.join('\n');
+  /* Digi-Star EZ ("NEW EZ"): a balança só manda o peso enquanto o app manda o byte 05 (ENQ) de tempos em tempos,
+     igual ao app TAP Feed (descoberto no registro HCI do tablet). Manda logo ao conectar e a cada 3 s. */
+  clearInterval(A.dsPoll);A.digiStar=false;
+  const dsEsc=A.btEsc.find(c=>c.service&&/^f0165585-/i.test(c.service.uuid));
+  if(dsEsc){A.digiStar=true;const enq=new Uint8Array([5]);
+    const manda=async()=>{if(A.bt!==dev)return clearInterval(A.dsPoll);try{await dsEsc.writeValue(enq);}catch(e){bruto('erro ao pedir peso: '+(e.message||e));}};
+    await manda();A.dsPoll=setInterval(manda,3000);info.push('Digi-Star EZ: pedindo o peso (05) a cada 3 s');$('aBtInfo').textContent=info.join('\n');A.btInfo=info.join('\n');}
   /* balança que não manda sozinha: lê os canais de leitura de tempos em tempos */
-  clearInterval(A.btPoll);if(A.btLer.length){n+=A.btLer.length;A.btPoll=setInterval(async()=>{if(A.bt!==dev||A.btLendo)return;if(A.btNotif&&Date.now()-A.btNotif<1500)return;A.btLendo=true;
-    try{for(const c of A.btLer){const v=await c.readValue();if(v&&v.byteLength){bruto('lido '+c.uuid.slice(0,8)+': '+JSON.stringify(txtDe(v))+'   ['+hexDe(v)+']');receber(v,'bt');}}}catch(e){}A.btLendo=false;},700);}
+  /* balança que não manda sozinha: lê os canais de leitura e/ou manda o "comando para pedir o peso" (Config › Balança) */
+  clearInterval(A.btPoll);if(!A.digiStar&&(A.btLer.length||A.btEsc.length)){n+=A.btLer.length;A.btPoll=setInterval(async()=>{if(A.bt!==dev||A.btLendo)return;if(A.btNotif&&Date.now()-A.btNotif<1500)return;A.btLendo=true;
+    try{const cmd=cmdBle();if(cmd&&A.btEsc.length){const ch=A.btEsc[0];if(ch.properties.writeWithoutResponse&&ch.writeValueWithoutResponse)await ch.writeValueWithoutResponse(cmd);else await ch.writeValue(cmd);bruto('enviado: '+hexDe(cmd));}
+      for(const c of A.btLer){const v=await c.readValue();if(v&&v.byteLength){bruto('lido '+c.uuid.slice(0,8)+': '+JSON.stringify(txtDe(v))+'   ['+hexDe(v)+']');receber(v,'bt');}}}catch(e){bruto('erro: '+(e.message||e));}A.btLendo=false;},1000);}
   if(!servs.length||!n){setStatus('Conectou, mas não achei o canal de peso desta balança. Descubra o UUID do serviço com o app nRF Connect e coloque em Gestão › Config. › Balança (UUID do Bluetooth). Ou tente o 🔵 Bluetooth.','err');return;}
   if(n)A.tCon=Date.now();setStatus(n?`Bluetooth conectado (${dev.name||'aparelho'}) · aguardando peso…`:'Conectou, mas nenhum canal envia dados. Veja "Dados recebidos".',n?'ok':'err');
   pedirTelaLigada();
@@ -305,11 +319,19 @@ function bruto(l){A.bruto.push(new Date().toLocaleTimeString('pt-BR')+'  '+l);if
   const el=$('aBruto');if(el&&el.closest('details').open){el.textContent=A.bruto.join('\n');el.scrollTop=el.scrollHeight;}
   const e2=$('acBruto');if(e2&&e2.closest('details').open){e2.textContent=(A.btInfo?A.btInfo+'\n\n':'')+A.bruto.join('\n');e2.scrollTop=e2.scrollHeight;}}
 let ultBruto=0;
-window.autoReceber=(v,o)=>receber(v,o||"sim");
+window.autoReceber=(v,o)=>receber(v,o||"sim");window.autoPeso=()=>({peso:A.peso,visor:A.visor});
 function receber(v,origem){
   A.ultDado=Date.now();
   const t=txtDe(v);
-  if(origem!=='sim'&&Date.now()-ultBruto>400){ultBruto=Date.now();bruto(JSON.stringify(t)+(typeof v!=='string'?'   ['+hexDe(v)+']':''));}
+  if(origem!=='sim'&&(origem==='bt'||Date.now()-ultBruto>400)){ultBruto=Date.now();bruto(JSON.stringify(t)+(typeof v!=='string'?'   ['+hexDe(v)+']':''));}
+  /* Digi-Star EZ: ESC 'O' 'm' '0' '2' STX "  2115" EOT ESC 'O' 'a' … EOT SUB EOT — o peso é o que está entre STX e EOT.
+     Quando o visor mostra mensagem (ex.: "PRESS TARE") não é número e é ignorado. */
+  if(typeof v!=='string'){const u=v instanceof DataView?new Uint8Array(v.buffer,v.byteOffset,v.byteLength):new Uint8Array(v);
+    if(u.length>5&&u[0]===0x1b&&u[1]===0x4f){A.temFim=true;
+      for(let i=0;i<u.length-2;i++){if(u[i]===0x1b&&u[i+1]===0x4f&&u[i+2]===0x6d){const a=u.indexOf(2,i+3),b=a>=0?u.indexOf(4,a+1):-1;
+        if(a>=0&&b>a){const vis=String.fromCharCode(...u.slice(a+1,b)).trim();A.visor=vis;
+          if(/^-?\s*\d+([.,]\d+)?$/.test(vis)){const n=parseFloat(vis.replace(/\s/g,'').replace(',','.'));if(!isNaN(n))novoPeso(n);}}}}
+      return;}}
   A.buf+=t;
   const partes=A.buf.split(/[\r\n]+/);A.buf=partes.pop();if(partes.length)A.temFim=true; // a balança manda "enter" no fim da linha
   if(A.buf.length>80){partes.push(A.buf);A.buf='';}
@@ -695,6 +717,8 @@ function montarCfgT(){const box=$('cfgTBox');if(!box||box.dataset.ok)return;box.
     <div class="aCfg">${CAMPOS.map(([k,t,u])=>`<div><label for="cfgT_${k}">${t}<small>${u}</small></label><input id="cfgT_${k}" data-k="${k}" type="number" inputmode="decimal" step="any" min="0"></div>`).join('')}</div>
     <label for="cfgT_ble" style="margin-top:8px">UUID do Bluetooth BLE (se a balança não for achada)</label>
     <input id="cfgT_ble" type="text" autocapitalize="off" autocorrect="off" spellcheck="false" placeholder="ex.: 0000ffe0-0000-1000-8000-00805f9b34fb">
+    <label for="cfgT_cmd" style="margin-top:8px">Comando para pedir o peso (Bluetooth BLE)</label>
+    <input id="cfgT_cmd" type="text" autocapitalize="off" autocorrect="off" spellcheck="false" placeholder="deixe vazio se a balança manda sozinha">
     <label for="cfgT_ws" style="margin-top:8px">Endereço da caixinha Wi-Fi</label>
     <input id="cfgT_ws" type="text" autocapitalize="off" autocorrect="off" spellcheck="false">
   </section>
@@ -721,6 +745,7 @@ function montarCfgT(){const box=$('cfgTBox');if(!box||box.dataset.ok)return;box.
   </section>`;
   CAMPOS.forEach(([k])=>{$('cfgT_'+k).onchange=e=>{const c=cfg(),v=parseFloat(String(e.target.value).replace(',','.'));
     if(!isNaN(v)&&v>=0){c[k]=v;salvarCfg();avisoCfg();}else e.target.value=c[k];};});
+  $('cfgT_cmd').onchange=e=>{const c=cfg();c.bleCmd=e.target.value;salvarCfg();avisoCfg();toast('Comando salvo. Conecte de novo pelo 🔷 Bluetooth BLE.');};
   $('cfgT_ble').onchange=e=>{const c=cfg();c.bleUuid=e.target.value.trim();salvarCfg();avisoCfg();toast('UUID salvo. Conecte de novo pelo 🔷 Bluetooth BLE.');};
   $('cfgT_ws').onchange=e=>{const c=cfg();c.ws=e.target.value.trim()||CFG_PADRAO.ws;e.target.value=c.ws;salvarCfg();avisoCfg();};
   $('cfgT_som').onchange=e=>{const c=cfg();c.som=e.target.checked;salvarCfg();avisoCfg();if(c.som){liberarSom();tocar('lento');}};
@@ -732,7 +757,7 @@ function avisoCfg(){const el=$('cfgTSinc');if(!el)return;const p=typeof G!=='und
   el.textContent=p?'⏳ enviando…':'✓ salvo na nuvem';if(p)setTimeout(avisoCfg,1500);}
 function preencherCfgT(){if(!$('cfgT_tol'))return;const c=cfg();
   CAMPOS.forEach(([k])=>{const el=$('cfgT_'+k);if(document.activeElement!==el)el.value=c[k];});
-  if(document.activeElement!==$('cfgT_ws'))$('cfgT_ws').value=c.ws;if(document.activeElement!==$('cfgT_ble'))$('cfgT_ble').value=c.bleUuid||'';$('cfgT_som').checked=!!c.som;}
+  if(document.activeElement!==$('cfgT_ws'))$('cfgT_ws').value=c.ws;if(document.activeElement!==$('cfgT_ble'))$('cfgT_ble').value=c.bleUuid||'';if(document.activeElement!==$('cfgT_cmd'))$('cfgT_cmd').value=c.bleCmd||'';$('cfgT_som').checked=!!c.som;}
 window.cfgTAoAbrir=()=>{montarCfgT();preencherCfgT();avisoCfg();
   try{if(typeof gSync==='function')gSync(true).then(()=>{if(!cfgNuvem())salvarCfg();preencherCfgT();avisoCfg();}).catch(()=>{});}catch(e){}};
 /* puxa da nuvem ao abrir a Automação também, para pegar ajustes feitos em outro aparelho */
