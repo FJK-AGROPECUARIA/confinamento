@@ -106,6 +106,7 @@ tr.grp td span{float:right;font-variant-numeric:tabular-nums}
 body.somenteVer.verCarga #viewTrato>section:not(#painel),body.somenteVer.verCarga #dataLinha,body.somenteVer.verCarga #painel>.tSetaFixa,body.somenteVer.verCarga .navtrato,body.somenteVer.verCarga #cal{display:none!important}
 #avCargaBox tr.atual td{background:#eef4e0}
 .contRem{border:3px solid #1565c0}.contRem h2{color:#1565c0}.contIt{display:grid;gap:4px;padding:8px 0;border-top:1px solid #dde3ea}.contIt span{font-size:.9rem;color:var(--muted)}.contIt button{margin-top:4px}
+.avSub{font-weight:800;font-size:1rem;color:var(--fg);padding:2px 4px 0;display:flex;flex-wrap:wrap;gap:2px 8px;align-items:baseline}.avSub em{font-style:normal;font-weight:600;font-size:.85rem;color:var(--muted)}
 .avVer{font-weight:700;font-size:.85rem;color:#4b5b3f;text-align:right;padding:0 4px}
 .abrirNovo{text-align:center}.abrirNovo .note{margin:0 0 8px}
 .fBar{display:flex;justify-content:space-between;align-items:center;gap:8px;background:#eef4e0;border-radius:10px;padding:8px 10px;margin-bottom:10px;font-weight:700;font-size:.92rem}
@@ -1040,7 +1041,7 @@ body.naInicio .topoLinha .voltarIni{display:none}
 <div class="toast" id="toast" hidden></div>
 <script>
 'use strict';
-const APP_VERSAO='58';
+const APP_VERSAO='59';
 const APP_DATA='19/10/2026';
 const KEY='confinamento-completo-v1';
 const $=id=>document.getElementById(id);
@@ -1297,7 +1298,7 @@ async function iniciarFornecimentoChecado(){const pend=fornPendentes(FS.local,FS
   const peso=window.pesoBalanca?pesoBalanca():null;
   if(peso!=null&&prec>0&&peso<prec){const ok=window.confirmaVermelho?await confirmaVermelho('Pouca ração no vagão',`A balança mostra ${fmt(peso)} kg e o fornecimento precisa de ${fmt(prec)} kg (${pend.length} curral(is)). Faltam ${fmt(prec-peso)} kg.`,'Iniciar mesmo assim','Voltar para carregar mais'):confirm('Pouca ração no vagão. Iniciar mesmo assim?');if(!ok)return;}
   iniciarFornecimento();}
-function iniciarFornecimento(){FS.fim='';S.forn={ativo:true,dia:hojeKey(),local:FS.local,rac:FS.rac||'',trato:+FS.trato};S.ini='';S.fim='';
+function iniciarFornecimento(){FS.fim='';S.forn={ativo:true,ts0:Date.now(),dia:hojeKey(),local:FS.local,rac:FS.rac||'',trato:+FS.trato};S.ini='';S.fim='';
   if(+S.tratoSel!==+FS.trato){S.tratoSel=+FS.trato;$('tratoSel').value=String(S.tratoSel);if($('aTrato'))$('aTrato').value=String(S.tratoSel);}
   const L=lista(),regs=regsAtuais();setAtual(Math.max(0,L.findIndex(x=>!feito(x.nome,regs))));save();
   if(window.aRenderFora)aRenderFora();render();mostrarFornecimento();window.scrollTo({top:0});}
@@ -2864,7 +2865,7 @@ function estadoAoVivo(){
   if(window.cEstadoAoVivo&&((avModo==='carga'||avModo==='autoc')||(bat&&!emForn))){const e=cEstadoAoVivo(avModo==='autoc'||(avModo!=='carga'&&bat&&bat.origem==='balanca'));if(e)return e;}
   if(avModo==='auto'&&window.aEstadoAoVivo){const e=aEstadoAoVivo();if(e)return e;}
   const L=lista(),c=L[S.atual],regs=regsAtuais();
-  const ff=filtroForn();return {modo:'trato',origem:'manual',local:ff?ff.local:'',rac:ff?ff.rac:'',fimForn:!ff,deAp:ff&&ff.deAp||'',contTs:ff&&ff.contTs||0,dia:diaAtivo(),trato:S.tratoSel,curral:c?c.nome:'',prev:c?c.prev:null,ini:S.ini||'',fim:S.fim||'',feitos:L.filter(x=>feito(x.nome,regs)).length,total:L.length};}
+  const ff=filtroForn();return {modo:'trato',origem:'manual',local:ff?ff.local:'',rac:ff?ff.rac:'',fimForn:!ff,deAp:ff&&ff.deAp||'',contTs:ff&&ff.contTs||0,fts0:ff&&ff.ts0||0,dia:diaAtivo(),trato:S.tratoSel,curral:c?c.nome:'',prev:c?c.prev:null,ini:S.ini||'',fim:S.fim||'',feitos:L.filter(x=>feito(x.nome,regs)).length,total:L.length};}
 function avAtivo(){return !!(S&&!modoVer&&!document.body.classList.contains('naInicio')&&apiUrl()&&navigator.onLine);}
 function agendarAoVivo(){if(avTimer||!avAtivo())return;if(JSON.stringify(estadoAoVivo())===avUlt)return;
   avTimer=setTimeout(enviarAoVivo,Math.max(300,2500-(Date.now()-avUltEnvio)));}
@@ -2889,7 +2890,7 @@ let contOferecido={};
 async function continuarForn(d,tela){tela=tela||window.abaAtual;
   try{await puxarRegistros(true);}catch(e){}
   const loc=d.local||linhaDe(d.curral||''),rac=d.local?(d.rac||''):((window.racaoDoCurral&&d.curral&&racaoDoCurral(d.curral))||'');
-  S.forn={ativo:true,dia:hojeKey(),local:loc,rac,trato:+d.trato,deAp:d.ap,contTs:Date.now()};FS.fim='';
+  S.forn={ativo:true,ts0:+d.fts0||Date.now(),dia:hojeKey(),local:loc,rac,trato:+d.trato,deAp:d.ap,contTs:Date.now()};FS.fim='';
   if(+S.tratoSel!==+d.trato){S.tratoSel=+d.trato;$('tratoSel').value=String(d.trato);if($('aTrato'))$('aTrato').value=String(d.trato);}
   const L=lista(),regs=regsAtuais(),meio=d.curral&&+d.ini>0&&!feito(d.curral,regs)?L.findIndex(x=>x.nome===d.curral):-1;
   setAtual(meio>=0?meio:Math.max(0,L.findIndex(x=>!feito(x.nome,regs))));
@@ -2951,11 +2952,12 @@ try{navigator.getBattery&&navigator.getBattery().then(bt=>{let av=0;const ver=()
   bt.addEventListener('levelchange',ver);bt.addEventListener('chargingchange',ver);setInterval(ver,60000);ver();});}catch(e){}
 /* cartão ao vivo do Carregar (batida do vagão), manual ou pela balança */
 function cardCargaAoVivo(d){const ini=parseFloat(d.ini),fim=parseFloat(d.fim),pv=d.prev,auto=d.origem==='auto';
-  const fora=d.dia!==hojeKey()?` · ${diaBR(d.dia)}`:'',topo=`<div class="avTopo"><span><i class="avPonto"></i>Ao vivo · ${auto?'⚡':'✋'} Carregar · Trato ${d.trato}${fora}${d.nProd?` · ${d.feitos||0}/${d.nProd}`:''}</span><span class="avIdade">${idadeTxt(d.idade)}</span></div>`;
+  const t0=+d.ts0||(d.bat&&+d.bat.ts0)||0;
+  const topo=avTopoHTML(d,t0)+(d.semBatida?'':`<div class="avSub">${auto?'⚡':'✋'} Carregar · ${d.trato?'Trato '+esc(d.trato):'Avulsa'}${d.rac?' · '+esc(d.rac):''}${d.nProd?` <em>${d.feitos||0} de ${d.nProd} produtos</em>`:''}</div>`);
   if(d.semBatida)return `<div class="avCard${d.idade>70000?' parado':''}">${topo}<div class="avVazio">Na tela de carregar, sem batida começada</div></div>`;
   let real='—',dif='—',cls='',fl=false;if(!isNaN(ini)&&!isNaN(fim)){const f=fim-ini;real=fmt(f);if(pv!=null){const x=f-pv;fl=auto&&x<0;dif=fl?fmt(-x):sgn(x);cls=fl?'':classeDesv(x,pv);}}
   return `<div class="avCard${d.idade>70000?' parado':''}">${topo}
-    <div class="curBox2"><div class="cbCur"><span>${esc(d.rac||'Ração')} · produto ${d.iProd||'—'}</span><b>${esc(d.prod||'—')}</b></div><div class="cbPrev"><span>Carregar</span><b class="num">${pv!=null?fmt(pv):'—'}</b></div></div>
+    <div class="curBox2"><div class="cbCur"><span>Produto ${d.iProd||'—'}${d.nProd?' de '+d.nProd:''}</span><b>${esc(d.prod||'—')}</b></div><div class="cbPrev"><span>Carregar</span><b class="num">${pv!=null?fmt(pv):'—'}</b></div></div>
     <div class="avGrade">
       <div><small>Bal. início</small><b class="num">${!isNaN(ini)?fmt(ini):'—'}</b></div>
       <div class="avAlvo"><small>Parar em</small><b class="num">${!isNaN(ini)&&pv!=null?fmt(ini+pv):'—'}</b></div>
@@ -2964,6 +2966,8 @@ function cardCargaAoVivo(d){const ini=parseFloat(d.ini),fim=parseFloat(d.fim),pv
       <div><small>${fl?'Falta':'Diferença'}</small><b class="num ${cls}">${dif}</b></div>
       <div><small>Batida</small><b class="num">${fmt((d.carregado||0)+(!isNaN(ini)&&!isNaN(fim)&&fim>ini&&!(d.its&&d.its[(d.iProd||1)-1]&&d.its[(d.iProd||1)-1][2]!=null)?fim-ini:0))}<small style="display:inline;font-size:.7rem"> / ${fmt(d.totalPrev||0)}</small></b></div>
     </div></div>`;}
+function avTopoHTML(d,t0){const dd=d.dia&&/^\d{4}-/.test(d.dia)?diaBR(d.dia).slice(0,5):'',h=t0?new Date(t0).toTimeString().slice(0,5):'';
+  return `<div class="avTopo"><span><i class="avPonto"></i>Ao vivo${dd?' · '+dd:''}${h?' · início '+h:''}</span><span class="avIdade">${idadeTxt(d.idade)}</span></div>`;}
 function idadeTxt(ms){const s=Math.max(0,Math.round(ms/1000));return s<60?`há ${s} s`:`há ${Math.round(s/60)} min`;}
 /* Visualizar › Carregar: embaixo, a batida em andamento produto por produto e as batidas feitas hoje */
 function pintarAvCarga(L){const el=$('avCargaBox');if(!el)return;const on=modoVer&&document.body.classList.contains('verCarga');el.hidden=!on;if(!on){el.innerHTML='';return;}
@@ -3004,7 +3008,7 @@ function renderAoVivo(){const box=$('aoVivo');if(!modoVer){box.innerHTML='';retu
     const fora=d.dia!==hojeKey()?` · ${diaBR(d.dia)}`:'';
     const nomeCur=d.fimForn?'✓ Fornecimento finalizado':d.curral||(d.total?'Trato completo':'—');
     return `<div class="avCard${d.idade>70000?' parado':''}">
-      <div class="avTopo"><span><i class="avPonto"></i>Ao vivo · ${auto?'⚡ Fornecer':'✋ Fornecer'}${d.local?' · '+(d.local==='C'?'Confinamento':'Pasto'):''} · Trato ${d.trato}${fora} · ${d.feitos||0}/${d.total||0}</span><span class="avIdade">${idadeTxt(d.idade)}</span></div>
+      ${avTopoHTML(d,+d.fts0||0)}<div class="avSub">${auto?'⚡':'✋'} Fornecer · Trato ${esc(d.trato)}${d.local?' · '+(d.local==='C'?'Confinamento':'Pasto'):''} <em>${d.feitos||0} de ${d.total||0} currais</em></div>
       <div class="curBox2"><div class="cbCur"><span>Curral atual</span><b>${esc(nomeCur)}</b></div><div class="cbPrev"><span>Previsto</span><b class="num">${pv!=null&&d.curral?fmt(pv):'—'}</b></div></div>
       <div class="avGrade">
         <div><small>Bal. início</small><b class="num">${!isNaN(ini)?fmt(ini):'—'}</b></div>

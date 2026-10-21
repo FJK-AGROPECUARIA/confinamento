@@ -1152,7 +1152,7 @@ window.cEstadoAoVivo=auto=>{const B=CG.ativa,base={modo:'carga',origem:auto?'aut
   const fim=ok(it.real)?it.fim:(auto?pesoAgora:it.fim);
   return Object.assign(base,{dia:B.dia,trato:B.trato,rac:B.racNome,prod:it.nome||'',iProd:B.atual+1,nProd:B.itens.length,prev:ok(it.prev)?it.prev:null,
     ini:ok(it.ini)?it.ini:'',fim:ok(fim)?fim:'',feitos:B.itens.filter(x=>ok(x.real)).length,
-    its:B.itens.map(x=>[x.nome,+x.prev||0,ok(x.real)?Math.round(x.real):null]),bat:JSON.parse(JSON.stringify(Object.assign({},B,{escolha:false}))),deAp:B.deAp||'',contTs:B.contTs||0,carregado:B.itens.reduce((a,x)=>a+(ok(x.real)?x.real:0),0),totalPrev:B.itens.reduce((a,x)=>a+(+x.prev||0),0)});};
+    its:B.itens.map(x=>[x.nome,+x.prev||0,ok(x.real)?Math.round(x.real):null]),ts0:B.ts0||0,bat:JSON.parse(JSON.stringify(Object.assign({},B,{escolha:false}))),deAp:B.deAp||'',contTs:B.contTs||0,carregado:B.itens.reduce((a,x)=>a+(ok(x.real)?x.real:0),0),totalPrev:B.itens.reduce((a,x)=>a+(+x.prev||0),0)});};
 let cTec=null,cBuf='';
 /* currais do trato que usam a ração (pelo lote) e o total previsto deles */
 function sugestaoCarga(trato,racId,loc){const hj=hojeKey(),m=(S.prev||{})[String(trato)]||{},cs=[];let tot=0;
