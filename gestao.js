@@ -1906,10 +1906,10 @@ function zootDados(dia,loc){const X=gCtx(),L=gTodos('lote').filter(l=>l.ent&&cab
   const T={cab};['dias','msRac','pE','pP','gmd','mnG','mnD','msG','msD','ms1','ms5','pvG','pvD','pv1','pv5','fD','fA'].forEach(k=>T[k]=pond(k));
   return {dia,loc:loc||'T',rows,T};}
 const ZCOLS=[ // [chave, título, grupo, casas, largura no PDF]
-  ['c','Curral','id',null,140],['ent','Entrada','id','dia',120],['sexo','Sexo','id',null,60],['cab','Cab.','id',0,70],
+  ['c','Curral','id',null,177],['ent','Entrada','id','dia',120],['sexo','Sexo','id',null,48],['cab','Cab.','id',0,70],
   ['dias','Dias','id2',0,60],['rac','Dieta','id2',null,80],['msRac','MS dieta','id2',1,95],
   ['pE','Entrada','pes',0,90],['pP','Projetado','pes',0,105],['gmd','GMD','pes',2,70],
-  ['nota','','nt',0,70],
+  ['nota','','nt',0,55],
   ['mnG','Geral','mn',2,85],['mnD','Dia','mn',2,85],
   ['msG','Geral','ms',2,80],['msD','Dia','ms',2,80],['ms1','D-1','ms',2,80],['ms5','5 dias','ms',2,80],
   ['pvG','Geral','pv',2,75],['pvD','Dia','pv',2,75],['pv1','D-1','pv',2,75],['pv5','5 dias','pv',2,75],
@@ -1958,7 +1958,8 @@ function zootCanvas(D){const W=1754,top=130,rowH=38,hd=72,porPag=Math.max(5,Math
       ZCOLS.forEach((c,i)=>{let t=zVal(v,c[0],c[3]);if(tot&&c[0]==='cab')t=nf(D.T.cab);if(tot&&c[0]==='nota')t='';
         x.font=(tot||c[0]==='c'||c[0]==='msD'?'bold ':'')+'18px Arial';x.fillStyle=c[2]==='fin'?'#1f5fa8':'#1d2b3a';
         const al=['c'].includes(c[0])?'left':'center';x.textAlign=al;
-        let tt=t;while(tt.length>3&&x.measureText(tt).width>pos[i].w-10)tt=tt.slice(0,-2)+'…';
+        let tt=t;if(c[0]==='c'){let fs=18;while(fs>11&&x.measureText(tt).width>pos[i].w-10){fs--;x.font=(tot||true?'bold ':'')+fs+'px Arial';}}  // nome do curral: diminui a letra para caber inteiro
+        while(tt.length>3&&x.measureText(tt).width>pos[i].w-10)tt=tt.slice(0,-2)+'…';
         x.fillText(tt,al==='left'?pos[i].x+8:pos[i].x+pos[i].w/2,y+26);});
       y+=rowH;});
     x.textAlign='left';x.fillStyle='#5d6b7a';x.font='17px Arial';
