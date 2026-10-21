@@ -1063,9 +1063,10 @@ body.naInicio .topoTxt h1{font-size:clamp(16px,5vw,28px)!important}
 <div class="escolhaImg" id="escolhaImg" hidden>
   <div class="eiCaixa">
     <h2>Foto</h2>
-    <button class="verde" data-img="trato">Por trato<small>uma imagem para cada trato</small></button>
-    <button class="verde" data-img="curral">Por curral<small>total de cada curral</small></button>
-    <button class="verde" data-img="todos">Todos<small>por trato e por curral</small></button>
+    <button class="verde" data-img="trato">Por trato separado<small>uma imagem para cada trato</small></button>
+    <button class="verde" data-img="juntos">Por trato juntos<small>todos os tratos numa imagem só, um embaixo do outro</small></button>
+    <button class="verde" data-img="curral">Por curral total<small>total de cada curral</small></button>
+    <button class="verde" data-img="todos">Todos<small>separado, juntos e por curral</small></button>
     <button data-img="cancelar">Cancelar</button>
   </div>
 </div>
@@ -1099,7 +1100,7 @@ body.naInicio .topoTxt h1{font-size:clamp(16px,5vw,28px)!important}
 <div class="toast" id="toast" hidden></div>
 <script>
 'use strict';
-const APP_VERSAO='92';
+const APP_VERSAO='93';
 const APP_DATA='19/10/2026';
 const KEY='confinamento-completo-v1';
 const $=id=>document.getElementById(id);
@@ -2026,6 +2027,14 @@ function secoesHist(){
     return {dia:g.dia,trato:g.trato,cab:`${diaBR(g.dia)} · Trato ${g.trato}`,linhas:[...m.entries()].map(([n,rs])=>linhaReg(n,rs[0].prev,rs))};});
 }
 const COLS_TRATO=[['Hora',100,'c'],['Curral',240,'c'],['Dieta',220,'c'],['Previsto',150,'r'],['Realizado',160,'r'],['Dif.',130,'r']];
+const COLS_JUNTOS=[['Hora',100,'c'],['Curral',220,'c'],['Trato',90,'c'],['Dieta',210,'c'],['Previsto',150,'r'],['Realizado',160,'r'],['Dif.',130,'r']];
+/* todos os tratos juntos, na sequência do horário, com a coluna Trato */
+function secaoJuntosImg(gs,cab){let tp=0,tf=0,tpf=0;
+  const it=[];gs.forEach(g=>g.linhas.forEach(l=>it.push({l,t:g.trato,dia:g.dia})));
+  it.sort((a,b)=>a.dia.localeCompare(b.dia)||(a.l.hora?0:1)-(b.l.hora?0:1)||String(a.l.hora||'').localeCompare(String(b.l.hora||''))||a.t-b.t);
+  const L=it.map(({l,t})=>{if(l.prev!=null)tp+=l.prev;if(l.real!=null){tf+=l.real;tpf+=l.prev||0;}
+    return {v:[l.hora,l.curral,String(t),dietaDe(l.curral),fx(l.prev),fx(l.real),l.dif==null?'':sgn(l.dif)],prev:l.prev,dif:l.dif,neg:[1,5]};});
+  return {cab,cols:COLS_JUNTOS,linhas:L,total:['TOTAL','','','',fmt(tp),fmt(tf),tf?sgn(tf-tpf):'']};}
 const COLS_CURRAL=[['Curral',220,'c'],['Dieta',200,'c'],['Tratos',100,'c'],['Previsto',150,'r'],['Realizado',150,'r'],['Dif.',120,'r'],['% IMS',120,'c']];
 // secoes: [{cab, cols, linhas:[{v:[...], prev, dif, neg:[índices em negrito]}], total:[...]}]
 function desenharTabela(secoes,titulo){window.__tituloImg=titulo||(()=>{try{const [a,b]=intervaloHist();return `FJK - Tratos - ${diaBR(a)}${a!==b?' a '+diaBR(b):''}`;}catch(e){return 'FJK - Tratos';}})();
@@ -2088,6 +2097,9 @@ $('escolhaImg').addEventListener('click',async e=>{const b=e.target.closest('but
   const f=filtrados();if(!f.length)return;
   const blobs=[],nomes=[];
   if(tipo==='trato'||tipo==='todos'){for(const g of secoesHist()){blobs.push(await desenharTabela([secaoTratoImg(g.cab,g.linhas)]));nomes.push(`FJK - Tratos - ${dataArq(g.dia)} (Trato ${g.trato}).png`);}}
+  if(tipo==='juntos'||tipo==='todos'){const gs=secoesHist();if(gs.length){const [pa,pb]=intervaloHist();
+    /* um arquivo só: Trato 1, e logo abaixo Trato 2 (cada um com a sua faixa e o seu total) */
+    blobs.push(await desenharTabela(gs.map(g=>secaoTratoImg(g.cab,g.linhas))));nomes.push(`FJK - Tratos - ${dataArq(pa)}${pa!==pb?' a '+dataArq(pb):''} (tratos juntos).png`);}}
   if(tipo==='curral'||tipo==='todos'){const t=HD.per?'':(HD.t>0?HD.t:'');
     const cab=`${t?'Trato '+t:'Todos os tratos'} - ${rotuloData()}${localSel==='C'?' · Confinamento':localSel==='P'?' · Pasto':''}`;
     blobs.push(await desenharTabela([secaoCurralImg(f,cab)]));{const [pa,pb]=intervaloHist();nomes.push(`FJK - Tratos - ${dataArq(pa)}${pa!==pb?' a '+dataArq(pb):''} (por curral).png`);}}
