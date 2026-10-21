@@ -559,7 +559,7 @@ input[type=date]::-webkit-calendar-picker-indicator{margin-left:2px;padding:0}
 .gHero b{display:block;font-family:var(--display);font-stretch:condensed;font-size:2.3rem;line-height:1.05;white-space:nowrap}
 .gHero span{display:block;font-size:.8rem;color:#c9d3df;margin-top:3px}
 .gHero.pos{background:#2f6b3a}.gHero.pos small{color:#d9ef7a}.gHero.neg{background:#9e2a24}.gHero.neg small{color:#ffd2cf}
-.fTodosOk{margin-top:10px;background:#2e7d32;color:#fff;font-weight:800;text-align:center;border-radius:14px;padding:14px 10px;font-size:1.05rem;letter-spacing:.02em}
+.fTodosOk{margin-top:10px;background:#c62828;color:#fff;font-weight:800;text-align:center;border-radius:14px;padding:14px 10px;font-size:1.05rem;letter-spacing:.02em}
 .gMsAviso{margin:10px 0;padding:10px 12px;border-radius:12px;background:#e8f2dc;color:#2e5a12;font-size:.88rem;line-height:1.35}.gMsAviso.atencao{background:#fff4dc;color:#7a4b00}.gMsAviso.bloq{background:#fde7e5;color:#b3261e;font-weight:600}
 .row.compart.fz3{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}.row.compart.fz3 button{margin:0;padding-left:4px;padding-right:4px;white-space:nowrap}
 .fzFotos{margin:12px 0 4px;padding:10px;border:1px dashed #b9c7a5;border-radius:12px}.fzFotosTopo{display:flex;justify-content:space-between;align-items:center;gap:8px;font-weight:700}.fzFotosTopo small{font-weight:500;color:var(--muted)}.fzFotosTopo .mini{margin:0}
@@ -571,6 +571,7 @@ input[type=date]::-webkit-calendar-picker-indicator{margin-left:2px;padding:0}
 .fzHN{display:flex;gap:4px}.fzHN button{margin:0;padding:6px 10px;min-height:0;font-size:.8rem;border-radius:99px}.fzHN button.sel{background:var(--accent);border-color:var(--accent);color:#fff}
 .zCards{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin:10px 0}.zCards div{background:#eef3e4;border-radius:12px;padding:8px 12px}.zCards small{display:block;font-size:.72rem;color:var(--muted);font-weight:600}.zCards b{font-size:1.1rem}
 #zootSec .curhead input{width:auto;max-width:170px;margin:0}.zTab td.c small{display:block;font-size:.7rem;color:var(--muted);font-weight:500}
+.cJaFeito{margin:10px 0;background:#c62828;color:#fff;font-weight:800;text-align:center;border-radius:14px;padding:14px 10px;font-size:1.05rem;letter-spacing:.02em;line-height:1.3}.fTodosOk small,.cJaFeito small{display:block;font-weight:600;font-size:.82rem;letter-spacing:0;margin-top:4px;opacity:.95}
 .gMsLinha{display:grid;grid-template-columns:1fr 1.3fr;gap:10px;align-items:end;margin:8px 0}.gMsLinha>div{background:var(--chip);border-radius:12px;padding:8px 12px}.gMsLinha>div span{display:block;font-size:.75rem;color:var(--muted);font-weight:600}.gMsLinha>div b{font-size:1.4rem}.gMsLinha input{font-size:1.2rem}
 .gCustos td,.gCustos th{font-size:.84rem;white-space:nowrap;padding-left:2px;padding-right:2px}.gCustos td:first-child{white-space:normal}.gCustos td small{display:block;font-size:.68rem;color:var(--muted);font-weight:500}.gCustos td,.gCustos th{font-size:.8rem}.gCustos td:first-child{font-weight:600}.gCustos tr.grp td{font-weight:800}
 .stat b small{font-size:.7rem;font-family:var(--body);color:var(--muted)}
@@ -1094,7 +1095,7 @@ body.naInicio .topoTxt h1{font-size:clamp(16px,5vw,28px)!important}
 <div class="toast" id="toast" hidden></div>
 <script>
 'use strict';
-const APP_VERSAO='79';
+const APP_VERSAO='80';
 const APP_DATA='19/10/2026';
 const KEY='confinamento-completo-v1';
 const $=id=>document.getElementById(id);
@@ -1332,7 +1333,10 @@ function fornSetupHTML0(){if(!FS.local)FS.passo=1;const cont=n=>`<button type="b
     <label for="fRac">2. Ração que vai distribuir</label><select id="fRac">${FS.rac==null?'<option value="-" selected>— escolha a ração —</option>':''}${R.map(r=>`<option value="${r.uid}"${r.uid===FS.rac?' selected':''}>${esc(r.nome)}</option>`).join('')}<option value=""${FS.rac===''?' selected':''}>Todas as rações</option></select>
     ${R.length===1?`<p class="note">Única ração ativa no ${FS.local==='C'?'confinamento':'pasto'}: já selecionada.</p>`:''}`;
   if(FS.rac==null)return passoRac;
-  const trF=tratosAtivos().filter(k=>fornCurrais(FS.local,FS.rac,k).length);if(!FS.trato&&trF.length===1)FS.trato=trF[0];
+  const trF=tratosAtivos().filter(k=>fornCurrais(FS.local,FS.rac,k).length);
+  /* já vem escolhido o próximo trato a fazer (o 1º com currais pendentes); a pessoa pode voltar pela setinha */
+  {const prox=trF.find(k=>fornPendentes(FS.local,FS.rac,k).length);
+   if(!FS.trato||(FS.tAuto&&prox&&+FS.trato!==prox&&!fornPendentes(FS.local,FS.rac,FS.trato).length)){FS.trato=prox||trF[trF.length-1]||null;FS.tAuto=true;}}
   if(!FS.trato){const pend=trF.map(k=>({k,n:fornPendentes(FS.local,FS.rac,k).length,t:fornCurrais(FS.local,FS.rac,k).length}));
     return passoRac+`<label for="fTrato">3. Trato</label>${tratoSeta('fTrato',null,'',trF)}<p class="note">${pend.length?pend.map(x=>`Trato ${x.k}: ${x.n?`faltam ${x.n} de ${x.t}`:'✓ todos fornecidos'}`).join(' · '):'Ainda não tem previsto para este local e ração.'}</p>`;}
   const L=fornCurrais(FS.local,FS.rac,FS.trato),pend=fornPendentes(FS.local,FS.rac,FS.trato),tot=L.reduce((a,x)=>a+x.prev,0);
@@ -1340,7 +1344,7 @@ function fornSetupHTML0(){if(!FS.local)FS.passo=1;const cont=n=>`<button type="b
     <label for="fTrato">3. Trato</label>${tratoSeta('fTrato',FS.trato,'',trF)}${`
     ${L.length?'':`<p class="note">${Object.keys(S.prev||{}).some(k=>Object.keys(S.prev[k]||{}).length)?'Nenhum curral com previsto neste trato para este local e ração.':'Ainda não tem previsto hoje: faça a leitura de cocho (Tratos › Leitura).'}</p>`}
     <button class="primary" id="fIniciar"${L.length?'':' disabled'}>▶ Iniciar fornecimento</button>
-    ${L.length&&!pend.length?`<div class="fTodosOk">✓ TRATO ${FS.trato}: TODOS JÁ FORAM FORNECIDOS</div>`:''}`}`;}
+    ${L.length&&!pend.length?`<div class="fTodosOk">⚠ TRATO ${FS.trato}: TODOS JÁ FORAM FORNECIDOS<small>Se precisar, pode iniciar o fornecimento mesmo assim.</small></div>`:''}`}`;}
 const FORN_NOVO_TXT=()=>{const f=S&&S.forn;return f&&f.dia&&f.dia<hojeKey()?`<p class="note" style="color:#b3261e;font-weight:700">⚠ Este fornecimento está aberto desde ${diaBR(f.dia).slice(0,5)}. Termine os currais ou encerre abrindo outro.</p>`:'<p class="note">Este fornecimento está em aberto. Quer abrir outro (outro local, ração ou trato)?</p>';};
 const FORN_NOVO={toString(){return FORN_NOVO_TXT()+'<button data-ftrocar="novo">＋ Abrir outro fornecimento</button>';}};
 function fornBarHTML(){const f=filtroForn();if(!f)return '';const r=f.rac&&typeof G!=='undefined'&&G.it[f.rac];
@@ -1363,7 +1367,7 @@ document.addEventListener('click',e=>{const lb=e.target.closest('[data-floc]');i
   const fp=e.target.closest('[data-fpasso]');if(fp){FS.passo=+fp.dataset.fpasso;mostrarFornecimento();return;}
   if(e.target.closest('#fIniciar'))return iniciarFornecimentoChecado();
   if(e.target.closest('[data-ftrocar]')){if(window.autoDescarregando&&autoDescarregando()){toast('Está fornecendo num curral: registre antes de trocar.');return;}const f=S.forn||{};FS.local=null;FS.rac=null;FS.trato=null;FS.passo=1;FS.fim='';S.forn=Object.assign({},f,{ativo:false});save();mostrarFornecimento();window.scrollTo({top:0});}});
-document.addEventListener('change',e=>{if(e.target.id==='fRac'){FS.rac=e.target.value==='-'?null:e.target.value;FS.trato=null;if(FS.rac!=null)FS.passo=Math.max(FS.passo,3);mostrarFornecimento();}if(e.target.id==='fTrato'){FS.trato=+e.target.value;mostrarFornecimento();}});
+document.addEventListener('change',e=>{if(e.target.id==='fRac'){FS.rac=e.target.value==='-'?null:e.target.value;FS.trato=null;if(FS.rac!=null)FS.passo=Math.max(FS.passo,3);mostrarFornecimento();}if(e.target.id==='fTrato'){FS.trato=+e.target.value;FS.tAuto=false;mostrarFornecimento();}});
 /* terminou todos os currais do trato (fornecidos ou "não fornecer"): já passa para o próximo trato */
 function proximoTratoSeCompleto(){try{const f=filtroForn();
   if(f){const L=lista(),regs=regsAtuais();if(!L.length||!L.every(x=>feito(x.nome,regs)))return false;

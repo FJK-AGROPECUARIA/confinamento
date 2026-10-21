@@ -113,11 +113,12 @@ function valorVenda(s){const cab=+s.cab||0,peso=+s.peso||0,p=+s.preco||0;
   const v=s.unid==='cab'?cab*p:s.unid==='kg'?cab*peso*p:arrobaVenda(s)*p;return v-(+s.desc||0);}
 
 /* ---------- consumo e custo por dia (a partir do realizado do trato) ---------- */
-function gIndice(){const m=new Map();(HIST||[]).forEach(r=>{const k=r.dia+'|'+r.curral;m.set(k,(m.get(k)||0)+(+r.forn||0));});return m;}
+const nAt=c=>typeof nomeAtual==='function'?nomeAtual(c):c;  // curral renomeado: registros e lotes se encontram pelo nome atual
+function gIndice(){const m=new Map();(HIST||[]).forEach(r=>{const k=r.dia+'|'+nAt(r.curral);m.set(k,(m.get(k)||0)+(+r.forn||0));});return m;}
 function gCtx(){const L=gTodos('lote');const sd=new Map(),pz=new Map();L.forEach(l=>{sd.set(l.uid,saidasDe(l));pz.set(l.uid,pesagensDe(l));});return {ix:gIndice(),L,sd,pz};}
 function diaLote(l,dia,X){
   const sd=X.sd.get(l.uid),cab=cabPres(l,dia,sd);if(!cab)return null;
-  const c=curralEm(l,dia),tot=X.ix.get(dia+'|'+c)||0;
+  const c=curralEm(l,dia),tot=X.ix.get(dia+'|'+nAt(c))||0;
   const juntos=X.L.filter(o=>curralEm(o,dia)===c&&cabPres(o,dia,X.sd.get(o.uid))>0);
   const cabTot=juntos.reduce((a,o)=>a+cabPres(o,dia,X.sd.get(o.uid)),0)||cab;
   const mn=tot*cab/cabTot,rac=racaoEm(l,dia),cp=rac?compRacao(rac,dia):null;
@@ -946,12 +947,16 @@ function msHistTodos(){const L=[];gTodos('insumo').forEach(i=>{const h=Array.isA
   return L.sort((a,b)=>(b.dia||'').localeCompare(a.dia||'')||(b.ts||0)-(a.ts||0));}
 /* quando pode alterar a MS: com trato do dia em andamento NÃO; terminou todos os tratos do dia → vale de amanhã; ainda não tratou hoje → vale de hoje */
 function msStatus(){const hj=hojeKey(),H=typeof HIST!=='undefined'?HIST:[],P=(typeof S!=='undefined'&&S&&S.prev)||{};
-  const feitoHoje=H.filter(r=>r.dia===hj);let pend=0,tot=0;
-  Object.keys(P).forEach(k=>Object.keys(P[k]||{}).forEach(c=>{if(!(+P[k][c]>0))return;tot++;if(!feitoHoje.some(r=>+r.trato===+k&&r.curral===c))pend++;}));
-  if(feitoHoje.length&&pend)return {bloq:true,pend,tot};
+  const feitoHoje=H.filter(r=>r.dia===hj);
+  /* conta trato por trato só os currais que estão naquele trato (mesma regra do Fornecer) */
+  const ks=(typeof tratosAtivos==='function'?tratosAtivos():[1,2]).map(Number),ativo=c=>typeof curralAtivo!=='function'||curralAtivo(c);
+  const porT=ks.map(k=>{const m=P[String(k)]||{};const cs=(S.cadastro||[]).filter(c=>ativo(c)&&typeof m[c]==='number'&&m[c]>0);
+    const falta=cs.filter(c=>!feitoHoje.some(r=>+r.trato===k&&r.curral===c)).length;return {k,tot:cs.length,falta};}).filter(x=>x.tot);
+  const pend=porT.reduce((a,x)=>a+x.falta,0);
+  if(feitoHoje.length&&pend)return {bloq:true,pend,porT};
   const dia=feitoHoje.length?somaDias(hj,1):hj,leit=gTodos('leitura').some(l=>l.dia===dia);return {bloq:false,dia,leit,amanha:dia!==hj};}
 function msAvisoHTML(){const m=msStatus();
-  if(m.bloq)return `<div class="gMsAviso bloq">⛔ Trato em andamento: faltam ${m.pend} de ${m.tot} curral(is) nos tratos de hoje.<br>A matéria seca só pode ser alterada depois que <b>todos os tratos do dia</b> forem finalizados (e antes da leitura do dia seguinte).</div>`;
+  if(m.bloq)return `<div class="gMsAviso bloq">⛔ Existem currais pendentes para finalizar o trato do dia:<br>${m.porT.filter(x=>x.falta).map(x=>`<b>Trato ${x.k}</b>: faltam ${x.falta} de ${x.tot} curral(is)`).join(' · ')}.<br>A matéria seca só pode ser alterada após a finalização de todos os tratos do dia (e antes da leitura do dia seguinte).</div>`;
   return `<div class="gMsAviso${m.leit?' atencao':''}">${m.amanha?'✓ Tratos de hoje finalizados. ':''}A nova MS vale a partir de <b>${dB(m.dia)}</b>${m.amanha?' (amanhã)':' (hoje)'}: leitura, previsto, rações e batidas desse dia em diante. Os dias anteriores ficam como estão.${m.leit?`<br>⚠ A leitura de ${dB(m.dia)} já foi feita com a MS antiga: depois de alterar, refaça a leitura para recalcular o previsto.`:''}</div>`;}
 function tInsMS(t){const I=gTodos('insumo').sort(porNome),H=msHistTodos(),sel=(t&&t.ins)||'',iS=sel&&G.it[sel];
   const linhas=H.map(x=>`<tr data-msh="${esc(x.uid||'')}"${sel&&x.uid!==sel?' hidden':''}><td>${dB(x.dia)}${x.hora?`<small>${esc(x.hora)}</small>`:''}</td><td class="c">${esc(x.nome)}</td><td>${x.ini?'inicial':pc(+x.de,1)}</td><td><b>${pc(+x.para,1)}</b></td></tr>`).join('');
@@ -1321,7 +1326,11 @@ function cTelaNova(){if(!CG.passo){CG.passo=1;CG.local=null;}if(!CG.local)CG.pas
     <div><label for="cRac">2. Ração</label><select id="cRac">${CG.rac?'':'<option value="" selected>— escolha a ração —</option>'}${R.map(r=>`<option value="${r.uid}"${r.uid===CG.rac?' selected':''}>${esc(r.nome)}</option>`).join('')}</select>
       ${doLocal.length===1?`<p class="note">Única ração ativa no ${NOMELOC[CG.local].toLowerCase()}: já selecionada.</p>`:!doLocal.length?`<p class="note">Nenhum lote com ração no ${NOMELOC[CG.local].toLowerCase()}: mostrando todas.</p>`:''}</div>`;
   if(!CG.rac)return passoRac+'</section>';
-  const trC=tratosAtivos().filter(k=>sugestaoCarga(k,CG.rac,CG.local).tot>0);if(!CG.trato&&!CG.avulso&&trC.length===1)CG.trato=trC[0];  // só os tratos com previsto; se for um só, já vem escolhido
+  const trC=tratosAtivos().filter(k=>sugestaoCarga(k,CG.rac,CG.local).tot>0);
+  /* já vem escolhido o próximo trato a fazer (o 1º com currais pendentes); a pessoa pode voltar pela setinha */
+  if(!CG.avulso&&typeof fornPendentes==='function'){const pend=k=>fornPendentes(CG.local,CG.rac,k).length,prox=trC.find(k=>pend(k));
+    if(!CG.trato||(CG.tAuto&&prox&&+CG.trato!==prox&&!pend(+CG.trato))){CG.trato=prox||trC[trC.length-1]||null;CG.tAuto=true;}}
+  else if(!CG.trato&&!CG.avulso&&trC.length===1)CG.trato=trC[0];  // só os tratos com previsto; se for um só, já vem escolhido
   CG.juntos=CG.avulso?[]:(CG.juntos||[]).filter(k=>k!==+CG.trato);const trs=[+CG.trato].concat(CG.juntos).sort((a,b)=>a-b);
   const partes=trs.map(k=>({k,sg:sugestaoCarga(k,CG.rac,CG.local)})),sg={tot:partes.reduce((a,p)=>a+p.sg.tot,0),cs:[...new Set(partes.flatMap(p=>p.sg.cs))]};
   const chave=CG.avulso?'avulso|'+CG.rac:CG.local+'|'+trs.join('+')+'|'+CG.rac;if(CG.totalDe!==chave){CG.total=CG.avulso?0:(sg.tot||0);CG.totalDe=chave;cSave();}
@@ -1331,7 +1340,7 @@ function cTelaNova(){if(!CG.passo){CG.passo=1;CG.local=null;}if(!CG.local)CG.pas
     <label for="cTrato">3. Trato</label>${window.tratoSeta?tratoSeta('cTrato',CG.trato,'',trC):''}
     <div class="cBotoes"><button type="button" class="mini cJtTog${CG.juntoAberto?' sel':''}" data-cjtog="1">＋ Carregar junto${CG.juntos.length?' (T'+CG.juntos.join(', T')+')':''}</button><button type="button" class="mini cAvulso" data-cavulso="1">✳ Trato avulso</button></div>
     <div class="cJuntoLista">${CG.juntoAberto?tratosAtivos().filter(k=>k!==+CG.trato).map(k=>{const t=sugestaoCarga(k,CG.rac,CG.local).tot;return `<button type="button" data-cjunto="${k}" class="${CG.juntos.includes(k)?'sel':''}"${t||CG.juntos.includes(k)?'':' disabled'}>T${k}${t?`<small>${nf(t)}</small>`:''}</button>`;}).join(''):''}</div>`)+
-    (CG.avulso?`<button type="button" class="mini cAvulso sel" data-cavulso="1">↩ Voltar para os tratos do previsto</button>`:'');
+    (CG.avulso?`<button type="button" class="mini cAvulso sel" data-cavulso="1">↩ Voltar para os tratos do previsto</button>`:cJaTratadoHTML(trs));
   if(!CG.avulso&&!CG.trato)return passoTrato+'</section>';  // escolhe o trato antes de mostrar o total
   return passoTrato+`
     <div><label>4. Total a carregar (kg)${CG.avulso?' · digite':' · pode mudar'}</label><div class="campoX cTotWrap"><input class="big num" id="cTotal" type="text" readonly inputmode="none" value="${CG.total?nf(CG.total):''}" placeholder="${CG.avulso?'digite':''}" data-ct="total"><div class="cSetas"><button type="button" data-ctot="-50" aria-label="Menos 50 kg">▼</button><button type="button" data-ctot="50" aria-label="Mais 50 kg">▲</button></div></div>
@@ -1431,7 +1440,7 @@ function cClique(e){
 }
 $('cBox').addEventListener('click',cClique);$('acBox').addEventListener('click',cClique);
 function cMuda(e){const t=e.target;
-  if(t.id==='cTrato'){CG.trato=+t.value||null;cSave();cRender();}
+  if(t.id==='cTrato'){CG.trato=+t.value||null;CG.tAuto=false;cSave();cRender();}
   if(t.id==='cRac'){CG.rac=t.value||null;CG.trato=null;if(CG.rac)CG.passo=Math.max(CG.passo||1,3);cSave();cRender();}
   if(t.id==='cDia'){CG.verDia=t.value||hojeKey();cSave();cRender();}}
 $('cBox').addEventListener('change',cMuda);$('acBox').addEventListener('change',cMuda);
@@ -1846,59 +1855,56 @@ function zootDados(dia,loc){const X=gCtx(),L=gTodos('lote').filter(l=>l.ent&&cab
   const media=(l,ini,fim,f)=>{let s=0,n=0;for(let d=ini,i=0;d<=fim&&i<4000;d=somaDias(d,1),i++){const x=diaLote(l,d,X);if(x&&x.mn>0){const v=f(x);if(ok(v)){s+=v;n++;}}}return n?s/n:NaN;};
   const rows=[];L.forEach(l=>{const x=diaLote(l,dia,X);if(!x||!doLocal(loc||'T',x.c))return;
     const d1=diaLote(l,somaDias(dia,-1),X),lt=G.it[idLeit(dia,x.c)],ini5=somaDias(dia,-4),ini0=l.ent.dia>ini5?l.ent.dia:ini5;
-    rows.push({c:x.c,lote:l.nome,ent:l.ent.dia,cab:x.cab,dias:difDias(l.ent.dia,dia),rac:x.rac,nota:lt&&!lt.del&&lt.nota!=null?+lt.nota:null,msRac:x.cp?Math.round(x.cp.ms*10)/10:NaN,
+    rows.push({c:nAt(x.c),lote:l.nome,sexo:sexoNorm(l.sexo)||'',ent:l.ent.dia,cab:x.cab,dias:difDias(l.ent.dia,dia),rac:(()=>{let t=linhaDe(nAt(x.c));if(t==='O')t=linhaDe(x.c);if(t==='O')t=/pasto/i.test(x.rac||'')?'P':'C';return t==='P'?'Pasto':'Conf';})(),racNome:x.rac,nota:lt&&!lt.del&&lt.nota!=null?+lt.nota:null,msRac:x.cp?Math.round(x.cp.ms*10)/10:NaN,
       pE:+l.ent.peso,pP:x.peso,gmd:+l.gmd||NaN,
       mnG:media(l,l.ent.dia,dia,y=>y.mnCab),mnD:x.mn>0?x.mnCab:NaN,
       msG:media(l,l.ent.dia,dia,y=>y.msCab),msD:x.mn>0?x.msCab:NaN,ms1:d1&&d1.mn>0?d1.msCab:NaN,ms5:media(l,ini0,dia,y=>y.msCab),
       pvG:media(l,l.ent.dia,dia,y=>y.pv),pvD:x.mn>0?x.pv:NaN,pv1:d1&&d1.mn>0?d1.pv:NaN,pv5:media(l,ini0,dia,y=>y.pv)});});
-  rows.sort((a,b)=>(linhaDe(a.c)==='C'?0:1)-(linhaDe(b.c)==='C'?0:1)||alfa(a.c,b.c)||alfa(a.lote,b.lote));
+  rows.sort((a,b)=>(a.rac==='Conf'?0:1)-(b.rac==='Conf'?0:1)||alfa(a.c,b.c)||alfa(a.lote,b.lote));
   /* totais: médias ponderadas pelas cabeças */
   const cab=rows.reduce((a,r)=>a+r.cab,0),pond=k=>{let s=0,w=0;rows.forEach(r=>{if(ok(r[k])){s+=r[k]*r.cab;w+=r.cab;}});return w?s/w:NaN;};
   const T={cab};['dias','msRac','pE','pP','gmd','mnG','mnD','msG','msD','ms1','ms5','pvG','pvD','pv1','pv5'].forEach(k=>T[k]=pond(k));
   return {dia,loc:loc||'T',rows,T};}
 const ZCOLS=[ // [chave, título, grupo, casas, largura no PDF]
-  ['c','Curral','id',null,130],['lote','Lote','id',null,130],['ent','Entrada','id','dia',120],['cab','Cab.','id',0,70],['dias','Dias','id',0,60],['rac','Dieta','id',null,160],['nota','Nota','id',0,60],['msRac','MS dieta','id',1,95],
+  ['c','Curral','id',null,140],['ent','Entrada','id','dia',120],['sexo','Sexo','id',null,60],['cab','Cab.','id',0,70],
   ['pE','Entrada','pes',0,90],['pP','Projetado','pes',0,105],['gmd','GMD','pes',2,70],
+  ['dias','Dias','id2',0,60],['rac','Dieta','id2',null,80],['nota','Nota','id2',0,60],['msRac','MS dieta','id2',1,95],
   ['mnG','Geral','mn',2,85],['mnD','Dia','mn',2,85],
   ['msG','Geral','ms',2,80],['msD','Dia','ms',2,80],['ms1','D-1','ms',2,80],['ms5','5 dias','ms',2,80],
   ['pvG','Geral','pv',2,75],['pvD','Dia','pv',2,75],['pv1','D-1','pv',2,75],['pv5','5 dias','pv',2,75]];
-const ZGRP={id:'Identificação',pes:'Peso (kg)',mn:'MN kg/cab/dia',ms:'MS kg/cab/dia',pv:'% IMS do PV'};
+const ZGRP={id:'Identificação',id2:'Trato',pes:'Peso (kg)',mn:'MN kg/cab/dia',ms:'MS kg/cab/dia',pv:'% IMS do PV'};
 const zVal=(r,k,d)=>{const v=r[k];if(d==='dia')return v?dB(v):'';if(d==null)return v==null?'':String(v);return ok(+v)&&v!==null&&v!==''?nf(+v,d):'—';};
 function zootCards(T){return [['Cabeças',nf(T.cab)],['Peso entrada',nf(T.pE,1)+' kg'],['Peso projetado',nf(T.pP,1)+' kg'],['GMD',nf(T.gmd,2)],['Dias (média)',nf(T.dias)],['MN dia',nf(T.mnD,2)+' kg/cab'],['MS dia',nf(T.msD,2)+' kg/cab'],['% PV dia',pc(T.pvD,2)]];}
 window.zootSecHTML=(dia,loc)=>{const D=zootDados(dia,loc);
   const top=`<div class="curhead"><h2>Relatório do dia</h2><input type="date" id="zDia" value="${dia}" max="${hojeKey()}" aria-label="Dia do relatório"></div>
     <p class="note">Zootécnico de ${dB(dia)}${D.loc==='C'?' · Confinamento':D.loc==='P'?' · Pasto':''}: consumo de matéria natural, matéria seca e % do peso vivo por lote.</p>`;
   if(!D.rows.length)return top+'<p class="note">Nenhum lote com animais neste dia.</p>';
-  const cards=`<div class="zCards">${zootCards(D.T).map(([a,b])=>`<div><small>${a}</small><b>${b}</b></div>`).join('')}</div>`;
   const tab=`<div class="tablebox"><table class="gTab zTab"><thead><tr><th>Curral</th><th>Cab</th><th>Dias</th><th>MN dia</th><th>MS dia</th><th>% PV</th></tr></thead><tbody>
-    ${D.rows.map(r=>`<tr><td class="c">${esc(r.c)}<small>${esc(r.lote)}${r.nota!=null?' · nota '+r.nota:''}</small></td><td>${nf(r.cab)}</td><td>${nf(r.dias)}</td><td>${nf(r.mnD,2)}</td><td><b>${nf(r.msD,2)}</b></td><td>${pc(r.pvD,2)}</td></tr>`).join('')}
+    ${D.rows.map(r=>`<tr><td class="c">${esc(r.c)}<small>${r.rac}${r.sexo?' · '+r.sexo:''}${r.nota!=null?' · nota '+r.nota:''}</small></td><td>${nf(r.cab)}</td><td>${nf(r.dias)}</td><td>${nf(r.mnD,2)}</td><td><b>${nf(r.msD,2)}</b></td><td>${pc(r.pvD,2)}</td></tr>`).join('')}
     <tr class="grp"><td>Média</td><td>${nf(D.T.cab)}</td><td>${nf(D.T.dias)}</td><td>${nf(D.T.mnD,2)}</td><td>${nf(D.T.msD,2)}</td><td>${pc(D.T.pvD,2)}</td></tr></tbody></table></div>
     <p class="note">MN e MS em kg por cabeça no dia. O PDF, a Foto e o Excel trazem o relatório completo (pesos, GMD, médias geral, D-1 e 5 dias).</p>`;
-  return top+cards+tab+`<div class="row compart fz3"><button class="verde" data-z="pdf">📄 PDF</button><button class="verde" data-z="img">🖼 Foto</button><button class="verde" data-z="xls">📊 Excel</button></div>`;};
-function zootCanvas(D){const W=1754,top=130,cardH=96,rowH=38,hd=72,porPag=Math.max(5,Math.floor((1240-top-30-cardH-30-hd-60)/rowH)),pags=[];
+  return top+tab+`<div class="row compart fz3"><button class="verde" data-z="pdf">📄 PDF</button><button class="verde" data-z="img">🖼 Foto</button><button class="verde" data-z="xls">📊 Excel</button></div>`;};
+function zootCanvas(D){const W=1754,top=130,rowH=38,hd=72,porPag=Math.max(5,Math.floor((1240-top-30-hd-60)/rowH)),pags=[];
   const all=D.rows.concat([{__tot:1}]),nP=Math.ceil(all.length/porPag);
   const totW=ZCOLS.reduce((a,c)=>a+c[4],0),esc_=(W-60)/totW;
-  for(let p=0;p<nP;p++){const R=all.slice(p*porPag,(p+1)*porPag),H=top+30+cardH+30+hd+R.length*rowH+70,cv=document.createElement('canvas');cv.width=W;cv.height=Math.max(H,p===0?0:400);const x=cv.getContext('2d');
+  for(let p=0;p<nP;p++){const R=all.slice(p*porPag,(p+1)*porPag),H=top+30+hd+R.length*rowH+70,cv=document.createElement('canvas');cv.width=W;cv.height=Math.max(H,p===0?0:400);const x=cv.getContext('2d');
     x.fillStyle='#fff';x.fillRect(0,0,W,cv.height);x.fillStyle='#24502a';x.fillRect(0,0,W,top);
-    x.fillStyle='#fff';x.textAlign='left';x.font='bold 42px Arial';x.fillText('Relatório zootécnico do dia',40,62);
+    x.fillStyle='#fff';x.textAlign='left';x.font='bold 42px Arial';x.fillText('FJK · Índices do dia',40,62);
     x.font='24px Arial';x.fillStyle='#d8f06a';x.fillText(`${dB(D.dia)}${D.loc==='C'?' · Confinamento':D.loc==='P'?' · Pasto':''} · FJK Agropecuária`,40,102);
     x.textAlign='right';x.fillStyle='#fff';x.font='20px Arial';x.fillText(`página ${p+1} de ${nP}`,W-40,102);
     /* cartões */
-    const C=zootCards(D.T),cw=(W-80-(C.length-1)*14)/C.length;let y=top+30;
-    C.forEach(([a,b],i)=>{const cx=40+i*(cw+14);x.fillStyle='#eef3e4';x.beginPath();x.roundRect?x.roundRect(cx,y,cw,cardH,14):x.rect(cx,y,cw,cardH);x.fill();
-      x.textAlign='left';x.fillStyle='#5d6b7a';x.font='18px Arial';x.fillText(a,cx+16,y+32);x.fillStyle='#1d2b3a';x.font='bold 28px Arial';x.fillText(b,cx+16,y+74);});
-    y+=cardH+30;
+    let y=top+30;
     /* cabeçalho da tabela: grupos e colunas */
     let cx=30;const pos=ZCOLS.map(c=>{const w=c[4]*esc_,o={x:cx,w};cx+=w;return o;});
     let g0=0;for(let i=1;i<=ZCOLS.length;i++){if(i===ZCOLS.length||ZCOLS[i][2]!==ZCOLS[g0][2]){const gx=pos[g0].x,gw=pos[i-1].x+pos[i-1].w-gx;
-      x.fillStyle=ZCOLS[g0][2]==='id'?'#24502a':'#3b6b2f';x.fillRect(gx+2,y,gw-4,32);x.fillStyle='#fff';x.font='bold 18px Arial';x.textAlign='center';x.fillText(ZGRP[ZCOLS[g0][2]],gx+gw/2,y+22);g0=i;}}
+      x.fillStyle=/^id/.test(ZCOLS[g0][2])?'#24502a':'#3b6b2f';x.fillRect(gx+2,y,gw-4,32);x.fillStyle='#fff';x.font='bold 18px Arial';x.textAlign='center';x.fillText(ZGRP[ZCOLS[g0][2]],gx+gw/2,y+22);g0=i;}}
     x.fillStyle='#5d6b7a';x.font='bold 17px Arial';ZCOLS.forEach((c,i)=>{x.textAlign='center';x.fillText(c[1],pos[i].x+pos[i].w/2,y+60);});
     y+=hd;
-    R.forEach((r,j)=>{const tot=!!r.__tot,v=tot?Object.assign({c:'MÉDIA',lote:'',ent:'',rac:'',nota:null},D.T):r;
+    R.forEach((r,j)=>{const tot=!!r.__tot,v=tot?Object.assign({c:'MÉDIA',lote:'',sexo:'',ent:'',rac:'',nota:null},D.T):r;
       if(tot){x.fillStyle='#e3ead6';x.fillRect(30,y,W-60,rowH);}else if(j%2){x.fillStyle='#f6f8f3';x.fillRect(30,y,W-60,rowH);}
       ZCOLS.forEach((c,i)=>{let t=zVal(v,c[0],c[3]);if(tot&&c[0]==='cab')t=nf(D.T.cab);if(tot&&c[0]==='nota')t='';
         x.font=(tot||c[0]==='c'||c[0]==='msD'?'bold ':'')+'18px Arial';x.fillStyle='#1d2b3a';
-        const al=['c','lote','rac'].includes(c[0])?'left':'center';x.textAlign=al;
+        const al=['c'].includes(c[0])?'left':'center';x.textAlign=al;
         let tt=t;while(tt.length>3&&x.measureText(tt).width>pos[i].w-10)tt=tt.slice(0,-2)+'…';
         x.fillText(tt,al==='left'?pos[i].x+8:pos[i].x+pos[i].w/2,y+26);});
       y+=rowH;});
@@ -1907,15 +1913,20 @@ function zootCanvas(D){const W=1754,top=130,cardH=96,rowH=38,hd=72,porPag=Math.m
     pags.push(cv);}
   return pags;}
 async function zootExport(tipo,dia,loc){const D=zootDados(dia,loc);if(!D.rows.length)return toast('Nenhum lote com animais neste dia');
-  const nome=`Relatorio zootecnico ${dB(dia).replace(/\//g,'-')}${D.loc==='C'?' confinamento':D.loc==='P'?' pasto':''}`;
+  const nome=`fjk-indices-${dB(dia).replace(/\//g,'-')}${D.loc==='C'?'-confinamento':D.loc==='P'?'-pasto':''}`;
   try{if(tipo==='xls'){const lin=r=>ZCOLS.map(c=>{const v=r[c[0]];return c[3]==='dia'?xc(v||null,'dia'):c[3]==null?xc(v==null?'':v):xc(ok(+v)&&v!==null?+v:'',c[3]===0?'int':'dec');});
-      return gExcel(nome,[['Zootécnico',ZCOLS.map(c=>(c[0]==='gmd'?'GMD':c[2]==='id'?(c[0]==='msRac'?'MS dieta %':c[1]):ZGRP[c[2]].replace(' kg/cab/dia','').replace('% IMS do PV','%PV').replace(' (kg)','')+' '+c[1])),D.rows.map(lin).concat([lin(Object.assign({c:'MÉDIA',lote:'',ent:'',rac:'',nota:''},D.T))]),ZCOLS.map(c=>Math.max(8,Math.round(c[4]/9)))]]);}
+      return gExcel(nome,[['Zootécnico',ZCOLS.map(c=>(c[0]==='gmd'?'GMD':/^id/.test(c[2])?(c[0]==='msRac'?'MS dieta %':c[0]==='ent'?'Data entrada':c[1]):ZGRP[c[2]].replace(' kg/cab/dia','').replace('% IMS do PV','%PV').replace(' (kg)','')+' '+c[1])),D.rows.map(lin).concat([lin(Object.assign({c:'MÉDIA',lote:'',sexo:'',ent:'',rac:'',nota:''},D.T))]),ZCOLS.map(c=>Math.max(8,Math.round(c[4]/9)))]]);}
     const P=zootCanvas(D);
     if(tipo==='pdf')return await compartilharArquivo(fzPdf(P),nome+'.pdf','application/pdf');
     if(P.length===1)return P[0].toBlob(b=>compartilharArquivo(b,nome+'.png','image/png'),'image/png');
     const bl=await Promise.all(P.map(c=>new Promise(r=>c.toBlob(r,'image/png'))));return compartilharVarios(bl,bl.map((_,i)=>`${nome} (${i+1}).png`));}
   catch(e){toast('Não consegui gerar o relatório');}}
 window.zootExport=zootExport;window.zootDados=zootDados;
+/* Carregar: avisa (sem bloquear) quando todos os currais do trato escolhido já foram tratados hoje */
+function cJaTratadoHTML(trs){if(typeof fornCurrais!=='function'||typeof fornPendentes!=='function')return '';
+  const feitos=trs.filter(k=>k>0&&fornCurrais(CG.local,CG.rac,k).length&&!fornPendentes(CG.local,CG.rac,k).length);if(!feitos.length)return '';
+  const prox=tratosAtivos().map(Number).find(k=>!trs.includes(k)&&fornPendentes(CG.local,CG.rac,k).length);
+  return `<div class="cJaFeito">⚠ ${feitos.length>1?'TRATOS '+feitos.join(' E '):'TRATO '+feitos[0]} (${NOMELOC[CG.local].toUpperCase()}): TODOS JÁ FORAM TRATADOS<small>${prox?`O próximo é o Trato ${prox}. `:''}Se precisar, pode carregar mesmo assim.</small></div>`;}
 /* PDF simples: cada página é uma imagem JPEG em folha A4 */
 function fzPdf(cvs){const enc=new TextEncoder(),partes=[],offs=[];let tam=0;const add=d=>{const b=typeof d==='string'?enc.encode(d):d;partes.push(b);tam+=b.length;};
   const obj=(n,txt,bin)=>{offs[n]=tam;add(`${n} 0 obj\n`+txt);if(bin){add(bin);add('\nendstream');}add('\nendobj\n');};
