@@ -107,6 +107,7 @@ body.somenteVer.verCarga #viewTrato>section:not(#painel),body.somenteVer.verCarg
 #avCargaBox tr.atual td{background:#eef4e0}
 .contRem{border:3px solid #1565c0}.contRem h2{color:#1565c0}.contIt{display:grid;gap:4px;padding:8px 0;border-top:1px solid #dde3ea}.contIt span{font-size:.9rem;color:var(--muted)}.contIt button{margin-top:4px}
 .avSub{font-weight:800;font-size:1rem;color:var(--fg);padding:2px 4px 0;display:flex;flex-wrap:wrap;gap:2px 8px;align-items:baseline}.avSub em{font-style:normal;font-weight:600;font-size:.85rem;color:var(--muted)}
+.avEspelho{display:grid;grid-template-columns:minmax(0,1fr);gap:8px;margin-top:6px;min-width:0}.avEspelho .curBox2{grid-template-columns:minmax(0,1fr) auto}.avEspelho .cbCur{min-width:0}.avEspelho .cbCur b{white-space:normal;line-height:1.05;font-size:clamp(1.3rem,6vw,2rem)!important}.avBatTot{text-align:center;font-weight:600;color:var(--muted)}.avBatTot b{color:var(--fg)}
 .avVer{font-weight:700;font-size:.85rem;color:#4b5b3f;text-align:right;padding:0 4px}
 .abrirNovo{text-align:center}.abrirNovo .note{margin:0 0 8px}
 .fBar{display:flex;justify-content:space-between;align-items:center;gap:8px;background:#eef4e0;border-radius:10px;padding:8px 10px;margin-bottom:10px;font-weight:700;font-size:.92rem}
@@ -1041,7 +1042,7 @@ body.naInicio .topoLinha .voltarIni{display:none}
 <div class="toast" id="toast" hidden></div>
 <script>
 'use strict';
-const APP_VERSAO='59';
+const APP_VERSAO='60';
 const APP_DATA='19/10/2026';
 const KEY='confinamento-completo-v1';
 const $=id=>document.getElementById(id);
@@ -2955,6 +2956,7 @@ function cardCargaAoVivo(d){const ini=parseFloat(d.ini),fim=parseFloat(d.fim),pv
   const t0=+d.ts0||(d.bat&&+d.bat.ts0)||0;
   const topo=avTopoHTML(d,t0)+(d.semBatida?'':`<div class="avSub">${auto?'⚡':'✋'} Carregar · ${d.trato?'Trato '+esc(d.trato):'Avulsa'}${d.rac?' · '+esc(d.rac):''}${d.nProd?` <em>${d.feitos||0} de ${d.nProd} produtos</em>`:''}</div>`);
   if(d.semBatida)return `<div class="avCard${d.idade>70000?' parado':''}">${topo}<div class="avVazio">Na tela de carregar, sem batida começada</div></div>`;
+  if(d.tela&&d.tela.fCl)return `<div class="avCard${d.idade>70000?' parado':''}">${topo}${avTelaHTML(d,true)}</div>`;
   let real='—',dif='—',cls='',fl=false;if(!isNaN(ini)&&!isNaN(fim)){const f=fim-ini;real=fmt(f);if(pv!=null){const x=f-pv;fl=auto&&x<0;dif=fl?fmt(-x):sgn(x);cls=fl?'':classeDesv(x,pv);}}
   return `<div class="avCard${d.idade>70000?' parado':''}">${topo}
     <div class="curBox2"><div class="cbCur"><span>Produto ${d.iProd||'—'}${d.nProd?' de '+d.nProd:''}</span><b>${esc(d.prod||'—')}</b></div><div class="cbPrev"><span>Carregar</span><b class="num">${pv!=null?fmt(pv):'—'}</b></div></div>
@@ -2966,8 +2968,16 @@ function cardCargaAoVivo(d){const ini=parseFloat(d.ini),fim=parseFloat(d.fim),pv
       <div><small>${fl?'Falta':'Diferença'}</small><b class="num ${cls}">${dif}</b></div>
       <div><small>Batida</small><b class="num">${fmt((d.carregado||0)+(!isNaN(ini)&&!isNaN(fim)&&fim>ini&&!(d.its&&d.its[(d.iProd||1)-1]&&d.its[(d.iProd||1)-1][2]!=null)?fim-ini:0))}<small style="display:inline;font-size:.7rem"> / ${fmt(d.totalPrev||0)}</small></b></div>
     </div></div>`;}
+/* Automação: o quadro do Visualizar é igual à tela do operador */
+function avTelaHTML(d,carga){const T=d.tela;
+  return `<div class="avEspelho"><div class="aPeso"><div><small>Balança (kg)</small><em>${esc(T.pesoTxt||'')}</em></div><b class="num">${esc(T.peso||'—')}</b></div>
+    <div class="curBox2"><div class="cbCur"><span>${carga?`Produto ${d.iProd||'—'}${d.nProd?' de '+d.nProd:''}`:'Curral atual'}</span><b>${esc((carga?d.prod:d.curral)||'—')}</b></div><div class="cbPrev"><span>${carga?'Carregar':'Previsto'}</span><b class="num">${d.prev!=null?fmt(d.prev):'—'}</b></div></div>
+    <div class="${esc(T.etCl||'aEtapa')}">${esc(T.etapa||'')}</div>
+    <div class="${esc(T.fCl||'aFalta')}"><small>${esc(T.fTit||'')}</small><b class="num">${esc(T.fVal||'—')}</b><em>${esc(T.fTxt||'')}</em></div>
+    <div class="aMini"><div class="caiu"><small>${carga?'Carregado':'Fornecido'}</small><b class="num">${esc(T.feito||'—')}</b></div><div><small>Peso inicial</small><b class="num">${esc(T.ini||'—')}</b></div><div><small>Parar com</small><b class="num">${esc(T.alvo||'—')}</b></div></div>
+    ${carga?`<div class="avBatTot">Batida: <b>${fmt((d.carregado||0)+(parseFloat(String(T.feito||'0').replace(/\./g,'').replace(',','.'))||0))}</b> de ${fmt(d.totalPrev||0)} kg</div>`:''}</div>`;}
 function avTopoHTML(d,t0){const dd=d.dia&&/^\d{4}-/.test(d.dia)?diaBR(d.dia).slice(0,5):'',h=t0?new Date(t0).toTimeString().slice(0,5):'';
-  return `<div class="avTopo"><span><i class="avPonto"></i>Ao vivo${dd?' · '+dd:''}${h?' · início '+h:''}</span><span class="avIdade">${idadeTxt(d.idade)}</span></div>`;}
+  return `<div class="avTopo"><span><i class="avPonto"></i>Ao vivo${h?` · início ${dd} ${h}`:dd?' · '+dd:''}</span><span class="avIdade">${idadeTxt(d.idade)}</span></div>`;}
 function idadeTxt(ms){const s=Math.max(0,Math.round(ms/1000));return s<60?`há ${s} s`:`há ${Math.round(s/60)} min`;}
 /* Visualizar › Carregar: embaixo, a batida em andamento produto por produto e as batidas feitas hoje */
 function pintarAvCarga(L){const el=$('avCargaBox');if(!el)return;const on=modoVer&&document.body.classList.contains('verCarga');el.hidden=!on;if(!on){el.innerHTML='';return;}
@@ -3006,6 +3016,7 @@ function renderAoVivo(){const box=$('aoVivo');if(!modoVer){box.innerHTML='';retu
     const alvo=(pv!=null&&!isNaN(ini))?fmt(ini-pv):'—';
     let real='—',dif='—',cls='';if(!isNaN(ini)&&!isNaN(fim)){const f=ini-fim;real=fmt(f);if(pv!=null){const x=f-pv;dif=auto&&x<0?fmt(-x):sgn(x);cls=auto&&x<0?'':classeDesv(x,pv);}}
     const fora=d.dia!==hojeKey()?` · ${diaBR(d.dia)}`:'';
+    if(d.tela&&d.tela.fCl&&!d.fimForn)return `<div class="avCard${d.idade>70000?' parado':''}">${avTopoHTML(d,+d.fts0||0)}<div class="avSub">⚡ Fornecer · Trato ${esc(d.trato)}${d.local?' · '+(d.local==='C'?'Confinamento':'Pasto'):''} <em>${d.feitos||0} de ${d.total||0} currais</em></div>${avTelaHTML(d,false)}</div>`;
     const nomeCur=d.fimForn?'✓ Fornecimento finalizado':d.curral||(d.total?'Trato completo':'—');
     return `<div class="avCard${d.idade>70000?' parado':''}">
       ${avTopoHTML(d,+d.fts0||0)}<div class="avSub">${auto?'⚡':'✋'} Fornecer · Trato ${esc(d.trato)}${d.local?' · '+(d.local==='C'?'Confinamento':'Pasto'):''} <em>${d.feitos||0} de ${d.total||0} currais</em></div>

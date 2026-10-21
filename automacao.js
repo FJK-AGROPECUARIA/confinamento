@@ -28,73 +28,75 @@ window.autoOcupado=()=>!!A.fonte||A.est==='descarregando';window.autoDescarregan
 
 /* ---------------- Tela ---------------- */
 const css=`
-:is(#aBox,#acBox) .curhead.balHead{flex-wrap:nowrap;justify-content:flex-start;gap:8px}
-:is(#aBox,#acBox) .curhead.balHead h2{margin:0;min-width:0}
-:is(#aBox,#acBox) .curhead .balTog{flex:none;padding:4px 10px;font-size:.95rem}
-:is(#aBox,#acBox) .aStatus{display:none!important}
-:is(#aBox,#acBox) .aSinal.desc{display:none!important}
-:is(#aBox,#acBox) .curhead .balMini{margin-left:auto;font-size:.82rem;font-weight:700;white-space:nowrap}
-:is(#aBox,#acBox) .curhead .balMini.ruim{color:#c62828}
-:is(#aBox,#acBox) section.balRec :is(.aStatus,.aConn,.aSinal,.aTeclas,.aSim){display:none!important}
-:is(#aBox,#acBox) .aConn{display:grid;grid-template-columns:3fr 2fr;gap:6px}
-:is(#aBox,#acBox) .aConn .aDescBt{border-color:var(--bad);color:var(--bad)}
-:is(#aBox,#acBox) .aConn .aDescBt:disabled{opacity:.35}
-:is(#aBox,#acBox) .aSinal{margin-top:6px;border-radius:10px;padding:8px 10px;font-weight:700;font-size:.95rem;text-align:center;background:#e9ecef;color:#495057}
-:is(#aBox,#acBox) .aSinal.ok{background:#e3f5e1;color:#1b5e20}
-:is(#aBox,#acBox) .aSinal.ok i{display:inline-block;width:10px;height:10px;border-radius:50%;background:#2e7d32;margin-right:6px;animation:aPulsa 1.2s infinite}
-:is(#aBox,#acBox) .aSinal.ruim{background:#c62828;color:#fff;animation:aPisca .8s steps(2) infinite}
+:is(#aBox,#acBox,#aoVivo) .curhead.balHead{flex-wrap:nowrap;justify-content:flex-start;gap:8px}
+:is(#aBox,#acBox,#aoVivo) .curhead.balHead h2{margin:0;min-width:0}
+:is(#aBox,#acBox,#aoVivo) .curhead .balTog{flex:none;padding:4px 10px;font-size:.95rem}
+:is(#aBox,#acBox,#aoVivo) .aStatus{display:none!important}
+:is(#aBox,#acBox,#aoVivo) .aSinal.desc{display:none!important}
+:is(#aBox,#acBox,#aoVivo) .curhead .balMini{margin-left:auto;font-size:.82rem;font-weight:700;white-space:nowrap}
+:is(#aBox,#acBox,#aoVivo) .curhead .balMini.ruim{color:#c62828}
+:is(#aBox,#acBox,#aoVivo) section.balRec :is(.aStatus,.aConn,.aSinal,.aTeclas,.aSim){display:none!important}
+:is(#aBox,#acBox,#aoVivo) .aConn{display:grid;grid-template-columns:3fr 2fr;gap:6px}
+:is(#aBox,#acBox,#aoVivo) .aConn .aDescBt{border-color:var(--bad);color:var(--bad)}
+:is(#aBox,#acBox,#aoVivo) .aConn .aDescBt:disabled{opacity:.35}
+:is(#aBox,#acBox,#aoVivo) .aSinal{margin-top:6px;border-radius:10px;padding:8px 10px;font-weight:700;font-size:.95rem;text-align:center;background:#e9ecef;color:#495057}
+:is(#aBox,#acBox,#aoVivo) .aSinal.ok{background:#e3f5e1;color:#1b5e20}
+:is(#aBox,#acBox,#aoVivo) .aSinal.ok i{display:inline-block;width:10px;height:10px;border-radius:50%;background:#2e7d32;margin-right:6px;animation:aPulsa 1.2s infinite}
+:is(#aBox,#acBox,#aoVivo) .aSinal.ruim{background:#c62828;color:#fff;animation:aPisca .8s steps(2) infinite}
 @keyframes aPulsa{50%{opacity:.25}}
-:is(#aBox,#acBox) .aConn button{padding:14px 6px;font-size:1rem}
-:is(#aBox,#acBox) .aConn button.on{background:var(--lima);border-color:var(--lima);color:var(--fg);font-weight:700}
-:is(#aBox,#acBox) .aStatus{display:flex;align-items:center;gap:8px;font-size:.9rem;color:var(--muted)}
-:is(#aBox,#acBox) .aStatus i{width:12px;height:12px;border-radius:50%;background:#b8c0c8;display:inline-block;flex:none}
-:is(#aBox,#acBox) .aStatus.ok i{background:#4caf50}:is(#aBox,#acBox) .aStatus.err i{background:var(--bad)}:is(#aBox,#acBox) .aStatus.wait i{background:var(--warn)}
-:is(#aBox,#acBox) .aPeso{background:var(--led-bg);border-radius:12px;padding:8px 12px;display:flex;align-items:center;justify-content:space-between;gap:8px}
-:is(#aBox,#acBox) .aFalta{border-radius:16px;padding:10px 14px 12px;text-align:center;color:#fff;background:#2e7d32;transition:background .2s}
-:is(#aBox,#acBox) .aFalta small{display:block;font-size:.85rem;font-weight:700;text-transform:uppercase;letter-spacing:.1em;opacity:.9}
-:is(#aBox,#acBox) .aFalta b{display:block;font-family:var(--display);font-stretch:condensed;font-weight:700;font-size:6.2rem;line-height:1;font-variant-numeric:tabular-nums}
-:is(#aBox,#acBox) .aFalta em{display:block;font-style:normal;font-size:.9rem;font-weight:600;opacity:.95}
-:is(#aBox,#acBox) .aFalta.amarelo{background:#f2b705;color:#11253d}
-:is(#aBox,#acBox) .aFalta.vermelho{background:#c62828}
-:is(#aBox,#acBox) .aFalta.continuo{background:#c62828;animation:aPisca .5s steps(2) infinite}
-:is(#aBox,#acBox) .aFalta.cinza{background:#7c8794}
+:is(#aBox,#acBox,#aoVivo) .aConn button{padding:14px 6px;font-size:1rem}
+:is(#aBox,#acBox,#aoVivo) .aConn button.on{background:var(--lima);border-color:var(--lima);color:var(--fg);font-weight:700}
+:is(#aBox,#acBox,#aoVivo) .aStatus{display:flex;align-items:center;gap:8px;font-size:.9rem;color:var(--muted)}
+:is(#aBox,#acBox,#aoVivo) .aStatus i{width:12px;height:12px;border-radius:50%;background:#b8c0c8;display:inline-block;flex:none}
+:is(#aBox,#acBox,#aoVivo) .aStatus.ok i{background:#4caf50}:is(#aBox,#acBox,#aoVivo) .aStatus.err i{background:var(--bad)}:is(#aBox,#acBox,#aoVivo) .aStatus.wait i{background:var(--warn)}
+:is(#aBox,#acBox,#aoVivo) .aPeso{background:var(--led-bg);border-radius:12px;padding:8px 12px;display:flex;align-items:center;justify-content:space-between;gap:8px}
+:is(#aBox,#acBox,#aoVivo) .aFalta{border-radius:16px;padding:10px 14px 12px;text-align:center;color:#fff;background:#2e7d32;transition:background .2s}
+:is(#aBox,#acBox,#aoVivo) .aFalta small{display:block;font-size:.85rem;font-weight:700;text-transform:uppercase;letter-spacing:.1em;opacity:.9}
+#aoVivo .aFalta b{font-size:4.6rem!important}
+:is(#aBox,#acBox,#aoVivo) .aFalta b{display:block;font-family:var(--display);font-stretch:condensed;font-weight:700;font-size:6.2rem;line-height:1;font-variant-numeric:tabular-nums}
+:is(#aBox,#acBox,#aoVivo) .aFalta em{display:block;font-style:normal;font-size:.9rem;font-weight:600;opacity:.95}
+:is(#aBox,#acBox,#aoVivo) .aFalta.amarelo{background:#f2b705;color:#11253d}
+:is(#aBox,#acBox,#aoVivo) .aFalta.vermelho{background:#c62828}
+:is(#aBox,#acBox,#aoVivo) .aFalta.continuo{background:#c62828;animation:aPisca .5s steps(2) infinite}
+:is(#aBox,#acBox,#aoVivo) .aFalta.cinza{background:#7c8794}
 #cfgTBox .aCores{margin:10px 0 4px;padding:10px;border:1px solid var(--line);border-radius:10px;display:grid;gap:6px;font-size:.88rem}
 #cfgTBox .aCores i{display:inline-block;width:22px;height:16px;border-radius:4px;margin-right:8px;vertical-align:-3px}
 #cfgTBox .aCores i.pisca{animation:aPisca .5s steps(2) infinite}#cfgTBox .aCores i.pisca2{animation:aPisca2 .4s steps(2) infinite}
-:is(#aBox,#acBox) .aFalta.passou{background:#6a1b9a;animation:aPisca2 .4s steps(2) infinite}
+:is(#aBox,#acBox,#aoVivo) .aFalta.passou{background:#6a1b9a;animation:aPisca2 .4s steps(2) infinite}
 @keyframes aPisca2{50%{background:#38006b}}
 @keyframes aPisca{50%{background:#7f0000}}
-:is(#aBox,#acBox) .aMini{display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px}
-:is(#aBox,#acBox) .aMini div{background:var(--chip);border-radius:10px;padding:6px 8px}
-:is(#aBox,#acBox) .aMini small{display:block;font-size:.66rem;color:var(--muted);text-transform:uppercase;letter-spacing:.04em}
-:is(#aBox,#acBox) .aMini b{font-family:var(--display);font-stretch:condensed;font-size:1.5rem;line-height:1.1}
-:is(#aBox,#acBox) .aMini div.caiu{background:#e5f4e3}:is(#aBox,#acBox) .aMini div.caiu b{font-size:1.9rem;color:var(--ok)}
-:is(#aBox,#acBox) .aPeso small{display:block;color:#c9d3df;font-size:.7rem;text-transform:uppercase;letter-spacing:.08em;text-align:left}
-:is(#aBox,#acBox) .aPeso b{font-family:var(--display);font-stretch:condensed;font-weight:700;color:var(--led);font-size:2.2rem;line-height:1;font-variant-numeric:tabular-nums}
-:is(#aBox,#acBox) .aPeso em{font-style:normal;font-size:.85rem;color:#c9d3df}
-:is(#aBox,#acBox) .aPeso em.est{color:#8be08f}
-:is(#aBox,#acBox) .aPeso em.atraso{color:#ff8a80;font-weight:700}
-:is(#aBox,#acBox) .aBarra{height:18px;border-radius:99px;background:var(--chip);overflow:hidden;border:1px solid var(--line)}
-:is(#aBox,#acBox) .aBarra div{height:100%;width:0;background:var(--lima);transition:width .3s}
-:is(#aBox,#acBox) .aBarra div.passou{background:var(--bad)}
-:is(#aBox,#acBox) .aEtapa{text-align:center;font-weight:700;padding:6px;border-radius:10px;background:var(--chip);font-size:.92rem}
-:is(#aBox,#acBox) .aEtapa.desc{background:#fff4d6;color:var(--warn)}
-:is(#aBox,#acBox) .aEtapa.pronto{background:#e5f4e3;color:var(--ok)}
+:is(#aBox,#acBox,#aoVivo) .aMini{display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px}
+:is(#aBox,#acBox,#aoVivo) .aMini div{background:var(--chip);border-radius:10px;padding:6px 8px}
+:is(#aBox,#acBox,#aoVivo) .aMini small{display:block;font-size:.66rem;color:var(--muted);text-transform:uppercase;letter-spacing:.04em}
+:is(#aBox,#acBox,#aoVivo) .aMini b{font-family:var(--display);font-stretch:condensed;font-size:1.5rem;line-height:1.1}
+:is(#aBox,#acBox,#aoVivo) .aMini div.caiu{background:#e5f4e3}:is(#aBox,#acBox,#aoVivo) .aMini div.caiu b{font-size:1.9rem;color:var(--ok)}
+:is(#aBox,#acBox,#aoVivo) .aPeso small{display:block;color:#c9d3df;font-size:.7rem;text-transform:uppercase;letter-spacing:.08em;text-align:left}
+:is(#aBox,#acBox,#aoVivo) .aPeso b{font-family:var(--display);font-stretch:condensed;font-weight:700;color:var(--led);font-size:2.2rem;line-height:1;font-variant-numeric:tabular-nums}
+:is(#aBox,#acBox,#aoVivo) .aPeso em{font-style:normal;font-size:.85rem;color:#c9d3df}
+:is(#aBox,#acBox,#aoVivo) .aPeso em.est{color:#8be08f}
+:is(#aBox,#acBox,#aoVivo) .aPeso em.atraso{color:#ff8a80;font-weight:700}
+:is(#aBox,#acBox,#aoVivo) .aBarra{height:18px;border-radius:99px;background:var(--chip);overflow:hidden;border:1px solid var(--line)}
+:is(#aBox,#acBox,#aoVivo) .aBarra div{height:100%;width:0;background:var(--lima);transition:width .3s}
+:is(#aBox,#acBox,#aoVivo) .aBarra div.passou{background:var(--bad)}
+:is(#aBox,#acBox,#aoVivo) .aEtapa{text-align:center;font-weight:700;padding:6px;border-radius:10px;background:var(--chip);font-size:.92rem}
+:is(#aBox,#acBox,#aoVivo) .aEtapa.desc{background:#fff4d6;color:var(--warn)}
+:is(#aBox,#acBox,#aoVivo) .aEtapa.pronto{background:#e5f4e3;color:var(--ok)}
 :is(#aBox,#acBox,#cfgTBox) .aBruto{font-family:ui-monospace,Menlo,monospace;font-size:.75rem;background:#0f1d2e;color:#cfe;padding:8px;border-radius:8px;max-height:150px;overflow:auto;white-space:pre-wrap;word-break:break-all}
-:is(#aBox,#acBox) .aCfg{display:grid;grid-template-columns:1fr 1fr;gap:8px}
-:is(#aBox,#acBox) .aCfg label{font-size:.8rem;margin:0}
-:is(#aBox,#acBox) .aCfg input{width:100%}
-:is(#aBox,#acBox) .aSim{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
-:is(#aBox,#acBox) .aTeclas{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-top:6px}
-:is(#aBox,#acBox) .aTeclas button{padding:9px 2px;font-size:.84rem;line-height:1.15}
-:is(#aBox,#acBox) .aSim button{padding:9px 4px;font-size:.88rem}
-:is(#aBox,#acBox) details summary{cursor:pointer;font-weight:600;padding:4px 0}
-:is(#aBox,#acBox) .aChk{display:flex;align-items:center;gap:8px;font-size:.95rem}
-:is(#aBox,#acBox) .aChk input{width:22px;height:22px}
+:is(#aBox,#acBox,#aoVivo) .aCfg{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+:is(#aBox,#acBox,#aoVivo) .aCfg label{font-size:.8rem;margin:0}
+:is(#aBox,#acBox,#aoVivo) .aCfg input{width:100%}
+:is(#aBox,#acBox,#aoVivo) .aSim{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
+:is(#aBox,#acBox,#aoVivo) .aTeclas{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-top:6px}
+:is(#aBox,#acBox,#aoVivo) .aTeclas button{padding:9px 2px;font-size:.84rem;line-height:1.15}
+:is(#aBox,#acBox,#aoVivo) .aSim button{padding:9px 4px;font-size:.88rem}
+:is(#aBox,#acBox,#aoVivo) details summary{cursor:pointer;font-weight:600;padding:4px 0}
+:is(#aBox,#acBox,#aoVivo) .aChk{display:flex;align-items:center;gap:8px;font-size:.95rem}
+:is(#aBox,#acBox,#aoVivo) .aChk input{width:22px;height:22px}
 `;
+/* o estilo entra já ao abrir (o Visualizar usa o mesmo visual no Ao vivo) */
+{const st=document.createElement('style');st.textContent=css;document.head.appendChild(st);}
 function montar(){
   if($('aBox').dataset.ok)return;$('aBox').dataset.ok='1';
-  const st=document.createElement('style');st.textContent=css;document.head.appendChild(st);
   $('aBox').innerHTML=`
   <section class="panel">
     <div class="curhead balHead"><button type="button" class="mini balTog" data-baltog="1" aria-label="Mostrar ou esconder a conexão">▲</button><h2>Balança</h2><span class="note" id="aData" hidden></span><span class="balMini" id="aBalMini"></span></div>
@@ -618,8 +620,12 @@ setInterval(()=>{if(A.fonte&&A.fonte!=='sim'&&!A.ultDado&&A.tCon&&Date.now()-A.t
 let leveT=null;
 function aRenderLeve(){if(leveT)return;leveT=setTimeout(()=>{leveT=null;pintarPeso();pintarCarga();if(typeof agendarAoVivo==='function')agendarAoVivo();},120);}
 /* acompanhamento ao vivo do Tratar pela balança */
+/* o que está na tela do operador (para o Visualizar mostrar igual) */
+window.telaAuto=p=>{const t=id=>{const e=$(p+id);return e?e.textContent.trim():'';},c=id=>{const e=$(p+id);return e?e.className:'';};
+  return {peso:t('Peso'),pesoTxt:t('EstTxt'),etapa:t('Etapa'),etCl:c('Etapa'),fCl:c('FaltaBox'),fTit:t('FaltaTit'),fVal:t('Falta'),fTxt:t('FaltaTxt'),
+    feito:t(p==='ac'?'Carr':'Caiu'),ini:t('Ini'),alvo:t('Alvo')};};
 window.aEstadoAoVivo=()=>{const L=lista(),c=L[S.atual],regs=regsAtuais();
-  const ff=window.filtroForn?filtroForn():null;return {modo:'trato',origem:'auto',local:ff?ff.local:'',rac:ff?ff.rac:'',fimForn:!ff,deAp:ff&&ff.deAp||'',contTs:ff&&ff.contTs||0,fts0:ff&&ff.ts0||0,dia:diaAtivo(),trato:S.tratoSel,curral:c?c.nome:'',prev:c?c.prev:null,ini:A.base!=null?Math.round(A.base):'',fim:A.peso!=null?Math.round(A.peso):'',
+  const ff=window.filtroForn?filtroForn():null;return {tela:$('viewAuto')&&!$('viewAuto').hidden&&ff?telaAuto('a'):null,modo:'trato',origem:'auto',local:ff?ff.local:'',rac:ff?ff.rac:'',fimForn:!ff,deAp:ff&&ff.deAp||'',contTs:ff&&ff.contTs||0,fts0:ff&&ff.ts0||0,dia:diaAtivo(),trato:S.tratoSel,curral:c?c.nome:'',prev:c?c.prev:null,ini:A.base!=null?Math.round(A.base):'',fim:A.peso!=null?Math.round(A.peso):'',
     feitos:L.filter(x=>feito(x.nome,regs)).length,total:L.length};};
 function pintarPeso(){
   if(!$('aPeso')||$('viewAuto').hidden)return;
