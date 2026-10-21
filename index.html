@@ -102,6 +102,7 @@ tr.grp td span{float:right;font-variant-numeric:tabular-nums}
 .danger{border-color:var(--bad);color:var(--bad)}
 .emSetup>section:not(.fornSetup){display:none!important}
 #aBox.emSetup>section:first-of-type{display:block!important}
+.fFim{background:#e6f4d7;border:2px solid #6aa121;border-radius:12px;padding:10px 12px;margin-bottom:12px;font-weight:800;color:#2e5a12;text-align:center}.fFim small{display:block;font-weight:600;color:#4b5b3f;margin-top:4px}
 .abrirNovo{text-align:center}.abrirNovo .note{margin:0 0 8px}
 .fBar{display:flex;justify-content:space-between;align-items:center;gap:8px;background:#eef4e0;border-radius:10px;padding:8px 10px;margin-bottom:10px;font-weight:700;font-size:.92rem}
 body.somenteVer .fBar{display:none!important}
@@ -1023,7 +1024,7 @@ body.naInicio .topoLinha .voltarIni{display:none}
 <div class="toast" id="toast" hidden></div>
 <script>
 'use strict';
-const APP_VERSAO='49';
+const APP_VERSAO='50';
 const APP_DATA='19/10/2026';
 const KEY='confinamento-completo-v1';
 const $=id=>document.getElementById(id);
@@ -1145,10 +1146,10 @@ async function iniciar(){
 function toast(t){const el=$('toast');el.textContent=t;el.hidden=false;clearTimeout(toast.t);toast.t=setTimeout(()=>el.hidden=true,2600);}
 /* Lista do trato = currais do cadastro (na ordem) que têm previsto maior que zero nesse trato */
 function mapaPrev(k){k=String(k);if(!S.prev[k])S.prev[k]={};return S.prev[k];}
-function lista(k){const m=(S.prev&&S.prev[String(k||S.tratoSel)])||{};const f=k?null:filtroForn();
+function lista(k){const m=(S.prev&&S.prev[String(k||S.tratoSel)])||{};const f=k?null:filtroForn();if(!k&&!f&&!(typeof modoVer!=='undefined'&&modoVer))return [];
   return S.cadastro.filter(n=>curralAtivo(n)&&typeof m[n]==='number'&&m[n]>0&&(!f||(linhaDe(n)===f.local&&(!f.rac||(window.racaoDoCurral&&racaoDoCurral(n)===f.rac))))).map(n=>({nome:n,prev:m[n]}));}
 /* Fornecer: antes de abrir, escolhe Local (confinamento/pasto), Ração e Trato; a lista mostra só esses currais */
-function filtroForn(){if(typeof modoVer!=='undefined'&&modoVer)return null;const f=S&&S.forn;return f&&f.ativo&&f.dia===hojeKey()?f:null;}
+function filtroForn(){if(typeof modoVer!=='undefined'&&modoVer)return (typeof avFiltro!=='undefined'&&avFiltro)||null;const f=S&&S.forn;return f&&f.ativo&&f.dia===hojeKey()?f:null;}
 /* ================= Previsto por dia · nº de tratos por curral · divisão em % =================
    S.prev = previsto de HOJE (o que o Tratar usa e vai para a nuvem).
    Cada dia fica guardado na Gestão (item 'prev-AAAA-MM-DD') para consultar depois; o de AMANHÃ fica lá até virar o dia. */
@@ -1249,7 +1250,8 @@ document.addEventListener('change',e=>{const s_=e.target.closest('.tSeta select'
 function fornCurrais(loc,rac,k){const m=(S.prev&&S.prev[String(k)])||{};return S.cadastro.filter(n=>curralAtivo(n)&&typeof m[n]==='number'&&m[n]>0&&linhaDe(n)===loc&&(!rac||(window.racaoDoCurral&&racaoDoCurral(n)===rac))).map(n=>({nome:n,prev:m[n]}));}
 function fornPendentes(loc,rac,k){const L=fornCurrais(loc,rac,k),hj=diaAtivo();return L.filter(x=>!HIST.some(r=>r.dia===hj&&+r.trato===k&&r.curral===x.nome));}
 /* em passos: local → ração → trato → resumo e Iniciar */
-function fornSetupHTML(){if(!FS.local)FS.passo=1;const cont=n=>`<button type="button" class="lima cCont" data-fpasso="${n}">Continuar ▶</button>`;
+function fornSetupHTML(){const fim_=FS.fim?`<div class="fFim">${esc(FS.fim)}<small>Escolha abaixo o próximo fornecimento.</small></div>`:'';return fim_+fornSetupHTML0();}
+function fornSetupHTML0(){if(!FS.local)FS.passo=1;const cont=n=>`<button type="button" class="lima cCont" data-fpasso="${n}">Continuar ▶</button>`;
   if(FS.passo<=1)return `<h2>Fornecer no cocho</h2><label>1. Local</label>${window.escolhaLocal?escolhaLocal('data-floc',null):''}<p class="note">Escolha o local para continuar.</p>`;
   const R=window.racoesDoLocal?racoesDoLocal(FS.local):[];
   if(FS.rac&&!R.some(r=>r.uid===FS.rac))FS.rac=null;if(FS.rac==null&&R.length===1)FS.rac=R[0].uid;
@@ -1279,19 +1281,19 @@ async function iniciarFornecimentoChecado(){const pend=fornPendentes(FS.local,FS
   const peso=window.pesoBalanca?pesoBalanca():null;
   if(peso!=null&&prec>0&&peso<prec){const ok=window.confirmaVermelho?await confirmaVermelho('Pouca ração no vagão',`A balança mostra ${fmt(peso)} kg e o fornecimento precisa de ${fmt(prec)} kg (${pend.length} curral(is)). Faltam ${fmt(prec-peso)} kg.`,'Iniciar mesmo assim','Voltar para carregar mais'):confirm('Pouca ração no vagão. Iniciar mesmo assim?');if(!ok)return;}
   iniciarFornecimento();}
-function iniciarFornecimento(){S.forn={ativo:true,dia:hojeKey(),local:FS.local,rac:FS.rac||'',trato:+FS.trato};S.ini='';S.fim='';
+function iniciarFornecimento(){FS.fim='';S.forn={ativo:true,dia:hojeKey(),local:FS.local,rac:FS.rac||'',trato:+FS.trato};S.ini='';S.fim='';
   if(+S.tratoSel!==+FS.trato){S.tratoSel=+FS.trato;$('tratoSel').value=String(S.tratoSel);if($('aTrato'))$('aTrato').value=String(S.tratoSel);}
   const L=lista(),regs=regsAtuais();setAtual(Math.max(0,L.findIndex(x=>!feito(x.nome,regs))));save();
   if(window.aRenderFora)aRenderFora();render();mostrarFornecimento();window.scrollTo({top:0});}
 document.addEventListener('click',e=>{const lb=e.target.closest('[data-floc]');if(lb){FS.local=lb.dataset.floc;FS.rac=null;FS.trato=null;FS.passo=2;mostrarFornecimento();return;}
   const fp=e.target.closest('[data-fpasso]');if(fp){FS.passo=+fp.dataset.fpasso;mostrarFornecimento();return;}
   if(e.target.closest('#fIniciar'))return iniciarFornecimentoChecado();
-  if(e.target.closest('[data-ftrocar]')){if(window.autoDescarregando&&autoDescarregando()){toast('Está fornecendo num curral: registre antes de trocar.');return;}const f=S.forn||{};FS.local=null;FS.rac=null;FS.trato=null;FS.passo=1;S.forn=Object.assign({},f,{ativo:false});save();mostrarFornecimento();window.scrollTo({top:0});}});
+  if(e.target.closest('[data-ftrocar]')){if(window.autoDescarregando&&autoDescarregando()){toast('Está fornecendo num curral: registre antes de trocar.');return;}const f=S.forn||{};FS.local=null;FS.rac=null;FS.trato=null;FS.passo=1;FS.fim='';S.forn=Object.assign({},f,{ativo:false});save();mostrarFornecimento();window.scrollTo({top:0});}});
 document.addEventListener('change',e=>{if(e.target.id==='fRac'){FS.rac=e.target.value==='-'?null:e.target.value;FS.trato=null;if(FS.rac!=null)FS.passo=Math.max(FS.passo,3);mostrarFornecimento();}if(e.target.id==='fTrato'){FS.trato=+e.target.value;mostrarFornecimento();}});
 /* terminou todos os currais do trato (fornecidos ou "não fornecer"): já passa para o próximo trato */
 function proximoTratoSeCompleto(){try{const f=filtroForn();
   if(f){const L=lista(),regs=regsAtuais();if(!L.length||!L.every(x=>feito(x.nome,regs)))return false;
-    toast(`✓ Fornecimento completo · ${f.local==='C'?'Confinamento':'Pasto'} · Trato ${S.tratoSel}`);FS.local=f.local;FS.rac=f.rac;FS.trato=null;FS.passo=3;S.forn=Object.assign({},f,{ativo:false});save();mostrarFornecimento();return true;}
+    const tk=L.reduce((a,x)=>a+x.prev,0);FS.fim=`✓ Fornecimento finalizado · ${f.local==='C'?'Confinamento':'Pasto'} · Trato ${S.tratoSel} · ${L.length} curral(is)`;toast(FS.fim);if(window.diagLog)try{diagLog('forn_finalizado',{local:f.local,trato:S.tratoSel,n:L.length,prev:tk});}catch(e){}FS.local=f.local;FS.rac=f.rac;FS.trato=null;FS.passo=3;S.forn=Object.assign({},f,{ativo:false});save();mostrarFornecimento();return true;}
   if(!tratoCompleto(S.tratoSel))return false;const antes=S.tratoSel;
   let alvo=null;for(let k=antes+1;k<=MAXT;k++){if(lista(k).length&&!tratoCompleto(k)){alvo=k;break;}}
   if(alvo==null)return false;$('tratoSel').value=String(alvo);$('tratoSel').dispatchEvent(new Event('change'));
@@ -1980,7 +1982,7 @@ $('hXls').onclick=()=>{const f=filtrados();if(f.length)compartilharArquivo(gerar
 /* ---------- Abas ---------- */
 function aba(qual){const vq=qual;if(modoVer&&(qual==='auto'||qual==='autoc'||qual==='carga'))qual='trato'; // no Visualizar, todas mostram o Ao vivo (manual e automação, carregar e fornecer)
   try{if((qual==='carga'||qual==='autoc')&&typeof CG!=='undefined'&&!CG.ativa){CG.passo=1;CG.local=null;CG.trato=null;CG.juntos=[];CG.avulso=false;CG.juntoAberto=false;}
-    if((qual==='trato'||qual==='auto')&&window.abaAtual!==qual&&typeof filtroForn==='function'&&!filtroForn()){FS.local=null;FS.rac=null;FS.trato=null;FS.passo=1;}}catch(e){}
+    if((qual==='trato'||qual==='auto')&&window.abaAtual!==qual&&typeof filtroForn==='function'&&!filtroForn()){FS.local=null;FS.rac=null;FS.trato=null;FS.passo=1;FS.fim='';}}catch(e){}
   $('viewEscolha').hidden=true;
   if(window.cFecha&&$('tecCarga')&&!$('tecCarga').hidden)cFecha();
   if(typeof modoRemover!=='undefined'&&modoRemover&&qual!=='prev')$('btnRemoverCurral').click();
@@ -2837,7 +2839,7 @@ function estadoAoVivo(){
   if((avModo==='carga'||avModo==='autoc')&&window.cEstadoAoVivo){const e=cEstadoAoVivo(avModo==='autoc');if(e)return e;}
   if(avModo==='auto'&&window.aEstadoAoVivo){const e=aEstadoAoVivo();if(e)return e;}
   const L=lista(),c=L[S.atual],regs=regsAtuais();
-  return {modo:'trato',origem:'manual',dia:diaAtivo(),trato:S.tratoSel,curral:c?c.nome:'',prev:c?c.prev:null,ini:S.ini||'',fim:S.fim||'',feitos:L.filter(x=>feito(x.nome,regs)).length,total:L.length};}
+  const ff=filtroForn();return {modo:'trato',origem:'manual',local:ff?ff.local:'',rac:ff?ff.rac:'',fimForn:!ff,dia:diaAtivo(),trato:S.tratoSel,curral:c?c.nome:'',prev:c?c.prev:null,ini:S.ini||'',fim:S.fim||'',feitos:L.filter(x=>feito(x.nome,regs)).length,total:L.length};}
 function avAtivo(){return !!(S&&!modoVer&&!document.body.classList.contains('naInicio')&&apiUrl()&&navigator.onLine);}
 function agendarAoVivo(){if(avTimer||!avAtivo())return;if(JSON.stringify(estadoAoVivo())===avUlt)return;
   avTimer=setTimeout(enviarAoVivo,Math.max(300,2500-(Date.now()-avUltEnvio)));}
@@ -2847,7 +2849,7 @@ async function enviarAoVivo(forcar){avTimer=null;if(!avAtivo())return;const est=
 function sairAoVivo(){avUlt='';if(S&&apiUrl()&&navigator.onLine)postApi({acao:'aovivo',aparelho:S.aparelho,sair:true}).catch(()=>{});}
 setInterval(()=>{if(avAtivo()&&document.visibilityState==='visible')enviarAoVivo(true);},45000);
 
-let avAbriu=false,avDados=null,avAgora=0,avRecebido=0,avBuscando=false,avErro=false;
+let avFiltro=null,avAbriu=false,avDados=null,avAgora=0,avRecebido=0,avBuscando=false,avErro=false;
 async function puxarAoVivo(){if(avBuscando||!apiUrl())return;avBuscando=true;
   try{const r=await fetch(apiUrl()+'?acao=aovivo',{cache:'no-store'});const j=await r.json();
     if(j&&j.ok){avDados=j.dados||{};avAgora=+j.agora||Date.now();avRecebido=Date.now();avErro=false;}else avErro=true;}
@@ -2906,6 +2908,8 @@ function renderAoVivo(){const box=$('aoVivo');if(!modoVer){box.innerHTML='';retu
   const passou=Date.now()-avRecebido;
   const lst=Object.keys(avDados).map(k=>Object.assign({ap:k},avDados[k])).map(d=>(d.idade=avAgora-d.tsServ+passou,d))
     .filter(d=>d.idade<3*60000).sort((a,b)=>a.idade-b.idade);
+  const tr0=lst.find(d=>d.modo==='trato'&&d.local),nf_=tr0?{ativo:true,dia:tr0.dia,local:tr0.local,rac:tr0.rac||'',trato:+tr0.trato}:null;
+  if(JSON.stringify(nf_)!==JSON.stringify(avFiltro)){avFiltro=nf_;setTimeout(()=>{try{render();}catch(e){}},0);}
   if(!lst.length){box.innerHTML='<div class="avVazio">Ninguém executando trato agora</div>';return;}
   if(!avAbriu&&window.abaAtual===''&&menuAberto==='trato'){avAbriu=true;const d0=lst[0];
     const au=d0.origem==='auto',cg=d0.modo==='carga';aba(au?(cg?'autoc':'auto'):(cg?'carga':'trato'));return;}
@@ -2913,9 +2917,9 @@ function renderAoVivo(){const box=$('aoVivo');if(!modoVer){box.innerHTML='';retu
     const alvo=(pv!=null&&!isNaN(ini))?fmt(ini-pv):'—';
     let real='—',dif='—',cls='';if(!isNaN(ini)&&!isNaN(fim)){const f=ini-fim;real=fmt(f);if(pv!=null){const x=f-pv;dif=auto&&x<0?fmt(-x):sgn(x);cls=auto&&x<0?'':classeDesv(x,pv);}}
     const fora=d.dia!==hojeKey()?` · ${diaBR(d.dia)}`:'';
-    const nomeCur=d.curral||(d.total?'Trato completo':'—');
+    const nomeCur=d.fimForn?'✓ Fornecimento finalizado':d.curral||(d.total?'Trato completo':'—');
     return `<div class="avCard${d.idade>70000?' parado':''}">
-      <div class="avTopo"><span><i class="avPonto"></i>Ao vivo · ${auto?'⚡ Tratar':'✋ Tratar'} · Trato ${d.trato}${fora} · ${d.feitos||0}/${d.total||0}</span><span class="avIdade">${idadeTxt(d.idade)}</span></div>
+      <div class="avTopo"><span><i class="avPonto"></i>Ao vivo · ${auto?'⚡ Fornecer':'✋ Fornecer'}${d.local?' · '+(d.local==='C'?'Confinamento':'Pasto'):''} · Trato ${d.trato}${fora} · ${d.feitos||0}/${d.total||0}</span><span class="avIdade">${idadeTxt(d.idade)}</span></div>
       <div class="curBox2"><div class="cbCur"><span>Curral atual</span><b>${esc(nomeCur)}</b></div><div class="cbPrev"><span>Previsto</span><b class="num">${pv!=null&&d.curral?fmt(pv):'—'}</b></div></div>
       <div class="avGrade">
         <div><small>Bal. início</small><b class="num">${!isNaN(ini)?fmt(ini):'—'}</b></div>

@@ -619,7 +619,7 @@ let leveT=null;
 function aRenderLeve(){if(leveT)return;leveT=setTimeout(()=>{leveT=null;pintarPeso();pintarCarga();if(typeof agendarAoVivo==='function')agendarAoVivo();},120);}
 /* acompanhamento ao vivo do Tratar pela balança */
 window.aEstadoAoVivo=()=>{const L=lista(),c=L[S.atual],regs=regsAtuais();
-  return {modo:'trato',origem:'auto',dia:diaAtivo(),trato:S.tratoSel,curral:c?c.nome:'',prev:c?c.prev:null,ini:A.base!=null?Math.round(A.base):'',fim:A.peso!=null?Math.round(A.peso):'',
+  const ff=window.filtroForn?filtroForn():null;return {modo:'trato',origem:'auto',local:ff?ff.local:'',rac:ff?ff.rac:'',fimForn:!ff,dia:diaAtivo(),trato:S.tratoSel,curral:c?c.nome:'',prev:c?c.prev:null,ini:A.base!=null?Math.round(A.base):'',fim:A.peso!=null?Math.round(A.peso):'',
     feitos:L.filter(x=>feito(x.nome,regs)).length,total:L.length};};
 function pintarPeso(){
   if(!$('aPeso')||$('viewAuto').hidden)return;
