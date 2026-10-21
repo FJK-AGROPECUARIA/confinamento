@@ -10,7 +10,7 @@
 <link rel="manifest" href="manifest.json">
 <link rel="icon" href="icone-192.png">
 <link rel="apple-touch-icon" href="icone-192.png">
-<title>Gestão de Tratos · FJK</title>
+<title>FJK · Gestão de Tratos</title>
 <style>
 /* Layout: painel do curral atual no topo (visor da balança), currais com previsto editável, registros e fechamento */
 :root{
@@ -1100,7 +1100,7 @@ body.naInicio .topoTxt h1{font-size:clamp(16px,5vw,28px)!important}
 <div class="toast" id="toast" hidden></div>
 <script>
 'use strict';
-const APP_VERSAO='98';
+const APP_VERSAO='99';
 const APP_DATA='19/10/2026';
 const KEY='confinamento-completo-v1';
 const $=id=>document.getElementById(id);
@@ -2473,7 +2473,7 @@ async function puxarRegistros(forcar){
   ultPuxaReg=Date.now();
   const d=new Date();d.setDate(d.getDate()-7);
   const envAntes=new Set(HIST.filter(x=>x.enviado).map(x=>x.uid)); // só confere os que já estavam na nuvem antes de buscar
-  const r=await fetch(apiUrl()+'?acao=listar&desde='+diaKey(d),{cache:'no-store'});const j=await r.json();if(!j||!j.ok)return;
+  const r=await fetch(apiUrl()+'?acao=listar&desde='+diaKey(d),{cache:'no-store'});const j=await r.json();if(!j||!j.ok)return;marcarAtualiz();
   const porUid=new Map(HIST.map(x=>[x.uid,x]));const pendEd=new Set((S.editarNuvem||[]).map(x=>x.uid));const apag=new Set(S.apagarNuvem||[]);
   const novos=[],mudados=[];
   (j.registros||[]).forEach(x=>{if(!x||!x.uid||apag.has(String(x.uid)))return;const u=String(x.uid),y=porUid.get(u);
@@ -2490,6 +2490,8 @@ async function puxarRegistros(forcar){
 }
 /* topo: "20/10 às 16:42" = data de hoje e hora da última atualização com a nuvem */
 let ultAtualiz=0;try{ultAtualiz=+localStorage.getItem('ultAtualiz')||0;}catch(e){}
+/* marca a hora da última vez que conversou com a nuvem (também no Visualizar e na Gestão, que só buscam dados) */
+function marcarAtualiz(){ultAtualiz=Date.now();try{localStorage.setItem('ultAtualiz',String(ultAtualiz));}catch(e){}try{pintarHoje();}catch(e){}}
 function pintarHoje(){const el=$('hoje');if(!el)return;const d=new Date(),dd=d.toLocaleDateString('pt-BR',{day:'2-digit',month:'2-digit'});
   const u=ultAtualiz?new Date(ultAtualiz):null;const mesmoDia=u&&u.toDateString()===d.toDateString();
   el.textContent=(u?`Atualizado ${u.toLocaleDateString('pt-BR',{day:'2-digit',month:'2-digit'})} às ${u.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'})}`:dd)+' – v'+APP_VERSAO;try{caberSub();}catch(e){}}

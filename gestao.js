@@ -54,7 +54,7 @@ async function gSync(puxar){
     if(puxar||Date.now()-gUltPuxa>2*60000){
       gUltPuxa=Date.now();
       const r=await fetch(apiUrl()+'?acao=gestao',{cache:'no-store'});const j=await r.json();
-      if(j&&j.ok&&Array.isArray(j.itens)){let mud=false;
+      if(j&&j.ok&&Array.isArray(j.itens)){let mud=false;try{marcarAtualiz();}catch(e){}
         j.itens.forEach(x=>{if(!x||!x.uid)return;const l=G.it[x.uid];
           if(!l||((+x.ts||0)>(l.ts||0)&&!G.pend.includes(x.uid))){G.it[x.uid]=x;mud=true;}});
         if(mud){gSave();try{aplicarRenomesHist();limparPrevRenomes();}catch(e){}if(!$('viewGest').hidden&&!gEditando())gRender();}
