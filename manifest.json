@@ -1,6 +1,6 @@
 {
-  "name": "Sistema Completo Confinamento - FJK",
-  "short_name": "Confinamento",
+  "name": "FJK - Tratos",
+  "short_name": "FJK - Tratos",
   "start_url": "./index.html",
   "scope": "./",
   "display": "standalone",
