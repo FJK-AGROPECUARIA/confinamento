@@ -1924,13 +1924,14 @@ window.ZST=window.ZST||{dia:null,loc:'T'};
 function zootBoxHTML(){const dia=ZST.dia||(ZST.dia=hojeKey()),loc=ZST.loc||'T',D=zootDados(dia,loc);
   const top=`<div class="curhead"><h2>Índices do dia</h2><input type="date" id="zDia" value="${dia}" max="${hojeKey()}" aria-label="Dia do relatório"></div>
     <div class="linhas zLoc">${[['T','Todos'],['C','Confinamento'],['P','🌿 Pasto']].map(([k,t])=>`<button data-zloc="${k}" class="${loc===k?'sel':''}">${t}</button>`).join('')}</div>
+    ${D.rows.length?'<div class="row compart fz3"><button class="verde" data-z="pdf">📄 PDF</button><button class="verde" data-z="img">🖼 Foto</button><button class="verde" data-z="xls">📊 Excel</button></div>':''}
     <p class="note">${dB(dia)}: consumo de matéria natural, matéria seca, % do peso vivo e custo por cabeça.</p>`;
   if(!D.rows.length)return top+'<p class="note">Nenhum lote com animais neste dia.</p>';
   const tab=`<div class="tablebox"><table class="gTab zTab"><thead><tr><th>Curral</th><th>Cab</th><th>Dias</th><th>MN dia</th><th>MS dia</th><th>% PV</th></tr></thead><tbody>
     ${D.rows.map(r=>`<tr><td class="c">${esc(r.c)}<small>${r.rac}${r.sexo?' · '+r.sexo:''}${r.nota!=null?' · nota '+r.nota:''}</small><small class="zFin">${rs(r.fD)}/dia · acum. ${rs(r.fA)}</small></td><td>${nf(r.cab)}</td><td>${nf(r.dias)}</td><td>${nf(r.mnD,2)}</td><td><b>${nf(r.msD,2)}</b></td><td>${pc(r.pvD,2)}</td></tr>`).join('')}
     <tr class="grp"><td>Média<small class="zFin">${rs(D.T.fD)}/dia · acum. ${rs(D.T.fA)}</small></td><td>${nf(D.T.cab)}</td><td>${nf(D.T.dias)}</td><td>${nf(D.T.mnD,2)}</td><td>${nf(D.T.msD,2)}</td><td>${pc(D.T.pvD,2)}</td></tr></tbody></table></div>
     <p class="note">MN e MS em kg por cabeça no dia. Em azul, o custo por cabeça (ração + operacional): do dia e acumulado desde a entrada. O PDF, a Foto e o Excel trazem o relatório completo.</p>`;
-  return top+tab+`<div class="row compart fz3"><button class="verde" data-z="pdf">📄 PDF</button><button class="verde" data-z="img">🖼 Foto</button><button class="verde" data-z="xls">📊 Excel</button></div>`;}
+  return top+tab;}
 window.zootBoxHTML=zootBoxHTML;
 function zootRepintar(){try{if(window.pintarZoot)pintarZoot();}catch(e){}if(GT&&GT.t==='indices')gRender();}
 if(!window.__zootEv){window.__zootEv=1;
