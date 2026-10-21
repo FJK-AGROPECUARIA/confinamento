@@ -722,10 +722,11 @@ body.menuFechado .menuSeta{background:#2e6b2f;color:#fff;padding:9px 12px;font-s
 .topoTxt .sub{margin-top:3px}
 .topoLinha .voltarIni,.topoLinha .atualizarBtn{position:static!important;transform:none!important;flex:none;padding:6px 4px}
 body.naInicio .topoLinha .voltarIni{display:none}
-.topoLinha{min-height:62px;gap:8px}
-.topo img.topoLogo{height:58px!important;align-self:center}
+.topoLinha{min-height:80px;gap:8px}
+.topo img.topoLogo{height:clamp(66px,20vw,88px)!important;align-self:center}
+.topo{padding-top:6px!important;padding-bottom:6px!important}
 .topoTxt{display:flex;flex-direction:column;justify-content:center;align-items:center;text-align:center;align-self:stretch}
-.topoTxt h1{font-size:clamp(13px,4.4vw,22px)!important;max-width:100%}
+.topoTxt h1{font-size:clamp(14px,4.6vw,22px)!important;max-width:100%;white-space:normal!important;overflow:visible!important;text-overflow:clip!important;line-height:1.1}
 .topoTxt .sub{display:flex;flex-wrap:wrap;justify-content:center;align-items:center;gap:2px 6px;font-size:12.5px;margin-top:2px}
 .topo #nuvem{font-size:9.5px;line-height:1.5;padding:0 6px;font-weight:700;opacity:.95}
 .topoLinha .atualizarBtn.girando{animation:girar2 .8s linear infinite}@keyframes girar2{from{transform:rotate(0)}to{transform:rotate(360deg)}}
@@ -1031,7 +1032,7 @@ body.naInicio .topoLinha .voltarIni{display:none}
 <div class="toast" id="toast" hidden></div>
 <script>
 'use strict';
-const APP_VERSAO='53';
+const APP_VERSAO='54';
 const APP_DATA='19/10/2026';
 const KEY='confinamento-completo-v1';
 const $=id=>document.getElementById(id);
@@ -2307,7 +2308,8 @@ function pintarHoje(){const el=$('hoje');if(!el)return;const d=new Date(),dd=d.t
 setInterval(pintarHoje,30000);
 /* título do cabeçalho: diminui a letra até caber inteiro */
 function caberTitulo(){const h=document.querySelector('.topoTxt h1');if(!h)return;h.style.fontSize='';let f=parseFloat(getComputedStyle(h).fontSize),n=0;
-  while(h.scrollWidth>h.clientWidth+1&&f>11&&n<40){f-=0.5;h.style.setProperty('font-size',f+'px','important');n++;}}
+  const lin=()=>h.getBoundingClientRect().height/(f*1.1);
+  while((h.scrollWidth>h.clientWidth+1||lin()>2.2)&&f>11&&n<40){f-=0.5;h.style.setProperty('font-size',f+'px','important');n++;}}
 window.addEventListener('resize',caberTitulo);try{new MutationObserver(()=>setTimeout(caberTitulo,0)).observe(document.body,{attributes:true,attributeFilter:['class']});}catch(e){}setTimeout(caberTitulo,0);
 async function sincronizar(avisar){
   if(!apiUrl()||sincronizando){statusNuvem();return;}
