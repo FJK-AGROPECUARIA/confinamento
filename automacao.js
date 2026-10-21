@@ -28,6 +28,10 @@ window.autoOcupado=()=>!!A.fonte||A.est==='descarregando';window.autoDescarregan
 
 /* ---------------- Tela ---------------- */
 const css=`
+:is(#aBox,#acBox) .curhead .balTog{margin-left:8px;padding:4px 12px;font-size:1rem}
+:is(#aBox,#acBox) .curhead .balMini{margin-left:auto;font-size:.82rem;font-weight:700}
+:is(#aBox,#acBox) .curhead .balMini.ruim{color:#c62828}
+:is(#aBox,#acBox) section.balRec :is(.aStatus,.aConn,.aSinal,.aTeclas,.aSim){display:none!important}
 :is(#aBox,#acBox) .aConn{display:grid;grid-template-columns:3fr 2fr;gap:6px}
 :is(#aBox,#acBox) .aConn .aDescBt{border-color:var(--bad);color:var(--bad)}
 :is(#aBox,#acBox) .aConn .aDescBt:disabled{opacity:.35}
@@ -89,7 +93,7 @@ function montar(){
   const st=document.createElement('style');st.textContent=css;document.head.appendChild(st);
   $('aBox').innerHTML=`
   <section class="panel">
-    <div class="curhead"><h2>Balança automática</h2><span class="note" id="aData"></span></div>
+    <div class="curhead"><h2>Balança automática</h2><span class="note" id="aData"></span><span class="balMini" id="aBalMini"></span><button type="button" class="mini balTog" data-baltog="1" aria-label="Mostrar ou esconder a conexão">▲</button></div>
     <div class="aStatus" id="aStatus"><i></i><span id="aStatusTxt">Desconectado</span></div>
     <div class="aConn">
       <button id="aBtSer" hidden>🔵 Bluetooth</button>
@@ -198,7 +202,15 @@ function pintarSinal(){const segs=A.ultDado?(Date.now()-A.ultDado)/1000:null;let
   else if(A.btReconectando){t='🔄 Reconectando a balança… não forneça agora';cl='ruim';}
   else if(segs==null||segs>3){t=segs==null?'⏳ Conectada, esperando o primeiro peso…':`⚠ SEM PESO há ${Math.round(segs)} s · não forneça agora`;cl=segs==null&&Date.now()-(A.tCon||0)<6000?'':'ruim';}
   else{t=`<i></i>Recebendo peso · ao vivo`;cl='ok';}
-  ['aSinal','acSinal'].forEach(id=>{const e=$(id);if(!e)return;if(e.innerHTML!==t)e.innerHTML=t;e.className='aSinal '+cl;});}
+  ['aSinal','acSinal'].forEach(id=>{const e=$(id);if(!e)return;if(e.innerHTML!==t)e.innerHTML=t;e.className='aSinal '+cl;});
+  /* depois de conectar e o peso chegar, recolhe a parte da conexão (fica só a bolinha no título; a setinha abre de novo) */
+  if(cl==='ok'&&!A.balAuto){A.balAuto=true;A.balRec=true;}if(!A.fonte){A.balAuto=false;A.balRec=false;}if(cl==='ruim'&&A.balRec){A.balRec=false;A.balAuto=false;} // parou o peso: abre de novo para ver o aviso
+  const mini=!A.fonte?'⚪ desconectada':cl==='ok'?'🟢 conectada':'🔴 sem peso';
+  ['aBalMini','acBalMini'].forEach(id=>{const e=$(id);if(!e)return;if(e.textContent!==mini)e.textContent=mini;e.className='balMini '+(cl==='ruim'?'ruim':'');});
+  aplicarBalRec();}
+function aplicarBalRec(){[['aBox',$('aBox')&&$('aBox').querySelector(':scope>section')],['acBox',$('acBox')&&$('acBox').querySelector(':scope>section')]].forEach(([_,sec])=>{if(!sec)return;
+  sec.classList.toggle('balRec',!!A.balRec);const b=sec.querySelector('.balTog');if(b)b.textContent=A.balRec?'▼':'▲';});}
+document.addEventListener('click',e=>{if(!e.target.closest('[data-baltog]'))return;A.balRec=!A.balRec;aplicarBalRec();});
 setInterval(pintarSinal,700);
 function desconectar(manual){
   try{if(A.bt&&A.bt.gatt&&A.bt.gatt.connected){A.bt._manual=true;A.bt.gatt.disconnect();}}catch(e){}
@@ -716,7 +728,7 @@ function zonaC(){const it=acItem();if(!naCargaAuto()||!it||!ok(it.ini)||A.peso==
   return {falta,fp,taxa,carregado,caindo:sub,z:falta<0?'passou':fp<=c.continuo?'continuo':fp<=c.vermelho?'vermelho':fp<=c.amarelo?'amarelo':'verde'};}
 window.acTela=(nova,dia)=>{
   const topo=`<section class="panel">
-    <div class="curhead"><h2>Carregar com a balança</h2><span class="note">⚡ Automação</span></div>
+    <div class="curhead"><h2>Carregar com a balança</h2><span class="balMini" id="acBalMini"></span><button type="button" class="mini balTog" data-baltog="1" aria-label="Mostrar ou esconder a conexão">▲</button></div>
     <div class="aStatus" id="acStatus"><i></i><span id="acStatusTxt">Desconectado</span></div>
     <div class="aConn"><button data-ac="ser" id="acBtSer" hidden>🔵 Bluetooth</button><button data-ac="bt" id="acBtBt">🔷 Conectar balança (Bluetooth)</button><button data-ac="ws" id="acBtWs" hidden>📶 Caixinha Wi-Fi</button><button data-ac="sim" id="acBtSim" hidden>🧪 Simulador</button><button data-ac="desc" id="acDesc" class="aDescBt" disabled>Desconectar</button></div>
     <div class="aSinal" id="acSinal">⚪ Balança desconectada</div>
@@ -728,7 +740,7 @@ window.acTela=(nova,dia)=>{
   const B=acB(),i=B.atual,it=B.itens[i];
   const pend=B.itens.filter(x=>!ok(x.real)).length,todosC=!pend,ultimoC=pend===1&&it&&!ok(it.real);
   const h=cTelaBatida(),k=h.indexOf('<section',h.indexOf('<section')+8),tabela=k>0?h.slice(k):'';
-  return topo+(window.barraBatida?barraBatida(B):'')+`<section class="panel"><div class="curhead"><h2>Batida · Trato ${B.trato}</h2><span class="note">${esc(B.racNome)} · ${nf(B.total)} kg</span></div>
+  return topo+(window.barraBatida?barraBatida(B):'')+`<section class="panel"><div class="curhead"><h2>Batida · ${B.avulso?'Avulsa':'Trato '+B.trato}</h2><span class="note">${esc(B.racNome)} · ${nf(B.total)} kg</span></div>
     <div class="curBox2"><div class="cbCur" data-c="escolher" role="button"><span>Produto ${i+1} de ${B.itens.length} <i class="seta">▼</i></span><b>${esc(it?it.nome:'—')}</b></div>
       <div class="cbPrev"><span>Carregar</span><b class="num">${it?nf(it.prev):'—'}</b></div></div>
     ${B.escolha?`<div class="escolha">${B.itens.map((x,j)=>`<button data-c="ir" data-i="${j}" class="${j===i?'sel':''}">${ok(x.real)?'✓ ':''}${esc(x.nome)} · ${nf(x.prev)} kg</button>`).join('')}</div>`:''}

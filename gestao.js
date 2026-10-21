@@ -1078,22 +1078,32 @@ window.racoesDoLocal=racoesDoLocal;
 const NOMELOC={C:'Confinamento',P:'Pasto'};
 function escolhaLocal(attr,sel){return `<div class="gLocal">${['C','P'].map(l=>`<button type="button" ${attr}="${l}" class="${sel===l?'sel':''}">${l==='C'?'🏠 Confinamento':'🌾 Pasto'}</button>`).join('')}</div>`;}
 window.escolhaLocal=escolhaLocal;
-function cTelaNova(){if(!CG.local)CG.local='C';if(!CG.trato)CG.trato=S.tratoSel||1;
+/* tela de início em passos: escolhe o local → abre a ração → abre o trato → abre o total e o botão de iniciar */
+function cTelaNova(){if(!CG.passo){CG.passo=1;CG.local=null;}if(!CG.local)CG.passo=1;if(!CG.trato)CG.trato=S.tratoSel||1;
+  const ps=CG.passo,cont=n=>`<button type="button" class="lima cCont" data-cpasso="${n}">Continuar ▶</button>`;
+  if(ps<=1||!CG.local)return `<section class="panel"><h2>Carregar vagão</h2><label>1. Local</label>${escolhaLocal('data-cloc',null)}<p class="note">Escolha o local para continuar.</p></section>`;
   const todas=racAtivas().sort(porNome);if(!todas.length)return `<section class="panel"><h2>Carregar vagão</h2><p class="note">Cadastre a ração primeiro em Gestão → Rações.</p></section>`;
   const doLocal=racoesDoLocal(CG.local),R=doLocal.length?doLocal:todas;
-  if(!CG.rac||!R.some(r=>r.uid===CG.rac))CG.rac=R[0].uid;
-  CG.juntos=(CG.juntos||[]).filter(k=>k!==+CG.trato);const trs=[+CG.trato].concat(CG.juntos).sort((a,b)=>a-b);
-  const partes=trs.map(k=>({k,sg:sugestaoCarga(k,CG.rac,CG.local)})),sg={tot:partes.reduce((a,p)=>a+p.sg.tot,0),cs:[...new Set(partes.flatMap(p=>p.sg.cs))]};
-  const chave=CG.local+'|'+trs.join('+')+'|'+CG.rac;if(CG.totalDe!==chave){CG.total=sg.tot||0;CG.totalDe=chave;cSave();}
-  const its=itensCarga(CG.rac,CG.total||0);
-  return `<section class="panel"><h2>Carregar vagão</h2>
+  if(CG.rac&&!R.some(r=>r.uid===CG.rac))CG.rac=null;if(!CG.rac&&R.length===1)CG.rac=R[0].uid;
+  const passoRac=`<section class="panel"><h2>Carregar vagão</h2>
     <label>1. Local</label>${escolhaLocal('data-cloc',CG.local)}
-    <div><label for="cRac">2. Ração</label><select id="cRac">${R.map(r=>`<option value="${r.uid}"${r.uid===CG.rac?' selected':''}>${esc(r.nome)}</option>`).join('')}</select>
-      ${doLocal.length===1?`<p class="note">Única ração ativa no ${NOMELOC[CG.local].toLowerCase()}: já selecionada.</p>`:!doLocal.length?`<p class="note">Nenhum lote com ração no ${NOMELOC[CG.local].toLowerCase()}: mostrando todas.</p>`:''}</div>
+    <div><label for="cRac">2. Ração</label><select id="cRac">${CG.rac?'':'<option value="" selected>— escolha a ração —</option>'}${R.map(r=>`<option value="${r.uid}"${r.uid===CG.rac?' selected':''}>${esc(r.nome)}</option>`).join('')}</select>
+      ${doLocal.length===1?`<p class="note">Única ração ativa no ${NOMELOC[CG.local].toLowerCase()}: já selecionada.</p>`:!doLocal.length?`<p class="note">Nenhum lote com ração no ${NOMELOC[CG.local].toLowerCase()}: mostrando todas.</p>`:''}</div>`;
+  if(ps<=2||!CG.rac)return passoRac+(CG.rac?cont(3):'')+'</section>';
+  CG.juntos=CG.avulso?[]:(CG.juntos||[]).filter(k=>k!==+CG.trato);const trs=[+CG.trato].concat(CG.juntos).sort((a,b)=>a-b);
+  const partes=trs.map(k=>({k,sg:sugestaoCarga(k,CG.rac,CG.local)})),sg={tot:partes.reduce((a,p)=>a+p.sg.tot,0),cs:[...new Set(partes.flatMap(p=>p.sg.cs))]};
+  const chave=CG.avulso?'avulso|'+CG.rac:CG.local+'|'+trs.join('+')+'|'+CG.rac;if(CG.totalDe!==chave){CG.total=CG.avulso?0:(sg.tot||0);CG.totalDe=chave;cSave();}
+  const its=itensCarga(CG.rac,CG.total||0);
+  const passoTrato=passoRac+(CG.avulso?`
+    <label>3. Trato</label><div class="cAvInfo">✳ Trato avulso · sem previsto, você digita a quantidade</div>`:`
     <label for="cTrato">3. Trato</label>${window.tratoSeta?tratoSeta('cTrato',CG.trato):''}
-    <div class="cJunto"><small>Carregar junto com:</small>${[1,2,3,4,5,6].filter(k=>k!==+CG.trato).map(k=>{const t=sugestaoCarga(k,CG.rac,CG.local).tot;return `<button type="button" data-cjunto="${k}" class="${CG.juntos.includes(k)?'sel':''}"${t||CG.juntos.includes(k)?'':' disabled'}>T${k}${t?`<small>${nf(t)}</small>`:''}</button>`;}).join('')}</div>
-    <div><label>4. Total a carregar (kg) · pode mudar</label><div class="campoX"><input class="big num" id="cTotal" type="text" readonly inputmode="none" value="${CG.total?nf(CG.total):''}" data-ct="total"></div>
-      <p class="note">${sg.cs.length?`Previsto ${trs.length>1?'dos Tratos '+trs.join(' + '):'do Trato '+CG.trato} (${NOMELOC[CG.local]}, esta ração): <b>${nf(sg.tot)} kg</b>${trs.length>1?' ('+partes.map(p=>'T'+p.k+': '+nf(p.sg.tot)).join(' · ')+')':''} · ${sg.cs.join(', ')}`:`Nenhum curral do ${NOMELOC[CG.local].toLowerCase()} com esta ração no Trato ${CG.trato}. Digite o total.`}</p></div>
+    <div class="cJunto"><button type="button" class="mini cJtTog${CG.juntoAberto?' sel':''}" data-cjtog="1">＋ Carregar junto${CG.juntos.length?' (T'+CG.juntos.join(', T')+')':''}</button>
+    ${CG.juntoAberto?[1,2,3,4,5,6].filter(k=>k!==+CG.trato).map(k=>{const t=sugestaoCarga(k,CG.rac,CG.local).tot;return `<button type="button" data-cjunto="${k}" class="${CG.juntos.includes(k)?'sel':''}"${t||CG.juntos.includes(k)?'':' disabled'}>T${k}${t?`<small>${nf(t)}</small>`:''}</button>`;}).join(''):''}</div>`)+
+    `<button type="button" class="mini cAvulso${CG.avulso?' sel':''}" data-cavulso="1">${CG.avulso?'↩ Voltar para os tratos do previsto':'✳ Trato avulso (sem previsto)'}</button>`;
+  if(ps<=3)return passoTrato+cont(4)+'</section>';
+  return passoTrato+`
+    <div><label>4. Total a carregar (kg)${CG.avulso?' · digite':' · pode mudar'}</label><div class="campoX cTotWrap"><input class="big num" id="cTotal" type="text" readonly inputmode="none" value="${CG.total?nf(CG.total):''}" placeholder="${CG.avulso?'digite':''}" data-ct="total"><div class="cSetas"><button type="button" data-ctot="-50" aria-label="Menos 50 kg">▼</button><button type="button" data-ctot="50" aria-label="Mais 50 kg">▲</button></div></div>
+</div>
     ${its.length&&CG.total>0?`<div class="tablebox"><table class="gTab"><thead><tr><th>Produto</th><th>% MN</th><th>Carregar (kg)</th></tr></thead><tbody>${its.map(i=>`<tr><td class="c">${esc(i.nome)}</td><td>${nf(i.pMN,1)}</td><td><b>${nf(i.prev)}</b></td></tr>`).join('')}
       <tr class="grp"><td>Total</td><td>100,0</td><td>${nf(CG.total)}</td></tr></tbody></table></div>`:''}
     <button class="primary" data-c="iniciar"${CG.total>0&&its.length?'':' disabled'}>▶ Iniciar batida</button></section>`;}
@@ -1104,7 +1114,7 @@ window.barraBatida=barraBatida;
 function cTelaBatida(){const A=cAtiva(),i=A.atual,it=A.itens[i],alvo=it&&ok(it.ini)?it.ini+it.prev:NaN,real=it&&ok(it.ini)&&ok(it.fim)?it.fim-it.ini:NaN,dif=real-(it?it.prev:0);
   const feitos=A.itens.filter(x=>ok(x.real)).length,tp=A.itens.reduce((a,x)=>a+x.prev,0),tr=A.itens.reduce((a,x)=>a+(ok(x.real)?x.real:0),0),tpf=A.itens.reduce((a,x)=>a+(ok(x.real)?x.prev:0),0);
   const cls=(d,p)=>typeof classeDesv==='function'?classeDesv(d,p):'';
-  return `${barraBatida(A)}<section class="panel"><div class="curhead"><h2>Batida · Trato ${A.trato}</h2><span class="note">${esc(A.racNome)} · ${nf(A.total)} kg</span></div>
+  return `${barraBatida(A)}<section class="panel"><div class="curhead"><h2>Batida · ${A.avulso?'Avulsa':'Trato '+A.trato}</h2><span class="note">${esc(A.racNome)} · ${nf(A.total)} kg</span></div>
     <div class="curBox2"><div class="cbCur" data-c="escolher" role="button"><span>Produto ${i+1} de ${A.itens.length} <i class="seta">▼</i></span><b>${esc(it?it.nome:'—')}</b></div>
       <div class="cbPrev"><span>Carregar</span><b class="num">${it?nf(it.prev):'—'}</b></div></div>
     ${A.escolha?`<div class="escolha">${A.itens.map((x,k)=>`<button data-c="ir" data-i="${k}" class="${k===i?'sel':''}">${ok(x.real)?'✓ ':''}${esc(x.nome)} · ${nf(x.prev)} kg</button>`).join('')}</div>`:''}
@@ -1150,7 +1160,11 @@ function cConfirma(){const v=cBuf===''?null:+cBuf,A=cAtiva();
   d.addEventListener('click',e=>{const b=e.target.closest('button[data-k]');if(!b)return;const k=b.dataset.k;
     if(k==='fechar')return cFecha();if(k==='ok')return cConfirma();if(k==='limpar')cBuf='';else if(k==='del')cBuf=cBuf.slice(0,-1);else if(cBuf.length<6)cBuf=(cBuf+k).replace(/^0+(?=\d)/,'');cMostra();});})();
 function cClique(e){
-  const lb=e.target.closest('[data-cloc]');if(lb){CG.local=lb.dataset.cloc;CG.juntos=[];cSave();return cRender();}
+  const lb=e.target.closest('[data-cloc]');if(lb){CG.local=lb.dataset.cloc;CG.juntos=[];CG.rac=null;CG.passo=2;cSave();return cRender();}
+  const cp=e.target.closest('[data-cpasso]');if(cp){CG.passo=+cp.dataset.cpasso;cSave();return cRender();}
+  if(e.target.closest('[data-cjtog]')){CG.juntoAberto=!CG.juntoAberto;cSave();return cRender();}
+  if(e.target.closest('[data-cavulso]')){CG.avulso=!CG.avulso;CG.juntos=[];CG.juntoAberto=false;CG.totalDe=null;cSave();return cRender();}
+  const ct=e.target.closest('[data-ctot]');if(ct){CG.total=Math.max(0,(+CG.total||0)+(+ct.dataset.ctot));cSave();return cRender();}
   const jb=e.target.closest('[data-cjunto]');if(jb){const k=+jb.dataset.cjunto;CG.juntos=CG.juntos||[];CG.juntos=CG.juntos.includes(k)?CG.juntos.filter(x=>x!==k):CG.juntos.concat(k);cSave();return cRender();}
   const inp=e.target.closest('[data-ct]');if(inp)return cTeclado(inp.dataset.ct);
   const b=e.target.closest('[data-c],[data-g]');if(!b)return;
@@ -1159,7 +1173,7 @@ function cClique(e){
   if(a==='imgCarga'||a==='xlsCarga')return a==='imgCarga'?imgCarga():xlsCarga();
   if(bloqueado())return;
   if(a==='iniciar'){const r=G.it[CG.rac],its=itensCarga(CG.rac,CG.total);if(!its.length)return toast('Ração sem fórmula');
-    CG.ativa={dia:hojeKey(),local:CG.local||'',trato:+CG.trato,tratos:[+CG.trato].concat(CG.juntos||[]).sort((a,b)=>a-b),rac:CG.rac,racNome:r.nome,total:CG.total,itens:its,atual:0,ts0:Date.now(),origem:cAuto()?'balanca':'manual'};cSave();cRender();window.scrollTo({top:0});if(cAuto()){if(window.acIniciou)acIniciou();return;}return cTeclado('ini');}
+    CG.ativa={dia:hojeKey(),local:CG.local||'',avulso:!!CG.avulso,trato:CG.avulso?0:+CG.trato,tratos:CG.avulso?[]:[+CG.trato].concat(CG.juntos||[]).sort((a,b)=>a-b),rac:CG.rac,racNome:r.nome,total:CG.total,itens:its,atual:0,ts0:Date.now(),origem:cAuto()?'balanca':'manual'};cSave();cRender();window.scrollTo({top:0});if(cAuto()){if(window.acIniciou)acIniciou();return;}return cTeclado('ini');}
   if(!A&&a!=='apagaCarga')return;
   if(a==='escolher'){A.escolha=!A.escolha;cSave();return cRender();}
   if(a==='ir'){A.atual=+b.dataset.i;A.escolha=false;cSave();return cRender();}
@@ -1175,17 +1189,17 @@ function cClique(e){
     const [x,j]=feitos[0];x.real=null;x.fim=null;A.atual=j;cSave();return cRender();}
   if(a==='cancelar'){const feitos=A.itens.filter(x=>ok(x.real)).length;
     confirmaVermelho('Deseja realmente cancelar a batida?',`${feitos?`Os ${feitos} produto(s) já carregado(s) nesta batida serão perdidos.`:'Esta batida será descartada.'} Nada dela será salvo e não dá para desfazer.`,'Sim, cancelar batida','Não, continuar carregando')
-      .then(sim=>{if(!sim)return;if(CG.ativa!==A)return;try{window.diagLog&&diagLog('batida_cancelada',{trato:A.trato,itens:A.itens.map(x=>[x.nome,x.prev,x.real])});}catch(e){}CG.ativa=null;cSave();cRender();toast('Batida cancelada');window.scrollTo({top:0});});return;}
+      .then(sim=>{if(!sim)return;if(CG.ativa!==A)return;CG.passo=1;CG.local=null;CG.juntos=[];CG.avulso=false;CG.juntoAberto=false;try{window.diagLog&&diagLog('batida_cancelada',{trato:A.trato,itens:A.itens.map(x=>[x.nome,x.prev,x.real])});}catch(e){}CG.ativa=null;cSave();cRender();toast('Batida cancelada');window.scrollTo({top:0});});return;}
   if(a==='concluir'){const falta=A.itens.filter(x=>!ok(x.real)).length;if(falta&&!confirm(`Faltam ${falta} produto(s). Finalizar assim mesmo?`))return;
-    gPut({uid:novoId('carga'),tipo:'carga',dia:A.dia,local:A.local||'',trato:A.trato,tratos:A.tratos||[A.trato],racao:A.rac,racNome:A.racNome,total:A.total,ts0:A.ts0,hora:new Date(A.ts0).toTimeString().slice(0,5),
+    gPut({uid:novoId('carga'),tipo:'carga',dia:A.dia,local:A.local||'',avulso:!!A.avulso,trato:A.trato,tratos:A.tratos||[A.trato],racao:A.rac,racNome:A.racNome,total:A.total,ts0:A.ts0,hora:new Date(A.ts0).toTimeString().slice(0,5),
       itens:A.itens.map(x=>({ins:x.ins,nome:x.nome,pMN:x.pMN,prev:x.prev,ini:x.ini,fim:x.fim,real:ok(x.real)?x.real:null,hora:x.hora||''})),origem:A.origem||''});
-    CG.ativa=null;CG.verDia=A.dia;cSave();toast('Batida salva');cRender();window.scrollTo({top:0});return;}
+    CG.ativa=null;CG.passo=1;CG.local=null;CG.juntos=[];CG.avulso=false;CG.juntoAberto=false;CG.verDia=A.dia;cSave();toast('Batida salva');cRender();window.scrollTo({top:0});return;}
   if(a==='apagaCarga'){if(!confirm('Apagar esta batida?'))return;gDel(b.dataset.id);return cRender();}
 }
 $('cBox').addEventListener('click',cClique);$('acBox').addEventListener('click',cClique);
 function cMuda(e){const t=e.target;
   if(t.id==='cTrato'){CG.trato=+t.value;cSave();cRender();}
-  if(t.id==='cRac'){CG.rac=t.value;cSave();cRender();}
+  if(t.id==='cRac'){CG.rac=t.value||null;if(CG.rac)CG.passo=Math.max(CG.passo||1,3);cSave();cRender();}
   if(t.id==='cDia'){CG.verDia=t.value||hojeKey();cSave();cRender();}}
 $('cBox').addEventListener('change',cMuda);$('acBox').addEventListener('change',cMuda);
 function imgCarga(){const dia=CG.verDia||hojeKey(),L=cargasDia(dia);
@@ -1220,7 +1234,7 @@ window.batidasLista=(pa,pb,loc,t)=>gTodos('carga').filter(c=>c.dia>=pa&&c.dia<=p
   .sort((a,b)=>(b.dia+b.hora).localeCompare(a.dia+a.hora));
 window.batidasHTML=(L,mostrarDia)=>{if(!L.length)return '<p class="note">Nenhuma batida neste filtro.</p>';
   return L.map(c=>{const tp=c.itens.reduce((a,x)=>a+(+x.prev||0),0),tr=c.itens.reduce((a,x)=>a+(+x.real||0),0),d=tr-tp,cls=(dd,p)=>typeof classeDesv==='function'?classeDesv(dd,p):'';
-    return `<details class="gMais gCarga"><summary><b>${mostrarDia?diaBR(c.dia).slice(0,5)+' ':''}${esc(c.hora||'')}</b> · ${c.tratos&&c.tratos.length>1?'Tratos '+c.tratos.join('+'):'Trato '+c.trato}${c.local?' · '+(c.local==='C'?'Confinamento':'Pasto'):''} · ${esc(c.racNome||'')} <span class="num">${nf(tr)} kg <i class="${cls(d,tp)}">(${d>0?'+':''}${nf(d)})</i></span></summary>
+    return `<details class="gMais gCarga"><summary><b>${mostrarDia?diaBR(c.dia).slice(0,5)+' ':''}${esc(c.hora||'')}</b> · ${c.avulso?'Avulsa':c.tratos&&c.tratos.length>1?'Tratos '+c.tratos.join('+'):'Trato '+c.trato}${c.local?' · '+(c.local==='C'?'Confinamento':'Pasto'):''} · ${esc(c.racNome||'')} <span class="num">${nf(tr)} kg <i class="${cls(d,tp)}">(${d>0?'+':''}${nf(d)})</i></span></summary>
       <div class="tablebox"><table class="gTab"><thead><tr><th>Ingrediente</th><th>Hora</th><th>Previsto</th><th>Carreg.</th><th>Dif.</th></tr></thead><tbody>${c.itens.map(x=>{const dd=x.real-x.prev;return `<tr><td class="c">${esc(x.nome)}</td><td>${esc(x.hora||'')}</td><td>${nf(x.prev)}</td><td>${ok(+x.real)?nf(+x.real):'—'}</td><td class="${ok(+x.real)?cls(dd,x.prev):''}">${ok(+x.real)?(dd>0?'+':'')+nf(dd):''}</td></tr>`;}).join('')}
       <tr class="grp"><td>Total</td><td></td><td>${nf(tp)}</td><td>${nf(tr)}</td><td>${(d>0?'+':'')+nf(d)}</td></tr></tbody></table></div>
       <button class="mini danger" data-hbdel="${c.uid}">Apagar esta batida</button></details>`;}).join('');};
