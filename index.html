@@ -735,6 +735,12 @@ body.naInicio .topoLinha .voltarIni{display:none}
 .topoTxt .sub{display:flex;flex-wrap:wrap;justify-content:center;align-items:center;gap:2px 6px;font-size:12.5px;margin-top:2px}
 .topo{background:linear-gradient(135deg,#1f4f25 0%,#2f6b2c 100%)!important}
 .topo img.topoLogo{filter:none!important}
+.topoTxt{position:relative;padding-left:14px}
+.topoTxt::before{content:'';position:absolute;left:0;top:16%;bottom:16%;width:2px;border-radius:2px;background:#a9c41c;opacity:.85}
+body.naInicio .topoLinha{min-height:clamp(96px,30vw,140px)}
+body.naInicio .topo img.topoLogo{height:clamp(80px,26vw,124px)!important}
+body.naInicio .topo{padding-top:14px!important;padding-bottom:14px!important}
+body.naInicio .topoTxt h1{white-space:normal!important;font-size:clamp(16px,5.4vw,26px)!important;line-height:1.15}
 .topoTxt h1{color:#fff!important}
 .topoLinha .voltarIni,.topoLinha .atualizarBtn{color:#fff!important}
 .topo #nuvem{font-size:9.5px;line-height:1.5;padding:0 6px;font-weight:700;opacity:.95}
@@ -1042,7 +1048,7 @@ body.naInicio .topoLinha .voltarIni{display:none}
 <div class="toast" id="toast" hidden></div>
 <script>
 'use strict';
-const APP_VERSAO='60';
+const APP_VERSAO='61';
 const APP_DATA='19/10/2026';
 const KEY='confinamento-completo-v1';
 const $=id=>document.getElementById(id);
@@ -2320,9 +2326,9 @@ function pintarHoje(){const el=$('hoje');if(!el)return;const d=new Date(),dd=d.t
 setInterval(pintarHoje,30000);
 /* título do cabeçalho: diminui a letra até caber inteiro */
 function caberTitulo(){const h=document.querySelector('.topoTxt h1');if(!h)return;h.style.fontSize='';let f=parseFloat(getComputedStyle(h).fontSize),n=0;
-  const lin=()=>h.getBoundingClientRect().height/(f*1.1);
+  const lin=()=>h.getBoundingClientRect().height/(f*(parseFloat(getComputedStyle(h).lineHeight)/f||1.2));
   while((h.scrollWidth>h.clientWidth+1||lin()>2.2)&&f>11&&n<40){f-=0.5;h.style.setProperty('font-size',f+'px','important');n++;}}
-window.addEventListener('resize',caberTitulo);try{new MutationObserver(()=>setTimeout(caberTitulo,0)).observe(document.body,{attributes:true,attributeFilter:['class']});}catch(e){}setTimeout(caberTitulo,0);
+window.addEventListener('resize',caberTitulo);window.addEventListener('load',caberTitulo);try{document.querySelector('.topoLogo').addEventListener('load',caberTitulo);}catch(e){}try{new MutationObserver(()=>setTimeout(caberTitulo,0)).observe(document.body,{attributes:true,attributeFilter:['class']});}catch(e){}setTimeout(caberTitulo,0);
 async function sincronizar(avisar){
   if(!apiUrl()||sincronizando){statusNuvem();return;}
   if(!navigator.onLine){statusNuvem();if(avisar)toast('Sem sinal. Os dados sobem quando tiver internet.');return;}
@@ -2977,7 +2983,7 @@ function avTelaHTML(d,carga){const T=d.tela;
     <div class="aMini"><div class="caiu"><small>${carga?'Carregado':'Fornecido'}</small><b class="num">${esc(T.feito||'—')}</b></div><div><small>Peso inicial</small><b class="num">${esc(T.ini||'—')}</b></div><div><small>Parar com</small><b class="num">${esc(T.alvo||'—')}</b></div></div>
     ${carga?`<div class="avBatTot">Batida: <b>${fmt((d.carregado||0)+(parseFloat(String(T.feito||'0').replace(/\./g,'').replace(',','.'))||0))}</b> de ${fmt(d.totalPrev||0)} kg</div>`:''}</div>`;}
 function avTopoHTML(d,t0){const dd=d.dia&&/^\d{4}-/.test(d.dia)?diaBR(d.dia).slice(0,5):'',h=t0?new Date(t0).toTimeString().slice(0,5):'';
-  return `<div class="avTopo"><span><i class="avPonto"></i>Ao vivo${h?` · início ${dd} ${h}`:dd?' · '+dd:''}</span><span class="avIdade">${idadeTxt(d.idade)}</span></div>`;}
+  return `<div class="avTopo"><span><i class="avPonto"></i>Ao vivo${h?` · início ${dd} às ${h}`:dd?' · '+dd:''}</span><span class="avIdade">${idadeTxt(d.idade)}</span></div>`;}
 function idadeTxt(ms){const s=Math.max(0,Math.round(ms/1000));return s<60?`há ${s} s`:`há ${Math.round(s/60)} min`;}
 /* Visualizar › Carregar: embaixo, a batida em andamento produto por produto e as batidas feitas hoje */
 function pintarAvCarga(L){const el=$('avCargaBox');if(!el)return;const on=modoVer&&document.body.classList.contains('verCarga');el.hidden=!on;if(!on){el.innerHTML='';return;}
