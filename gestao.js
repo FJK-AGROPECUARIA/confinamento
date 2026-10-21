@@ -1916,7 +1916,8 @@ const ZCOLS=[ // [chave, título, grupo, casas, largura no PDF]
   ['msG','Geral','ms',2,80],['msD','Dia','ms',2,80],['ms1','D-1','ms',2,80],['ms5','5 dias','ms',2,80],
   ['pvG','Geral','pv',2,75],['pvD','Dia','pv',2,75],['pv1','D-1','pv',2,75],['pv5','5 dias','pv',2,75],
   ['fD','Diária','fin','rs',95],['fA','Acumulado','fin','rs',115]];
-const ZGRP={id:'Identificação',id2:'Trato',nt:'Nota',fin:'Financeiro R$/cab',pes:'Peso (kg)',mn:'MN kg/cab/dia',ms:'MS kg/cab/dia',pv:'% IMS do PV'};
+const ZGRP={id:'Identificação',id2:'Trato',nt:'Nota',fin:'R$/cab',pes:'Peso (kg)',mn:'MN kg/cab/dia',ms:'MS kg/cab/dia',pv:'% IMS do PV'};
+const ZCOR={id:'#24502a',id2:'#5b8f3e',pes:'#24502a',nt:'#5b8f3e',mn:'#24502a',ms:'#5b8f3e',pv:'#24502a',fin:'#1f5fa8'};
 const zVal=(r,k,d)=>{const v=r[k];if(d==='dia')return v?dB(v):'';if(d==='rs')return ok(+v)?nf(+v,2):'—';if(d==null)return v==null?'':String(v);return ok(+v)&&v!==null&&v!==''?nf(+v,d):'—';};
 function zootCards(T){return [['Cabeças',nf(T.cab)],['Peso entrada',nf(T.pE,1)+' kg'],['Peso projetado',nf(T.pP,1)+' kg'],['GMD',nf(T.gmd,2)],['Dias (média)',nf(T.dias)],['MN dia',nf(T.mnD,2)+' kg/cab'],['MS dia',nf(T.msD,2)+' kg/cab'],['% PV dia',pc(T.pvD,2)]];}
 /* estado único do relatório de índices: o mesmo em Tratos › Histórico › Relatório e em Gestão › Relatórios › Índices do dia */
@@ -1929,7 +1930,7 @@ function zootBoxHTML(){const dia=ZST.dia||(ZST.dia=hojeKey()),loc=ZST.loc||'T',D
   if(!D.rows.length)return top+'<p class="note">Nenhum lote com animais neste dia.</p>';
   const tab=`<div class="tablebox"><table class="gTab zTab"><thead><tr><th>Curral</th><th>Cab</th><th>Dias</th><th>MN dia</th><th>MS dia</th><th>% PV</th></tr></thead><tbody>
     ${D.rows.map(r=>`<tr><td class="c">${esc(r.c)}<small>${r.rac}${r.sexo?' · '+r.sexo:''}${r.nota!=null?' · nota '+r.nota:''}</small><small class="zFin">${rs(r.fD)}/dia · acum. ${rs(r.fA)}</small></td><td>${nf(r.cab)}</td><td>${nf(r.dias)}</td><td>${nf(r.mnD,2)}</td><td><b>${nf(r.msD,2)}</b></td><td>${pc(r.pvD,2)}</td></tr>`).join('')}
-    <tr class="grp"><td>Média<small class="zFin">${rs(D.T.fD)}/dia · acum. ${rs(D.T.fA)}</small></td><td>${nf(D.T.cab)}</td><td>${nf(D.T.dias)}</td><td>${nf(D.T.mnD,2)}</td><td>${nf(D.T.msD,2)}</td><td>${pc(D.T.pvD,2)}</td></tr></tbody></table></div>
+    <tr class="grp"><td>Média<small class="zFin">${rs(D.T.fD)}/dia · acum. ${rs(D.T.fA)}</small></td><td>${nf(D.T.cab)}</td><td></td><td>${nf(D.T.mnD,2)}</td><td>${nf(D.T.msD,2)}</td><td>${pc(D.T.pvD,2)}</td></tr></tbody></table></div>
     <p class="note">MN e MS em kg por cabeça no dia. Em azul, o custo por cabeça (ração + operacional): do dia e acumulado desde a entrada. O PDF, a Foto e o Excel trazem o relatório completo.</p>`;
   return top+tab;}
 window.zootBoxHTML=zootBoxHTML;
@@ -1940,27 +1941,29 @@ if(!window.__zootEv){window.__zootEv=1;
     const b=e.target.closest('[data-z]');if(b)zootExport(b.dataset.z,ZST.dia||hojeKey(),ZST.loc||'T');});
   document.addEventListener('change',e=>{if(e.target.id==='zDia'&&e.target.closest('.zootBox')&&e.target.value){ZST.dia=e.target.value;zootRepintar();}});}
 function tIndices(){return `${voltar('Relatórios')}<section class="panel zootBox">${zootBoxHTML()}</section>`;}
-function zootCanvas(D){const W=1754,top=130,rowH=38,hd=72,porPag=Math.max(5,Math.floor((1240-top-30-hd-60)/rowH)),pags=[];
+function zootCanvas(D){const W=1754,top=84,rowH=38,hd=72,porPag=Math.max(5,Math.floor((1240-top-30-hd-60)/rowH)),pags=[];
   const all=D.rows.concat([{__tot:1}]),nP=Math.ceil(all.length/porPag);
   const totW=ZCOLS.reduce((a,c)=>a+c[4],0),esc_=(W-60)/totW;
   for(let p=0;p<nP;p++){const R=all.slice(p*porPag,(p+1)*porPag),H=top+30+hd+R.length*rowH+70,cv=document.createElement('canvas');cv.width=W;cv.height=Math.max(H,p===0?0:400);const x=cv.getContext('2d');
     x.fillStyle='#fff';x.fillRect(0,0,W,cv.height);x.fillStyle='#24502a';x.fillRect(0,0,W,top);
-    x.fillStyle='#fff';x.textAlign='left';x.font='bold 42px Arial';x.fillText('FJK · Índices do dia',40,62);
-    x.font='24px Arial';x.fillStyle='#d8f06a';x.fillText(`${dB(D.dia)}${D.loc==='C'?' · Confinamento':D.loc==='P'?' · Pasto':''} · FJK Agropecuária`,40,102);
-    x.textAlign='right';x.fillStyle='#fff';x.font='20px Arial';x.fillText(`página ${p+1} de ${nP}`,W-40,102);
+    x.fillStyle='#fff';x.textAlign='left';x.font='bold 38px Arial';x.fillText(`FJK Agropecuária - Tratos ${dB(D.dia)}`,40,top/2+13);
+    x.textAlign='right';x.font='20px Arial';x.fillStyle='#d8f06a';x.fillText(`${D.loc==='C'?'Confinamento · ':D.loc==='P'?'Pasto · ':''}página ${p+1} de ${nP}`,W-40,top/2+8);
     /* cartões */
     let y=top+30;
     /* cabeçalho da tabela: grupos e colunas */
     let cx=30;const pos=ZCOLS.map(c=>{const w=c[4]*esc_,o={x:cx,w};cx+=w;return o;});
     let g0=0;for(let i=1;i<=ZCOLS.length;i++){if(i===ZCOLS.length||ZCOLS[i][2]!==ZCOLS[g0][2]){const gx=pos[g0].x,gw=pos[i-1].x+pos[i-1].w-gx;
-      x.fillStyle=/^id/.test(ZCOLS[g0][2])?'#24502a':ZCOLS[g0][2]==='nt'?'#8a6d1f':ZCOLS[g0][2]==='fin'?'#1f5fa8':'#3b6b2f';x.fillRect(gx+2,y,gw-4,32);x.fillStyle='#fff';x.font='bold 18px Arial';x.textAlign='center';x.fillText(ZGRP[ZCOLS[g0][2]],gx+gw/2,y+22);g0=i;}}
-    x.fillStyle='#5d6b7a';x.font='bold 17px Arial';ZCOLS.forEach((c,i)=>{x.textAlign='center';x.fillText(c[1],pos[i].x+pos[i].w/2,y+60);});
+      x.fillStyle=ZCOR[ZCOLS[g0][2]]||'#24502a';x.fillRect(gx+2,y,gw-4,32);x.fillStyle='#fff';x.font='bold 18px Arial';x.textAlign='center';x.fillText(ZGRP[ZCOLS[g0][2]],gx+gw/2,y+22);g0=i;}}
+    const ROXO='#24502a';  // linha MÉDIA: verde escuro do cabeçalho
+    /* linha dos títulos das colunas: cada grupo na cor do seu título de cima (verde escuro / verde claro alternados; financeiro azul) */
+    {let a=0;for(let i=1;i<=ZCOLS.length;i++){if(i===ZCOLS.length||ZCOLS[i][2]!==ZCOLS[a][2]){const gx=pos[a].x,gw=pos[i-1].x+pos[i-1].w-gx;x.fillStyle=ZCOR[ZCOLS[a][2]]||'#24502a';x.fillRect(gx+2,y+38,gw-4,32);a=i;}}}
+    x.fillStyle='#fff';x.font='bold 17px Arial';ZCOLS.forEach((c,i)=>{if(c[0]==='c'&&window.ZCALIGN!=='center'){x.textAlign='left';x.fillText(c[1],pos[i].x+8,y+60);}else{x.textAlign='center';x.fillText(c[1],pos[i].x+pos[i].w/2,y+60);}});
     y+=hd;
     R.forEach((r,j)=>{const tot=!!r.__tot,v=tot?Object.assign({c:'MÉDIA',lote:'',sexo:'',ent:'',rac:'',nota:null},D.T):r;
-      if(tot){x.fillStyle='#e3ead6';x.fillRect(30,y,W-60,rowH);}else if(j%2){x.fillStyle='#f6f8f3';x.fillRect(30,y,W-60,rowH);}
-      ZCOLS.forEach((c,i)=>{let t=zVal(v,c[0],c[3]);if(tot&&c[0]==='cab')t=nf(D.T.cab);if(tot&&c[0]==='nota')t='';
-        x.font=(tot||c[0]==='c'||c[0]==='msD'?'bold ':'')+'18px Arial';x.fillStyle=c[2]==='fin'?'#1f5fa8':'#1d2b3a';
-        const al=['c'].includes(c[0])?'left':'center';x.textAlign=al;
+      if(tot){x.fillStyle=ROXO;x.fillRect(30,y,W-60,rowH);}else if(j%2){x.fillStyle=window.ZSTRIPE||'#dde6cf';x.fillRect(30,y,W-60,rowH);}  // linhas alternadas: uma clara, uma mais escura
+      ZCOLS.forEach((c,i)=>{let t=zVal(v,c[0],c[3]);if(tot&&c[0]==='cab')t=nf(D.T.cab);if(tot&&['nota','dias','msRac'].includes(c[0]))t='';
+        x.font=(tot||c[0]==='c'||c[0]==='msD'?'bold ':'')+'18px Arial';x.fillStyle=tot?'#fff':'#1d2b3a';
+        const al=c[0]==='c'&&window.ZCALIGN!=='center'?'left':'center';x.textAlign=al;
         let tt=t;if(c[0]==='c'){let fs=18;while(fs>11&&x.measureText(tt).width>pos[i].w-10){fs--;x.font=(tot||true?'bold ':'')+fs+'px Arial';}}  // nome do curral: diminui a letra para caber inteiro
         while(tt.length>3&&x.measureText(tt).width>pos[i].w-10)tt=tt.slice(0,-2)+'…';
         x.fillText(tt,al==='left'?pos[i].x+8:pos[i].x+pos[i].w/2,y+26);});
@@ -1970,9 +1973,9 @@ function zootCanvas(D){const W=1754,top=130,rowH=38,hd=72,porPag=Math.max(5,Math
     pags.push(cv);}
   return pags;}
 async function zootExport(tipo,dia,loc){const D=zootDados(dia,loc);if(!D.rows.length)return toast('Nenhum lote com animais neste dia');
-  const nome=`fjk-indices-${dB(dia).replace(/\//g,'-')}${D.loc==='C'?'-confinamento':D.loc==='P'?'-pasto':''}`;
+  const nome=`FJK - Tratos ${dB(dia).replace(/\//g,'-')}${D.loc==='C'?' - Confinamento':D.loc==='P'?' - Pasto':''}`;
   try{if(tipo==='xls'){const lin=r=>ZCOLS.map(c=>{const v=r[c[0]];return c[3]==='dia'?xc(v||null,'dia'):c[3]==='rs'?xc(ok(+v)?+v:'','rs'):c[3]==null?xc(v==null?'':v):xc(ok(+v)&&v!==null?+v:'',c[3]===0?'int':'dec');});
-      return gExcel(nome,[['Zootécnico',ZCOLS.map(c=>(c[2]==='fin'?c[1]+' R$/cab':c[0]==='gmd'?'GMD':c[0]==='nota'?'Nota':/^id/.test(c[2])?(c[0]==='msRac'?'MS dieta %':c[0]==='ent'?'Data entrada':c[1]):ZGRP[c[2]].replace(' kg/cab/dia','').replace('% IMS do PV','%PV').replace(' (kg)','')+' '+c[1])),D.rows.map(lin).concat([lin(Object.assign({c:'MÉDIA',lote:'',sexo:'',ent:'',rac:'',nota:''},D.T))]),ZCOLS.map(c=>Math.max(8,Math.round(c[4]/9)))]]);}
+      return gExcel(nome,[['Zootécnico',ZCOLS.map(c=>(c[2]==='fin'?c[1]+' R$/cab':c[0]==='gmd'?'GMD':c[0]==='nota'?'Nota':/^id/.test(c[2])?(c[0]==='msRac'?'MS dieta %':c[0]==='ent'?'Data entrada':c[1]):ZGRP[c[2]].replace(' kg/cab/dia','').replace('% IMS do PV','%PV').replace(' (kg)','')+' '+c[1])),D.rows.map(lin).concat([lin(Object.assign({},D.T,{c:'MÉDIA',lote:'',sexo:'',ent:'',rac:'',nota:'',dias:null,msRac:null}))]),ZCOLS.map(c=>Math.max(8,Math.round(c[4]/9)))]]);}
     const P=zootCanvas(D);
     if(tipo==='pdf')return await compartilharArquivo(fzPdf(P),nome+'.pdf','application/pdf');
     if(P.length===1)return P[0].toBlob(b=>compartilharArquivo(b,nome+'.png','image/png'),'image/png');
