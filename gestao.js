@@ -162,7 +162,7 @@ const UNID_C=[['arroba','R$ por @ (peso vivo ÷ 30)'],['cab','R$ por cabeça'],[
 const UNID_V=[['arroba','R$ por @ (carcaça ÷ 15)'],['cab','R$ por cabeça'],['kg','R$ por kg vivo']];
 
 const RAIZ={home:'home',estoque:'estoque',estIns:'estoque',estForm:'estoque',currais:'currais',curForm:'currais',lotes:'lotes',lote:'lotes',loteForm:'lotes',pesForm:'lotes',saiForm:'lotes',mudForm:'lotes',rel:'lotes',custoForm:'lotes',
-  cocho:'cocho',cochoGraf:'cocho',fezes:'cocho',rels:'rels',dia:'rels',periodo:'rels',comp:'rels',racoes:'racoes',racForm:'racoes',insumos:'insumos',insForm:'insumos',insMS:'insumos',ms:'cocho',cfg:'cfg'};
+  cocho:'cocho',cochoGraf:'cocho',fezes:'cocho',rels:'rels',dia:'rels',indices:'rels',periodo:'rels',comp:'rels',racoes:'racoes',racForm:'racoes',insumos:'insumos',insForm:'insumos',insMS:'insumos',ms:'cocho',cfg:'cfg'};
 /* Leitura de cocho fica no menu Tratos (aba 'leit'); o resto da Gestão na aba 'gest' — as duas usam a mesma tela */
 function gRaiz(t){GT={t};gPilha.length=0;const alvo=RAIZ[t]==='cocho'&&!document.body.classList.contains('modoGest')?'leit':'gest';if(window.abaAtual!==alvo)aba(alvo);else gRender();window.scrollTo({top:0});}
 window.gAbrir=modo=>{const leit=RAIZ[GT.t]==='cocho';if(modo==='leit'&&!leit)GT={t:'cocho'};if(modo==='gest'&&leit&&!document.body.classList.contains('modoGest'))GT={t:'home'};gRender();if(navigator.onLine)gSync(true).catch(()=>{});};
@@ -171,7 +171,7 @@ function gRender(){
   if(window.abaAtual==='gest'&&RAIZ[GT.t]==='cocho'&&!document.body.classList.contains('modoGest')){aba('leit');return;}  // leitura abre no menu Tratos
   if(window.abaAtual==='leit'&&RAIZ[GT.t]!=='cocho'){aba('gest');return;}
   const f={home:tHome,estoque:tEstoque,estIns:tEstIns,estForm:tEstForm,currais:tCurrais,curForm:tCurForm,lotes:tLotes,lote:tLote,loteForm:tLoteForm,pesForm:tPesForm,saiForm:tSaiForm,mudForm:tMudForm,rel:tRelLote,custoForm:tCustoForm,
-    cocho:tCocho,cochoGraf:tCochoGraf,fezes:t=>tFezes(t),rels:tRels,dia:tDia,periodo:tPeriodo,comp:tComp,racoes:tRacoes,racForm:tRacForm,insumos:tInsumos,insForm:tInsForm,insMS:tInsMS,ms:tInsMS,cfg:tCfg}[GT.t]||tHome;
+    cocho:tCocho,cochoGraf:tCochoGraf,fezes:t=>tFezes(t),rels:tRels,dia:tDia,indices:tIndices,periodo:tPeriodo,comp:tComp,racoes:tRacoes,racForm:tRacForm,insumos:tInsumos,insForm:tInsForm,insMS:tInsMS,ms:tInsMS,cfg:tCfg}[GT.t]||tHome;
   const raiz=RAIZ[GT.t]||'home';document.querySelectorAll('#subGest button[data-gt]').forEach(x=>x.setAttribute('aria-selected',String(x.dataset.gt===raiz)));
   const cb=$('cfgTBox');if(cb&&$('cfgTParque')&&cb.parentNode!==$('cfgTParque'))$('cfgTParque').appendChild(cb); // ajustes da balança: guarda antes de redesenhar
   b.innerHTML=f(GT);
@@ -778,6 +778,7 @@ function xlsGraf(){const D=dadosGraf(GT.dia);const cab=['Curral'].concat(D.dias.
 /* ---------- relatórios ---------- */
 function tRels(){return `<div class="gGrade">
   <button class="gBig" data-g="ir" data-t="dia">📋<b>Do dia</b><small>consumo, custo e insumos por lote</small></button>
+  <button class="gBig" data-g="ir" data-t="indices">📈<b>Índices do dia</b><small>MN, MS, % PV e custo por curral</small></button>
   <button class="gBig" data-g="ir" data-t="periodo">📆<b>Por período</b><small>semana, mês ou datas escolhidas</small></button>
   <button class="gBig" data-g="ir" data-t="comp">📊<b>Comparativo de lotes</b><small>desempenho e resultado lado a lado</small></button></div>
   <p class="note">O relatório de um lote fica dentro do lote: Lotes → escolha o lote → Resultado.</p>`;}
@@ -1734,7 +1735,7 @@ $('gBox').addEventListener('change',e=>{if(GT.t!=='fezes')return;
     const n=JSON.parse(JSON.stringify(x));n.obs=e.target.value;gPut(n);toast('Observação salva');}});
 
 /* ---------- Escore de fezes: fotos (até 4 por curral/dia), guardadas no Google Drive pela planilha ---------- */
-const FZ_MAXF=4,FZ_FOTO={},FZ_ENV={};   // FZ_FOTO: cache id → dataURL; FZ_ENV: fotos subindo (por curral)
+const FZ_MAXF=6,FZ_FOTO={},FZ_ENV={};   // FZ_FOTO: cache id → dataURL; FZ_ENV: fotos subindo (por curral)
 function fzFotosHTML(x){const fo=(x&&x.fotos)||[],env=FZ_ENV[GT.dia+'|'+GT.cur]||0,livre=FZ_MAXF-fo.length-env;
   const th=fo.map((f,n)=>{const src=FZ_FOTO[f.idMini];if(!src)fzFotoCarregar(f.idMini);
     return `<div class="fzFoto"><button class="fzFotoImg" data-g="fzFotoVer" data-n="${n}" aria-label="Ver foto ${n+1}">${src?`<img src="${src}" alt="">`:'<span>⏳</span>'}</button>${typeof modoVer!=='undefined'&&modoVer?'':`<button class="fzFotoX" data-g="fzFotoRm" data-n="${n}" aria-label="Apagar foto ${n+1}">✕</button>`}</div>`;}).join('')
@@ -1752,7 +1753,7 @@ async function fzFotosAnexar(files){if(typeof bloqueado==='function'&&bloqueado(
   if(livre<=0)return toast(`Máximo de ${FZ_MAXF} fotos por curral`);
   if(files.length>livre)toast(`Só cabem mais ${livre} foto(s): as outras ficaram de fora`);
   files=files.slice(0,livre);FZ_ENV[chave]=(FZ_ENV[chave]||0)+files.length;gRender();let okN=0;
-  for(const f of files){try{const big=await fzRedim(f,1280,.8),mini=await fzRedim(f,360,.7);
+  for(const f of files){try{const big=await fzRedim(f,1024,.6),mini=await fzRedim(f,300,.6);  // compactadas: ~100 KB a grande, ~15 KB a miniatura
       const r=await postApi({acao:'fotoSalvar',img:big.split(',')[1],mini:mini.split(',')[1],nome:`${dB(dia).replace(/\//g,'-')} ${c} ${Date.now()}`});
       if(!r.id)throw new Error('sem id');FZ_FOTO[r.idMini||r.id]=mini;
       const x=fzItem(dia,c)||{uid:fzId(dia,c),tipo:'fezes',dia,curral:c,c:[0,0,0,0,0],obs:''},n=JSON.parse(JSON.stringify(x));
@@ -1780,10 +1781,10 @@ const FZ_COR=['#c62828','#f2b705','#2e7d32','#8d6e63','#4e342e'];
 function fzDadosDia(){const t=GT;return gTodos('fezes').filter(x=>x.dia===t.dia&&doLocal(t.loc,x.curral)).map(x=>({c:x.curral,k:fzCalc(x.c),obs:x.obs||'',fotos:x.fotos||[]})).filter(o=>o.k.tot)
   .sort((a,b)=>alfa(a.c,b.c));}
 /* um quadro com o gráfico de barras do curral */
-function fzQuadro(x,X,Y,W,H,o,dia){const k=o.k,st=fzStatus(k),L=gTodos('lote').filter(l=>curralEm(l,dia)===o.c&&cabPres(l,dia)>0);
+function fzQuadro(x,X,Y,W,H,o,dia){const k=o.k,st=fzStatus(k),L=gTodos('lote').filter(l=>nAt(curralEm(l,dia))===nAt(o.c)&&cabPres(l,dia)>0);
   x.fillStyle='#fff';x.strokeStyle='#d5dde5';x.lineWidth=2;x.beginPath();x.roundRect?x.roundRect(X,Y,W,H,16):x.rect(X,Y,W,H);x.fill();x.stroke();
   x.textAlign='left';x.fillStyle='#13243d';x.font='bold 34px Arial';x.fillText(o.c,X+24,Y+48);
-  x.font='20px Arial';x.fillStyle='#5d6b7a';x.fillText(L.map(l=>l.nome+' · '+nf(cabPres(l,dia))+' cab').join(' · ').slice(0,60),X+24,Y+78);
+  x.font='20px Arial';x.fillStyle='#5d6b7a';x.fillText(L.map(l=>[[catNorm(l.cat)||l.nome,l.raca||''].filter(Boolean).join(' '),nf(cabPres(l,dia))+' cab',nf(pesoEm(l,dia))+' kg proj.'].join(' – ')).join('  |  ')+(ok(o.pv1)?` – % IMS PV D-1: ${nf(o.pv1,2)}%`:''),X+24,Y+78);
   x.textAlign='right';x.fillStyle='#13243d';x.font='bold 22px Arial';x.fillText(`${k.tot} fezes avaliadas`,X+W-24,Y+44);
   x.fillStyle=st.cl==='bad'?'#b3261e':st.cl==='warn'?'#a86b00':'#2e7d32';x.font='bold 22px Arial';x.fillText(`Média ${fz1(k.media)} · ${st.txt}`,X+W-24,Y+74);
   /* barras */
@@ -1802,8 +1803,10 @@ function fzQuadro(x,X,Y,W,H,o,dia){const k=o.k,st=fzStatus(k),L=gTodos('lote').f
 function fzPaginas(imgs){const D=fzDadosDia(),dia=GT.dia,W=1240,H=1754,pags=[];if(!D.length)return pags;imgs=imgs||{};
   const G5=[0,0,0,0,0];D.forEach(o=>o.k.cs.forEach((n,i)=>G5[i]+=n));const KG=fzCalc(G5);
   const comF=o=>o.fotos.some(f=>imgs[f.id]||imgs[f.idMini]);
-  /* primeiro os sem fotos, 3 por página (páginas cheias); depois cada curral com fotos na sua página */
-  const sem=D.filter(o=>!comF(o)),com=D.filter(comF),grupos=[];for(let i=0;i<sem.length;i+=3)grupos.push(sem.slice(i,i+3));com.forEach(o=>grupos.push([o]));
+  /* ordem alfabética sempre: curral com fotos ocupa a página inteira no lugar dele; os sem fotos vão juntos, até 3 por página */
+  const grupos=[];let buf=[];D.forEach(o=>{if(comF(o)){if(buf.length){grupos.push(buf);buf=[];}grupos.push([o]);}else{buf.push(o);if(buf.length===3){grupos.push(buf);buf=[];}}});if(buf.length)grupos.push(buf);
+  /* % IMS do PV do dia anterior (D-1) de cada curral (mesmo cálculo do relatório de índices) */
+  try{const X=gCtx(),d1=somaDias(dia,-1);D.forEach(o=>{let s=0,w=0;gTodos('lote').forEach(l=>{if(!l.ent)return;const y=diaLote(l,d1,X);if(!y||nAt(y.c)!==nAt(o.c)||!(y.mn>0)||!ok(y.pv))return;s+=y.pv*y.cab;w+=y.cab;});o.pv1=w?s/w:NaN;});}catch(e){}
   const total=grupos.length;
   grupos.forEach((g,p)=>{const cv=document.createElement('canvas');cv.width=W;cv.height=H;const x=cv.getContext('2d');
     x.fillStyle='#f4f6f2';x.fillRect(0,0,W,H);x.fillStyle='#24502a';x.fillRect(0,0,W,130);
@@ -1813,8 +1816,8 @@ function fzPaginas(imgs){const D=fzDadosDia(),dia=GT.dia,W=1240,H=1754,pags=[];i
     x.font='20px Arial';x.fillText(`${D.length} curral(is) · página ${p+1} de ${total}`,W-40,100);
     const bh=(H-130-90-3*24)/3;
     if(g.length===1&&comF(g[0])){const o=g[0];fzQuadro(x,40,154,W-80,bh,o,dia);
-      /* fotos: até 4, em grade 2×2 abaixo do gráfico */
-      const fs=o.fotos.map(f=>imgs[f.id]||imgs[f.idMini]).filter(Boolean).slice(0,4),y0=154+bh+30,areaH=H-y0-100,cols=fs.length===1?1:2,rows=Math.ceil(fs.length/cols),gap=20;
+      /* fotos: até 6, 3 por fileira abaixo do gráfico */
+      const fs=o.fotos.map(f=>imgs[f.id]||imgs[f.idMini]).filter(Boolean).slice(0,FZ_MAXF),y0=154+bh+30,areaH=H-y0-100,cols=fs.length<=2?Math.max(1,fs.length):3,rows=Math.ceil(fs.length/cols),gap=20;
       const cw=(W-80-(cols-1)*gap)/cols,ch=(areaH-(rows-1)*gap)/rows;
       x.fillStyle='#24502a';x.textAlign='left';x.font='bold 24px Arial';x.fillText(`📷 Fotos · ${o.c}`,40,y0-6);
       fs.forEach((im,i)=>{const cx=40+(i%cols)*(cw+gap),cy=y0+14+Math.floor(i/cols)*(ch+gap),bw=cw,bh2=ch-14;
@@ -1879,11 +1882,13 @@ function zootDados(dia,loc){const X=gCtx(),L=gTodos('lote').filter(l=>l.ent&&cab
       pE:+l.ent.peso,pP:x.peso,gmd:+l.gmd||NaN,
       mnG:media(l,l.ent.dia,dia,y=>y.mnCab),mnD:x.mn>0?x.mnCab:NaN,
       msG:media(l,l.ent.dia,dia,y=>y.msCab),msD:x.mn>0?x.msCab:NaN,ms1:d1&&d1.mn>0?d1.msCab:NaN,ms5:media(l,ini0,dia,y=>y.msCab),
-      pvG:media(l,l.ent.dia,dia,y=>y.pv),pvD:x.mn>0?x.pv:NaN,pv1:d1&&d1.mn>0?d1.pv:NaN,pv5:media(l,ini0,dia,y=>y.pv)});});
+      pvG:media(l,l.ent.dia,dia,y=>y.pv),pvD:x.mn>0?x.pv:NaN,pv1:d1&&d1.mn>0?d1.pv:NaN,pv5:media(l,ini0,dia,y=>y.pv),
+      /* financeiro: custo do dia por cabeça (ração + operacional) e acumulado por cabeça desde a entrada */
+      fD:((ok(x.custoR)?x.custoR:0)+x.custoOp)/x.cab,fA:(()=>{let a=0;for(let d=l.ent.dia,i=0;d<=dia&&i<4000;d=somaDias(d,1),i++){const y=diaLote(l,d,X);if(y&&y.cab)a+=((ok(y.custoR)?y.custoR:0)+y.custoOp)/y.cab;}return a;})()});});
   rows.sort((a,b)=>(a.rac==='Conf'?0:1)-(b.rac==='Conf'?0:1)||alfa(a.c,b.c)||alfa(a.lote,b.lote));
   /* totais: médias ponderadas pelas cabeças */
   const cab=rows.reduce((a,r)=>a+r.cab,0),pond=k=>{let s=0,w=0;rows.forEach(r=>{if(ok(r[k])){s+=r[k]*r.cab;w+=r.cab;}});return w?s/w:NaN;};
-  const T={cab};['dias','msRac','pE','pP','gmd','mnG','mnD','msG','msD','ms1','ms5','pvG','pvD','pv1','pv5'].forEach(k=>T[k]=pond(k));
+  const T={cab};['dias','msRac','pE','pP','gmd','mnG','mnD','msG','msD','ms1','ms5','pvG','pvD','pv1','pv5','fD','fA'].forEach(k=>T[k]=pond(k));
   return {dia,loc:loc||'T',rows,T};}
 const ZCOLS=[ // [chave, título, grupo, casas, largura no PDF]
   ['c','Curral','id',null,140],['ent','Entrada','id','dia',120],['sexo','Sexo','id',null,60],['cab','Cab.','id',0,70],
@@ -1892,19 +1897,31 @@ const ZCOLS=[ // [chave, título, grupo, casas, largura no PDF]
   ['nota','','nt',0,70],
   ['mnG','Geral','mn',2,85],['mnD','Dia','mn',2,85],
   ['msG','Geral','ms',2,80],['msD','Dia','ms',2,80],['ms1','D-1','ms',2,80],['ms5','5 dias','ms',2,80],
-  ['pvG','Geral','pv',2,75],['pvD','Dia','pv',2,75],['pv1','D-1','pv',2,75],['pv5','5 dias','pv',2,75]];
-const ZGRP={id:'Identificação',id2:'Trato',nt:'Nota',pes:'Peso (kg)',mn:'MN kg/cab/dia',ms:'MS kg/cab/dia',pv:'% IMS do PV'};
-const zVal=(r,k,d)=>{const v=r[k];if(d==='dia')return v?dB(v):'';if(d==null)return v==null?'':String(v);return ok(+v)&&v!==null&&v!==''?nf(+v,d):'—';};
+  ['pvG','Geral','pv',2,75],['pvD','Dia','pv',2,75],['pv1','D-1','pv',2,75],['pv5','5 dias','pv',2,75],
+  ['fD','Diária','fin','rs',95],['fA','Acumulado','fin','rs',115]];
+const ZGRP={id:'Identificação',id2:'Trato',nt:'Nota',fin:'Financeiro R$/cab',pes:'Peso (kg)',mn:'MN kg/cab/dia',ms:'MS kg/cab/dia',pv:'% IMS do PV'};
+const zVal=(r,k,d)=>{const v=r[k];if(d==='dia')return v?dB(v):'';if(d==='rs')return ok(+v)?nf(+v,2):'—';if(d==null)return v==null?'':String(v);return ok(+v)&&v!==null&&v!==''?nf(+v,d):'—';};
 function zootCards(T){return [['Cabeças',nf(T.cab)],['Peso entrada',nf(T.pE,1)+' kg'],['Peso projetado',nf(T.pP,1)+' kg'],['GMD',nf(T.gmd,2)],['Dias (média)',nf(T.dias)],['MN dia',nf(T.mnD,2)+' kg/cab'],['MS dia',nf(T.msD,2)+' kg/cab'],['% PV dia',pc(T.pvD,2)]];}
-window.zootSecHTML=(dia,loc)=>{const D=zootDados(dia,loc);
-  const top=`<div class="curhead"><h2>Relatório do dia</h2><input type="date" id="zDia" value="${dia}" max="${hojeKey()}" aria-label="Dia do relatório"></div>
-    <p class="note">Zootécnico de ${dB(dia)}${D.loc==='C'?' · Confinamento':D.loc==='P'?' · Pasto':''}: consumo de matéria natural, matéria seca e % do peso vivo por lote.</p>`;
+/* estado único do relatório de índices: o mesmo em Tratos › Histórico › Relatório e em Gestão › Relatórios › Índices do dia */
+window.ZST=window.ZST||{dia:null,loc:'T'};
+function zootBoxHTML(){const dia=ZST.dia||(ZST.dia=hojeKey()),loc=ZST.loc||'T',D=zootDados(dia,loc);
+  const top=`<div class="curhead"><h2>Índices do dia</h2><input type="date" id="zDia" value="${dia}" max="${hojeKey()}" aria-label="Dia do relatório"></div>
+    <div class="linhas zLoc">${[['T','Todos'],['C','Confinamento'],['P','🌿 Pasto']].map(([k,t])=>`<button data-zloc="${k}" class="${loc===k?'sel':''}">${t}</button>`).join('')}</div>
+    <p class="note">${dB(dia)}: consumo de matéria natural, matéria seca, % do peso vivo e custo por cabeça.</p>`;
   if(!D.rows.length)return top+'<p class="note">Nenhum lote com animais neste dia.</p>';
   const tab=`<div class="tablebox"><table class="gTab zTab"><thead><tr><th>Curral</th><th>Cab</th><th>Dias</th><th>MN dia</th><th>MS dia</th><th>% PV</th></tr></thead><tbody>
-    ${D.rows.map(r=>`<tr><td class="c">${esc(r.c)}<small>${r.rac}${r.sexo?' · '+r.sexo:''}${r.nota!=null?' · nota '+r.nota:''}</small></td><td>${nf(r.cab)}</td><td>${nf(r.dias)}</td><td>${nf(r.mnD,2)}</td><td><b>${nf(r.msD,2)}</b></td><td>${pc(r.pvD,2)}</td></tr>`).join('')}
-    <tr class="grp"><td>Média</td><td>${nf(D.T.cab)}</td><td>${nf(D.T.dias)}</td><td>${nf(D.T.mnD,2)}</td><td>${nf(D.T.msD,2)}</td><td>${pc(D.T.pvD,2)}</td></tr></tbody></table></div>
-    <p class="note">MN e MS em kg por cabeça no dia. O PDF, a Foto e o Excel trazem o relatório completo (pesos, GMD, médias geral, D-1 e 5 dias).</p>`;
-  return top+tab+`<div class="row compart fz3"><button class="verde" data-z="pdf">📄 PDF</button><button class="verde" data-z="img">🖼 Foto</button><button class="verde" data-z="xls">📊 Excel</button></div>`;};
+    ${D.rows.map(r=>`<tr><td class="c">${esc(r.c)}<small>${r.rac}${r.sexo?' · '+r.sexo:''}${r.nota!=null?' · nota '+r.nota:''}</small><small class="zFin">${rs(r.fD)}/dia · acum. ${rs(r.fA)}</small></td><td>${nf(r.cab)}</td><td>${nf(r.dias)}</td><td>${nf(r.mnD,2)}</td><td><b>${nf(r.msD,2)}</b></td><td>${pc(r.pvD,2)}</td></tr>`).join('')}
+    <tr class="grp"><td>Média<small class="zFin">${rs(D.T.fD)}/dia · acum. ${rs(D.T.fA)}</small></td><td>${nf(D.T.cab)}</td><td>${nf(D.T.dias)}</td><td>${nf(D.T.mnD,2)}</td><td>${nf(D.T.msD,2)}</td><td>${pc(D.T.pvD,2)}</td></tr></tbody></table></div>
+    <p class="note">MN e MS em kg por cabeça no dia. Em azul, o custo por cabeça (ração + operacional): do dia e acumulado desde a entrada. O PDF, a Foto e o Excel trazem o relatório completo.</p>`;
+  return top+tab+`<div class="row compart fz3"><button class="verde" data-z="pdf">📄 PDF</button><button class="verde" data-z="img">🖼 Foto</button><button class="verde" data-z="xls">📊 Excel</button></div>`;}
+window.zootBoxHTML=zootBoxHTML;
+function zootRepintar(){try{if(window.pintarZoot)pintarZoot();}catch(e){}if(GT&&GT.t==='indices')gRender();}
+if(!window.__zootEv){window.__zootEv=1;
+  document.addEventListener('click',e=>{const box=e.target.closest('.zootBox');if(!box)return;
+    const l=e.target.closest('[data-zloc]');if(l){ZST.loc=l.dataset.zloc;zootRepintar();return;}
+    const b=e.target.closest('[data-z]');if(b)zootExport(b.dataset.z,ZST.dia||hojeKey(),ZST.loc||'T');});
+  document.addEventListener('change',e=>{if(e.target.id==='zDia'&&e.target.closest('.zootBox')&&e.target.value){ZST.dia=e.target.value;zootRepintar();}});}
+function tIndices(){return `${voltar('Relatórios')}<section class="panel zootBox">${zootBoxHTML()}</section>`;}
 function zootCanvas(D){const W=1754,top=130,rowH=38,hd=72,porPag=Math.max(5,Math.floor((1240-top-30-hd-60)/rowH)),pags=[];
   const all=D.rows.concat([{__tot:1}]),nP=Math.ceil(all.length/porPag);
   const totW=ZCOLS.reduce((a,c)=>a+c[4],0),esc_=(W-60)/totW;
@@ -1918,13 +1935,13 @@ function zootCanvas(D){const W=1754,top=130,rowH=38,hd=72,porPag=Math.max(5,Math
     /* cabeçalho da tabela: grupos e colunas */
     let cx=30;const pos=ZCOLS.map(c=>{const w=c[4]*esc_,o={x:cx,w};cx+=w;return o;});
     let g0=0;for(let i=1;i<=ZCOLS.length;i++){if(i===ZCOLS.length||ZCOLS[i][2]!==ZCOLS[g0][2]){const gx=pos[g0].x,gw=pos[i-1].x+pos[i-1].w-gx;
-      x.fillStyle=/^id/.test(ZCOLS[g0][2])?'#24502a':ZCOLS[g0][2]==='nt'?'#8a6d1f':'#3b6b2f';x.fillRect(gx+2,y,gw-4,32);x.fillStyle='#fff';x.font='bold 18px Arial';x.textAlign='center';x.fillText(ZGRP[ZCOLS[g0][2]],gx+gw/2,y+22);g0=i;}}
+      x.fillStyle=/^id/.test(ZCOLS[g0][2])?'#24502a':ZCOLS[g0][2]==='nt'?'#8a6d1f':ZCOLS[g0][2]==='fin'?'#1f5fa8':'#3b6b2f';x.fillRect(gx+2,y,gw-4,32);x.fillStyle='#fff';x.font='bold 18px Arial';x.textAlign='center';x.fillText(ZGRP[ZCOLS[g0][2]],gx+gw/2,y+22);g0=i;}}
     x.fillStyle='#5d6b7a';x.font='bold 17px Arial';ZCOLS.forEach((c,i)=>{x.textAlign='center';x.fillText(c[1],pos[i].x+pos[i].w/2,y+60);});
     y+=hd;
     R.forEach((r,j)=>{const tot=!!r.__tot,v=tot?Object.assign({c:'MÉDIA',lote:'',sexo:'',ent:'',rac:'',nota:null},D.T):r;
       if(tot){x.fillStyle='#e3ead6';x.fillRect(30,y,W-60,rowH);}else if(j%2){x.fillStyle='#f6f8f3';x.fillRect(30,y,W-60,rowH);}
       ZCOLS.forEach((c,i)=>{let t=zVal(v,c[0],c[3]);if(tot&&c[0]==='cab')t=nf(D.T.cab);if(tot&&c[0]==='nota')t='';
-        x.font=(tot||c[0]==='c'||c[0]==='msD'?'bold ':'')+'18px Arial';x.fillStyle='#1d2b3a';
+        x.font=(tot||c[0]==='c'||c[0]==='msD'?'bold ':'')+'18px Arial';x.fillStyle=c[2]==='fin'?'#1f5fa8':'#1d2b3a';
         const al=['c'].includes(c[0])?'left':'center';x.textAlign=al;
         let tt=t;while(tt.length>3&&x.measureText(tt).width>pos[i].w-10)tt=tt.slice(0,-2)+'…';
         x.fillText(tt,al==='left'?pos[i].x+8:pos[i].x+pos[i].w/2,y+26);});
@@ -1935,8 +1952,8 @@ function zootCanvas(D){const W=1754,top=130,rowH=38,hd=72,porPag=Math.max(5,Math
   return pags;}
 async function zootExport(tipo,dia,loc){const D=zootDados(dia,loc);if(!D.rows.length)return toast('Nenhum lote com animais neste dia');
   const nome=`fjk-indices-${dB(dia).replace(/\//g,'-')}${D.loc==='C'?'-confinamento':D.loc==='P'?'-pasto':''}`;
-  try{if(tipo==='xls'){const lin=r=>ZCOLS.map(c=>{const v=r[c[0]];return c[3]==='dia'?xc(v||null,'dia'):c[3]==null?xc(v==null?'':v):xc(ok(+v)&&v!==null?+v:'',c[3]===0?'int':'dec');});
-      return gExcel(nome,[['Zootécnico',ZCOLS.map(c=>(c[0]==='gmd'?'GMD':c[0]==='nota'?'Nota':/^id/.test(c[2])?(c[0]==='msRac'?'MS dieta %':c[0]==='ent'?'Data entrada':c[1]):ZGRP[c[2]].replace(' kg/cab/dia','').replace('% IMS do PV','%PV').replace(' (kg)','')+' '+c[1])),D.rows.map(lin).concat([lin(Object.assign({c:'MÉDIA',lote:'',sexo:'',ent:'',rac:'',nota:''},D.T))]),ZCOLS.map(c=>Math.max(8,Math.round(c[4]/9)))]]);}
+  try{if(tipo==='xls'){const lin=r=>ZCOLS.map(c=>{const v=r[c[0]];return c[3]==='dia'?xc(v||null,'dia'):c[3]==='rs'?xc(ok(+v)?+v:'','rs'):c[3]==null?xc(v==null?'':v):xc(ok(+v)&&v!==null?+v:'',c[3]===0?'int':'dec');});
+      return gExcel(nome,[['Zootécnico',ZCOLS.map(c=>(c[2]==='fin'?c[1]+' R$/cab':c[0]==='gmd'?'GMD':c[0]==='nota'?'Nota':/^id/.test(c[2])?(c[0]==='msRac'?'MS dieta %':c[0]==='ent'?'Data entrada':c[1]):ZGRP[c[2]].replace(' kg/cab/dia','').replace('% IMS do PV','%PV').replace(' (kg)','')+' '+c[1])),D.rows.map(lin).concat([lin(Object.assign({c:'MÉDIA',lote:'',sexo:'',ent:'',rac:'',nota:''},D.T))]),ZCOLS.map(c=>Math.max(8,Math.round(c[4]/9)))]]);}
     const P=zootCanvas(D);
     if(tipo==='pdf')return await compartilharArquivo(fzPdf(P),nome+'.pdf','application/pdf');
     if(P.length===1)return P[0].toBlob(b=>compartilharArquivo(b,nome+'.png','image/png'),'image/png');
@@ -1952,7 +1969,7 @@ function cJaTratadoHTML(trs){if(typeof fornCurrais!=='function'||typeof fornPend
 function fzPdf(cvs){const enc=new TextEncoder(),partes=[],offs=[];let tam=0;const add=d=>{const b=typeof d==='string'?enc.encode(d):d;partes.push(b);tam+=b.length;};
   const obj=(n,txt,bin)=>{offs[n]=tam;add(`${n} 0 obj\n`+txt);if(bin){add(bin);add('\nendstream');}add('\nendobj\n');};
   add('%PDF-1.4\n%\xE2\xE3\xCF\xD3\n');const n=cvs.length,kids=[];
-  const imgs=cvs.map(c=>{const u=c.toDataURL('image/jpeg',0.85),b=atob(u.split(',')[1]),a=new Uint8Array(b.length);for(let i=0;i<b.length;i++)a[i]=b.charCodeAt(i);return a;});
+  const imgs=cvs.map(c=>{const u=c.toDataURL('image/jpeg',0.75),b=atob(u.split(',')[1]),a=new Uint8Array(b.length);for(let i=0;i<b.length;i++)a[i]=b.charCodeAt(i);return a;});
   // 1 catálogo, 2 páginas, depois para cada página: página, conteúdo, imagem
   const pw=595.28;
   cvs.forEach((c,i)=>kids.push(3+i*3));
