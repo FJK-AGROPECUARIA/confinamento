@@ -564,7 +564,7 @@ input[type=date]::-webkit-calendar-picker-indicator{margin-left:2px;padding:0}
 .gHero.pos{background:#2f6b3a}.gHero.pos small{color:#d9ef7a}.gHero.neg{background:#9e2a24}.gHero.neg small{color:#ffd2cf}
 .fTodosOk{margin-top:10px;background:#c62828;color:#fff;font-weight:800;text-align:center;border-radius:14px;padding:14px 10px;font-size:1.05rem;letter-spacing:.02em}
 .gMsAviso{margin:10px 0;padding:10px 12px;border-radius:12px;background:#e8f2dc;color:#2e5a12;font-size:.88rem;line-height:1.35}.gMsAviso.atencao{background:#fff4dc;color:#7a4b00}.gMsAviso.bloq{background:#fde7e5;color:#b3261e;font-weight:600}
-.row.compart.fz3{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}.row.compart.fz3 button{margin:0;padding-left:4px;padding-right:4px;white-space:nowrap}
+.row.compart.fz3.expTopo{margin:0 0 12px}.row.compart.fz3{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}.row.compart.fz3 button{margin:0;padding-left:4px;padding-right:4px;white-space:nowrap}
 .fzFotos{margin:12px 0 4px;padding:10px;border:1px dashed #b9c7a5;border-radius:12px}.fzFotosTopo{display:flex;justify-content:space-between;align-items:center;gap:8px;font-weight:700}.fzFotosTopo small{font-weight:500;color:var(--muted)}.fzFotosTopo .mini{margin:0}
 .fzFotoGrade{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-top:8px}.fzFoto{position:relative;aspect-ratio:1;border-radius:10px;overflow:hidden;background:#eef2e8;display:flex;align-items:center;justify-content:center}
 .fzFotoImg{all:unset;width:100%;height:100%;display:flex;align-items:center;justify-content:center;cursor:pointer}.fzFotoImg img{width:100%;height:100%;object-fit:cover}.fzFotoUp{font-size:.7rem;color:var(--muted);text-align:center}
@@ -974,11 +974,12 @@ body.naInicio .topoTxt h1{font-size:clamp(16px,5vw,28px)!important}
   </section>
 
   <section class="panel" id="hBatSec" hidden>
+    <div class="row compart fz3 expTopo"><button class="verde" id="hBatPdf">📄 PDF</button><button class="verde" id="hBatImg">🖼 Foto</button><button class="verde" id="hBatXls">📊 Excel</button></div>
     <div class="curhead"><h2>Batidas do vagão</h2><span class="note num" id="hBatN"></span></div>
     <div id="hBat"></div>
-    <div class="row compart fz3"><button class="verde" id="hBatPdf">📄 PDF</button><button class="verde" id="hBatImg">🖼 Foto</button><button class="verde" id="hBatXls">📊 Excel</button></div>
   </section>
   <section class="panel hSoTratos">
+    <div class="row compart fz3 expTopo"><button class="verde" id="hPdf">📄 PDF</button><button class="verde" id="hImg">🖼 Foto</button><button class="verde" id="hXls">📊 Excel</button></div>
     <div class="curhead"><h2>Registros</h2><span class="note num" id="hN"></span></div>
     <div class="tablebox"><table>
       <thead><tr><th class="hora">Hora</th><th>Curral</th><th>Previsto</th><th>Realiz.</th><th>Dif.</th></tr></thead>
@@ -989,7 +990,6 @@ body.naInicio .topoTxt h1{font-size:clamp(16px,5vw,28px)!important}
       <div class="row"><button id="selTodos">Selecionar todos</button><button id="selCanc">Cancelar</button></div>
       <button class="dangerfill" id="selApagar" disabled>Apagar selecionados</button>
     </div>
-    <div class="row compart fz3"><button class="verde" id="hPdf">📄 PDF</button><button class="verde" id="hImg">🖼 Foto</button><button class="verde" id="hXls">📊 Excel</button></div>
     <div hidden>
       <button class="wa" id="hWa">Enviar no WhatsApp</button><button id="hCopiar">Copiar lista</button>
       <button id="hExcel">Exportar Excel</button><button id="hShare" class="shareX" hidden>Compartilhar planilha</button>
@@ -1100,7 +1100,7 @@ body.naInicio .topoTxt h1{font-size:clamp(16px,5vw,28px)!important}
 <div class="toast" id="toast" hidden></div>
 <script>
 'use strict';
-const APP_VERSAO='96';
+const APP_VERSAO='97';
 const APP_DATA='19/10/2026';
 const KEY='confinamento-completo-v1';
 const $=id=>document.getElementById(id);
@@ -1269,7 +1269,13 @@ function distribuir(c,total,n,obj){obj=obj||S.prev;if(obj===S.prev&&S.prevOrig&&
   return obj;}
 /* previsto guardado de um dia (cópia); para dias sem cópia monta pelos registros do Histórico */
 const idPrevDia=d=>'prev-'+d;
-function prevGuardado(d){const it=gOk()&&G.it[idPrevDia(d)];if(it&&!it.del&&it.prev)return it.prev;return null;}
+function prevGuardado(d){const it=gOk()&&G.it[idPrevDia(d)];if(it&&!it.del&&it.prev)return prevNomes(it.prev);return null;}
+/* curral renomeado: previsto guardado com o nome antigo passa para o nome atual (o nome atual vale se tiver os dois) */
+function prevNomes(o){try{const m=mapaRenomes();if(!o||!Object.keys(m).length)return o;let mud=false;const out={};
+  Object.keys(o).forEach(k=>{const mp=o[k]||{},nv={};Object.keys(mp).forEach(c=>{if(nomeAtual(c)===c)nv[c]=mp[c];});
+    Object.keys(mp).forEach(c=>{const n=nomeAtual(c);if(n!==c){mud=true;if(!(n in nv))nv[n]=mp[c];}});out[k]=nv;});return mud?out:o;}catch(e){return o;}}
+function limparPrevRenomes(){try{if(!S||!S.prev||(typeof modoVer!=='undefined'&&modoVer))return;const n=prevNomes(S.prev);if(n===S.prev)return;
+  Object.keys(S.prev).forEach(k=>{S.prev[k]=n[k];});marcarPrev();}catch(e){}}
 function prevPelosRegistros(d){const o={};HIST.filter(r=>r.dia===d).forEach(r=>{const k=String(r.trato);if(!o[k])o[k]={};if(typeof r.prev==='number')o[k][r.curral]=r.prev;});return o;}
 function prevDoDia(d){if(d===hojeKey())return S.prev;return prevGuardado(d)||(d<hojeKey()?prevPelosRegistros(d):{});}
 let snapTimer=null;
@@ -1440,7 +1446,7 @@ function ordemTabela(L,extras,regs){const t0=n=>{const rs=regs.filter(r=>r.curra
   const feitos=it.filter(x=>x.t!=null).sort((a,b)=>a.t-b.t),atual=it.filter(x=>x.t==null&&x.i===S.atual),resto=it.filter(x=>x.t==null&&x.i!==S.atual);
   return feitos.concat(atual,resto);}
 window.ordemTabela=ordemTabela;
-function render(){try{aplicarRenomesHist();}catch(e){}
+function render(){try{aplicarRenomesHist();limparPrevRenomes();}catch(e){}
   try{encherSelTrato();}catch(e){}
   const man=!!S.dataManual;
   const amh=diaAtivo()===amanhaKey();
@@ -2051,7 +2057,7 @@ function desenharTabela(secoes,titulo,totalGeral){window.__tituloImg=titulo||(()
   c.fillStyle='#ffffff';c.fillRect(0,0,W,H);
   c.fillStyle='#11253d';c.fillRect(0,0,W,90);c.fillStyle='#a7bc09';c.fillRect(0,90,W,6);
   c.fillStyle='#ffffff';c.font=`700 34px ${F}`;c.textBaseline='middle';c.fillText(window.__tituloImg||'FJK - Tratos',M,46);
-  c.font=`500 18px ${F}`;c.textAlign='right';c.fillStyle='#c8dd1e';c.fillText('Gerado em '+new Date().toLocaleString('pt-BR',{day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'}),W-M,46);c.textAlign='left';
+  /* sem 'Gerado em' no canto (pedido) */
   const cor=(d,p)=>{if(d==null)return '#11253d';const k=classeDesv(d,p);return k==='ok'?'#5f7a00':k==='warn'?'#b26a00':'#b3261e';};
   const px=(k,a)=>{let x=M;for(let i=0;i<k;i++)x+=cols[i][1];const w=cols[k][1];return a==='l'?x+8:a==='c'?x+w/2:x+w-8;};
   let y=120;
@@ -2119,8 +2125,11 @@ $('escolhaImg').addEventListener('click',async e=>{const b=e.target.closest('but
   compartilharVarios(blobs,nomes);
 });
 $('hModo').addEventListener('click',e=>{const b=e.target.closest('[data-hm]');if(!b)return;hModo=b.dataset.hm;renderHist();});
-$('hBatPdf').onclick=()=>{window.__expPdf=true;$('hBatImg').onclick(true);};
-$('hBatImg').onclick=(viaPdf)=>{if(viaPdf!==true)window.__expPdf=false;const [pa,pb]=intervaloHist();const L=batidasLista(pa,pb,localSel,HD.per||HD.t<0?0:HD.t);if(!L.length){window.__expPdf=false;return toast('Nenhuma batida');}imgBatidas(L,pa===pb?diaBR(pa):diaBR(pa)+' a '+diaBR(pb));};
+/* batidas: um relatório só (batidas com subtotal, total geral e o quadro de total dos insumos embaixo) */
+function expBat(pdf){const [pa,pb]=intervaloHist();const L=batidasLista(pa,pb,localSel,HD.per||HD.t<0?0:HD.t);if(!L.length)return toast('Nenhuma batida');
+  window.__expPdf=!!pdf;imgBatidas(L,pa===pb?diaBR(pa):diaBR(pa)+' a '+diaBR(pb),'juntas');}
+$('hBatPdf').onclick=()=>expBat(true);
+$('hBatImg').onclick=()=>expBat(false);
 $('hBatXls').onclick=()=>{const [pa,pb]=intervaloHist();const L=batidasLista(pa,pb,localSel,HD.per||HD.t<0?0:HD.t);if(!L.length)return toast('Nenhuma batida');xlsBatidas(L,pa===pb?diaBR(pa):diaBR(pa)+' a '+diaBR(pb));};
 $('hXls').onclick=()=>{const f=filtrados();if(f.length)compartilharArquivo(gerarXlsx(f),nomeArquivo(f),XT);};
 

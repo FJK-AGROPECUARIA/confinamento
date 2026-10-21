@@ -57,7 +57,7 @@ async function gSync(puxar){
       if(j&&j.ok&&Array.isArray(j.itens)){let mud=false;
         j.itens.forEach(x=>{if(!x||!x.uid)return;const l=G.it[x.uid];
           if(!l||((+x.ts||0)>(l.ts||0)&&!G.pend.includes(x.uid))){G.it[x.uid]=x;mud=true;}});
-        if(mud){gSave();if(!$('viewGest').hidden&&!gEditando())gRender();}
+        if(mud){gSave();try{aplicarRenomesHist();limparPrevRenomes();}catch(e){}if(!$('viewGest').hidden&&!gEditando())gRender();}
       }
     }
   }finally{gSinc=false;if(typeof statusNuvem==='function')statusNuvem();}
@@ -100,7 +100,7 @@ const pesagensDe=l=>gTodos('pesagem').filter(s=>s.lote===l.uid).sort(porDia);
 function cabPres(l,dia,sd){if(!l.ent||dia<l.ent.dia)return 0;let c=+l.ent.cab||0;(sd||saidasDe(l)).forEach(s=>{if(s.dia<dia)c-=+s.cab||0;});return Math.max(0,c);}
 function cabEm(l,dia,sd){if(!l.ent||dia<l.ent.dia)return 0;let c=+l.ent.cab||0;(sd||saidasDe(l)).forEach(s=>{if(s.dia<=dia)c-=+s.cab||0;});return Math.max(0,c);}
 const cabAtual=l=>cabEm(l,hojeKey());
-const curralEm=(l,dia)=>{const v=vig(l.curr,dia);return v?v.c:'';};
+const curralEm=(l,dia)=>{const v=vig(l.curr,dia);return v?(typeof nomeAtual==='function'?nomeAtual(v.c):v.c):'';}; // sempre o nome ATUAL (curral renomeado)
 const racaoEm=(l,dia)=>{const v=vig(l.rac,dia);const r=v&&G.it[v.r];return r&&!r.del?r:null;};
 function pesoEm(l,dia,pz){if(!l.ent)return NaN;let b={dia:l.ent.dia,peso:+l.ent.peso};(pz||pesagensDe(l)).forEach(p=>{if(p.dia<=dia)b=p;});return +b.peso+(+l.gmd||0)*difDias(b.dia,dia);}
 const fimLote=l=>{if(cabAtual(l)>0)return null;const sd=saidasDe(l);return sd.length?sd[sd.length-1].dia:null;};
@@ -718,14 +718,18 @@ const tabInsumos=acc=>{const e=Object.entries(acc).sort((a,b)=>b[1].kg-a[1].kg);
    secoes: [{cab:'título', cols:[[nome,largura,'l'|'c'|'r'],...], linhas:[[...]], total:[...]|null, cores:[[...]]}] */
 function gImagem(titulo,secoes){
   const W0=Math.max(...secoes.map(s=>s.cols.reduce((a,c)=>a+c[1],0))),M=30,W=M*2+W0,RH=44,esc=2,F='-apple-system,"Segoe UI",Roboto,Arial,sans-serif';
-  let H=120;secoes.forEach(s=>{H+=50+(s.cols.some(c=>c[0])?40:6)+RH*s.linhas.length+(s.total?52:0)+24;});H+=20;
+  let H=120;const todas=[...secoes,...(secoes.depois||[])];todas.forEach(s=>{H+=50+(s.cols.some(c=>c[0])?40:6)+RH*s.linhas.length+(s.total?52:0)+24;});H+=20+(secoes.totalGeral?(secoes.depois?96:70):0);
   const cv=document.createElement('canvas');cv.width=W*esc;cv.height=H*esc;const c=cv.getContext('2d');c.scale(esc,esc);
   c.fillStyle='#ffffff';c.fillRect(0,0,W,H);c.fillStyle='#11253d';c.fillRect(0,0,W,90);c.fillStyle='#a7bc09';c.fillRect(0,90,W,6);
-  c.textBaseline='middle';c.fillStyle='#ffffff';let fs=30;c.font=`700 ${fs}px ${F}`;while(c.measureText(titulo).width>W-2*M-230&&fs>18){fs--;c.font=`700 ${fs}px ${F}`;}c.fillText(titulo,M,40);
-  c.font=`600 16px ${F}`;c.fillStyle='#c8dd1e';c.fillText('Gestão de Tratos · FJK',M,70);
-  c.font=`500 16px ${F}`;c.textAlign='right';c.fillText('Gerado em '+new Date().toLocaleString('pt-BR',{day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'}),W-M,70);c.textAlign='left';
-  let y=120;
-  secoes.forEach(s=>{const cols=s.cols,px=(k,a)=>{let x=M;for(let i=0;i<k;i++)x+=cols[i][1];const w=cols[k][1];return a==='l'?x+8:a==='c'?x+w/2:x+w-8;};
+  c.textBaseline='middle';c.fillStyle='#ffffff';let fs=30;c.font=`700 ${fs}px ${F}`;while(c.measureText(titulo).width>W-2*M&&fs>18){fs--;c.font=`700 ${fs}px ${F}`;}const umaL=secoes.umaLinha;c.fillText(titulo,M,umaL?46:40);
+  if(!umaL){c.font=`600 16px ${F}`;c.fillStyle='#c8dd1e';c.fillText('Gestão de Tratos · FJK',M,70);}
+  /* sem 'Gerado em' no canto (pedido) */
+  let y=120,tgFeito=false;
+  /* total geral (soma de todas as seções): azul escuro, destacado no fim */
+  const desTG=()=>{tgFeito=true;const TG=secoes.totalGeral;if(TG){const cols=TG.cols,px=(k,a)=>{let x=M;for(let i=0;i<k;i++)x+=cols[i][1];const w=cols[k][1];return a==='l'?x+8:a==='c'?x+w/2:x+w-8;};
+    c.fillStyle='#11253d';c.fillRect(M,y,W-2*M,56);c.fillStyle='#a7bc09';c.fillRect(M,y,W-2*M,4);c.font=`800 22px ${F}`;
+    TG.v.forEach((v,k)=>{if(v==null||v===''||!cols[k])return;const a=cols[k][2];c.textAlign=a==='l'?'left':a==='c'?'center':'right';c.fillStyle=/^(Carregado|Realizado)$/.test(cols[k][0])?'#c8dd1e':'#ffffff';c.fillText(String(v),k===0?M+12:px(k,a),y+31);});y+=56+30;}};
+  todas.forEach((s,iS)=>{if(iS===secoes.length&&!tgFeito)desTG();const cols=s.cols,px=(k,a)=>{let x=M;for(let i=0;i<k;i++)x+=cols[i][1];const w=cols[k][1];return a==='l'?x+8:a==='c'?x+w/2:x+w-8;};
     const al=a=>a==='l'?'left':a==='c'?'center':'right';
     c.fillStyle='#f3f7dc';c.fillRect(M,y,W-2*M,44);c.fillStyle='#a7bc09';c.fillRect(M,y,6,44);c.fillStyle='#11253d';c.font=`700 22px ${F}`;c.textAlign='left';c.fillText(s.cab,M+16,y+22);y+=50;
     if(cols.some(x=>x[0])){c.font=`700 14px ${F}`;c.fillStyle='#5d6b7a';cols.forEach(([t,w,a],k)=>{c.textAlign=al(a);c.fillText(String(t).toUpperCase(),px(k,a),y+20);});y+=40;c.fillStyle='#dde3ea';c.fillRect(M,y-2,W-2*M,2);}else y+=6;
@@ -733,9 +737,10 @@ function gImagem(titulo,secoes){
       l.forEach((v,k)=>{if(!cols[k])return;const a=cols[k][2];c.textAlign=al(a);c.font=(k===0?'700 ':'500 ')+'19px '+F;c.fillStyle=(s.cores&&s.cores[i]&&s.cores[i][k])||'#11253d';
         let t=String(v??''),f=19;while(c.measureText(t).width>cols[k][1]-12&&f>11){f--;c.font=(k===0?'700 ':'500 ')+f+'px '+F;}c.fillText(t,px(k,a),y+RH/2);});
       y+=RH;c.fillStyle='#dde3ea';c.fillRect(M,y-1,W-2*M,1);});
-    if(s.total){c.fillStyle='#11253d';c.fillRect(M,y+6,W-2*M,44);c.font=`700 19px ${F}`;
-      s.total.forEach((v,k)=>{if(v==null||v===''||!cols[k])return;c.textAlign=k===0?'left':al(cols[k][2]);c.fillStyle=k===0?'#ffffff':'#c8dd1e';c.fillText(String(v),k===0?M+12:px(k,cols[k][2]),y+28);});y+=52;}
+    if(s.total){c.fillStyle=s.sub?'#4a7fbf':'#11253d';c.fillRect(M,y+6,W-2*M,44);c.font=`700 19px ${F}`;
+      s.total.forEach((v,k)=>{if(v==null||v===''||!cols[k])return;c.textAlign=k===0?'left':al(cols[k][2]);c.fillStyle=s.sub?(/^(Carregado|Realizado)$/.test(cols[k][0])?'#eef7b0':'#ffffff'):(k===0?'#ffffff':'#c8dd1e');c.fillText(String(v),k===0?M+12:px(k,cols[k][2]),y+28);});y+=52;}
     y+=24;});
+  if(!tgFeito)desTG();
   return new Promise(ok=>cv.toBlob(ok,'image/png'));
 }
 const nomeArq=s=>s.replace(/[\\/:*?"<>|]/g,'-');
@@ -1501,11 +1506,31 @@ window.batidasHTML=(L,mostrarDia,semApagar)=>{if(!L.length)return '<p class="not
       <div class="tablebox"><table class="gTab"><thead><tr><th>Hora</th><th>Insumos</th><th>Previsto</th><th>Carreg.</th><th>Dif.</th></tr></thead><tbody>${c.itens.map(x=>{const dd=x.real-x.prev;return `<tr><td>${esc(x.hora||'')}</td><td class="c">${esc(x.nome)}</td><td>${nf(x.prev)}</td><td>${ok(+x.real)?nf(+x.real):'—'}</td><td class="${ok(+x.real)?cls(dd,x.prev):''}">${ok(+x.real)?(dd>0?'+':'')+nf(dd):''}</td></tr>`;}).join('')}
       <tr class="grp"><td></td><td>Total</td><td>${nf(tp)}</td><td>${nf(tr)}</td><td>${(d>0?'+':'')+nf(d)}</td></tr></tbody></table></div>
       ${semApagar||(typeof modoVer!=='undefined'&&modoVer)?'':`<button class="mini danger" data-hbdel="${c.uid}">Apagar esta batida</button>`}</details>`;}).join('');};
-window.imgBatidas=(L,rot)=>enviarImg(`FJK - Fabricação de Ração - ${rot}`,L.map(c=>{const tp=c.itens.reduce((a,x)=>a+x.prev,0),tr=c.itens.reduce((a,x)=>a+(+x.real||0),0);
-    return {cab:`${diaBR(c.dia).slice(0,5)} ${c.hora} · Trato ${c.trato}${c.local?' · '+(c.local==='C'?'Confinamento':'Pasto'):''} · ${c.racNome}`,cols:[['Hora',110,'l'],['Insumos',330,'c'],['Previsto',170,'r'],['Carregado',170,'r'],['Diferença',170,'r']],
-      linhas:c.itens.map(x=>[x.hora||'',x.nome,nf(x.prev),ok(+x.real)?nf(+x.real):'—',ok(+x.real)?((x.real-x.prev)>0?'+':'')+nf(x.real-x.prev):'']),
-      cores:c.itens.map(x=>{const d=x.real-x.prev;return [null,null,null,!ok(+x.real)?null:Math.abs(d)/x.prev<=.03?'#5f7a00':Math.abs(d)/x.prev<=.08?'#b26a00':'#b3261e'];}),
-      total:['','TOTAL',nf(tp),nf(tr),(tr-tp>0?'+':'')+nf(tr-tp)]};}),`Fabricação-${rot.replace(/\//g,'-').replace(/ a /,'_a_')}`);
+/* relatório de batidas — tipo: 'sep' (uma imagem por batida), 'juntas' (todas numa imagem, subtotal azul claro + total geral), 'insumo' (total de cada insumo), 'todos' */
+const COLB=[['Hora',110,'l'],['Insumos',330,'c'],['Previsto',170,'r'],['Carregado',170,'r'],['Diferença',170,'r']];
+const sgnB=d=>(d>0?'+':'')+nf(d),corB=(r,p)=>!ok(+r)||!p?null:Math.abs(r-p)/p<=.03?'#5f7a00':Math.abs(r-p)/p<=.08?'#b26a00':'#b3261e';
+function secaoBat(c,sub,semData){const tp=c.itens.reduce((a,x)=>a+x.prev,0),tr=c.itens.reduce((a,x)=>a+(+x.real||0),0);
+  return {cab:`${semData?'':diaBR(c.dia).slice(0,5)+' '}${c.hora} · Trato ${c.trato}${c.local?' · '+(c.local==='C'?'Confinamento':'Pasto'):''} · ${c.racNome}`,cols:COLB,
+    linhas:c.itens.map(x=>[x.hora||'',x.nome,nf(x.prev),ok(+x.real)?nf(+x.real):'—',ok(+x.real)?sgnB(x.real-x.prev):'']),
+    cores:c.itens.map(x=>[null,null,null,corB(x.real,x.prev)]),
+    total:[sub?'SUBTOTAL':'TOTAL','',nf(tp),nf(tr),sgnB(tr-tp)],sub,_p:tp,_r:tr};}
+function secsBatJuntas(L){const umDia=new Set(L.map(c=>c.dia)).size===1;const secs=L.map(c=>secaoBat(c,L.length>1,umDia));let GP=0,GR=0;secs.forEach(x=>{GP+=x._p;GR+=x._r;});secs.umaLinha=true;
+  if(secs.length>1)secs.totalGeral={cols:COLB,v:['TOTAL - FABRICAÇÃO','',nf(GP),nf(GR),sgnB(GR-GP)]};return secs;}
+function secsBatInsumo(L,rot){const m=new Map();L.forEach(c=>c.itens.forEach(x=>{const o=m.get(x.nome)||{p:0,r:0,n:0};o.p+=+x.prev||0;if(ok(+x.real))o.r+=+x.real;o.n++;m.set(x.nome,o);}));
+  const ls=[...m.entries()].sort((a,b)=>b[1].p-a[1].p),C=[['Insumos',440,'c'],['Previsto',170,'r'],['Carregado',170,'r'],['Diferença',170,'r']];
+  const tp=ls.reduce((a,[,o])=>a+o.p,0),tr=ls.reduce((a,[,o])=>a+o.r,0);
+  const s=[{cab:'Utilização de insumos',cols:C,linhas:ls.map(([n,o])=>[n,nf(o.p),nf(o.r),sgnB(o.r-o.p)]),
+    cores:ls.map(([,o])=>[null,null,corB(o.r,o.p)])}];s.umaLinha=true;return s;}
+window.imgBatidas=async(L,rot,tipo)=>{tipo=tipo||'juntas';const pdf=window.__expPdf;window.__expPdf=false;
+  const tit=`FJK - Fabricação de Ração - ${rot}`,base=nomeArq(`Fabricação-${rot.replace(/\//g,'-').replace(/ a /,'_a_')}`),blobs=[],nomes=[];
+  try{
+    if(tipo==='sep'||tipo==='todos')for(const c of L){const s=[secaoBat(c,false,true)];s.umaLinha=true;blobs.push(await gImagem(tit,s));nomes.push(nomeArq(`${base} (Trato ${c.trato} ${c.hora.replace(':','h')})`)+'.png');}
+    if(tipo==='juntas'||tipo==='todos'){const sj=secsBatJuntas(L);if(L.length>1)sj.depois=secsBatInsumo(L,rot);blobs.push(await gImagem(tit,sj));nomes.push(base+(tipo==='todos'?' (batidas juntas)':'')+'.png');}
+    if(tipo==='insumo'||tipo==='todos'){blobs.push(await gImagem(tit,secsBatInsumo(L,rot)));nomes.push(base+' (por insumo).png');}
+    if(pdf)return await compartilharArquivo(await pngsParaPdf(blobs),base+'.pdf','application/pdf');
+    if(blobs.length===1)return await compartilharArquivo(blobs[0],nomes[0],'image/png');
+    return await compartilharVarios(blobs,nomes);
+  }catch(e){console.error(e);toast(pdf?'Não consegui gerar o PDF':'Não consegui gerar a imagem');}};
 window.xlsBatidas=(L,rot)=>{const r=[];L.forEach(c=>c.itens.forEach(x=>r.push([xc(c.dia,'dia'),xc(c.hora),xc(x.hora||''),xc(c.trato,'int'),xc(c.local==='C'?'Confinamento':c.local==='P'?'Pasto':''),xc(c.racNome),xc(x.nome),xc(x.prev,'int'),xc(ok(+x.real)?+x.real:NaN,'int'),xc(ok(+x.real)?x.real-x.prev:NaN,'int'),xc(ok(+x.ini)?+x.ini:NaN,'int'),xc(ok(+x.fim)?+x.fim:NaN,'int')])));
   gExcel(`Fabricação-${rot.replace(/\//g,'-').replace(/ a /,'_a_')}`,[['Fabricação',['Data','Início batida','Hora insumo','Trato','Local','Ração','Insumo','Previsto (kg)','Carregado (kg)','Diferença (kg)','Balança início','Balança final'],r,[11,9,9,7,13,16,22,12,13,13,13,13]]]);};
 document.addEventListener('click',e=>{const b=e.target.closest('[data-hbdel]');if(!b)return;if(typeof bloqueado==='function'&&bloqueado())return;if(!confirm('Apagar esta batida?'))return;gDel(b.dataset.hbdel);if(typeof renderHist==='function')renderHist();});
@@ -1704,7 +1729,7 @@ function tFezes(t){const hj=hojeKey();t.dia=t.dia||hj;t.loc=t.loc||'T';const dia
     :`<section class="panel"><p class="note">Nenhuma avaliação de fezes em ${dB(dia)}${t.loc!=='T'?' neste local':''}.</p></section>`;
   /* histórico */
   const hN=[7,15,30].includes(+t.hN)?+t.hN:30,ini=somaDias(dia,-(hN-1)),cH=t.hCur||'';
-  const HI=gTodos('fezes').filter(x=>x.dia>=ini&&x.dia<=dia&&(cH?x.curral===cH:doLocal(t.loc,x.curral)));
+  const HI=gTodos('fezes').filter(x=>x.dia>=ini&&x.dia<=dia&&(cH?nAt(x.curral)===cH:doLocal(t.loc,nAt(x.curral))));
   const porDia={};HI.forEach(x=>{const k=fzCalc(x.c);if(!k.tot)return;const d=porDia[x.dia]||(porDia[x.dia]=[0,0,0,0,0]);k.cs.forEach((n,i)=>d[i]+=n);});
   const dias=Object.keys(porDia).sort().reverse();
   const opC=[...new Set(gTodos('fezes').map(x=>x.curral))].sort(alfa);
@@ -1731,7 +1756,7 @@ function fzXls(hist){const t=GT;
     return gExcel(`Escore de fezes ${dB(t.dia).replace(/\//g,'-')}`,[['Escore de fezes',['Dia','Curral','Total','Esc. 1','Esc. 2','Esc. 3','Esc. 4','Esc. 5','% 1','% 2','% 3','% 4','% 5','Média','Situação','Observação'],
       R.map(o=>[xc(t.dia,'dia'),xc(o.c),xc(o.k.tot,'int')].concat(o.k.cs.map(n=>xc(n,'int')),o.k.pct.map(p=>xc(p/100,'pct')),[xc(o.k.media,'dec'),xc(fzStatus(o.k).txt),xc(o.obs||'')])),[11,16,8,7,7,7,7,7,8,8,8,8,8,8,24,40]]]);}
   const hN=[7,15,30].includes(+t.hN)?+t.hN:30,ini=somaDias(t.dia,-(hN-1)),cH=t.hCur||'';
-  const HI=gTodos('fezes').filter(x=>x.dia>=ini&&x.dia<=t.dia&&(cH?x.curral===cH:doLocal(t.loc,x.curral))).map(x=>({d:x.dia,c:x.curral,k:fzCalc(x.c),obs:x.obs})).filter(o=>o.k.tot).sort((a,b)=>a.d.localeCompare(b.d)||alfa(a.c,b.c));
+  const HI=gTodos('fezes').filter(x=>x.dia>=ini&&x.dia<=t.dia&&(cH?nAt(x.curral)===cH:doLocal(t.loc,nAt(x.curral)))).map(x=>({d:x.dia,c:x.curral,k:fzCalc(x.c),obs:x.obs})).filter(o=>o.k.tot).sort((a,b)=>a.d.localeCompare(b.d)||alfa(a.c,b.c));
   gExcel(`Escore de fezes historico ${hN} dias ${(cH||'todos').replace(/[\\/:*?"<>|]/g,'-')} ${dB(t.dia).replace(/\//g,'-')}`,[['Histórico',['Dia','Curral','Total','% 1','% 2','% 3','% 4','% 5','Média','Situação','Observação'],
     HI.map(o=>[xc(o.d,'dia'),xc(o.c),xc(o.k.tot,'int')].concat(o.k.pct.map(p=>xc(p/100,'pct')),[xc(o.k.media,'dec'),xc(fzStatus(o.k).txt),xc(o.obs||'')])),[11,16,8,8,8,8,8,8,8,24,40]]]);}
 $('gBox').addEventListener('click',e=>{const b=e.target.closest('[data-g^="fz"]');if(!b||GT.t!=='fezes')return;const a=b.dataset.g;
@@ -1860,7 +1885,7 @@ async function fzFotosParaPdf(){const D=fzDadosDia(),imgs={},ids=[];D.forEach(o=
   return imgs;}
 /* histórico do escore (7/15/30 dias, um curral ou todos): gráfico + tabela, em PDF ou imagem */
 function fzHistCanvas(){const t=GT,dia=t.dia,hN=[7,15,30].includes(+t.hN)?+t.hN:30,ini=somaDias(dia,-(hN-1)),cH=t.hCur||'';
-  const porDia={};gTodos('fezes').filter(x=>x.dia>=ini&&x.dia<=dia&&(cH?x.curral===cH:doLocal(t.loc,x.curral))).forEach(x=>{const k=fzCalc(x.c);if(!k.tot)return;const d=porDia[x.dia]||(porDia[x.dia]=[0,0,0,0,0]);k.cs.forEach((n,i)=>d[i]+=n);});
+  const porDia={};gTodos('fezes').filter(x=>x.dia>=ini&&x.dia<=dia&&(cH?nAt(x.curral)===cH:doLocal(t.loc,nAt(x.curral)))).forEach(x=>{const k=fzCalc(x.c);if(!k.tot)return;const d=porDia[x.dia]||(porDia[x.dia]=[0,0,0,0,0]);k.cs.forEach((n,i)=>d[i]+=n);});
   const dias=Object.keys(porDia).sort();if(!dias.length)return null;
   const W=1240,top=130,gH=460,rowH=44,H=top+40+gH+70+60+(dias.length+1)*rowH+90,cv=document.createElement('canvas');cv.width=W;cv.height=H;const x=cv.getContext('2d');
   const quem=cH||(t.loc==='C'?'Todo o confinamento':t.loc==='P'?'Todo o pasto':'Todos os currais');
