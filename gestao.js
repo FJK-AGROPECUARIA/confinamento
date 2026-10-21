@@ -1836,8 +1836,10 @@ function fzPaginas(imgs){const D=fzDadosDia(),dia=GT.dia,W=1240,H=1754,pags=[];i
       const cw=(W-80-(cols-1)*gap)/cols,ch=(areaH-(rows-1)*gap)/rows;
       x.fillStyle='#24502a';x.textAlign='left';x.font='bold 24px Arial';x.fillText(`📷 Fotos · ${o.c}`,40,y0-6);
       fs.forEach((im,i)=>{const cx=40+(i%cols)*(cw+gap),cy=y0+14+Math.floor(i/cols)*(ch+gap),bw=cw,bh2=ch-14;
-        x.fillStyle='#fff';x.fillRect(cx,cy,bw,bh2);const k=Math.min(bw/im.width,bh2/im.height),w=im.width*k,h=im.height*k;
-        x.drawImage(im,cx+(bw-w)/2,cy+(bh2-h)/2,w,h);x.strokeStyle='#d5dccd';x.lineWidth=2;x.strokeRect(cx,cy,bw,bh2);});}
+        /* sempre em pé e do mesmo tamanho: foto deitada gira 90°; preenche o quadro inteiro (corta só a sobra das bordas) */
+        const deit=im.width>im.height,iw=deit?im.height:im.width,ih=deit?im.width:im.height,k=Math.max(bw/iw,bh2/ih);
+        x.save();x.beginPath();x.rect(cx,cy,bw,bh2);x.clip();x.translate(cx+bw/2,cy+bh2/2);if(deit)x.rotate(Math.PI/2);
+        x.drawImage(im,-im.width*k/2,-im.height*k/2,im.width*k,im.height*k);x.restore();x.strokeStyle='#d5dccd';x.lineWidth=2;x.strokeRect(cx,cy,bw,bh2);});}
     else g.forEach((o,j)=>fzQuadro(x,40,154+j*(bh+24),W-80,bh,o,dia));
     x.textAlign='left';x.fillStyle='#5d6b7a';x.font='18px Arial';
     x.fillText('Escala: 1 líquida · 2 mole · 3 ideal (pastosa) · 4 firme · 5 seca. Ideal: maioria no escore 3, média entre 2,5 e 3,5.',40,H-48);
