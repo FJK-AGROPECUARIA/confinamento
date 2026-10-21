@@ -71,7 +71,7 @@ const NOTAS_PADRAO=[-4,-3,-2,-1,0,1,2,3,4].map(n=>({n,t:n>0?'Aumentar':n<0?'Dimi
 const NOTAS_VER=3;
 function gCfg(){const c=G.it.config&&!G.it.config.del?G.it.config:{uid:'config',tipo:'config'};
   if(!Array.isArray(c.taxa))c.taxa=[];if(!Array.isArray(c.notas)||!c.notas.length||c.notasV!==NOTAS_VER)c.notas=NOTAS_PADRAO.map(x=>Object.assign({},x));
-  if(!Array.isArray(c.racas)||!c.racas.length)c.racas=RACAS_PADRAO.slice();if(!Array.isArray(c.cats)||!c.cats.length)c.cats=CATS_PADRAO.slice();else c.cats=[...new Set(c.cats.map(x=>x==='Bezerro'?'Bezerro macho':x==='Bezerra'?'Bezerra fêmea':x))];if(!ok(c.arred))c.arred=10;if(!ok(c.pvIni))c.pvIni=2.2;if(!ok(c.rc))c.rc=52;return c;}
+  if(!Array.isArray(c.racas)||!c.racas.length)c.racas=RACAS_PADRAO.slice();if(!Array.isArray(c.cats)||!c.cats.length)c.cats=CATS_PADRAO.slice();else c.cats=[...new Set(c.cats.map(x=>CAT_PLURAL[x]||x))];if(!ok(c.arred))c.arred=10;if(!ok(c.pvIni))c.pvIni=2.2;if(!ok(c.rc))c.rc=52;return c;}
 const taxaEm=dia=>{const v=vig(gCfg().taxa,dia);return v?+v.rs||0:0;};
 
 /* ---------- insumos e rações ---------- */
@@ -189,8 +189,9 @@ function navData(id,dia,rot){const hj=hojeKey(),[y,m,d]=dia.split('-').map(Numbe
 const custosDe=l=>gTodos('custo').filter(c=>c.lote===l.uid).sort(porDia);
 const TIPOS_CUSTO=['Sanidade / vacina','Medicamento','Mão de obra','Frete','Outros'];
 const SEXOS=[['','—'],['M','Macho'],['F','Fêmea']];
-const CATS_PADRAO=['Bezerro macho','Garrote','Boi','Bezerra fêmea','Novilha','Vaca'];
-const catNorm=c=>c==='Bezerro'?'Bezerro macho':c==='Bezerra'?'Bezerra fêmea':(c||'');
+const CATS_PADRAO=['Bezerros machos','Garrotes','Bois','Bezerras fêmeas','Novilhas','Vacas'];
+const CAT_PLURAL={'Bezerro':'Bezerros machos','Bezerro macho':'Bezerros machos','Bezerros macho':'Bezerros machos','Garrote':'Garrotes','Boi':'Bois','Bezerra':'Bezerras fêmeas','Bezerra fêmea':'Bezerras fêmeas','Bezerras fêmea':'Bezerras fêmeas','Novilha':'Novilhas','Vaca':'Vacas','Touro':'Touros'};
+const catNorm=c=>CAT_PLURAL[c]||(c||'');
 const opCats=atual=>[['','—']].concat(gCfg().cats.map(c=>[c,c])).concat(atual&&!gCfg().cats.includes(atual)?[[atual,atual]]:[]);
 const SISTEMAS=[['Confinamento','🏠 Confinamento'],['Pasto com suplementação','🌾 Pasto']];
 const tipoDoSistema=v=>v==='Pasto com suplementação'?'P':'C';
@@ -309,16 +310,18 @@ function tLotes(t){
   const todosL=gTodos('lote').filter(noLocal),lista=(t.enc?todosL.filter(l=>!ativo(l)).sort(porNome):todosL.filter(ativo).sort(porCurral));
   const cards=lista.map(l=>{const fim=fimLote(l),ref=fim&&fim<hj?fim:hj,cab=cabPres(l,ref),r=racaoEm(l,ref),c=curralEm(l,ref),m=mediaLote(l,X);
     const sub=[sexoTxt(l.sexo),l.raca,catNorm(l.cat)].filter(Boolean).join(' · ');
-    return `<button class="gLote gLote2" data-g="lote" data-id="${l.uid}">
-      <div class="gLoteInfo"><b>${esc(l.nome)}</b><span class="gLoteCur">📍 ${esc(c||'—')}${sub?' · '+esc(sub):''}</span>
+    return `<button class="gLote" data-g="lote" data-id="${l.uid}">${seloCurral(c)}
+      <div class="gLoteInfo"><b>${esc(l.nome)}</b>${sub?`<span>${esc(sub)}</span>`:''}
       <span class="gRacLote">🌾 ${esc(r?r.nome:'sem ração')}</span>
       ${fim&&fim<hj?`<span>Arquivado em ${dB(fim)}</span>`:l.ent.dia>hj?`<span>Entra em ${dB(l.ent.dia)}</span>`:''}
       <div class="gLoteNums4"><span><b>${nf(cab)}</b> cab</span><span><b>${nf(+l.ent.peso||0)}</b> kg entrada</span><span><b>${nf(pesoEm(l,ref))}</b> kg projetado</span><span><b>${nf(Math.max(0,difDias(l.ent.dia,ref)))}</b> dias</span></div>
       <div class="gLoteNums4 gMed"><span><b>${m.n?nf(m.mn/m.n,1):'—'}</b> MN/cab</span><span><b>${m.nms?nf(m.ms/m.nms,2):'—'}</b> MS/cab</span><span><b>${m.nms?pc(m.pv/m.nms,2):'—'}</b> % IMS</span><span><b>${nf(m.n)}</b> dias c/ trato</span></div>
-      <small class="gLoteDica">Média de todos os tratos do lote · toque para abrir</small></div></button>`;}).join('');
+      ${(()=>{const C=calcLote(l);return `<div class="gLoteNums4 gCus"><span><b>${ok(C.custoCabDia)?rs(C.custoCabDia):'—'}</b> R$/cab/dia</span><span><b>${C.cabE?rs(C.custo/C.cabE):'—'}</b> R$/cab total</span><span><b>${rs(C.custo)}</b> R$ total do lote</span></div>`;})()}
+      <small class="gLoteDica">Médias de todos os tratos do lote · custo total inclui a compra · toque para abrir</small></div></button>`;}).join('');
   return `<section class="panel"><div class="curhead"><h2>${t.enc?'Lotes arquivados':'Lotes ativos'}</h2><span class="note">${lista.length}</span></div>
     <div class="linhas gFiltro">${[['T','Todos'],['C','Confinamento'],['P','Pasto']].map(([k,r])=>`<button data-g="filtroLoc" data-l="${k}" class="${loc===k?'sel':''}">${r}</button>`).join('')}</div>
     ${cards||`<p class="note">${t.enc?'Nenhum lote arquivado.':'Nenhum lote ainda. Toque em “+ Novo lote”.'}</p>`}
+    ${lista.length?`<div class="row compart"><button class="verde" data-g="lotesImg" data-enc="${t.enc?'1':''}">🖼 Imagem</button><button class="verde" data-g="lotesXls" data-enc="${t.enc?'1':''}">📊 Excel</button></div>`:''}
     ${t.enc?'':'<button class="lima" data-g="novoLote">+ Novo lote</button>'}
     <button data-g="ir" data-t="lotes" data-enc="${t.enc?'':'1'}">${t.enc?'Ver lotes ativos':'Ver lotes arquivados'}</button></section>`;
 }
@@ -870,16 +873,17 @@ function tCfg(){const c=gCfg(),hj=hojeKey(),tx=vig(c.taxa,hj),ab=GT.cab||'custo'
     <p class="note">Nota positiva aumenta o trato, negativa diminui. O ajuste é em cima do realizado do dia anterior. Use o sinal de menos (−) para diminuir.</p>
     <div class="gForm">${campo({k:'pvIni',l:'Consumo inicial sugerido',suf:'% do PV em MS',t:'num',v:c.pvIni,meia:1,ajuda:'Usado na leitura de cocho quando o curral ainda não tem trato.'})}</div>${salvar}</section>`;
   if(ab==='raca')h=`<section class="panel gCfgP"><h2>Raças</h2>
-    <div class="gChips">${GT.racasEd.map((r,k)=>`<button class="sel" data-g="racaRm" data-i="${k}">${esc(r)} ✕</button>`).join('')}</div>
+    <div class="gEdLista">${GT.racasEd.map((r,k)=>`<div><span>${esc(r)}</span><button class="mini" data-g="racaEd" data-i="${k}">✎ Editar</button><button class="mini danger" data-g="racaRm" data-i="${k}">✕ Excluir</button></div>`).join('')}</div>
     <div class="gRacaAdd"><input type="text" id="gNovaRaca" placeholder="Nova raça" autocomplete="off"><button class="lima" data-g="racaAdd">+ Incluir</button></div>
-    <p class="note">Aparecem na ficha do lote. Toque numa raça para tirar.</p></section>
+    <p class="note">Aparecem na ficha do lote. Depois de mexer, toque em Salvar.</p></section>
   <section class="panel gCfgP"><h2>Categorias</h2>
-    <div class="gChips">${GT.catsEd.map((r,k)=>`<button class="sel" data-g="catRm" data-i="${k}">${esc(r)} ✕</button>`).join('')}</div>
+    <div class="gEdLista">${GT.catsEd.map((r,k)=>`<div><span>${esc(r)}</span><button class="mini" data-g="catEd" data-i="${k}">✎ Editar</button><button class="mini danger" data-g="catRm" data-i="${k}">✕ Excluir</button></div>`).join('')}</div>
     <div class="gRacaAdd"><input type="text" id="gNovaCat" placeholder="Nova categoria" autocomplete="off"><button class="lima" data-g="catAdd">+ Incluir</button></div>
-    <p class="note">Aparecem na ficha do lote (junto com sexo e raça). Toque numa categoria para tirar.</p>${salvar}</section>`;
-  if(ab==='tratos'){const P=window.prevApi,cads=(S.cadastro||[]);
+    <p class="note">Aparecem na ficha do lote (junto com sexo e raça). Depois de mexer, toque em Salvar.</p>${salvar}</section>`;
+  if(ab==='tratos'){const P=window.prevApi,lt=GT.ntLoc||'T',cads=(S.cadastro||[]).filter(n=>(typeof curralAtivo!=='function'||curralAtivo(n))&&(lt==='T'||linhaDe(n)===lt)).sort(alfa);
     h=`<section class="panel gCfgP"><h2>Quantidade de tratos por curral</h2>
     <p class="note">Em quantas vezes o total do dia do curral é dividido. Mudou aqui, o previsto de hoje já é redividido.</p>
+    <div class="linhas gFiltro">${[['T','Todos'],['C','Confinamento'],['P','Pasto']].map(([k,r])=>`<button data-g="ntLoc" data-l="${k}" class="${lt===k?'sel':''}">${r}</button>`).join('')}</div>
     <div class="gNtLista">${cads.map(cu=>{const n=P?P.nTratos(cu):1;return `<label class="gNt"><span>${esc(cu)}</span><select data-ntc="${esc(cu)}">${[1,2,3,4,5,6].map(x=>`<option value="${x}"${x===n?' selected':''}>${x} trato${x>1?'s':''}</option>`).join('')}</select></label>`;}).join('')||'<p class="note">Cadastre os currais no Previsto.</p>'}</div></section>
   <section class="panel gCfgP"><h2>Divisão do trato (%)</h2>
     <p class="note">Quando o curral tem 2 ou mais tratos, o total do dia é dividido assim. 1 trato = 100% no Trato 1.</p>
@@ -904,6 +908,8 @@ function salvaCfg(){const c=JSON.parse(JSON.stringify(gCfg()));const t=fn('taxa'
   if(new Set(ns.map(x=>x.n)).size!==ns.length)return toast('Tem nota repetida');if(!ns.length)return toast('Coloque pelo menos uma nota');
   c.racas=(GT.racasEd||c.racas).slice();GT.racasEd=null;c.cats=(GT.catsEd||c.cats).slice();GT.catsEd=null;c.notas=ns.map(x=>({n:x.n,t:x.t||(x.p>0?'Aumentar':x.p<0?'Diminuir':'Manter'),p:x.p})).sort((a,b)=>a.n-b.n);c.notasV=NOTAS_VER;
   const a=fn('arred'),rc=fn('rc'),pv=fn('pvIni');if(ok(a)&&a>=0)c.arred=a;if(rc>0)c.rc=rc;if(pv>0)c.pvIni=pv;
+  const rR=GT.renR||{},rC=GT.renC||{};GT.renR=null;GT.renC=null;
+  gTodos('lote').forEach(l=>{let mud=false;const x=JSON.parse(JSON.stringify(l));if(rR[x.raca]){x.raca=rR[x.raca];mud=true;}const cn=catNorm(x.cat);if(rC[cn]){x.cat=rC[cn];mud=true;}if(mud)gPut(x);});
   gPut(c);GT.notasEd=null;toast('Configurações salvas');gRender();}
 
 /* =====================================================================================
@@ -921,10 +927,13 @@ $('gBox').addEventListener('click',e=>{
   if(a==='filtroLoc'){gLoc=b.dataset.l;return gRender();}
   if(a==='racaAdd'){lerNotasEd();const v=($('gNovaRaca').value||'').trim();if(!v)return toast('Digite o nome da raça');
     if(GT.racasEd.some(r=>alfa(r,v)===0))return toast('Essa raça já está na lista');GT.racasEd.push(v);GT.racasEd.sort(alfa);gRender();return toast('Incluída. Toque em Salvar configurações.');}
+  if(a==='ntLoc'){GT.ntLoc=b.dataset.l;return gRender();}
   if(a==='catAdd'){lerNotasEd();const v=($('gNovaCat').value||'').trim();if(!v)return toast('Digite o nome da categoria');
     if(GT.catsEd.some(r=>alfa(r,v)===0))return toast('Essa categoria já está na lista');GT.catsEd.push(v);gRender();return toast('Incluída. Toque em Salvar configurações.');}
-  if(a==='catRm'){lerNotasEd();GT.catsEd.splice(+b.dataset.i,1);gRender();return toast('Tirada. Toque em Salvar configurações.');}
-  if(a==='racaRm'){lerNotasEd();GT.racasEd.splice(+b.dataset.i,1);gRender();return toast('Tirada. Toque em Salvar configurações.');}
+  if(a==='racaEd'||a==='catEd'){lerNotasEd();const arr=a==='racaEd'?GT.racasEd:GT.catsEd,i=+b.dataset.i,ant=arr[i];const v=(prompt('Novo nome:',ant)||'').trim();if(!v||v===ant)return;
+    if(arr.some((r,k)=>k!==i&&alfa(r,v)===0))return toast('Esse nome já está na lista');arr[i]=v;const m=a==='racaEd'?(GT.renR=GT.renR||{}):(GT.renC=GT.renC||{});m[ant]=v;gRender();return toast('Alterado. Toque em Salvar.');}
+  if(a==='catRm'){if(!confirm(`Excluir a categoria ${GT.catsEd[+b.dataset.i]}? Os lotes que já têm ela continuam com o nome.`))return;lerNotasEd();GT.catsEd.splice(+b.dataset.i,1);gRender();return toast('Tirada. Toque em Salvar configurações.');}
+  if(a==='racaRm'){if(!confirm(`Excluir a raça ${GT.racasEd[+b.dataset.i]}? Os lotes que já têm ela continuam com o nome.`))return;lerNotasEd();GT.racasEd.splice(+b.dataset.i,1);gRender();return toast('Tirada. Toque em Salvar configurações.');}
   if(a==='grafLoc'){gLocG=b.dataset.l;return gRender();}
   if(a==='grafCur'){const c=b.dataset.c;if(gGrafOff.has(c))gGrafOff.delete(c);else gGrafOff.add(c);return gRender();}
   if(a==='imgGraf')return imagemGraf();
@@ -1247,3 +1256,18 @@ document.addEventListener('click',e=>{const b=e.target.closest('#gBox [data-g="s
 /* novo lote: escolheu Confinamento ou Pasto → a lista mostra só os currais desse tipo */
 document.addEventListener('change',e=>{if(e.target.id!=='gf_sistema'||GT.t!=='loteForm')return;const c=$('gf_curral');if(!c)return;
   const ops=opCurraisTipo(tipoDoSistema(e.target.value));c.innerHTML=ops.map(([v,t])=>`<option value="${esc(v)}">${esc(t)}</option>`).join('');});
+
+/* Lotes: exportar a lista (com o filtro de local) em imagem e Excel */
+function linhasLotes(enc){const hj=hojeKey(),X=gCtx(),loc=gLoc,noLocal=l=>loc==='T'||linhaDe(curralEm(l,fimLote(l)||hj))===loc;
+  const todos=gTodos('lote').filter(noLocal),L=enc?todos.filter(l=>!ativo(l)).sort(porNome):todos.filter(ativo).sort(porCurral);
+  return L.map(l=>{const fim=fimLote(l),ref=fim&&fim<hj?fim:hj,m=mediaLote(l,X),C=calcLote(l),r=racaoEm(l,ref);
+    return {c:curralEm(l,ref)||'',nome:l.nome,desc:[sexoTxt(l.sexo),l.raca,catNorm(l.cat)].filter(Boolean).join(' · '),rac:r?r.nome:'',cab:cabPres(l,ref),pe:+l.ent.peso||0,pp:pesoEm(l,ref),
+      dias:Math.max(0,difDias(l.ent.dia,ref)),mn:m.n?m.mn/m.n:NaN,ms:m.nms?m.ms/m.nms:NaN,ims:m.nms?m.pv/m.nms:NaN,cd:C.custoCabDia,ct:C.cabE?C.custo/C.cabE:NaN,tot:C.custo,ent:l.ent.dia,fim:fim||''};});}
+document.addEventListener('click',e=>{const b=e.target.closest('#gBox [data-g="lotesImg"],#gBox [data-g="lotesXls"]');if(!b)return;e.stopPropagation();
+  const enc=!!b.dataset.enc,R=linhasLotes(enc),loc=gLoc==='C'?' · Confinamento':gLoc==='P'?' · Pasto':'',tit=`${enc?'Lotes arquivados':'Lotes ativos'}${loc} · ${dB(hojeKey())}`;
+  if(!R.length)return toast('Nenhum lote');
+  if(b.dataset.g==='lotesImg')return enviarImg(tit,[{cab:tit,cols:[['Curral',100,'l'],['Lote',200,'l'],['Cab',65,'r'],['Peso proj.',100,'r'],['Dias',60,'r'],['MN/cab',85,'r'],['MS/cab',85,'r'],['% IMS',80,'r'],['R$/cab/dia',110,'r'],['R$ total',140,'r']],
+    linhas:R.map(x=>[x.c,x.nome,nf(x.cab),nf(x.pp),nf(x.dias),ok(x.mn)?nf(x.mn,1):'—',ok(x.ms)?nf(x.ms,2):'—',ok(x.ims)?pc(x.ims,2):'—',ok(x.cd)?rs(x.cd):'—',rs(x.tot)]),
+    total:['TOTAL',`${R.length} lote(s)`,nf(R.reduce((a,x)=>a+x.cab,0)),'','','','','','',rs(R.reduce((a,x)=>a+(ok(x.tot)?x.tot:0),0))]}],`Lotes ${dB(hojeKey()).replace(/\//g,'-')}`);
+  gExcel(`Lotes ${dB(hojeKey()).replace(/\//g,'-')}`,[['Lotes',['Curral','Lote','Sexo · raça · categoria','Ração','Entrada','Arquivado em','Cabeças','Peso entrada (kg)','Peso projetado (kg)','Dias','MN/cab (média)','MS/cab (média)','% IMS (média)','R$/cab/dia','R$/cab total','R$ total do lote'],
+    R.map(x=>[xc(x.c),xc(x.nome),xc(x.desc),xc(x.rac),xc(x.ent,'dia'),xc(x.fim,'dia'),xc(x.cab,'int'),xc(x.pe,'int'),xc(x.pp,'int'),xc(x.dias,'int'),xc(x.mn,'dec'),xc(x.ms,'dec'),xc(ok(x.ims)?x.ims/100:NaN,'pct'),xc(x.cd,'rs'),xc(x.ct,'rs'),xc(x.tot,'rs')]),[10,22,26,16,11,12,9,11,12,7,11,11,10,11,12,14]]]);},true);

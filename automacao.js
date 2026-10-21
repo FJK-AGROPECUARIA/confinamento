@@ -50,6 +50,9 @@ const css=`
 :is(#aBox,#acBox) .aFalta.vermelho{background:#c62828}
 :is(#aBox,#acBox) .aFalta.continuo{background:#c62828;animation:aPisca .5s steps(2) infinite}
 :is(#aBox,#acBox) .aFalta.cinza{background:#7c8794}
+#cfgTBox .aCores{margin:10px 0 4px;padding:10px;border:1px solid var(--line);border-radius:10px;display:grid;gap:6px;font-size:.88rem}
+#cfgTBox .aCores i{display:inline-block;width:22px;height:16px;border-radius:4px;margin-right:8px;vertical-align:-3px}
+#cfgTBox .aCores i.pisca{animation:aPisca .5s steps(2) infinite}#cfgTBox .aCores i.pisca2{animation:aPisca2 .4s steps(2) infinite}
 :is(#aBox,#acBox) .aFalta.passou{background:#6a1b9a;animation:aPisca2 .4s steps(2) infinite}
 @keyframes aPisca2{50%{background:#38006b}}
 @keyframes aPisca{50%{background:#7f0000}}
@@ -820,6 +823,7 @@ function montarCfgT(){const box=$('cfgTBox');if(!box||box.dataset.ok)return;box.
     <div class="curhead"><h2>⚙ Ajustes da balança</h2><span class="note" id="cfgTSinc"></span></div>
     <p class="note">Valem para todos os celulares: mudou aqui, muda nos outros (pela nuvem).</p>
     <div class="aCfg">${CAMPOS.map(([k,t,u])=>`<div><label for="cfgT_${k}">${t}<small>${u}</small></label><input id="cfgT_${k}" data-k="${k}" type="number" inputmode="decimal" step="any" min="0"></div>`).join('')}</div>
+    <div class="aCores" id="cfgT_cores"></div>
     <label for="cfgT_ble" style="margin-top:8px">UUID do Bluetooth BLE (se a balança não for achada)</label>
     <input id="cfgT_ble" type="text" autocapitalize="off" autocorrect="off" spellcheck="false" placeholder="ex.: 0000ffe0-0000-1000-8000-00805f9b34fb">
     <label for="cfgT_cmd" style="margin-top:8px">Comando para pedir o peso (Bluetooth BLE)</label>
@@ -859,7 +863,7 @@ function montarCfgT(){const box=$('cfgTBox');if(!box||box.dataset.ok)return;box.
       <button id="cfgCopiar" style="margin-top:6px">Copiar dados</button></details>
   </section>`;
   CAMPOS.forEach(([k])=>{$('cfgT_'+k).onchange=e=>{const c=cfg(),v=parseFloat(String(e.target.value).replace(',','.'));
-    if(!isNaN(v)&&v>=0){c[k]=v;salvarCfg();avisoCfg();}else e.target.value=c[k];};});
+    if(!isNaN(v)&&v>=0){c[k]=v;salvarCfg();avisoCfg();pintarCores();}else e.target.value=c[k];};});
   $('cfgDados').addEventListener('toggle',()=>{if($('cfgDados').open){const e=$('cfgBruto');e.textContent=(A.btInfo?A.btInfo+'\n\n':'')+(A.bruto.join('\n')||'Nada recebido ainda.');e.scrollTop=e.scrollHeight;}});
   $('cfgCopiar').onclick=()=>copiar((A.btInfo?A.btInfo+'\n\n':'')+A.bruto.join('\n'),'Dados copiados');
   $('cfgT_cmd').onchange=e=>{const c=cfg();c.bleCmd=e.target.value;salvarCfg();avisoCfg();toast('Comando salvo. Conecte de novo pelo 🔷 Bluetooth BLE.');};
@@ -872,7 +876,15 @@ function montarCfgT(){const box=$('cfgTBox');if(!box||box.dataset.ok)return;box.
 }
 function avisoCfg(){const el=$('cfgTSinc');if(!el)return;const p=typeof G!=='undefined'&&G.pend&&G.pend.includes('cfgBalanca');
   el.textContent=p?'⏳ enviando…':'✓ salvo na nuvem';if(p)setTimeout(avisoCfg,1500);}
-function preencherCfgT(){if(!$('cfgT_tol'))return;const c=cfg();
+/* legenda das cores do quadro "Fornecer/Carregar", com os valores ajustados */
+function pintarCores(){const el=$('cfgT_cores');if(!el)return;const c=cfg();
+  el.innerHTML=`<b>Cores na tela</b>
+  <div><i style="background:#2e7d32"></i>Verde · falta mais de ${fmt(+c.amarelo)} kg</div>
+  <div><i style="background:#f2b705"></i>Amarelo · faltam ${fmt(+c.amarelo)} kg ou menos (apito lento)</div>
+  <div><i style="background:#c62828"></i>Vermelho · faltam ${fmt(+c.vermelho)} kg ou menos (apito rápido)</div>
+  <div><i class="pisca" style="background:#c62828"></i>Vermelho piscando · faltam ${fmt(+c.continuo)} kg ou menos (apito direto)</div>
+  <div><i class="pisca2" style="background:#6a1b9a"></i>Roxo piscando · passou do previsto (negativo), apito bem rápido</div>`;}
+function preencherCfgT(){if(!$('cfgT_tol'))return;const c=cfg();pintarCores();
   CAMPOS.forEach(([k])=>{const el=$('cfgT_'+k);if(document.activeElement!==el)el.value=c[k];});
   if(document.activeElement!==$('cfgT_ws'))$('cfgT_ws').value=c.ws;if(document.activeElement!==$('cfgT_ble'))$('cfgT_ble').value=c.bleUuid||'';if(document.activeElement!==$('cfgT_cmd'))$('cfgT_cmd').value=c.bleCmd||'';$('cfgT_som').checked=!!c.som;}
 window.cfgTAoAbrir=()=>{montarCfgT();preencherCfgT();avisoCfg();

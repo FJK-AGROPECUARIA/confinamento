@@ -103,7 +103,9 @@ tr.grp td span{float:right;font-variant-numeric:tabular-nums}
 #aBox.emSetup>section:first-of-type{display:block!important}
 .fBar{display:flex;justify-content:space-between;align-items:center;gap:8px;background:#eef4e0;border-radius:10px;padding:8px 10px;margin-bottom:10px;font-weight:700;font-size:.92rem}
 body.somenteVer .fBar{display:none!important}
-.gLote2{display:block;text-align:left}.gLoteCur{font-weight:700}.gLoteNums4{display:grid;grid-template-columns:repeat(4,1fr);gap:4px;margin-top:6px;font-size:.78rem;color:var(--muted)}.gLoteNums4 b{display:block;font-size:1rem;color:var(--fg)}.gLoteNums4.gMed{background:#eef4e0;border-radius:8px;padding:4px}.gLoteDica{display:block;margin-top:4px;color:var(--muted);font-size:.72rem}
+.gLote2{display:block;text-align:left}.gLoteCur{font-weight:700}.gLoteNums4{display:grid;grid-template-columns:repeat(4,1fr);gap:4px;margin-top:6px;font-size:.78rem;color:var(--muted)}.gLoteNums4 b{display:block;font-size:.95rem;color:var(--fg);white-space:nowrap}.gLoteNums4.gMed{background:#eef4e0;border-radius:8px;padding:4px}.gLoteNums4.gCus{grid-template-columns:repeat(3,1fr);background:#fff6e5;border-radius:8px;padding:4px}.gLoteNums4.gCus b{font-size:.82rem}
+.gEdLista{display:grid;gap:6px;margin:6px 0 10px}.gEdLista>div{display:grid;grid-template-columns:1fr auto auto;gap:6px;align-items:center;border-bottom:1px solid var(--line);padding:4px 0}.gEdLista span{font-weight:600}
+.gLoteDica{display:block;margin-top:4px;color:var(--muted);font-size:.72rem}
 .gSub{margin:14px 0 6px;font-size:.9rem;color:var(--muted);text-transform:uppercase;letter-spacing:.06em}
 #tbPrev .cell.feito{background:#eef1ec;color:var(--muted);text-decoration:none;pointer-events:none}
 #tbPrev td.pvReal{font-weight:700}#tbPrev td.pvFalta{color:#b26a00;font-weight:700}
@@ -644,8 +646,8 @@ body.menuFechado .menuSeta{background:#2e6b2f;color:#fff;padding:9px 12px;font-s
 .gCfgP .gCampo input[type=date]{width:12em!important}
 .gCfgP .gNotaCfg{grid-template-columns:4em minmax(0,13em) 4.4em 2.4em!important}
 .gCfgP .gRacaAdd input{flex:0 1 14em}
-.gNtLista{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:6px}
-.gNt{display:flex;align-items:center;justify-content:space-between;gap:6px;margin:0;padding:6px 8px;border:1px solid var(--line);border-radius:10px;text-transform:none;letter-spacing:0;font-size:.95rem;color:var(--fg);font-weight:700}
+.gNtLista{display:grid;grid-template-columns:1fr;gap:0;margin-top:8px}
+.gNt{display:grid;grid-template-columns:1fr 150px;align-items:center;gap:10px;margin:0;padding:8px 4px;border:0;border-bottom:1px solid var(--line);border-radius:0;text-transform:none;letter-spacing:0;font-size:.95rem;color:var(--fg);font-weight:700}
 .gNt select{width:auto;font-size:.88rem;padding:5px 4px}
 .gCfgP .gDivIn{display:flex!important;flex-wrap:wrap;gap:4px}.gCfgP .gDivIn label{width:3.6em}
 .gCfgP .gDiv{grid-template-columns:4.6em minmax(0,1fr) 3.6em}
@@ -950,7 +952,7 @@ body.menuFechado .menuSeta{background:#2e6b2f;color:#fff;padding:9px 12px;font-s
 <div class="toast" id="toast" hidden></div>
 <script>
 'use strict';
-const APP_VERSAO='33';
+const APP_VERSAO='34';
 const APP_DATA='19/10/2026';
 const KEY='confinamento-completo-v1';
 const $=id=>document.getElementById(id);
@@ -1409,15 +1411,16 @@ function renderPrev(){
   const ed=pvEditavel(),hoje=PV.dia===hojeKey()&&!PV.per,o=pvObj(),m=pvMapa(),ims=PV.ims&&ed&&PV.t===0&&!PV.per;
   /* realizado do dia (todos os tratos) ou do trato escolhido; curral já tratado não deixa mais mudar o previsto */
   const comReal=!PV.per&&PV.dia<=hojeKey(),realDe=c=>{const rs=HIST.filter(r=>r.dia===PV.dia&&r.curral===c&&(PV.t===0||+r.trato===PV.t));return rs.length?rs.reduce((a,r)=>a+(+r.forn||0),0):null;};
-  const travado=c=>PV.t>0&&HIST.some(r=>r.dia===PV.dia&&r.curral===c&&+r.trato===PV.t);
+  const feitoT=(c,k)=>HIST.some(r=>r.dia===PV.dia&&r.curral===c&&+r.trato===k);
+  const travado=c=>{if(PV.t>0)return feitoT(c,PV.t);const ks=[];for(let k=1;k<=MAXT;k++){const v=(o[k]||{})[c];if(typeof v==='number'&&v>0)ks.push(k);}return ks.length>0&&ks.every(k=>feitoT(c,k));}; // Todos: trava quando todos os tratos do curral já foram feitos
   $('viewPrev').classList.toggle('pvSoVer',!ed);
-  $('listaBtns').hidden=!(ed&&hoje&&PV.t>0);$('btnLimparPrev').hidden=!ed;$('btnIms').hidden=!(ed&&PV.t===0);
+  $('listaBtns').hidden=!(ed&&hoje&&PV.t>0);$('btnLimparPrev').hidden=true;$('btnIms').hidden=!(ed&&PV.t===0);
   $('btnOrdem').hidden=!hoje;$('btnCadastrar').hidden=true;$('btnRemoverCurral').hidden=true;
   $('pvImsBar').hidden=!ims;$('viewPrev').classList.toggle('pvImsOn',ims);$('viewPrev').classList.toggle('pvTodos',PV.t===0&&!PV.per);$('btnIms').classList.toggle('on',ims);
   $('pvHead').innerHTML=PV.per?'<tr><th></th><th>Curral</th><th>Total do período (kg)</th><th></th></tr>':
-    PV.t===0?`<tr><th></th><th>Curral</th>${ims?'<th>% IMS</th>':''}<th>Previsto do dia</th>${comReal?'<th>Realiz.</th><th>Falta</th>':''}<th></th></tr>`:`<tr><th></th><th>Curral</th><th>Previsto T${PV.t}</th>${comReal?'<th>Realiz.</th><th>Dif.</th>':''}<th></th></tr>`;
+    PV.t===0?`<tr><th></th><th>Curral</th>${ims?'<th>% IMS</th>':''}<th>Previsto do dia</th>${comReal?'<th>Realiz.</th><th>Dif.</th>':''}<th></th></tr>`:`<tr><th></th><th>Curral</th><th>Previsto T${PV.t}</th>${comReal?'<th>Realiz.</th><th>Dif.</th>':''}<th></th></tr>`;
   $('tbPrev').innerHTML=S.cadastro.map((c,i)=>{const v=m[c],esc_=esc(c),tr=travado(c),rl=comReal?realDe(c):null,pvN=typeof v==='number'?v:0;
-    const colR=comReal?(PV.t===0?`<td class="num pvReal">${rl!=null?fmt(rl):''}</td><td class="num pvFalta">${rl!=null&&pvN?fmt(Math.max(0,pvN-rl)):''}</td>`
+    const colR=comReal?(PV.t===0?`<td class="num pvReal">${rl!=null?fmt(rl):''}</td><td class="num ${rl!=null&&pvN?classeDesv(rl-pvN,pvN):''}">${rl!=null&&pvN?sgn(rl-pvN):''}</td>`
       :`<td class="num pvReal">${rl!=null?fmt(rl):''}</td><td class="num ${rl!=null&&pvN?classeDesv(rl-pvN,pvN):''}">${rl!=null&&pvN?sgn(rl-pvN):''}</td>`):'';
     const ocultar=!curralAtivo(c)||(linhaSel!=='T'&&linhaDe(c)!==linhaSel);
     const nome=`<td class="c" style="cursor:default">${esc_}</td>`;
@@ -1515,7 +1518,7 @@ function abrirTeclado(i){
   if(tecIdx!=null&&tecIdx!==i&&!aplicarPrev(tecIdx,tecBuf))return;
   document.querySelectorAll('#tbPrev input.sel').forEach(x=>x.classList.remove('sel'));
   const x=campoPrev(i);if(!x){fecharTeclado();return;}
-  if(x.classList.contains('feito')){toast(`${S.cadastro[i]}: Trato ${PV.t} já tratado, o previsto não muda mais`);fecharTeclado();return;}
+  if(x.classList.contains('feito')){toast(PV.t?`${S.cadastro[i]}: Trato ${PV.t} já tratado, o previsto não muda mais`:`${S.cadastro[i]}: todos os tratos do dia já foram feitos, o total não muda mais`);fecharTeclado();return;}
   tecIdx=i;tecBuf=x.value==='—'?'':x.value;tecOrig=tecBuf;tecNovo=true;x.classList.add('sel');marcarVoltar();
   $('teclado').hidden=false;document.body.classList.add('comteclado');
   $('tecNome').textContent=S.cadastro[i];$('tecValor').textContent=tecBuf||'—';
@@ -1575,7 +1578,7 @@ function teclar(k){
   else{if(tecBuf==='?')tecBuf='';if(tecBuf.length<6)tecBuf+=k;}
   const x=campoPrev(tecIdx);if(x)x.value=tecBuf;$('tecValor').textContent=tecBuf||'—';marcarVoltar();
 }
-$('tbPrev').addEventListener('click',e=>{const td=e.target.closest('td'),f=td&&td.querySelector('input.feito[data-n]');if(f&&!e.target.closest('input:not(.feito)')){toast(`${S.cadastro[+f.dataset.n]}: Trato ${PV.t} já tratado, o previsto não muda mais`);return;}const x=e.target.closest('input[data-n]');if(x){e.preventDefault();x.blur();abrirTeclado(+x.dataset.n);}});
+$('tbPrev').addEventListener('click',e=>{const td=e.target.closest('td'),f=td&&td.querySelector('input.feito[data-n]');if(f&&!e.target.closest('input:not(.feito)')){toast(PV.t?`${S.cadastro[+f.dataset.n]}: Trato ${PV.t} já tratado, o previsto não muda mais`:`${S.cadastro[+f.dataset.n]}: todos os tratos do dia já foram feitos, o total não muda mais`);return;}const x=e.target.closest('input[data-n]');if(x){e.preventDefault();x.blur();abrirTeclado(+x.dataset.n);}});
 $('teclado').addEventListener('pointerdown',e=>{const b=e.target.closest('button[data-k]');if(!b)return;e.preventDefault();teclar(b.dataset.k);});
 document.addEventListener('keydown',e=>{if(tecIdx==null)return;
   if(/^[0-9]$/.test(e.key))teclar(e.key);else if(e.key==='Backspace')teclar('del');else if(e.key==='Enter'||e.key==='Tab'){e.preventDefault();teclar('ok');}else if(e.key==='Escape')teclar('fechar');else if(e.key==='?')teclar('?');});
@@ -2649,12 +2652,12 @@ $('tecSenha').addEventListener('click',e=>{const b=e.target.closest('button[data
 /* entra só na parte escolhida: 'trato' (padrão) ou 'gest' */
 function entrarExec(m){m=m==='gest'?'gest':'trato';modoVer=false;document.body.classList.remove('naInicio','somenteVer','modoTrato','modoGest');document.body.classList.add(m==='gest'?'modoGest':'modoTrato');$('faixaVer').hidden=true;
   menuAberto=null;abrirMenu(m==='gest'?'gest':'trato');
-  if(m==='gest'){try{GT={t:'home'};}catch(e){}aba('gest');}else{try{if(escolherTratoDoDia()){$('tratoSel').value=String(S.tratoSel);}render();}catch(e){}escolherModo(null);}
+  if(m==='gest'){try{GT={t:'home'};}catch(e){}window.abaAtual='';document.querySelectorAll('#subGest button[data-gt]').forEach(x=>x.setAttribute('aria-selected','false'));telaEscolha('Escolha uma opção no menu acima.');}else{try{if(escolherTratoDoDia()){$('tratoSel').value=String(S.tratoSel);}render();}catch(e){}escolherModo(null);}
   if(window.menuCaminho)menuCaminho();}
 $('btnModoVer').onclick=()=>{verSenha(false);if(typeof fecharTeclado==='function')fecharTeclado();if(balCampo)fecharBal();
   guardarExec();modoVer=true;document.body.classList.remove('naInicio','modoTrato','modoGest');document.body.classList.add('somenteVer');$('faixaVer').hidden=false;menuAberto=null;abrirMenu('trato');
   S.dataManual=null;S.ini='';S.fim='';escolherTratoDoDia();$('tratoSel').value=String(S.tratoSel);$('pvTrato').value=String(S.tratoSel);S.pvTrato=S.tratoSel;
-  $('ini').value='';$('fim').value='';aba('trato');render();renderPrev();avDados=null;avErro=false;renderAoVivo();if(navigator.onLine)puxarAoVivo();
+  $('ini').value='';$('fim').value='';render();renderPrev();modoAtual=null;$('subModo').hidden=true;$('tabMan').setAttribute('aria-selected','false');$('tabModoAuto').setAttribute('aria-selected','false');telaEscolha('Escolha uma opção no menu acima.');avDados=null;avErro=false;renderAoVivo();if(navigator.onLine)puxarAoVivo();
   if(navigator.onLine){puxarRegistros(true).catch(()=>{});puxarPrevisto(true).catch(()=>{});}};
 function voltarInicio(){
   if(typeof fecharTeclado==='function')fecharTeclado();if(typeof balCampo!=='undefined'&&balCampo)fecharBal();
