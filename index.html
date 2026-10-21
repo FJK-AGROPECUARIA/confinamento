@@ -1072,7 +1072,7 @@ body.naInicio .topoTxt h1{font-size:clamp(16px,5vw,28px)!important}
 <div class="toast" id="toast" hidden></div>
 <script>
 'use strict';
-const APP_VERSAO='71';
+const APP_VERSAO='72';
 const APP_DATA='19/10/2026';
 const KEY='confinamento-completo-v1';
 const $=id=>document.getElementById(id);
@@ -2375,7 +2375,7 @@ async function puxarRegistros(forcar){
 let ultAtualiz=0;try{ultAtualiz=+localStorage.getItem('ultAtualiz')||0;}catch(e){}
 function pintarHoje(){const el=$('hoje');if(!el)return;const d=new Date(),dd=d.toLocaleDateString('pt-BR',{day:'2-digit',month:'2-digit'});
   const u=ultAtualiz?new Date(ultAtualiz):null;const mesmoDia=u&&u.toDateString()===d.toDateString();
-  el.textContent=u?`Atualizado ${u.toLocaleDateString('pt-BR',{day:'2-digit',month:'2-digit'})} às ${u.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'})}`:dd;try{caberSub();}catch(e){}}
+  el.textContent=(u?`Atualizado ${u.toLocaleDateString('pt-BR',{day:'2-digit',month:'2-digit'})} às ${u.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'})}`:dd)+' – v'+APP_VERSAO;try{caberSub();}catch(e){}}
 setInterval(pintarHoje,30000);
 /* linha de baixo do cabeçalho (Atualizado …): também diminui para caber numa linha */
 function caberSub(){const e=document.querySelector('.topoTxt .sub');if(!e)return;e.style.fontSize='';let f=parseFloat(getComputedStyle(e).fontSize),n=0;
@@ -2933,24 +2933,18 @@ const geoOk=p=>{const c=p.coords,n={lat:+c.latitude.toFixed(6),lon:+c.longitude.
   if(geo&&geo.acc&&n.acc>Math.max(150,geo.acc*3)&&Date.now()-geo.ts<5*60000)return;
   geo=n;geoErro='';try{localStorage.setItem('geoUlt',JSON.stringify(n));}catch(e){}};
 /* volta a última posição boa (até 2 h) quando o app reabre */
-try{const g0=JSON.parse(localStorage.getItem('geoUlt')||'null');if(g0&&Date.now()-g0.ts<2*3600e3)geo=g0;}catch(e){}
+try{const g0=JSON.parse(localStorage.getItem('geoUlt')||'null');if(g0&&Date.now()-g0.ts<12*3600e3)geo=g0;}catch(e){}
 const geoFalha=e=>{geoErro=!e?'sem resposta':e.code===1?'não permitida neste aparelho':e.code===2?'GPS sem sinal ou desligado':e.code===3?'demorou para achar':'erro';
   if(e&&e.code===1){try{navigator.geolocation.clearWatch(geoW);}catch(x){}geoW=-1;}};
 let geoIniW=0;
+/* igual à versão 63 (quando funcionou): só o acompanhamento contínuo; e um reforço pela rede só se ficar sem posição */
 function geoIniciar(){try{if(!navigator.geolocation){geoErro='aparelho sem GPS';return;}
-  const semFix=!geo||Date.now()-geo.ts>120000;
-  /* negado antes: tenta de novo a cada 1 min (pode ter liberado nas configurações) */
-  if(geoW===-1&&Date.now()-geoIniW>60000)geoW=null;
-  /* sem posição nova há mais de 3 min: reinicia o acompanhamento (o Android às vezes para de mandar depois que a tela apaga) */
-  if(geoW!=null&&geoW>=0&&semFix&&Date.now()-geoIniW>180000){try{navigator.geolocation.clearWatch(geoW);}catch(e){}geoW=null;}
-  if(geoW==null){geoIniW=Date.now();geoW=navigator.geolocation.watchPosition(geoOk,geoFalha,{enableHighAccuracy:true,maximumAge:60000});}
-  if(geoW!==-1&&Date.now()-geoUltPed>60000){geoUltPed=Date.now();
-    /* reforço a cada 1 min: GPS (aceita posição de até 2 min); se não vier, tenta pela rede/Wi-Fi */
-    navigator.geolocation.getCurrentPosition(geoOk,e=>{
-      if(e&&e.code===1){geoFalha(e);return;}
-      navigator.geolocation.getCurrentPosition(geoOk,e2=>{if(!geo)geoFalha(e2);},{enableHighAccuracy:false,maximumAge:300000,timeout:20000});},
-      {enableHighAccuracy:true,maximumAge:120000,timeout:45000});}}catch(e){geoErro='erro';}}
-document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible'&&geoW!=null&&geoW>=0){try{navigator.geolocation.clearWatch(geoW);}catch(e){}geoW=null;geoUltPed=0;setTimeout(()=>{try{geoTalvez();}catch(e){}},500);}});
+  if(geoW===-1&&Date.now()-geoIniW>60000)geoW=null;   // negado antes: tenta de novo (pode ter liberado nas configurações)
+  if(geoW==null){geoIniW=Date.now();geoW=navigator.geolocation.watchPosition(geoOk,geoFalha,{enableHighAccuracy:true,maximumAge:30000,timeout:60000});}
+  const semFix=!geo||Date.now()-geo.ts>180000;
+  if(geoW!==-1&&semFix&&Date.now()-geoUltPed>120000){geoUltPed=Date.now();
+    navigator.geolocation.getCurrentPosition(geoOk,e=>{if(e&&e.code===1)geoFalha(e);},{enableHighAccuracy:false,maximumAge:300000,timeout:30000});}}catch(e){geoErro='erro';}}
+document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')setTimeout(()=>{try{geoTalvez();}catch(e){}},500);});
 function geoParar(){try{if(geoW!=null&&geoW>=0)navigator.geolocation.clearWatch(geoW);}catch(e){}geoW=null;}
 /* só pede a localização quando: o aparelho está trabalhando (batida ou fornecimento aberto), a opção está ligada neste aparelho
    e a permissão não foi negada. Depois de permitido uma vez, o navegador guarda e não pergunta mais (Android/Chrome). */
@@ -2963,7 +2957,7 @@ async function geoTalvez(){if(!(typeof avAtivo==='function'&&avAtivo())||!geoLig
   if(geoPerm==='granted'||geoTrabalhando())geoIniciar();}
 window.geoEstado=()=>({ligado:geoLigado(),perm:geoPerm});
 setInterval(()=>{geoTalvez();},15000);
-function estadoAoVivo(){const e=estadoAoVivo0();if(e){if(geo)e.geo=geo;else if(geoErro)e.geoErro=geoErro;}return e;}
+function estadoAoVivo(){const e=estadoAoVivo0();if(e){if(geo)e.geo=geo;if(geoErro)e.geoErro=geoErro;}return e;}
 /* contagem do ao vivo: todos os currais daquele local (pasto ou confinamento) no trato, de qualquer fornecimento do dia */
 function contaLocalTrato(L,regs){try{const f=filtroForn();const T=f&&typeof fornCurrais==='function'?fornCurrais(f.local,null,+S.tratoSel):L;
   return {feitos:T.filter(x=>feito(x.nome,regs)).length,total:T.length};}catch(e){return {feitos:L.filter(x=>feito(x.nome,regs)).length,total:L.length};}}
@@ -3105,7 +3099,7 @@ function avTopoHTML(d,t0){const dd=d.dia&&/^\d{4}-/.test(d.dia)?diaBR(d.dia).sli
   const velho=(d.dia&&/^\d{4}-/.test(d.dia)&&d.dia<hojeKey())||(t0&&diaKey(new Date(t0))<hojeKey());
   return `<div class="avTopo"><span><i class="avPonto"></i>Ao vivo${h?` · início ${dd} às ${h}`:dd?' · '+dd:''}</span><span class="avIdade">${idadeTxt(d.idade)}</span></div>`
     +(velho?`<div class="avVelho">⚠ Aberto desde ${dd}: precisa ser finalizado ou cancelado</div>`:'')
-    +(g?`<a class="avGeo" data-geo="${g.lat},${g.lon}" href="https://www.google.com/maps/search/?api=1&query=${g.lat},${g.lon}" target="_blank" rel="noopener">📍 Localização <small>${idadeTxt(gIdade)} · precisão ${g.acc>=1000?'±'+(g.acc/1000).toFixed(1).replace('.',',')+' km':'±'+g.acc+' m'}${g.acc>200?' ⚠ imprecisa':''}</small></a>`
+    +(g?`<a class="avGeo" data-geo="${g.lat},${g.lon}" href="https://www.google.com/maps/search/?api=1&query=${g.lat},${g.lon}" target="_blank" rel="noopener">📍 ${gIdade>5*60000?'Última localização':'Localização'} <small>${idadeTxt(gIdade)}${gIdade>5*60000&&d.geoErro?' ('+esc(d.geoErro)+' agora)':''} · precisão ${g.acc>=1000?'±'+(g.acc/1000).toFixed(1).replace('.',',')+' km':'±'+g.acc+' m'}${g.acc>200?' ⚠ imprecisa':''}</small></a>`
        :`<div class="avGeo semGeo">📍 Localização <small>${d.geoErro?esc(d.geoErro):'ainda não chegou do aparelho'}</small></div>`);}
 function idadeTxt(ms){const s=Math.max(0,Math.round(ms/1000));return s<60?`há ${s} s`:`há ${Math.round(s/60)} min`;}
 /* Visualizar › Carregar: embaixo, a batida em andamento produto por produto e as batidas feitas hoje */
