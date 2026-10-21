@@ -1475,3 +1475,23 @@ function garantirPrevLeituras(){try{if(typeof modoVer!=='undefined'&&modoVer)ret
     if(!tem&&!feito&&(typeof curralAtivo!=='function'||curralAtivo(c))){aplicaPrev(c,+x.novo,S.prev);n++;}});
   if(n){marcarPrev();if(typeof render==='function')render();}return n;}catch(e){return 0;}}
 setInterval(garantirPrevLeituras,20000);setTimeout(garantirPrevLeituras,6000);
+/* ---------- compensação garantida: terminou um trato e o último trato do curral ainda está com o previsto original?
+   ajusta o último trato pelo que foi a mais/a menos (vale para qualquer aparelho em Executar; não mexe se mudaram o previsto à mão) ---------- */
+function garantirCompensacao(){try{if(typeof modoVer!=='undefined'&&modoVer)return 0;if(!S||!S.prev||typeof compensarCurral!=='function')return 0;
+  const hj=hojeKey();if(typeof diaAtivo==='function'&&diaAtivo()!==hj)return 0;let n=0;
+  let a=+gCfg().arred;if(!(a>0))a=10;
+  gTodos('leitura').filter(x=>x.dia===hj&&+x.novo>0).forEach(x=>{const c=x.curral;
+    const ks=Object.keys(S.prev).map(Number).filter(k=>+((S.prev[k]||{})[c])>0).sort((p,q)=>p-q);if(ks.length<2)return;
+    const regs=HIST.filter(r=>r.dia===hj&&r.curral===c);if(!regs.length)return;
+    const feitos=new Set(regs.map(r=>+r.trato)),ult=ks[ks.length-1];if(feitos.has(ult))return;
+    /* só mexe se o previsto do curral ainda é exatamente a divisão original da leitura (não compensado e ninguém mudou à mão) */
+    const tmp={};try{prevApi.distribuir(c,+x.novo,ks.length,tmp);}catch(e){return;}
+    const soma=ks.reduce((s_,k)=>s_+(+S.prev[k][c]),0);
+    if(soma!==arredPrev(+x.novo)||!ks.every(k=>Math.abs((+((tmp[k]||{})[c])||0)-(+S.prev[k][c]))<=a))return;
+    const real=regs.reduce((s_,r)=>s_+(+r.forn||0),0),prevFeito=ks.filter(k=>feitos.has(k)).reduce((s_,k)=>s_+(+S.prev[k][c]),0);
+    if(Math.abs(real-prevFeito)<a/2)return;           // fez certinho: nada a ajustar
+    if(S.prevOrig&&S.prevOrig.dia===hj&&S.prevOrig.set)delete S.prevOrig.set[c],S.prevOrig.v&&delete S.prevOrig.v[c];
+    if(compensarCurral(c))n++;});
+  if(n&&typeof render==='function')render();if(n&&typeof renderPrev==='function'&&$('viewPrev')&&!$('viewPrev').hidden)renderPrev();return n;}catch(e){return 0;}}
+window.garantirCompensacao=garantirCompensacao;
+setInterval(garantirCompensacao,20000);setTimeout(garantirCompensacao,8000);
