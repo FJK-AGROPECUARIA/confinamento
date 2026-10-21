@@ -1052,7 +1052,7 @@ body.naInicio .topoTxt h1{font-size:clamp(16px,5vw,28px)!important}
 <div class="toast" id="toast" hidden></div>
 <script>
 'use strict';
-const APP_VERSAO='65';
+const APP_VERSAO='66';
 const APP_DATA='19/10/2026';
 const KEY='confinamento-completo-v1';
 const $=id=>document.getElementById(id);
@@ -3024,8 +3024,8 @@ function avTelaSint(d,carga){const ini=parseFloat(d.ini),fim=parseFloat(d.fim),p
   const feito=isNaN(fim)?0:(carga?fim-ini:ini-fim),falta=pv-feito,alvo=carga?ini+pv:ini-pv;
   const cor=falta<0?'passou':falta<=Math.max(15,pv*.03)?'vermelho':falta<=Math.max(60,pv*.12)?'amarelo':'verde';
   return {peso:isNaN(fim)?'—':fmt(fim),pesoTxt:'ao vivo',etapa:feito>0?(carga?`▲ Carregando ${d.prod||''}`:`▼ Fornecendo no ${d.curral||''}`):(carga?`Pronto: pode carregar ${d.prod||''}`:`Pronto: pode fornecer no ${d.curral||''}`),
-    etCl:'aEtapa '+(feito>0?'desc':'pronto'),fCl:'aFalta '+cor,fTit:falta<0?'Passou':(carga?'Carregar':'Fornecer'),fVal:fmt(Math.abs(falta)),
-    fTxt:falta<0?`passou ${fmt(-falta)} kg do previsto`:carga?`de ${fmt(pv)} kg de ${d.prod||''}`:`de ${fmt(pv)} kg previstos`,feito:fmt(Math.max(0,feito)),ini:fmt(ini),alvo:fmt(alvo)};}
+    etCl:'aEtapa '+(feito>0?'desc':'pronto'),fCl:'aFalta '+cor,fTit:falta<0?'PASSOU':(carga?'Carregar':'Fornecer'),fVal:fmt(Math.abs(falta)),
+    fTxt:falta<0?'DO PREVISTO':'\u00a0',feito:fmt(Math.max(0,feito)),ini:fmt(ini),alvo:fmt(alvo)};}
 function avTelaHTML(d,carga){const T=d.tela;
   return `<div class="avEspelho"><div class="aPeso"><div><small>Balança (kg)</small><em>${esc(T.pesoTxt||'')}</em></div><b class="num">${esc(T.peso||'—')}</b></div>
     <div class="curBox2"><div class="cbCur"><span>${carga?`Produto ${d.iProd||'—'}${d.nProd?' de '+d.nProd:''}`:'Curral atual'}</span><b>${esc((carga?d.prod:d.curral)||'—')}</b></div><div class="cbPrev"><span>${carga?'Carregar':'Previsto'}</span><b class="num">${d.prev!=null?fmt(d.prev):'—'}</b></div></div>

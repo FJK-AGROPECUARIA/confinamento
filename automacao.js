@@ -663,10 +663,10 @@ function pintarPeso(){
   const caiu=(A.base!=null&&A.peso!=null)?Math.max(0,A.base-A.peso):null;
   $('aCaiu').textContent=caiu==null?'—':fmt(caiu);
   const z=zona(),fb=$('aFaltaBox');
-  $('aFaltaTit').textContent=(z&&z.falta<0)?'Passou':'Fornecer';
+  $('aFaltaTit').textContent=(z&&z.falta<0)?'PASSOU':'Fornecer';
   if(z){$('aFalta').textContent=fmt(z.falta);fb.className='aFalta '+z.z;
-    $('aFaltaTxt').textContent=z.falta<0?`passou ${fmt(-z.falta)} kg do previsto`:z.falta===0?'no ponto!':`de ${fmt(cur.prev)} kg previstos`;
-    if(z.falta<0)$('aFalta').textContent='-'+fmt(-z.falta);}
+    $('aFaltaTxt').textContent=z.falta<0?'DO PREVISTO':z.falta===0?'NO PONTO!':'\u00a0';
+    if(z.falta<0)$('aFalta').textContent=fmt(-z.falta);}
   else{$('aFalta').textContent=cur?fmt(cur.prev):'—';fb.className='aFalta cinza';$('aFaltaTxt').textContent=A.fonte?'esperando peso inicial':'conecte a balança';}
   const et=$('aEtapa');let txt,cl='';
   pintarPausa();
@@ -825,9 +825,9 @@ function pintarCarga(){
   $('acIni').textContent=it&&ok(it.ini)?fmt(it.ini):'—';
   $('acAlvo').textContent=it&&ok(it.ini)?fmt(it.ini+it.prev):'—';
   $('acCarr').textContent=it&&ok(it.real)?fmt(it.real):z?fmt(z.carregado):'—';
-  $('acFaltaTit').textContent=(z&&z.falta<0)?'Passou':'Carregar';
-  if(z){$('acFalta').textContent=z.falta<0?'-'+fmt(-z.falta):fmt(z.falta);fb.className='aFalta '+z.z;
-    $('acFaltaTxt').textContent=z.falta<0?`passou ${fmt(-z.falta)} kg do previsto`:z.falta===0?'no ponto!':`de ${fmt(it.prev)} kg de ${it.nome}`;}
+  $('acFaltaTit').textContent=(z&&z.falta<0)?'PASSOU':'Carregar';
+  if(z){$('acFalta').textContent=z.falta<0?fmt(-z.falta):fmt(z.falta);fb.className='aFalta '+z.z;
+    $('acFaltaTxt').textContent=z.falta<0?'DO PREVISTO':z.falta===0?'NO PONTO!':'\u00a0';}
   else{$('acFalta').textContent=it?fmt(ok(it.real)?it.real:it.prev):'—';fb.className='aFalta cinza';
     $('acFaltaTxt').textContent=it&&ok(it.real)?'já carregado':A.fonte?'esperando peso inicial':'conecte a balança';}
   let txt,cl='';
