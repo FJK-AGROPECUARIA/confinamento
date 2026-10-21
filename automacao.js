@@ -639,11 +639,12 @@ window.telaAuto=p=>{const t=id=>{const e=$(p+id);return e?e.textContent.trim():'
     feito:t(p==='ac'?'Carr':'Caiu'),ini:t('Ini'),alvo:t('Alvo')};};
 window.aEstadoAoVivo=()=>{const L=lista(),c=L[S.atual],regs=regsAtuais();
   const ff=window.filtroForn?filtroForn():null;return {pausa:!!A.pausa,tela:$('viewAuto')&&!$('viewAuto').hidden&&ff?telaAuto('a'):null,modo:'trato',origem:'auto',local:ff?ff.local:'',rac:ff?ff.rac:'',fimForn:!ff,deAp:ff&&ff.deAp||'',contTs:ff&&ff.contTs||0,fts0:ff&&ff.ts0||0,dia:diaAtivo(),trato:S.tratoSel,curral:c?c.nome:'',prev:c?c.prev:null,ini:A.base!=null?Math.round(A.base):'',fim:A.peso!=null?Math.round(A.peso):'',
-    feitos:L.filter(x=>feito(x.nome,regs)).length,total:L.length};};
+    ...contaLocalTrato(L,regs)};};
 /* ---------- Pausar no trajeto ---------- */
 function pintarPausa(){const p=!!A.pausa;if(!$('aPausaBox'))return;$('aPausaBox').hidden=!p;$('aPausar').hidden=p||!curralAtual();
   ['aFaltaBox','aReg'].forEach(i=>{const e=$(i);if(e)e.style.display=p?'none':'';});const m=document.querySelector('#aBox .aMini');if(m)m.style.display=p?'none':'';}
-function aPausar(){if(A.pausa)return;A.pausa={est:A.est,base:A.base,ts:Date.now()};pararSom();diagLog('pausou',{est:A.est,base:A.base,peso:A.peso});
+function aPausar(){if(A.pausa)return;const z0=zona(),cur0=curralAtual();A.pausa={est:A.est,base:A.base,ts:Date.now(),
+    falta:A.est==='descarregando'&&z0?Math.max(0,z0.falta):(cur0?cur0.prev:null),caiu:A.est==='descarregando'&&A.base!=null&&A.peso!=null?Math.max(0,A.base-A.peso):0};pararSom();diagLog('pausou',{est:A.est,base:A.base,peso:A.peso});
   toast('⏸ Pausado: a balança não conta até você continuar');pintarPeso();if(typeof agendarAoVivo==='function')agendarAoVivo();}
 function aContinuarPausa(){const P=A.pausa;if(!P)return;A.pausa=null;
   if(P.est==='descarregando'){A.est='descarregando';A.base=P.base;A.ancV=null;A.ancT=Date.now();A.fpMin=null;}  // estava no meio do curral: continua com o mesmo início
@@ -670,7 +671,8 @@ function pintarPeso(){
   else{$('aFalta').textContent=cur?fmt(cur.prev):'—';fb.className='aFalta cinza';$('aFaltaTxt').textContent=A.fonte?'esperando peso inicial':'conecte a balança';}
   const et=$('aEtapa');let txt,cl='';
   pintarPausa();
-  if(A.pausa){et.textContent='⏸ Pausado no trajeto · a balança não está contando';et.className='aEtapa pausa';$('aFaltaTit').textContent='Pausado';fb.className='aFalta cinza';$('aFaltaTxt').textContent='toque em continuar quando chegar';$('aReg').disabled=true;return;}
+  if(A.pausa){/* pausado: os números ficam parados no valor de quando pausou */$('aFalta').textContent=A.pausa.falta==null?'—':fmt(A.pausa.falta);$('aCaiu').textContent=fmt(A.pausa.caiu||0);
+    et.textContent='⏸ Pausado no trajeto · a balança não está contando';et.className='aEtapa pausa';$('aFaltaTit').textContent='Pausado';fb.className='aFalta cinza';$('aFaltaTxt').textContent='toque em continuar quando chegar';$('aReg').disabled=true;return;}
   if(!A.fonte)txt='Conecte a balança (ou use o Simulador)';
   else if(A.peso==null)txt='Esperando o peso chegar da balança…';
   else if(!cur)txt=lista().length?'✓ Trato completo':'Sem previsto neste trato (lance na aba Previsto)';
@@ -695,7 +697,7 @@ function aRender(){
     const real=fz?`<b>${fmt(f)}</b>`:(i===S.atual?'<span class="pill">agora</span>':'—');
     return `<tr class="${i===S.atual?'cur':''}"><td class="hora">${fz?horaDe(rs[0]):''}</td><td class="c">${esc(nome)}</td><td>${prev!=null?fmt(prev):'—'}</td><td>${real}</td><td class="${fz&&prev?classeDesv(d,prev):''}">${fz&&prev!=null?sgn(d):''}</td></tr>`;};
   const extras=[...new Set(regs.map(r=>r.curral))].filter(n=>!L.some(x=>x.nome===n));
-  $('aTb').innerHTML=(L.length||extras.length)?L.map((x,i)=>linha(x.nome,x.prev,i)).join('')+extras.map(n=>linha(n,(regs.find(r=>r.curral===n)||{}).prev,null)).join(''):
+  $('aTb').innerHTML=(L.length||extras.length)?ordemTabela(L,extras,regs).map(x=>linha(x.nome,x.prev,x.i)).join(''):
     `<tr><td colspan="5" class="note" style="text-align:left">Nenhum previsto no Trato ${S.tratoSel}. Lance na aba Previsto.</td></tr>`;
   caberTabela($('aTb'));
   $('aTit').textContent=`Currais — Trato ${S.tratoSel}`;

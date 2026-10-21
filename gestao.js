@@ -156,7 +156,7 @@ const UNID_C=[['arroba','R$ por @ (peso vivo ÷ 30)'],['cab','R$ por cabeça'],[
 const UNID_V=[['arroba','R$ por @ (carcaça ÷ 15)'],['cab','R$ por cabeça'],['kg','R$ por kg vivo']];
 
 const RAIZ={home:'home',estoque:'estoque',estIns:'estoque',estForm:'estoque',currais:'currais',curForm:'currais',lotes:'lotes',lote:'lotes',loteForm:'lotes',pesForm:'lotes',saiForm:'lotes',mudForm:'lotes',rel:'lotes',custoForm:'lotes',
-  cocho:'cocho',cochoGraf:'cocho',rels:'rels',dia:'rels',periodo:'rels',comp:'rels',racoes:'racoes',racForm:'racoes',insumos:'insumos',insForm:'insumos',cfg:'cfg'};
+  cocho:'cocho',cochoGraf:'cocho',fezes:'cocho',rels:'rels',dia:'rels',periodo:'rels',comp:'rels',racoes:'racoes',racForm:'racoes',insumos:'insumos',insForm:'insumos',cfg:'cfg'};
 /* Leitura de cocho fica no menu Tratos (aba 'leit'); o resto da Gestão na aba 'gest' — as duas usam a mesma tela */
 function gRaiz(t){GT={t};gPilha.length=0;const alvo=RAIZ[t]==='cocho'&&!document.body.classList.contains('modoGest')?'leit':'gest';if(window.abaAtual!==alvo)aba(alvo);else gRender();window.scrollTo({top:0});}
 window.gAbrir=modo=>{const leit=RAIZ[GT.t]==='cocho';if(modo==='leit'&&!leit)GT={t:'cocho'};if(modo==='gest'&&leit&&!document.body.classList.contains('modoGest'))GT={t:'home'};gRender();if(navigator.onLine)gSync(true).catch(()=>{});};
@@ -165,10 +165,11 @@ function gRender(){
   if(window.abaAtual==='gest'&&RAIZ[GT.t]==='cocho'&&!document.body.classList.contains('modoGest')){aba('leit');return;}  // leitura abre no menu Tratos
   if(window.abaAtual==='leit'&&RAIZ[GT.t]!=='cocho'){aba('gest');return;}
   const f={home:tHome,estoque:tEstoque,estIns:tEstIns,estForm:tEstForm,currais:tCurrais,curForm:tCurForm,lotes:tLotes,lote:tLote,loteForm:tLoteForm,pesForm:tPesForm,saiForm:tSaiForm,mudForm:tMudForm,rel:tRelLote,custoForm:tCustoForm,
-    cocho:tCocho,cochoGraf:tCochoGraf,rels:tRels,dia:tDia,periodo:tPeriodo,comp:tComp,racoes:tRacoes,racForm:tRacForm,insumos:tInsumos,insForm:tInsForm,cfg:tCfg}[GT.t]||tHome;
+    cocho:tCocho,cochoGraf:tCochoGraf,fezes:t=>tFezes(t),rels:tRels,dia:tDia,periodo:tPeriodo,comp:tComp,racoes:tRacoes,racForm:tRacForm,insumos:tInsumos,insForm:tInsForm,cfg:tCfg}[GT.t]||tHome;
   const raiz=RAIZ[GT.t]||'home';document.querySelectorAll('#subGest button[data-gt]').forEach(x=>x.setAttribute('aria-selected',String(x.dataset.gt===raiz)));
   const cb=$('cfgTBox');if(cb&&$('cfgTParque')&&cb.parentNode!==$('cfgTParque'))$('cfgTParque').appendChild(cb); // ajustes da balança: guarda antes de redesenhar
   b.innerHTML=f(GT);
+  try{const fz=GT.t==='fezes';if($('tabFez'))$('tabFez').setAttribute('aria-selected',String(fz&&window.abaAtual==='leit'));if($('tabLeit')&&window.abaAtual==='leit')$('tabLeit').setAttribute('aria-selected',String(!fz));}catch(e){}
   if(GT.t==='cfg'&&cb&&$('cfgBalHost')){$('cfgBalHost').appendChild(cb);if(window.cfgTAoAbrir)cfgTAoAbrir();}
   if(GT.t==='racForm')calcRacao();
   if(GT.t==='rel')calcSimul();
@@ -986,7 +987,7 @@ function salvaCfg(){const c=JSON.parse(JSON.stringify(gCfg()));const t=fn('taxa'
 /* =====================================================================================
    EVENTOS
    ===================================================================================== */
-const SO_VER=new Set(['cfgAba','coLoc','coAbre','coFecha','estPer','evLoc','evolN','imgDia','imgPer','imgComp','imgLote','xlsGraf','racaAdd','racaRm','grafLoc','grafCur','celGraf','imgGraf','filtroLoc','dataPasso','dataHoje','voltar','ir','lote','raiz','compRel','compDia','xlsDia','xlsPer','xlsComp','xlsLote','perAtalho','nota','racAdd','racRm','notaAdd','notaRm','notaPadrao']);
+const SO_VER=new Set(['fzCur','fzLoc','fzImg','fzXls','fzXlsHist','cfgAba','coLoc','coAbre','coFecha','estPer','evLoc','evolN','imgDia','imgPer','imgComp','imgLote','xlsGraf','racaAdd','racaRm','grafLoc','grafCur','celGraf','imgGraf','filtroLoc','dataPasso','dataHoje','voltar','ir','lote','raiz','compRel','compDia','xlsDia','xlsPer','xlsComp','xlsLote','perAtalho','nota','racAdd','racRm','notaAdd','notaRm','notaPadrao']);
 $('gBox').addEventListener('click',e=>{
   const b=e.target.closest('[data-g]');if(!b)return;const a=b.dataset.g,id=b.dataset.id;
   if(!SO_VER.has(a)&&bloqueado())return;
@@ -1531,3 +1532,90 @@ function garantirCompensacao(){try{if(typeof modoVer!=='undefined'&&modoVer)retu
   if(n&&typeof render==='function')render();if(n&&typeof renderPrev==='function'&&$('viewPrev')&&!$('viewPrev').hidden)renderPrev();return n;}catch(e){return 0;}}
 window.garantirCompensacao=garantirCompensacao;
 setInterval(garantirCompensacao,20000);setTimeout(garantirCompensacao,8000);
+
+/* ===================== Escore de fezes (Tratos › Fezes) =====================
+   Escala 1 a 5: 1 líquida · 2 mole · 3 ideal (pastosa) · 4 firme · 5 seca/dura.
+   Cada avaliação: dia + curral, quantas fezes em cada escore, observação. Média ponderada = Σ(escore × qtd) ÷ total.  */
+const FZ_DESC=['','Líquida','Mole','Ideal','Firme','Seca'];
+const fzId=(dia,c)=>'fz-'+dia+'-'+c;
+const fzItem=(dia,c)=>{const x=G.it[fzId(dia,c)];return x&&!x.del?x:null;};
+function fzCalc(cs){cs=(cs||[0,0,0,0,0]).map(n=>+n||0);const tot=cs.reduce((a,b)=>a+b,0);
+  return {cs,tot,pct:cs.map(n=>tot?n/tot*100:0),media:tot?cs.reduce((a,n,i)=>a+n*(i+1),0)/tot:null};}
+/* leitura: média 2,5 a 3,5 e no máx. 20% em 1+2 (acidose) ou 4+5 (fibra/pouca água) */
+function fzStatus(k){if(!k||!k.tot)return {cl:'',txt:'—'};const b=k.pct[0]+k.pct[1],a=k.pct[3]+k.pct[4];
+  if(b>20)return {cl:'bad',txt:'Mole demais (risco de acidose)'};if(a>20)return {cl:'warn',txt:'Firme demais'};
+  if(k.media<2.5)return {cl:'warn',txt:'Tendendo a mole'};if(k.media>3.5)return {cl:'warn',txt:'Tendendo a firme'};return {cl:'ok',txt:'Ideal'};}
+const fz1=v=>v==null?'—':v.toFixed(2).replace('.',',');
+const fzPc=v=>v.toFixed(1).replace('.',',')+'%';
+function fzCurrais(dia,loc){const s=new Set();gTodos('lote').filter(l=>cabPres(l,dia)>0).forEach(l=>{const c=curralEm(l,dia);if(c&&doLocal(loc||'T',c))s.add(c);});
+  gTodos('fezes').filter(x=>x.dia===dia&&doLocal(loc||'T',x.curral)).forEach(x=>s.add(x.curral));
+  const ord=S.cadastro||[];return [...s].sort((a,b)=>{const ia=ord.indexOf(a),ib=ord.indexOf(b);return (ia<0?999:ia)-(ib<0?999:ib)||alfa(a,b);});}
+function tFezes(t){const hj=hojeKey();t.dia=t.dia||hj;t.loc=t.loc||'T';const dia=t.dia,Cs=fzCurrais(dia,t.loc);
+  if(t.cur&&!Cs.includes(t.cur))t.cur=null;
+  const chips=Cs.map(c=>{const k=fzCalc((fzItem(dia,c)||{}).c),st=fzStatus(k);
+    return `<button class="fzChip ${t.cur===c?'sel':''} ${k.tot?'feito '+st.cl:''}" data-g="fzCur" data-c="${esc(c)}"><b>${esc(c)}</b><small>${k.tot?'✓ média '+fz1(k.media):'avaliar'}</small></button>`;}).join('');
+  let ficha='';
+  if(t.cur){const c=t.cur,x=fzItem(dia,c),k=fzCalc(x&&x.c),st=fzStatus(k);
+    const L=gTodos('lote').filter(l=>curralEm(l,dia)===c&&cabPres(l,dia)>0);
+    ficha=`<section class="panel fzFicha"><div class="curhead"><h2>${esc(c)}</h2><span class="note">${L.map(l=>esc(l.nome)+' · '+nf(cabPres(l,dia))+' cab').join(' · ')}</span></div>
+      <div class="fzTot"><span>Total de fezes avaliadas</span><b>${k.tot}</b></div>
+      ${[1,2,3,4,5].map(i=>`<div class="fzLinha e${i}"><div><b>Escore ${i}</b> · ${fzPc(k.pct[i-1])}<small>${FZ_DESC[i]}</small></div>
+        <button class="fzBt" data-g="fzMenos" data-i="${i}" aria-label="Menos escore ${i}"${k.cs[i-1]?'':' disabled'}>−</button><b class="fzN">${k.cs[i-1]}</b>
+        <button class="fzBt mais" data-g="fzMais" data-i="${i}" aria-label="Mais escore ${i}">+</button></div>`).join('')}
+      <div class="fzMedia ${st.cl}"><span>Escore médio ponderado</span><b>${fz1(k.media)}</b><em>${st.txt}</em></div>
+      <label for="fzObs">Observações</label><textarea id="fzObs" rows="2" placeholder="Ex.: fezes com grãos inteiros, muco, bolhas…">${esc((x&&x.obs)||'')}</textarea>
+      ${k.tot?`<button class="mini danger" data-g="fzApagar">Apagar avaliação deste curral</button>`:''}</section>`;}
+  /* relatório do dia */
+  const R=gTodos('fezes').filter(x=>x.dia===dia&&doLocal(t.loc,x.curral)).map(x=>({c:x.curral,k:fzCalc(x.c),obs:x.obs})).filter(o=>o.k.tot).sort((a,b)=>alfa(a.c,b.c));
+  const G5=[0,0,0,0,0];R.forEach(o=>o.k.cs.forEach((n,i)=>G5[i]+=n));const KG=fzCalc(G5);
+  const rel=R.length?`<section class="panel"><div class="curhead"><h2>Relatório do dia · ${dB(dia).slice(0,5)}</h2><span class="note">${R.length} curral(is) · ${KG.tot} fezes</span></div>
+    <div class="tablebox"><table class="gTab fzTab"><thead><tr><th>Curral</th><th>N</th><th>1</th><th>2</th><th>3</th><th>4</th><th>5</th><th>Média</th></tr></thead><tbody>
+    ${R.map(o=>`<tr data-g="fzCur" data-c="${esc(o.c)}"><td class="c">${esc(o.c)}</td><td>${o.k.tot}</td>${o.k.pct.map((p,i)=>`<td class="${i===2?'fz3':''}">${p?p.toFixed(0)+'%':'·'}</td>`).join('')}<td class="${fzStatus(o.k).cl}"><b>${fz1(o.k.media)}</b></td></tr>`).join('')}
+    <tr class="grp"><td>Geral</td><td>${KG.tot}</td>${KG.pct.map(p=>`<td>${p.toFixed(0)}%</td>`).join('')}<td class="${fzStatus(KG).cl}"><b>${fz1(KG.media)}</b></td></tr></tbody></table></div>
+    <p class="note">Ideal: maioria no escore 3 e média entre 2,5 e 3,5. Mais de 20% em 1+2 = fezes moles (risco de acidose). Mais de 20% em 4+5 = fezes firmes.</p>
+    <div class="row compart"><button class="verde" data-g="fzImg">🖼 Imagem</button><button class="verde" data-g="fzXls">📊 Excel</button></div></section>`
+    :`<section class="panel"><p class="note">Nenhuma avaliação de fezes em ${dB(dia)}${t.loc!=='T'?' neste local':''}.</p></section>`;
+  /* histórico */
+  const ini=t.hIni||somaDias(dia,-29),cH=t.hCur||'';
+  const HI=gTodos('fezes').filter(x=>x.dia>=ini&&x.dia<=dia&&(cH?x.curral===cH:doLocal(t.loc,x.curral)));
+  const porDia={};HI.forEach(x=>{const k=fzCalc(x.c);if(!k.tot)return;const d=porDia[x.dia]||(porDia[x.dia]=[0,0,0,0,0]);k.cs.forEach((n,i)=>d[i]+=n);});
+  const dias=Object.keys(porDia).sort().reverse();
+  const opC=[...new Set(gTodos('fezes').map(x=>x.curral))].sort(alfa);
+  const hist=`<section class="panel"><div class="curhead"><h2>Histórico</h2><span class="note">últimos 30 dias</span></div>
+    <select id="fzHCur"><option value="">${t.loc==='T'?'Todos os currais':t.loc==='C'?'Todo o confinamento':'Todo o pasto'}</option>${opC.map(c=>`<option${c===cH?' selected':''}>${esc(c)}</option>`).join('')}</select>
+    ${dias.length?`<div class="fzBarras">${dias.slice().reverse().map(d=>{const k=fzCalc(porDia[d]);return `<div class="fzBar" title="${dB(d)} · média ${fz1(k.media)}">${k.pct.map((p,i)=>`<i class="e${i+1}" style="height:${p}%"></i>`).join('')}<small>${dB(d).slice(0,5)}</small></div>`;}).join('')}</div>
+      <div class="fzLeg">${[1,2,3,4,5].map(i=>`<span><i class="e${i}"></i>${i} ${FZ_DESC[i]}</span>`).join('')}</div>
+      <div class="tablebox"><table class="gTab fzTab"><thead><tr><th>Dia</th><th>N</th><th>1</th><th>2</th><th>3</th><th>4</th><th>5</th><th>Média</th></tr></thead><tbody>
+      ${dias.map(d=>{const k=fzCalc(porDia[d]);return `<tr><td class="c">${dB(d).slice(0,5)}</td><td>${k.tot}</td>${k.pct.map((p,i)=>`<td class="${i===2?'fz3':''}">${p?p.toFixed(0)+'%':'·'}</td>`).join('')}<td class="${fzStatus(k).cl}"><b>${fz1(k.media)}</b></td></tr>`;}).join('')}</tbody></table></div>
+      <div class="row compart"><button class="verde" data-g="fzXlsHist">📊 Excel do histórico</button></div>`:'<p class="note">Sem avaliações nesse período.</p>'}</section>`;
+  return `<section class="panel"><h2>Escore de fezes</h2>${navData('fzDia',dia,'Dia da avaliação')}${locBotoes('fzLoc',t.loc)}
+    <p class="note">Escolha o curral e toque em + para cada fezes avaliada.</p>
+    <div class="fzChips">${chips||'<p class="note">Nenhum curral com lote neste local.</p>'}</div></section>${ficha}${rel}${hist}`;}
+function fzMudar(i,d){const t=GT,c=t.cur;if(!c)return;const x=fzItem(t.dia,c)||{uid:fzId(t.dia,c),tipo:'fezes',dia:t.dia,curral:c,c:[0,0,0,0,0],obs:''};
+  const n=JSON.parse(JSON.stringify(x));n.c=(n.c||[0,0,0,0,0]).map(v=>+v||0);n.c[i-1]=Math.max(0,n.c[i-1]+d);
+  const o=$('fzObs');if(o)n.obs=o.value;gPut(n);const y=window.scrollY;gRender();window.scrollTo({top:y});}
+function fzImg(){const t=GT,R=gTodos('fezes').filter(x=>x.dia===t.dia&&doLocal(t.loc,x.curral)).map(x=>({c:x.curral,k:fzCalc(x.c),obs:x.obs})).filter(o=>o.k.tot).sort((a,b)=>alfa(a.c,b.c));
+  const G5=[0,0,0,0,0];R.forEach(o=>o.k.cs.forEach((n,i)=>G5[i]+=n));const KG=fzCalc(G5);
+  enviarImg(`Escore de fezes · ${dB(t.dia)}`,[{cab:'% de fezes em cada escore (1 líquida · 3 ideal · 5 seca)',cols:[['Curral',170,'l'],['N',60,'r'],['1',90,'r'],['2',90,'r'],['3',90,'r'],['4',90,'r'],['5',90,'r'],['Média',100,'r']],
+    linhas:R.map(o=>[o.c,String(o.k.tot)].concat(o.k.pct.map(p=>p.toFixed(0)+'%'),[fz1(o.k.media)])),total:['GERAL',String(KG.tot)].concat(KG.pct.map(p=>p.toFixed(0)+'%'),[fz1(KG.media)])},
+    ...(R.some(o=>o.obs)?[{cab:'Observações',cols:[['Curral',170,'l'],['Observação',700,'l']],linhas:R.filter(o=>o.obs).map(o=>[o.c,o.obs])}]:[])],`Escore de fezes ${dB(t.dia).replace(/\//g,'-')}`);}
+function fzXls(hist){const t=GT;
+  if(!hist){const R=gTodos('fezes').filter(x=>x.dia===t.dia&&doLocal(t.loc,x.curral)).map(x=>({c:x.curral,k:fzCalc(x.c),obs:x.obs})).filter(o=>o.k.tot).sort((a,b)=>alfa(a.c,b.c));
+    return gExcel(`Escore de fezes ${dB(t.dia).replace(/\//g,'-')}`,[['Escore de fezes',['Dia','Curral','Total','Esc. 1','Esc. 2','Esc. 3','Esc. 4','Esc. 5','% 1','% 2','% 3','% 4','% 5','Média','Situação','Observação'],
+      R.map(o=>[xc(t.dia,'dia'),xc(o.c),xc(o.k.tot,'int')].concat(o.k.cs.map(n=>xc(n,'int')),o.k.pct.map(p=>xc(p/100,'pct')),[xc(o.k.media,'dec'),xc(fzStatus(o.k).txt),xc(o.obs||'')])),[11,16,8,7,7,7,7,7,8,8,8,8,8,8,24,40]]]);}
+  const ini=t.hIni||somaDias(t.dia,-29),cH=t.hCur||'';
+  const HI=gTodos('fezes').filter(x=>x.dia>=ini&&x.dia<=t.dia&&(cH?x.curral===cH:doLocal(t.loc,x.curral))).map(x=>({d:x.dia,c:x.curral,k:fzCalc(x.c),obs:x.obs})).filter(o=>o.k.tot).sort((a,b)=>a.d.localeCompare(b.d)||alfa(a.c,b.c));
+  gExcel(`Escore de fezes historico ate ${dB(t.dia).replace(/\//g,'-')}`,[['Histórico',['Dia','Curral','Total','% 1','% 2','% 3','% 4','% 5','Média','Situação','Observação'],
+    HI.map(o=>[xc(o.d,'dia'),xc(o.c),xc(o.k.tot,'int')].concat(o.k.pct.map(p=>xc(p/100,'pct')),[xc(o.k.media,'dec'),xc(fzStatus(o.k).txt),xc(o.obs||'')])),[11,16,8,8,8,8,8,8,8,24,40]]]);}
+$('gBox').addEventListener('click',e=>{const b=e.target.closest('[data-g^="fz"]');if(!b||GT.t!=='fezes')return;const a=b.dataset.g;
+  if(a==='fzCur'){GT.cur=GT.cur===b.dataset.c&&b.tagName==='BUTTON'?null:b.dataset.c;gRender();if(GT.cur)setTimeout(()=>{const f=document.querySelector('.fzFicha');if(f)f.scrollIntoView({behavior:'smooth',block:'start'});},50);return;}
+  if(a==='fzLoc'){GT.loc=b.dataset.l;GT.cur=null;return gRender();}
+  if(a==='fzImg')return fzImg();if(a==='fzXls')return fzXls(false);if(a==='fzXlsHist')return fzXls(true);
+  if(typeof bloqueado==='function'&&bloqueado())return;
+  if(a==='fzMais'||a==='fzMenos')return fzMudar(+b.dataset.i,a==='fzMais'?1:-1);
+  if(a==='fzApagar'){if(!confirm(`Apagar a avaliação de fezes do ${GT.cur} em ${dB(GT.dia)}?`))return;const x=fzItem(GT.dia,GT.cur);if(x)gDel(x.uid);return gRender();}});
+$('gBox').addEventListener('change',e=>{if(GT.t!=='fezes')return;
+  if(e.target.id==='fzDia'){GT.dia=e.target.value||hojeKey();GT.cur=null;return gRender();}
+  if(e.target.id==='fzHCur'){GT.hCur=e.target.value;return gRender();}
+  if(e.target.id==='fzObs'){if(typeof bloqueado==='function'&&bloqueado())return;const c=GT.cur;if(!c)return;const x=fzItem(GT.dia,c)||{uid:fzId(GT.dia,c),tipo:'fezes',dia:GT.dia,curral:c,c:[0,0,0,0,0]};
+    const n=JSON.parse(JSON.stringify(x));n.obs=e.target.value;gPut(n);toast('Observação salva');}});

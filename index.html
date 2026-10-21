@@ -83,7 +83,7 @@ pre.msg{background:var(--chip);border-radius:10px;padding:12px;margin:0;white-sp
 
 .menu{position:sticky;top:env(safe-area-inset-top,0px);z-index:4;background:var(--bg);padding-block:6px;display:flex;flex-direction:column;gap:6px;box-shadow:0 6px 8px -8px rgba(17,37,61,.25)}
 .tabs{display:flex;gap:6px}
-.subtabs{display:grid;gap:6px}.subtabs.sub3{grid-template-columns:repeat(3,1fr)}.subtabs.sub4{grid-template-columns:repeat(4,1fr)}.subtabs.sub5{grid-template-columns:repeat(5,1fr)}.subtabs.sub5 button{font-size:.8rem;padding:7px 2px}.subtabs.sub6{grid-template-columns:repeat(6,minmax(0,1fr))}.subtabs.sub6 button{grid-column:span 2;font-size:.86rem;padding:7px 2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.subtabs.sub6 #tabModoAuto{grid-column:span 5}.subtabs.sub6 #tabMan{grid-column:span 1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:0;padding:3px 0;font-size:.95rem;line-height:1;opacity:.85}.subtabs.sub6 #tabMan small{font-size:.58rem;font-weight:600;margin-top:2px}
+.subtabs{display:grid;gap:6px}.subtabs.sub3{grid-template-columns:repeat(3,1fr)}.subtabs.sub4{grid-template-columns:repeat(4,1fr)}.subtabs.sub5{grid-template-columns:repeat(5,1fr)}.subtabs.sub5 button{font-size:.8rem;padding:7px 2px}.subtabs.sub6{grid-template-columns:repeat(6,minmax(0,1fr))}.subtabs.sub6 button{grid-column:span 2;font-size:.86rem;padding:7px 2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.subtabs.sub6 #tabModoAuto{grid-column:span 3}.subtabs.sub6 #tabHist{grid-column:span 2}.subtabs.sub6 #tabMan{grid-column:span 1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:0;padding:3px 0;font-size:.95rem;line-height:1;opacity:.85}.subtabs.sub6 #tabMan small{font-size:.58rem;font-weight:600;margin-top:2px}
 .subModo{display:grid;grid-template-columns:auto 1fr 1fr;gap:6px;align-items:center;margin-top:6px;background:#11253d;border-radius:99px;padding:4px 4px 4px 12px}
 .subModo span{color:#fff;font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em}
 .subModo button{border-radius:99px;padding:7px 4px;font-size:.9rem;font-weight:700;background:#2a3f58;border-color:#2a3f58;color:#fff}
@@ -111,6 +111,24 @@ body.somenteVer.verCarga #viewTrato>section:not(#painel),body.somenteVer.verCarg
 .avEspelho{display:grid;grid-template-columns:minmax(0,1fr);gap:8px;margin-top:6px;min-width:0}.avEspelho .curBox2{display:grid!important;grid-template-columns:minmax(0,1fr) minmax(0,36%)}.avEspelho .curBox2>div{min-width:0!important;overflow:hidden}.avEspelho .cbPrev b{font-size:clamp(1.5rem,7.5vw,2.3rem)!important}.avEspelho .cbPrev{padding:8px 8px!important}.avEspelho .cbPrev b{width:auto!important;min-width:0!important;max-width:100%}.avEspelho .cbPrev span{font-size:.68rem!important;letter-spacing:.05em!important;white-space:nowrap}.avEspelho .cbCur{min-width:0}.avEspelho .cbCur b{white-space:nowrap;overflow:hidden;line-height:1.1}.avBatTot{text-align:center;font-weight:600;color:var(--muted)}.avBatTot b{color:var(--fg)}
 .avGeo{display:flex;align-items:baseline;gap:6px;flex-wrap:nowrap;white-space:nowrap;overflow:hidden;margin:4px 4px 0;font-weight:700;font-size:.9rem;color:#1565c0;text-decoration:none}.avGeo.semGeo{color:var(--muted);font-weight:600}.avGeo small{overflow:hidden;text-overflow:ellipsis;min-width:0;font-weight:600;color:var(--muted)}
 body.somenteVer details.gCarga{display:block!important}
+.fzChips{display:grid;grid-template-columns:repeat(auto-fill,minmax(104px,1fr));gap:6px;margin-top:8px}
+.fzChip{display:flex;flex-direction:column;align-items:center;gap:1px;padding:8px 4px;border-radius:12px;margin:0;min-width:0}
+.fzChip b{font-size:.95rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}.fzChip small{font-size:.72rem;color:var(--muted);font-weight:600}
+.fzChip.feito{border-color:#9ccc65;background:#f1f8e9}.fzChip.feito.bad{border-color:#e57373;background:#fdecea}.fzChip.feito.warn{border-color:#ffb74d;background:#fff4e0}
+.fzChip.sel{outline:3px solid var(--accent);outline-offset:1px}
+.fzTot{display:flex;justify-content:space-between;align-items:center;font-weight:700;padding:6px 2px 10px}.fzTot b{font-size:1.8rem}
+.fzLinha{display:grid;grid-template-columns:1fr 52px 48px 52px;align-items:center;gap:6px;padding:8px 10px;border:1px solid #dde3ea;border-radius:12px;margin-bottom:6px;border-left:6px solid #ccc}
+.fzLinha small{display:block;color:var(--muted);font-size:.78rem}.fzLinha .fzN{text-align:center;font-size:1.4rem}
+.fzLinha.e1{border-left-color:#c62828}.fzLinha.e2{border-left-color:#f2b705}.fzLinha.e3{border-left-color:#2e7d32}.fzLinha.e4{border-left-color:#8d6e63}.fzLinha.e5{border-left-color:#4e342e}
+.fzBt{margin:0;padding:8px 0;font-size:1.5rem;line-height:1;border-radius:50%;width:48px;height:48px}.fzBt.mais{background:var(--accent);border-color:var(--accent);color:#fff}
+.fzMedia{display:flex;flex-wrap:wrap;align-items:baseline;gap:6px 10px;justify-content:space-between;background:#eef4e0;border-radius:12px;padding:10px 12px;margin:6px 0 10px;font-weight:700}
+.fzMedia b{font-size:1.6rem}.fzMedia em{font-style:normal;font-size:.85rem;width:100%}.fzMedia.bad{background:#fdecea;color:#b3261e}.fzMedia.warn{background:#fff4e0;color:#8a5a00}.fzMedia.ok{background:#e6f4d7;color:#2e5a12}
+.fzTab td.fz3{font-weight:700}.fzTab td.bad b{color:#b3261e}.fzTab td.warn b{color:#a86b00}.fzTab td.ok b{color:#2e7d32}.fzTab tr[data-g]{cursor:pointer}
+.fzBarras{display:flex;align-items:flex-end;gap:4px;height:130px;overflow-x:auto;padding:8px 0 18px;margin-top:8px}
+.fzBar{position:relative;flex:0 0 24px;height:100%;display:flex;flex-direction:column-reverse;border-radius:4px;overflow:visible}
+.fzBar i{display:block;width:100%}.fzBar small{position:absolute;bottom:-16px;left:50%;transform:translateX(-50%);font-size:.6rem;color:var(--muted);white-space:nowrap}
+.fzBar i.e1,.fzLeg i.e1{background:#c62828}.fzBar i.e2,.fzLeg i.e2{background:#f2b705}.fzBar i.e3,.fzLeg i.e3{background:#2e7d32}.fzBar i.e4,.fzLeg i.e4{background:#8d6e63}.fzBar i.e5,.fzLeg i.e5{background:#4e342e}
+.fzLeg{display:flex;flex-wrap:wrap;gap:4px 10px;font-size:.75rem;color:var(--muted);margin:4px 0 8px}.fzLeg i{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:4px}
 .avVer{font-weight:700;font-size:.85rem;color:#4b5b3f;text-align:right;padding:0 4px}
 .abrirNovo{text-align:center}.abrirNovo .note{margin:0 0 8px}
 .fBar{display:flex;justify-content:space-between;align-items:center;gap:8px;background:#eef4e0;border-radius:10px;padding:8px 10px;margin-bottom:10px;font-weight:700;font-size:.92rem}
@@ -776,10 +794,11 @@ body.naInicio .topoTxt h1{font-size:clamp(16px,5vw,28px)!important}
     <button id="tabGrpTrato" role="tab" aria-selected="false">Tratos</button>
   </nav>
   <div class="subtabs sub6" id="subTrato" hidden>
-    <button id="tabLeit" aria-selected="false">Leitura</button>
-    <button id="tabPrev" aria-selected="false">Previsto</button>
-    <button id="tabHist" aria-selected="false">Histórico</button>
+    <button id="tabLeit" aria-selected="false">🔍 Leitura</button>
+    <button id="tabPrev" aria-selected="false">🕒 Previsto</button>
+    <button id="tabFez" aria-selected="false">💩 Fezes</button>
     <button id="tabModoAuto" aria-selected="false">⚡ Automação</button>
+    <button id="tabHist" aria-selected="false">📖 Histórico</button>
     <button id="tabMan" aria-selected="false" title="Manual (só se a Automação não estiver funcionando)">✋<small>Manual</small></button>
   </div>
   <div class="subModo" id="subModo" hidden>
@@ -1052,7 +1071,7 @@ body.naInicio .topoTxt h1{font-size:clamp(16px,5vw,28px)!important}
 <div class="toast" id="toast" hidden></div>
 <script>
 'use strict';
-const APP_VERSAO='66';
+const APP_VERSAO='67';
 const APP_DATA='19/10/2026';
 const KEY='confinamento-completo-v1';
 const $=id=>document.getElementById(id);
@@ -1375,6 +1394,13 @@ function mapaRenomes(){try{const cad=S.cadastro||[],L=(typeof gTodos==='function
   renMemo={k,m};return m;}catch(e){return {};}}
 function nomeAtual(c){const m=mapaRenomes();let n=c,i=0;while(m[n]&&i<10){n=m[n];i++;}return n;}
 function aplicarRenomesHist(){const m=mapaRenomes();if(!Object.keys(m).length)return;HIST.forEach(r=>{const n=nomeAtual(r.curral);if(n!==r.curral){r.curralOrig=r.curralOrig||r.curral;r.curral=n;}});}
+/* tabela de currais: primeiro os já tratados, na ordem do horário; depois o atual; depois os que faltam (ordem da lista) */
+function ordemTabela(L,extras,regs){const t0=n=>{const rs=regs.filter(r=>r.curral===n);return rs.length?Math.min(...rs.map(r=>+r.ts||0)):null;};
+  const it=L.map((x,i)=>({nome:x.nome,prev:x.prev,i})).concat(extras.map(n=>({nome:n,prev:(regs.find(r=>r.curral===n)||{}).prev,i:null})));
+  it.forEach(x=>x.t=t0(x.nome));
+  const feitos=it.filter(x=>x.t!=null).sort((a,b)=>a.t-b.t),atual=it.filter(x=>x.t==null&&x.i===S.atual),resto=it.filter(x=>x.t==null&&x.i!==S.atual);
+  return feitos.concat(atual,resto);}
+window.ordemTabela=ordemTabela;
 function render(){try{aplicarRenomesHist();}catch(e){}
   try{encherSelTrato();}catch(e){}
   const man=!!S.dataManual;
@@ -1411,7 +1437,7 @@ function render(){try{aplicarRenomesHist();}catch(e){}
     return `<tr class="${i===S.atual?'cur':''}"><td class="hora">${fz?horaDe(rs[0]):''}</td><td class="c" ${i!=null?`data-i="${i}"`:''}>${esc(nome)}</td><td>${prev!=null?fmt(prev):'—'}</td><td>${real}</td><td class="${fz&&prev?classeDesv(d,prev):''}">${fz&&prev!=null?sgn(d):''}</td></tr>`;
   };
   const extras=[...new Set(regs.map(r=>r.curral))].filter(n=>!L.some(x=>x.nome===n)); // tratado mas fora da lista atual
-  $('tbCur').innerHTML=(L.length||extras.length)?L.map((x,i)=>linha(x.nome,x.prev,i)).join('')+extras.map(n=>linha(n,(regs.find(r=>r.curral===n)||{}).prev,null)).join(''):
+  $('tbCur').innerHTML=(L.length||extras.length)?ordemTabela(L,extras,regs).map(x=>linha(x.nome,x.prev,x.i)).join(''):
     `<tr><td colspan="5" class="note" style="text-align:left">Nenhum previsto no Trato ${S.tratoSel}. Lance na aba Previsto.</td></tr>`;
   caberTabela($('tbCur'));
   const dv=duvidas();
@@ -2069,7 +2095,8 @@ function abrirMenu(g){menuAberto=g;$('subGest').hidden=g!=='gest';$('subTrato').
 function tocarGrupo(g){if(menuAberto===g){abrirMenu(null);return;}abrirMenu(g);if(g!=='gest'&&!abaTrato){escolherModo('auto');return;}aba(g==='gest'?'gest':abaTrato);}
 $('tabGrpTrato').onclick=()=>tocarGrupo('trato');
 $('tabPrev').onclick=()=>aba('prev');
-$('tabLeit').onclick=()=>aba('leit');
+$('tabLeit').onclick=()=>{try{if(GT.t==='fezes')GT={t:'cocho'};}catch(e){}aba('leit');};
+$('tabFez').onclick=()=>{try{GT={t:'fezes',dia:hojeKey(),loc:'T'};}catch(e){}if(window.abaAtual==='leit'&&window.gAoAbrir)gAoAbrir();else aba('leit');};
 /* Manual / Automação: só abre as opções (Carregar e Tratar), sem abrir a tela sozinho */
 function telaEscolha(txt){['viewPrev','viewTrato','viewHist','viewGest','viewCarga','viewAuto','viewAutoC'].forEach(i=>{const e=$(i);if(e)e.hidden=true;});
   $('escolhaTxt').textContent=txt;$('viewEscolha').hidden=false;window.abaAtual='';if(window.menuAbre)menuAbre();
@@ -2909,6 +2936,10 @@ function geoIniciar(){try{if(!navigator.geolocation){geoErro='aparelho sem GPS';
 function geoParar(){try{if(geoW!=null&&geoW>=0)navigator.geolocation.clearWatch(geoW);}catch(e){}geoW=null;}
 setInterval(()=>{if(typeof avAtivo==='function'&&avAtivo())geoIniciar();},15000);
 function estadoAoVivo(){const e=estadoAoVivo0();if(e){if(geo)e.geo=geo;else if(geoErro)e.geoErro=geoErro;}return e;}
+/* contagem do ao vivo: todos os currais daquele local (pasto ou confinamento) no trato, de qualquer fornecimento do dia */
+function contaLocalTrato(L,regs){try{const f=filtroForn();const T=f&&typeof fornCurrais==='function'?fornCurrais(f.local,null,+S.tratoSel):L;
+  return {feitos:T.filter(x=>feito(x.nome,regs)).length,total:T.length};}catch(e){return {feitos:L.filter(x=>feito(x.nome,regs)).length,total:L.length};}}
+window.contaLocalTrato=contaLocalTrato;
 function estadoAoVivo0(){
   /* manda o que está ABERTO: batida aberta conta mesmo se a tela agora for outra (menu, fornecer sem fornecimento aberto) */
   const bat=typeof CG!=='undefined'&&CG&&CG.ativa,emForn=['trato','auto'].includes(window.abaAtual)&&filtroForn();
@@ -2916,7 +2947,7 @@ function estadoAoVivo0(){
   /* com a balança conectada o fornecimento é da Automação, mesmo se a última tela usada foi outra */
   if(window.aEstadoAoVivo&&(avModo==='auto'||(window.AUTO&&AUTO.fonte&&filtroForn()))){const e=aEstadoAoVivo();if(e)return e;}
   const L=lista(),c=L[S.atual],regs=regsAtuais();
-  const ff=filtroForn();return {modo:'trato',origem:'manual',local:ff?ff.local:'',rac:ff?ff.rac:'',fimForn:!ff,deAp:ff&&ff.deAp||'',contTs:ff&&ff.contTs||0,fts0:ff&&ff.ts0||0,dia:diaAtivo(),trato:S.tratoSel,curral:c?c.nome:'',prev:c?c.prev:null,ini:S.ini||'',fim:S.fim||'',feitos:L.filter(x=>feito(x.nome,regs)).length,total:L.length};}
+  const ff=filtroForn();return {modo:'trato',origem:'manual',local:ff?ff.local:'',rac:ff?ff.rac:'',fimForn:!ff,deAp:ff&&ff.deAp||'',contTs:ff&&ff.contTs||0,fts0:ff&&ff.ts0||0,dia:diaAtivo(),trato:S.tratoSel,curral:c?c.nome:'',prev:c?c.prev:null,ini:S.ini||'',fim:S.fim||'',...contaLocalTrato(L,regs)};}
 function avAtivo(){return !!(S&&!modoVer&&!document.body.classList.contains('naInicio')&&apiUrl()&&navigator.onLine);}
 function agendarAoVivo(){if(avTimer||!avAtivo())return;if(JSON.stringify(estadoAoVivo())===avUlt)return;
   avTimer=setTimeout(enviarAoVivo,Math.max(300,2500-(Date.now()-avUltEnvio)));}
