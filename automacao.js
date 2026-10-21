@@ -165,7 +165,6 @@ function montar(){
   <section class="panel abrirNovo" id="fNovoA" hidden></section>
 
   <section class="panel">
-    <label class="aChkGeo"><input type="checkbox" id="aGeoChk"> 📍 Mandar a localização deste aparelho no Ao vivo</label>
     <p class="note">Ajustes da balança e dos apitos: Gestão › Config. › Balança.</p>
     <details hidden>
       <summary>🔧 Dados recebidos (para teste)</summary>
@@ -199,7 +198,6 @@ function ligar(){
     setAtual(nx);save();novoCurral(true);render();aRender();};
   $('aDesfazer').onclick=()=>{$('btnDesfazer').click();setTimeout(aRender,300);};
   $('aTestarSom').onclick=testarSom;
-  try{$('aGeoChk').checked=window.geoEstado?geoEstado().ligado:true;$('aGeoChk').onchange=e=>{if(window.geoLigar)geoLigar(e.target.checked);toast(e.target.checked?'Localização ligada neste aparelho':'Localização desligada neste aparelho');};}catch(e){}
   $('aPausar').onclick=()=>{if(!bloqueado())aPausar();};$('aPausaBox').onclick=()=>{if(!bloqueado())aContinuarPausa();};
   $('aCopiarBruto').onclick=()=>copiar(A.bruto.join('\n')+'\n\n'+($('aBtInfo').textContent||''),'Dados copiados');
   document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible'&&A.fonte)pedirTelaLigada();});

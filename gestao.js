@@ -1171,7 +1171,7 @@ function cRender(){const auto=cAuto(),b=$(auto?'acBox':'cBox'),o=$(auto?'cBox':'
 const C_NOVA='<section class="panel abrirNovo"><p class="note">Esta batida está em aberto. Quer começar outra no lugar dela?</p><button data-c="cancelar">＋ Abrir nova batida</button></section>';
 /* ---------- continuar em outro aparelho: batida aberta em outro celular/tablet (acabou bateria, travou) ---------- */
 let cRem=[];
-const cRemOk=(d,todos)=>d&&d.modo==='carga'&&d.bat&&d.bat.itens&&d.ap!==S.aparelho&&d.bat.dia===hojeKey()&&d.idade<4*3600e3
+const cRemOk=(d,todos)=>d&&d.modo==='carga'&&d.bat&&d.bat.itens&&d.ap!==S.aparelho&&d.idade<4*3600e3
   &&!todos.some(e=>e.ap!==d.ap&&e.deAp===d.ap&&e.bat&&e.bat.ts0===d.bat.ts0);
 async function cBuscarRemoto(){try{if(modoVer||!navigator.onLine||!apiUrl()||cAtiva())return;
   const j=await (await fetch(apiUrl()+'?acao=aovivo',{cache:'no-store'})).json();if(!j||!j.ok)return;

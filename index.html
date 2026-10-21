@@ -129,6 +129,7 @@ body.somenteVer details.gCarga{display:block!important}
 .fzBar i{display:block;width:100%}.fzBar small{position:absolute;bottom:-16px;left:50%;transform:translateX(-50%);font-size:.6rem;color:var(--muted);white-space:nowrap}
 .fzBar i.e1,.fzLeg i.e1{background:#c62828}.fzBar i.e2,.fzLeg i.e2{background:#f2b705}.fzBar i.e3,.fzLeg i.e3{background:#2e7d32}.fzBar i.e4,.fzLeg i.e4{background:#8d6e63}.fzBar i.e5,.fzLeg i.e5{background:#4e342e}
 .fzLeg{display:flex;flex-wrap:wrap;gap:4px 10px;font-size:.75rem;color:var(--muted);margin:4px 0 8px}.fzLeg i{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:4px}
+.avVelho{margin:4px 4px 0;padding:6px 10px;border-radius:10px;background:#fdecea;color:#b3261e;font-weight:800;font-size:.9rem}
 .avVer{font-weight:700;font-size:.85rem;color:#4b5b3f;text-align:right;padding:0 4px}
 .abrirNovo{text-align:center}.abrirNovo .note{margin:0 0 8px}
 .fBar{display:flex;justify-content:space-between;align-items:center;gap:8px;background:#eef4e0;border-radius:10px;padding:8px 10px;margin-bottom:10px;font-weight:700;font-size:.92rem}
@@ -1071,7 +1072,7 @@ body.naInicio .topoTxt h1{font-size:clamp(16px,5vw,28px)!important}
 <div class="toast" id="toast" hidden></div>
 <script>
 'use strict';
-const APP_VERSAO='68';
+const APP_VERSAO='69';
 const APP_DATA='19/10/2026';
 const KEY='confinamento-completo-v1';
 const $=id=>document.getElementById(id);
@@ -1196,7 +1197,7 @@ function mapaPrev(k){k=String(k);if(!S.prev[k])S.prev[k]={};return S.prev[k];}
 function lista(k){const m=(S.prev&&S.prev[String(k||S.tratoSel)])||{};const f=k?null:filtroForn();if(!k&&!f&&!(typeof modoVer!=='undefined'&&modoVer))return [];
   return S.cadastro.filter(n=>curralAtivo(n)&&typeof m[n]==='number'&&m[n]>0&&(!f||(linhaDe(n)===f.local&&(!f.rac||(window.racaoDoCurral&&racaoDoCurral(n)===f.rac))))).map(n=>({nome:n,prev:m[n]}));}
 /* Fornecer: antes de abrir, escolhe Local (confinamento/pasto), Ração e Trato; a lista mostra só esses currais */
-function filtroForn(){if(typeof modoVer!=='undefined'&&modoVer)return (typeof avFiltro!=='undefined'&&avFiltro)||null;const f=S&&S.forn;return f&&f.ativo&&f.dia===hojeKey()?f:null;}
+function filtroForn(){if(typeof modoVer!=='undefined'&&modoVer)return (typeof avFiltro!=='undefined'&&avFiltro)||null;const f=S&&S.forn;return f&&f.ativo?f:null;} // aberto continua (até no dia seguinte) até finalizar ou abrir outro
 /* ================= Previsto por dia · nº de tratos por curral · divisão em % =================
    S.prev = previsto de HOJE (o que o Tratar usa e vai para a nuvem).
    Cada dia fica guardado na Gestão (item 'prev-AAAA-MM-DD') para consultar depois; o de AMANHÃ fica lá até virar o dia. */
@@ -1315,7 +1316,8 @@ function fornSetupHTML0(){if(!FS.local)FS.passo=1;const cont=n=>`<button type="b
     <label for="fTrato">3. Trato</label>${tratoSeta('fTrato',FS.trato,'',trF)}${`
     <p class="note">${L.length?`<b>${L.length} curral(is)</b> · ${fmt(tot)} kg previstos · ${pend.length===L.length?'nenhum fornecido ainda':pend.length?`faltam ${pend.length}`:'✓ todos já fornecidos'}<br>${L.map(x=>esc(x.nome)).join(', ')}`:(Object.keys(S.prev||{}).some(k=>Object.keys(S.prev[k]||{}).length)?'Nenhum curral com previsto neste trato para este local e ração.':'Ainda não tem previsto hoje: faça a leitura de cocho (Tratos › Leitura).')}</p>
     <button class="primary" id="fIniciar"${L.length?'':' disabled'}>▶ Iniciar fornecimento</button>`}`;}
-const FORN_NOVO='<p class="note">Este fornecimento está em aberto. Quer abrir outro (outro local, ração ou trato)?</p><button data-ftrocar="novo">＋ Abrir outro fornecimento</button>';
+const FORN_NOVO_TXT=()=>{const f=S&&S.forn;return f&&f.dia&&f.dia<hojeKey()?`<p class="note" style="color:#b3261e;font-weight:700">⚠ Este fornecimento está aberto desde ${diaBR(f.dia).slice(0,5)}. Termine os currais ou encerre abrindo outro.</p>`:'<p class="note">Este fornecimento está em aberto. Quer abrir outro (outro local, ração ou trato)?</p>';};
+const FORN_NOVO={toString(){return FORN_NOVO_TXT()+'<button data-ftrocar="novo">＋ Abrir outro fornecimento</button>';}};
 function fornBarHTML(){const f=filtroForn();if(!f)return '';const r=f.rac&&typeof G!=='undefined'&&G.it[f.rac];
   return `<span>${f.local==='C'?ICO_C+' Confinamento':'🌿 Pasto'} · ${r?esc(r.nome):'Todas as rações'} · Trato ${S.tratoSel}</span>`;}
 function mostrarFornecimento(){try{const setup=!modoVer&&!filtroForn();
@@ -2926,24 +2928,28 @@ let geo=null,geoW=null,geoErro='',geoUltPed=0;
 const geoOk=p=>{const c=p.coords,n={lat:+c.latitude.toFixed(6),lon:+c.longitude.toFixed(6),acc:Math.round(c.accuracy||0),ts:p.timestamp||Date.now()};
   /* posição de antena/wi-fi (imprecisa) não substitui uma de GPS recente */
   if(geo&&geo.acc&&n.acc>Math.max(150,geo.acc*3)&&Date.now()-geo.ts<5*60000)return;
-  geo=n;geoErro='';};
+  geo=n;geoErro='';try{localStorage.setItem('geoUlt',JSON.stringify(n));}catch(e){}};
+/* volta a última posição boa (até 2 h) quando o app reabre */
+try{const g0=JSON.parse(localStorage.getItem('geoUlt')||'null');if(g0&&Date.now()-g0.ts<2*3600e3)geo=g0;}catch(e){}
 const geoFalha=e=>{geoErro=!e?'sem resposta':e.code===1?'não permitida neste aparelho':e.code===2?'GPS sem sinal ou desligado':e.code===3?'demorou para achar':'erro';
   if(e&&e.code===1){try{navigator.geolocation.clearWatch(geoW);}catch(x){}geoW=-1;}};
 function geoIniciar(){try{if(!navigator.geolocation){geoErro='aparelho sem GPS';return;}
   if(geoW==null)geoW=navigator.geolocation.watchPosition(geoOk,geoFalha,{enableHighAccuracy:true,maximumAge:5000,timeout:60000});
   /* reforço: a cada 1 min pede de novo (alguns tablets param de mandar sozinhos) */
-  if(geoW!==-1&&Date.now()-geoUltPed>60000){geoUltPed=Date.now();navigator.geolocation.getCurrentPosition(geoOk,e=>{if(!geo)geoFalha(e);},{enableHighAccuracy:true,maximumAge:10000,timeout:30000});}}catch(e){geoErro='erro';}}
+  if(geoW!==-1&&Date.now()-geoUltPed>60000){geoUltPed=Date.now();
+    /* GPS demorou: tenta pelo Wi-Fi/rede (menos preciso), mas a posição de GPS recente continua valendo */
+    const velho=!geo||Date.now()-geo.ts>120000;
+    navigator.geolocation.getCurrentPosition(geoOk,e=>{if(!geo)geoFalha(e);},velho?{enableHighAccuracy:false,maximumAge:120000,timeout:20000}:{enableHighAccuracy:true,maximumAge:10000,timeout:30000});}}catch(e){geoErro='erro';}}
 function geoParar(){try{if(geoW!=null&&geoW>=0)navigator.geolocation.clearWatch(geoW);}catch(e){}geoW=null;}
 /* só pede a localização quando: o aparelho está trabalhando (batida ou fornecimento aberto), a opção está ligada neste aparelho
    e a permissão não foi negada. Depois de permitido uma vez, o navegador guarda e não pergunta mais (Android/Chrome). */
-let geoPerm='';
-function geoLigado(){try{return localStorage.getItem('geoAparelho')!=='0';}catch(e){return true;}}
+let geoPerm='';try{localStorage.removeItem('geoAparelho');}catch(e){}
+function geoLigado(){return true;} // sempre ligada: quem quiser tirar, tira nas configurações do aparelho
 function geoTrabalhando(){try{return !!(filtroForn()||(typeof CG!=='undefined'&&CG&&CG.ativa));}catch(e){return false;}}
 async function geoTalvez(){if(!(typeof avAtivo==='function'&&avAtivo())||!geoLigado()){geoParar();return;}
   try{if(navigator.permissions&&navigator.permissions.query){const p=await navigator.permissions.query({name:'geolocation'});geoPerm=p.state;}}catch(e){}
   if(geoPerm==='denied'){geoErro='não permitida neste aparelho';return;}
   if(geoPerm==='granted'||geoTrabalhando())geoIniciar();}
-window.geoLigar=v=>{try{localStorage.setItem('geoAparelho',v?'1':'0');}catch(e){}if(v)geoIniciar();else{geoParar();geo=null;geoErro='desligada neste aparelho';}};
 window.geoEstado=()=>({ligado:geoLigado(),perm:geoPerm});
 setInterval(()=>{geoTalvez();},15000);
 function estadoAoVivo(){const e=estadoAoVivo0();if(e){if(geo)e.geo=geo;else if(geoErro)e.geoErro=geoErro;}return e;}
@@ -3085,7 +3091,9 @@ document.addEventListener('click',e=>{const a=e.target.closest('a[data-geo]');if
   window.open(web,'_blank','noopener');});
 function avTopoHTML(d,t0){const dd=d.dia&&/^\d{4}-/.test(d.dia)?diaBR(d.dia).slice(0,5):'',h=t0?new Date(t0).toTimeString().slice(0,5):'';
   const g=d.geo&&d.geo.lat?d.geo:null,gIdade=g?Math.max(0,Date.now()-(+g.ts||0)):0;
+  const velho=(d.dia&&/^\d{4}-/.test(d.dia)&&d.dia<hojeKey())||(t0&&diaKey(new Date(t0))<hojeKey());
   return `<div class="avTopo"><span><i class="avPonto"></i>Ao vivo${h?` · início ${dd} às ${h}`:dd?' · '+dd:''}</span><span class="avIdade">${idadeTxt(d.idade)}</span></div>`
+    +(velho?`<div class="avVelho">⚠ Aberto desde ${dd}: precisa ser finalizado ou cancelado</div>`:'')
     +(g?`<a class="avGeo" data-geo="${g.lat},${g.lon}" href="https://www.google.com/maps/search/?api=1&query=${g.lat},${g.lon}" target="_blank" rel="noopener">📍 Localização <small>${idadeTxt(gIdade)} · precisão ${g.acc>=1000?'±'+(g.acc/1000).toFixed(1).replace('.',',')+' km':'±'+g.acc+' m'}${g.acc>200?' ⚠ imprecisa':''}</small></a>`
        :`<div class="avGeo semGeo">📍 Localização <small>${d.geoErro?esc(d.geoErro):'ainda não chegou do aparelho'}</small></div>`);}
 function idadeTxt(ms){const s=Math.max(0,Math.round(ms/1000));return s<60?`há ${s} s`:`há ${Math.round(s/60)} min`;}
