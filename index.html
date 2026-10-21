@@ -134,6 +134,7 @@ body.somenteVer details.gCarga{display:block!important}
 .arqCaixa{position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:9999;display:flex;align-items:center;justify-content:center;padding:16px}
 .arqBox{background:var(--card,#fff);border-radius:16px;max-width:420px;width:100%;padding:18px;display:grid;gap:10px}.arqBox button{margin:0;padding:14px}
 .arqTit{display:flex;flex-wrap:wrap;gap:4px 8px;align-items:baseline;font-size:1rem;margin-bottom:4px;word-break:break-word}.arqTit small{color:var(--muted)}
+.inclPrevLinha{display:flex;justify-content:flex-end;margin:2px 0 6px}.inclPrevLinha[hidden]{display:none}.inclPrevLinha .mini{padding:5px 10px;font-size:.8rem;margin:0}.inclPrevLinha .mini.on{background:var(--lima);border-color:var(--lima)}
 .avVer{font-weight:700;font-size:.85rem;color:#4b5b3f;text-align:right;padding:0 4px}
 .abrirNovo{text-align:center}.abrirNovo .note{margin:0 0 8px}
 .fBar{display:flex;justify-content:space-between;align-items:center;gap:8px;background:#eef4e0;border-radius:10px;padding:8px 10px;margin-bottom:10px;font-weight:700;font-size:.92rem}
@@ -330,7 +331,7 @@ body.modoTrato #tabGrpGest,body.somenteVer #tabGrpGest,body.modoGest #tabGrpTrat
 .faixaVer{display:flex;align-items:center;justify-content:space-between;gap:8px;background:#e8eef7;border:2px solid var(--accent);border-radius:10px;padding:8px 12px;font-weight:600;color:var(--accent)}
 /* modo visualização: esconde tudo que altera dados */
 body.somenteVer #escolhaCur,body.somenteVer .led,body.somenteVer .res,body.somenteVer #btnReg,body.somenteVer #painel>p.note,
-body.somenteVer #painel div:has(>.campoX),body.somenteVer #btnDesfazer,body.somenteVer #listaBtns,body.somenteVer #btnLimparPrev,
+body.somenteVer #painel div:has(>.campoX),body.somenteVer #btnDesfazer,body.somenteVer #listaBtns,body.somenteVer #inclPrevLinha,body.somenteVer #btnLimparPrev,
 body.somenteVer #btnCadastrar,body.somenteVer #btnRemoverCurral,body.somenteVer #tbPrev td.acoes,body.somenteVer #tbPrev td.alca,
 body.somenteVer #hApagar,body.somenteVer #selBar,body.somenteVer label[for=restaurar],body.somenteVer details,body.somenteVer #btnEnviar,
 body.somenteVer #editBox,body.somenteVer #revBox,body.somenteVer #ocrBox,body.somenteVer .curBox2 .seta{display:none!important}
@@ -837,6 +838,7 @@ body.naInicio .topoTxt h1{font-size:clamp(16px,5vw,28px)!important}
       </select>
     </div>
     <p class="aviso bad" id="pvAviso" hidden></p>
+    <div class="inclPrevLinha" id="inclPrevLinha"><button class="mini" id="btnInclPrev" type="button">＋ Incluir previsto</button></div>
     <div class="row" id="listaBtns">
       <button class="lima" id="btnLerFoto">Ler lista por foto</button>
       <button id="btnEditar">Editar em texto</button>
@@ -1076,7 +1078,7 @@ body.naInicio .topoTxt h1{font-size:clamp(16px,5vw,28px)!important}
 <div class="toast" id="toast" hidden></div>
 <script>
 'use strict';
-const APP_VERSAO='74';
+const APP_VERSAO='75';
 const APP_DATA='19/10/2026';
 const KEY='confinamento-completo-v1';
 const $=id=>document.getElementById(id);
@@ -1596,7 +1598,7 @@ function renderPrev(){
   const feitoT=(c,k)=>HIST.some(r=>r.dia===PV.dia&&r.curral===c&&+r.trato===k);
   const travado=c=>{if(PV.t>0)return feitoT(c,PV.t);const ks=[];for(let k=1;k<=MAXT;k++){const v=(o[k]||{})[c];if(typeof v==='number'&&v>0)ks.push(k);}return ks.length>0&&ks.every(k=>feitoT(c,k));}; // Todos: trava quando todos os tratos do curral já foram feitos
   $('viewPrev').classList.toggle('pvSoVer',!ed);
-  $('listaBtns').hidden=!(ed&&hoje&&PV.t>0);$('btnLimparPrev').hidden=true;$('btnIms').hidden=!(ed&&PV.t===0);
+  const podeIncl=ed&&hoje&&PV.t>0;$('inclPrevLinha').hidden=!podeIncl;$('btnInclPrev').classList.toggle('on',!!PV.incl);$('listaBtns').hidden=!(podeIncl&&PV.incl);$('btnLimparPrev').hidden=true;$('btnIms').hidden=!(ed&&PV.t===0);
   $('btnOrdem').hidden=!hoje;$('btnCadastrar').hidden=true;$('btnRemoverCurral').hidden=true;
   $('pvImsBar').hidden=!ims;$('viewPrev').classList.toggle('pvImsOn',ims);$('viewPrev').classList.toggle('pvTodos',PV.t===0&&!PV.per);$('btnIms').classList.toggle('on',ims);
   $('pvHead').innerHTML=PV.per?'<tr><th></th><th>Curral</th><th>Total do período (kg)</th><th></th></tr>':
@@ -1604,7 +1606,9 @@ function renderPrev(){
   $('tbPrev').innerHTML=S.cadastro.map((c,i)=>{const v=m[c],esc_=esc(c),tr=travado(c),rl=comReal?realDe(c):null,pvN=typeof v==='number'?v:0;
     const colR=comReal?(PV.t===0?`<td class="num pvReal">${rl!=null?fmt(rl):''}</td><td class="num ${rl!=null&&pvN?classeDesv(rl-pvN,pvN):''}">${rl!=null&&pvN?sgn(rl-pvN):''}</td>`
       :`<td class="num pvReal">${rl!=null?fmt(rl):''}</td><td class="num ${rl!=null&&pvN?classeDesv(rl-pvN,pvN):''}">${rl!=null&&pvN?sgn(rl-pvN):''}</td>`):'';
-    const ocultar=!curralAtivo(c)||(linhaSel!=='T'&&linhaDe(c)!==linhaSel);
+    /* Trato N: só os currais que têm esse trato (previsto, já tratado ou quantidade de tratos do curral) */
+    const foraDoTrato=PV.t>0&&!PV.per&&!(pvN>0||v==='?'||rl!=null||(()=>{try{const pos=tratosAtivos().map(Number).indexOf(+PV.t)+1;return pos>0&&nTratos(c,o)>=pos;}catch(e){return true;}})());
+    const ocultar=!curralAtivo(c)||(linhaSel!=='T'&&linhaDe(c)!==linhaSel)||foraDoTrato;
     const nome=`<td class="c" style="cursor:default">${esc_}</td>`;
     const cel=`<td><input class="cell${v==='?'?' duv':''}${tr?' feito':''}" type="text" readonly tabindex="-1" inputmode="none" data-n="${i}" value="${esc(valPrev(typeof v==='number'?(v||null):v))}" placeholder="—" aria-label="Previsto ${esc_}"${ed&&!tr?'':' disabled'}${tr?' title="Já tratado: não muda mais"':''}></td>`;
     const ac=`<td class="acoes">${modoRemover&&hoje?`<button class="mini danger" tabindex="-1" data-a="rm" data-i="${i}" aria-label="Excluir ${esc_}">✕</button>`:''}</td>`;
@@ -2929,6 +2933,7 @@ function voltarInicio(){try{geoParar();}catch(e){}
 $('btnSairVer').onclick=voltarInicio;
 /* ↕ Alterar ordem: só mostra o ☰ de arrastar quando liga */
 function modoOrdem(v){$('viewPrev').classList.toggle('ordem',v);$('btnOrdem').textContent=v?'✓ Concluir':'↕ Alterar ordem';if(v)toast('Arraste pelo ☰ para mudar a ordem');}
+$('btnInclPrev').onclick=()=>{if(bloqueado())return;PV.incl=!PV.incl;renderPrev();};
 $('btnOrdem').onclick=()=>{if(bloqueado())return;modoOrdem(!$('viewPrev').classList.contains('ordem'));};
 /* ⟳ Atualizar agora: no Visualizar busca tudo na hora; em Executar envia o que falta e busca o que os outros lançaram */
 let atualizando=false;
