@@ -786,7 +786,7 @@ body.menuFechado .menuSeta{background:#2e6b2f;color:#fff;padding:9px 12px;font-s
       <div class="row" style="margin-top:10px"><button class="primary" id="btnAplicarRev">Atualizar previsto</button><button id="btnCancRev">Cancelar</button></div>
     </div>
     <div class="linhas" id="linhas">
-      <button data-l="T" class="sel">Todos</button><button data-l="C">Confinamento</button><button data-l="P">Pasto</button>
+      <button data-l="T" class="sel">Todos</button><button data-l="C">🏠 Confinamento</button><button data-l="P">🌾 Pasto</button>
       <div class="somaLinha" id="somaLinha"></div>
     </div>
     <div id="pvTN"></div>
@@ -867,7 +867,7 @@ body.menuFechado .menuSeta{background:#2e6b2f;color:#fff;padding:9px 12px;font-s
   <section class="panel">
     <div class="curhead"><h2>Filtrar</h2><span id="hPerBox"></span></div>
     <div id="hData"></div>
-    <div class="linhas hLocal" id="hLocal"><button data-loc="T" class="sel">Todos</button><button data-loc="C">Confinamento</button><button data-loc="P">Pasto</button></div>
+    <div class="linhas hLocal" id="hLocal"><button data-loc="T" class="sel">Todos</button><button data-loc="C">🏠 Confinamento</button><button data-loc="P">🌾 Pasto</button></div>
     <div id="hTN"></div>
     <div class="stat">
       <div><small>Previsto</small><b class="num" id="hPrev">—</b></div>
@@ -1000,7 +1000,7 @@ body.menuFechado .menuSeta{background:#2e6b2f;color:#fff;padding:9px 12px;font-s
 <div class="toast" id="toast" hidden></div>
 <script>
 'use strict';
-const APP_VERSAO='43';
+const APP_VERSAO='44';
 const APP_DATA='19/10/2026';
 const KEY='confinamento-completo-v1';
 const $=id=>document.getElementById(id);
@@ -1150,7 +1150,10 @@ function divisao(n){n=Math.max(1,Math.min(MAXT,+n||1));const c=gOk()&&typeof gCf
   const base=Math.floor(1000/n)/10,r=[];for(let i=0;i<n;i++)r.push(base);r[0]=Math.round((100-base*(n-1))*10)/10;return r;}
 function ntMapa(){return (gOk()&&G.it.prevNTr&&G.it.prevNTr.v)||{};}
 /* nº de tratos do curral: o escolhido; senão, quantos tratos têm previsto hoje; senão 1 */
-function nTratos(c,obj){const m=ntMapa(),na=tratosAtivos().length;if(+m[c]>=1)return Math.min(na,+m[c]);obj=obj||S.prev||{};let n=0;for(let k=1;k<=MAXT;k++){const v=(obj[k]||{})[c];if(typeof v==='number'&&v>0)n++;}return Math.min(na,n||1);}
+function nTratos(c,obj){const m=ntMapa(),na=tratosAtivos().length;if(+m[c]>=1)return Math.min(na,+m[c]);obj=obj||S.prev||{};let n=0;for(let k=1;k<=MAXT;k++){const v=(obj[k]||{})[c];if(typeof v==='number'&&v>0)n++;}
+  /* sem quantidade na Config. e sem previsto ainda: usa quantos tratos o curral teve no último dia com trato */
+  if(!n){try{const hj=hojeKey(),r=HIST.filter(x=>x.curral===c&&x.dia<hj&&!String(x.uid||'').startsWith('imp-'));if(r.length){const ult=r.reduce((a,x)=>x.dia>a?x.dia:a,'');n=new Set(r.filter(x=>x.dia===ult).map(x=>+x.trato)).size;}}catch(e){}}
+  return Math.min(na,n||1);}
 const tratosDoCurral=(c,obj,n)=>tratosAtivos().slice(0,n||nTratos(c,obj));
 function setNTratos(c,n){const m=Object.assign({},ntMapa());m[c]=Math.max(1,Math.min(MAXT,+n||1));if(gOk()&&typeof gPut==='function')gPut({uid:'prevNTr',tipo:'prevNTr',v:m});}
 function totalCurral(c,obj){obj=obj||S.prev||{};let t=0;for(let k=1;k<=MAXT;k++){const v=(obj[k]||{})[c];if(typeof v==='number')t+=v;}return t;}
@@ -1539,6 +1542,7 @@ function somaLinhas(){
   $('somaLinha').innerHTML=`<b>${fmt(x[0])} kg</b> <span>${x[1]} ${x[1]===1?'curral':'currais'}</span>`+
     (linhaSel==='T'?`<small>Confinamento: ${fmt(t.C[0])} kg · Pasto: ${fmt(t.P[0])} kg</small>`:'');
   document.querySelectorAll('#linhas button[data-l]').forEach(b=>b.classList.toggle('sel',b.dataset.l===linhaSel));
+  pintarContaLocal('#linhas button[data-l]','l',k=>S.cadastro.filter(c=>curralAtivo(c)&&(k==='T'||linhaDe(c)===k)).length);
 }
 $('linhas').addEventListener('click',e=>{const b=e.target.closest('button[data-l]');if(!b)return;linhaSel=b.dataset.l;if(typeof fecharTeclado==='function')fecharTeclado();renderPrev();});
 function resumoPrev(){
@@ -2026,6 +2030,8 @@ function ligarNavDia(box,st,mudou){
       setTimeout(()=>{const x=box.querySelector('[data-df]');if(x&&x.showPicker){try{x.showPicker();}catch(_){}}},80);}}  // escolheu a inicial: já abre a final
     else if(t.matches('[data-df]')){if(t.value){st.fim=t.value;if(st.fim<st.ini)st.ini=st.fim;mudou();}}});}
 /* Todos | ◀ Escolher trato ▶ (tocando no nome abre a lista dos tratos ativos). dois=true: Todos (total) e Todos (separado) */
+/* coloca o número de cada local nos botões fixos (Previsto, Histórico) */
+function pintarContaLocal(sel,ds,conta){document.querySelectorAll(sel).forEach(b=>{let sm=b.querySelector('small');if(!sm){sm=document.createElement('small');b.appendChild(sm);}const t=' '+conta(b.dataset[ds]);if(sm.textContent!==t)sm.textContent=t;});}
 function tratoNavHTML(t,dois,extra){const a=[...new Set(tratosAtivos().concat(extra||[]).map(Number))].filter(k=>k>0).sort((x,y)=>x-y),tem=t>0,ult=a[a.length-1];
   const todos=dois?`<div class="tTodos"><button data-tt="-1" class="${t===-1?'sel':''}">Todos (total)</button><button data-tt="0" class="${t===0?'sel':''}">Todos (separado)</button></div>`
     :`<button data-tt="0" class="${t<=0?'sel':''}">Todos</button>`;
@@ -2057,11 +2063,13 @@ function renderHist(){
   document.querySelectorAll('#hModo [data-hm]').forEach(b=>b.classList.toggle('sel',b.dataset.hm===hModo));
   document.querySelectorAll('#viewHist .hSoTratos').forEach(e=>e.hidden=hModo!=='T');$('hBatSec').hidden=hModo!=='B';
   if(hModo==='B'){document.querySelectorAll('#hLocal button[data-loc]').forEach(b=>b.classList.toggle('sel',b.dataset.loc===localSel));
+    {const [pa,pb]=intervaloHist();pintarContaLocal('#hLocal button[data-loc]','loc',k=>window.batidasLista?batidasLista(pa,pb,k,HD.per||HD.t<0?0:HD.t).length:'');}
     const [pa,pb]=intervaloHist(),L=window.batidasLista?batidasLista(pa,pb,localSel,HD.per||HD.t<0?0:HD.t):[];
     const tp=L.reduce((a,c)=>a+c.itens.reduce((s,x)=>s+(+x.prev||0),0),0),tr=L.reduce((a,c)=>a+c.itens.reduce((s,x)=>s+(+x.real||0),0),0);
     $('hPrev').textContent=L.length?fmt(tp):'—';$('hReal').textContent=L.length?fmt(tr):'—';$('hDif').textContent=L.length?sgn(tr-tp):'—';$('hDif').className='num '+(L.length?classeDesv(tr-tp,tp):'');
     $('hBatN').textContent=L.length?`${L.length} batida(s)`:'';$('hBat').innerHTML=window.batidasHTML?batidasHTML(L,pa!==pb):'';return;}
   document.querySelectorAll('#hLocal button[data-loc]').forEach(b=>b.classList.toggle('sel',b.dataset.loc===localSel));
+  {const [a,b]=intervaloHist(),t=HD.per||HD.t<0?0:HD.t,base=HIST.filter(r=>r.dia>=a&&r.dia<=b&&(!t||r.trato===t));pintarContaLocal('#hLocal button[data-loc]','loc',k=>base.filter(r=>k==='T'||linhaDe(r.curral)===k).length);}
   const regs=filtrados();
   const p=regs.reduce((a,r)=>a+r.prev,0),f=regs.reduce((a,r)=>a+r.forn,0);
   $('hPrev').textContent=regs.length?fmt(p):'—';$('hReal').textContent=regs.length?fmt(f):'—';

@@ -327,6 +327,9 @@ function tHome(t){
 function mediaLote(l,X){const ini=l.ent&&l.ent.dia,fim=fimLote(l)||hojeKey();const m={n:0,mn:0,ms:0,pv:0,nms:0};if(!ini||ini>fim)return m;
   for(let d=ini,i=0;d<=fim&&i<4000;d=somaDias(d,1),i++){const x=diaLote(l,d,X);if(!x||!(x.mn>0))continue;m.n++;m.mn+=x.mnCab;if(ok(x.msCab)&&ok(x.pv)){m.ms+=x.msCab;m.pv+=x.pv;m.nms++;}}
   return m;}
+/* botões Todos / Confinamento / Pasto com o número de cada um (ex.: Pasto 0/11 ou Pasto 11) */
+function locBotoes(attr,sel,conta,extra){return `<div class="linhas gFiltro">${[['T','Todos'],['C','🏠 Confinamento'],['P','🌾 Pasto']].map(([k,r])=>{const n=conta?conta(k):null;return `<button data-g="${attr}" data-l="${k}" class="${sel===k?'sel':''}"${extra||''}>${r}${n!=null?`<small> ${n}</small>`:''}</button>`;}).join('')}</div>`;}
+const doLocal=(k,c)=>k==='T'||linhaDe(c)===k;
 function tLotes(t){
   const hj=hojeKey(),X=gCtx(),loc=gLoc,noLocal=l=>loc==='T'||linhaDe(curralEm(l,fimLote(l)||hj))===loc;
   const todosL=gTodos('lote').filter(noLocal),lista=(t.enc?todosL.filter(l=>!ativo(l)).sort(porNome):todosL.filter(ativo).sort(porCurral));
@@ -342,7 +345,7 @@ function tLotes(t){
         <span><b>${rs(C.custo)}</b> R$ total do lote</span><span><b>${ok(V.venda)?rs(V.venda):'—'}</b> ${V.real?'venda':'venda estimada'}</span><span class="${cr}"><b>${ok(V.res)?rs(V.res):'—'}</b> resultado</span></div>`;})()}
       <small class="gLoteDica">Médias de todos os tratos do lote · custo total inclui a compra · venda estimada = cabeças × peso projetado × rendimento × preço da @ (editar lote › Estimativa de venda) · toque para abrir</small></div></button>`;}).join('');
   return `<section class="panel"><div class="curhead"><h2>${t.enc?'Lotes arquivados':'Lotes ativos'}</h2><span class="note">${lista.length}</span></div>
-    <div class="linhas gFiltro">${[['T','Todos'],['C','Confinamento'],['P','Pasto']].map(([k,r])=>`<button data-g="filtroLoc" data-l="${k}" class="${loc===k?'sel':''}">${r}</button>`).join('')}</div>
+    ${(()=>{const base=gTodos('lote').filter(l=>t.enc?!ativo(l):ativo(l));return locBotoes('filtroLoc',loc,k=>base.filter(l=>doLocal(k,curralEm(l,fimLote(l)||hj))).length);})()}
     ${cards||`<p class="note">${t.enc?'Nenhum lote arquivado.':'Nenhum lote ainda. Toque em “+ Novo lote”.'}</p>`}
     ${lista.length?`<div class="row compart"><button class="verde" data-g="lotesImg" data-enc="${t.enc?'1':''}">🖼 Imagem</button><button class="verde" data-g="lotesXls" data-enc="${t.enc?'1':''}">📊 Excel</button></div>`:''}
     ${t.enc?'':'<button class="lima" data-g="novoLote">+ Novo lote</button>'}
@@ -576,7 +579,7 @@ function tCocho(t){
       <div class="gCoNovo"><span>${cn?esc(cn.t)+'<small> · toque de novo para desmarcar</small>':'Toque na nota'}</span><input class="cell num" inputmode="numeric" data-kg="${esc(c)}" value="${kg!=null?kg:''}" placeholder="kg"><small>kg/dia</small></div></div>`;}).join('');
   return `<section class="panel"><h2>Leitura de cocho</h2>
     ${navData('gCoDia',dia,'Data da leitura')}
-    <div class="linhas gFiltro">${[['T','Todos'],['C','🏠 Confinamento'],['P','🌾 Pasto']].map(([k,r])=>{const n=CsT.filter(c=>k==='T'||linhaDe(c)===k).length,f=CsT.filter(c=>(k==='T'||linhaDe(c)===k)&&G.it[idLeit(dia,c)]&&!G.it[idLeit(dia,c)].del).length;return `<button data-g="coLoc" data-l="${k}" class="${lc===k?'sel':''}">${r}<small> ${f}/${n}</small></button>`;}).join('')}</div>
+    ${locBotoes('coLoc',lc,k=>{const A=CsT.filter(c=>doLocal(k,c));return A.filter(c=>G.it[idLeit(dia,c)]&&!G.it[idLeit(dia,c)].del).length+'/'+A.length;})}
     <details class="gLeg"><summary class="note">Ver as notas</summary>${notas.map(x=>`<p class="note"><b>${notaTxt(x.n)}</b> — ${esc(x.t)}: ${x.p>0?'+':''}${nf(x.p,0)}%</p>`).join('')}<p class="note">Para mudar as notas: Config.</p></details>
     ${pode.ok?'':`<p class="aviso">${esc(pode.msg)}</p>`}
     <div class="${pode.ok?'':'gLeitTrava'}">${rows||'<p class="note">Nenhum lote ativo nesta data. Cadastre os lotes primeiro.</p>'}</div>
@@ -590,14 +593,17 @@ function salvaCocho(){
   const pode=leitPode(dia);if(!pode.ok)return toast(pode.msg);
   const amanha=dia===somaDias(hojeKey(),1),obj=hoje?S.prev:JSON.parse(JSON.stringify(prevApi.prevGuardado(dia)||S.prev||{}));
   document.querySelectorAll('#gBox .gCocho').forEach(el=>{const c=el.dataset.c,s=GT.sel[c];const inp=el.querySelector('input[data-kg]');const kg=gNum(inp.value);
-    const lt=G.it[idLeit(dia,c)];if(s&&s.n==null){if(lt&&!lt.del){gDel(lt.uid);rm++;}return;}const nota=s?s.n:(lt&&!lt.del?lt.nota:null);if(nota==null)return;
+    const lt=G.it[idLeit(dia,c)];if(s&&s.n==null){if(lt&&!lt.del){gDel(lt.uid);rm++;
+      /* apaga também o previsto que a leitura gerou (só dos tratos que ainda não foram fornecidos) */
+      const feitos=new Set((typeof HIST!=='undefined'?HIST:[]).filter(r=>r.dia===dia&&r.curral===c).map(r=>+r.trato));
+      for(let k=1;k<=(prevApi.MAXT||8);k++){if(feitos.has(k))continue;const m=obj[String(k)];if(m&&c in m){delete m[c];ap++;}}}return;}const nota=s?s.n:(lt&&!lt.del?lt.nota:null);if(nota==null)return;
     const cn=cfg.notas.find(x=>x.n===nota);
     const bs=(GT.base||{})[c]||(lt&&!lt.del&&lt.baseM?{m:lt.baseM,d:lt.baseDia}:null)||{m:'ontem'};
     gPut({uid:idLeit(dia,c),tipo:'leitura',dia,curral:c,nota,pct:cn?cn.p:0,base:+el.dataset.base||0,baseM:bs.m,baseDia:bs.m==='dia'?bs.d:null,novo:ok(kg)?kg:null});n++;
     if(ok(kg)&&kg>0&&aplicaPrev(c,kg,obj))ap++;});
-  if(!n&&!rm)return toast('Marque a nota de pelo menos um curral');if(!n){GT.sel={};GT.base={};toast(`${rm} leitura(s) desmarcada(s) e apagada(s). O previsto continua como estava.`);return gRender();}
+  if(!n&&!rm)return toast('Marque a nota de pelo menos um curral');if(!n){if(ap){if(hoje){marcarPrev();if(typeof render==='function')render();}else prevApi.guardarPrevDia(dia,obj);}GT.sel={};GT.base={};toast(`${rm} leitura(s) apagada(s) junto com o previsto que tinham gerado`);return gRender();}
   if(ap){if(hoje){marcarPrev();if(typeof render==='function')render();}else prevApi.guardarPrevDia(dia,obj);}
-  GT.sel={};GT.base={};toast(`Leitura salva · previsto ${hoje?'de hoje':'de amanhã'} ajustado em ${ap} curral(is)`);gRender();
+  GT.sel={};GT.base={};toast(`${n} leitura(s) salva(s) · previsto ${hoje?'de hoje':'de amanhã'} ${ap?`mudou em ${ap} curral(is)`:'já estava com esses valores'}${rm?` · ${rm} apagada(s)`:''}`);gRender();
 }
 function aplicaPrev(c,total,obj){obj=obj||S.prev;const antes=JSON.stringify([1,2,3,4,5,6].map(k=>(obj[k]||{})[c]));
   prevApi.distribuir(c,total,prevApi.nTratos(c,obj),obj);return JSON.stringify([1,2,3,4,5,6].map(k=>(obj[k]||{})[c]))!==antes;}
@@ -625,7 +631,7 @@ function tCochoGraf(t){const fim=t.dia||GT.dia||hojeKey();GT.dia=fim;const D=dad
   const notas=gCfg().notas.slice().sort((a,b)=>a.n-b.n);
   return `${voltar('Leitura')}<section class="panel"><h2>Leitura de cocho · 10 dias</h2>
     ${navData('gGrafDia',fim,'Até o dia')}
-    <div class="linhas">${[['T','Todos'],['C','Confinamento'],['P','Pasto']].map(([k,r])=>`<button data-g="grafLoc" data-l="${k}" class="${gLocG===k?'sel':''}">${r}</button>`).join('')}</div>
+    ${(()=>{const set=new Set();D.dias.forEach(d=>cochoCurrais(d).forEach(c=>set.add(c)));gTodos('leitura').forEach(x=>{if(x.dia>=D.dias[0]&&x.dia<=fim)set.add(x.curral);});const A=[...set];return locBotoes('grafLoc',gLocG,k=>A.filter(c=>doLocal(k,c)).length);})()}
     <div class="gChips">${D.todos.map(c=>`<button data-g="grafCur" data-c="${esc(c)}" class="${gGrafOff.has(c)?'':'sel'}">${esc(c)}</button>`).join('')}</div>
     ${rows?`<div class="tablebox"><table class="gHeat"><colgroup><col class="cC">${D.dias.map(()=>'<col>').join('')}<col class="cM"></colgroup><thead><tr><th class="gHc">Local</th>${cab}<th class="gHm">Méd.</th></tr></thead><tbody>${rows}</tbody></table></div>
     <div class="gLegNota">${notas.map(x=>{const [bg,fg]=corNota(x.p);return `<span style="background:${bg};color:${fg}">${notaTxt(x.n)}<small>${x.p>0?'+':''}${nf(x.p,0)}%</small></span>`;}).join('')}</div>
@@ -933,8 +939,8 @@ function tCfg(){const c=gCfg(),hj=hojeKey(),tx=vig(c.taxa,hj),ab=GT.cab||'custo'
     <div class="gEdLista gTrLista">${TC.map(t=>`<div class="${t.ativo?'':'gInativa'}"><span><b>Trato ${t.k}</b>${t.nome?' · '+esc(t.nome):''} <span class="pill${t.ativo?' done':''}">${t.ativo?'ativo':'inativo'}</span></span><button class="mini" data-g="trEd" data-k="${t.k}">✎ Editar</button><button class="mini${t.ativo?' danger':''}" data-g="trAt" data-k="${t.k}">${t.ativo?'Desativar':'Ativar'}</button></div>`).join('')}</div>
     ${TC.length<tratosApi.MAXT?`<button class="lima" data-g="trAdd">+ Novo trato (Trato ${TC.length+1})</button>`:''}</section>
   <section class="panel gCfgP"><h2>Quantidade de tratos por curral</h2>
-    <p class="note">Em quantas vezes o total do dia do curral é dividido. Mudou aqui, o previsto de hoje já é redividido.</p>
-    <div class="linhas gFiltro">${[['T','Todos'],['C','Confinamento'],['P','Pasto']].map(([k,r])=>`<button data-g="ntLoc" data-l="${k}" class="${lt===k?'sel':''}">${r}</button>`).join('')}</div>
+    <p class="note">Em quantas vezes o total do dia do curral é dividido. <b>Salva sozinho</b> ao escolher (aparece a confirmação embaixo) e o previsto de hoje já é redividido. O botão “Salvar divisão” é só para os % abaixo.</p>
+    ${(()=>{const A=(S.cadastro||[]).filter(n=>typeof curralAtivo!=='function'||curralAtivo(n));return locBotoes('ntLoc',lt,k=>A.filter(c=>doLocal(k,c)).length);})()}
     <div class="gNtLista">${cads.map(cu=>{const n=P?P.nTratos(cu):1;return `<label class="gNt"><span>${esc(cu)}</span><select data-ntc="${esc(cu)}">${tratosAtivos().map((_,i)=>i+1).map(x=>`<option value="${x}"${x===n?' selected':''}>${x} trato${x>1?'s':''}</option>`).join('')}</select></label>`;}).join('')||'<p class="note">Cadastre os currais no Previsto.</p>'}</div></section>
   <section class="panel gCfgP"><h2>Divisão do trato (%)</h2>
     <p class="note">Quando o curral tem 2 ou mais tratos, o total do dia é dividido assim. 1 trato = 100% no Trato 1.</p>
@@ -959,7 +965,7 @@ function tCfg(){const c=gCfg(),hj=hojeKey(),tx=vig(c.taxa,hj),ab=GT.cab||'custo'
 function lerNotasEd(){(GT.notasEd||[]).forEach((x,k)=>{const n=document.querySelector(`#gBox [data-nn="${k}"]`),t=document.querySelector(`#gBox [data-nt="${k}"]`),p=document.querySelector(`#gBox [data-np="${k}"]`);
   if(n)x.n=gNum(n.value);if(t)x.t=t.value.trim();if(p)x.p=gNum(p.value);});}
 function salvaDiv(){const c=JSON.parse(JSON.stringify(gCfg()));c.div=c.div||{};let ruim=[];
-  [2,3,4,5,6].forEach(n=>{const v=[...document.querySelectorAll(`#gBox [data-div="${n}"]`)].map(i=>gNum(i.value));
+  [...new Set([...document.querySelectorAll('#gBox [data-div]')].map(i=>+i.dataset.div))].forEach(n=>{const v=[...document.querySelectorAll(`#gBox [data-div="${n}"]`)].map(i=>gNum(i.value));  // só as linhas que aparecem (tratos ativos)
     if(v.length!==n||v.some(x=>!ok(x)||x<0)||Math.abs(v.reduce((a,b)=>a+b,0)-100)>0.5){ruim.push(n);return;}c.div[n]=v;});
   if(ruim.length)return toast(`A soma precisa dar 100% (confira: ${ruim.map(n=>n+' tratos').join(', ')})`);
   gPut(c);toast('Divisão dos tratos salva');gRender();}
@@ -1162,7 +1168,10 @@ function racoesDoLocal(loc,dia){dia=dia||hojeKey();const s=new Set();gTodos('lot
   return racAtivas().filter(r=>s.has(r.uid)).sort(porNome);}
 window.racoesDoLocal=racoesDoLocal;
 const NOMELOC={C:'Confinamento',P:'Pasto'};
-function escolhaLocal(attr,sel){return `<div class="gLocal">${['C','P'].map(l=>`<button type="button" ${attr}="${l}" class="${sel===l?'sel':''}">${l==='C'?'🏠 Confinamento':'🌾 Pasto'}</button>`).join('')}</div>`;}
+/* conta os currais com previsto hoje em cada local; modo 'forn' mostra fornecidos/total */
+function contaLocalPrev(k,modo){try{const hj=hojeKey(),P=S.prev||{},cs=new Set();Object.keys(P).forEach(t=>Object.keys(P[t]||{}).forEach(c=>{if(+P[t][c]>0&&linhaDe(c)===k&&(typeof curralAtivo!=='function'||curralAtivo(c)))cs.add(c);}));
+  if(modo!=='forn')return String(cs.size);const H=typeof HIST!=='undefined'?HIST:[];let f=0,t=0;cs.forEach(c=>Object.keys(P).forEach(k=>{if(+((P[k]||{})[c])>0){t++;if(H.some(r=>r.dia===hj&&r.curral===c&&+r.trato===+k))f++;}}));return f+'/'+t;}catch(e){return '';}}  // tratos fornecidos / tratos previstos hoje
+function escolhaLocal(attr,sel){const modo=attr==='data-floc'?'forn':'carga';return `<div class="gLocal">${['C','P'].map(l=>`<button type="button" ${attr}="${l}" class="${sel===l?'sel':''}">${l==='C'?'🏠 Confinamento':'🌾 Pasto'}<small> ${contaLocalPrev(l,modo)}</small></button>`).join('')}</div>`;}
 window.escolhaLocal=escolhaLocal;
 /* tela de início em passos: escolhe o local → abre a ração → abre o trato → abre o total e o botão de iniciar */
 function cTelaNova(){if(!CG.passo){CG.passo=1;CG.local=null;}if(!CG.local)CG.passo=1;if(!CG.trato)CG.trato=S.tratoSel||1;
@@ -1386,7 +1395,7 @@ function tEstVenda(){const hj=hojeKey(),lt=GT.evLoc||'T',L=gTodos('lote').filter
   const inp=(cls,attr,u,val,ph,mode)=>`<input class="${cls}" inputmode="${mode}" ${attr}="${u}" value="${esc(val)}" placeholder="${esc(ph)}">`;
   return `<section class="panel gCfgP"><h2>Estimativa de compra e venda</h2>
     <p class="note"><b>Compra</b>: preço da @ e rendimento de carcaça na compra (só muda nos lotes com a compra liberada no cadastro; 🔒 = bloqueada). Conta: peso × rendimento ÷ 15 × preço da @ (50% = peso vivo ÷ 30). Vai para o valor de compra do lote.<br><b>Venda</b>: rendimento e preço da @ da venda, sempre pelo peso atual projetado.<br>São os mesmos campos do cadastro do lote. Mude um por um ou aplique a todos da lista e toque em Salvar.</p>
-    <div class="linhas gFiltro">${[['T','Todos'],['C','Confinamento'],['P','Pasto']].map(([k,r])=>`<button data-g="evLoc" data-l="${k}" class="${lt===k?'sel':''}">${r}</button>`).join('')}</div>
+    ${(()=>{const A=gTodos('lote').filter(ativo);return locBotoes('evLoc',lt,k=>A.filter(l=>doLocal(k,curralEm(l,hj))).length);})()}
     <div class="gEvTodos2">
       <div class="gEvGrp"><b>Compra · aplicar a todos</b><div><input class="gRs" id="gEcPrT" inputmode="numeric" placeholder="R$ @"><input class="cell num" id="gEcRcT" inputmode="decimal" placeholder="Rend. %"></div><button class="lima" data-g="ecTodos">Aplicar compra</button></div>
       <div class="gEvGrp"><b>Venda · aplicar a todos</b><div><input class="cell num" id="gEvRcT" inputmode="decimal" placeholder="Rend. %"><input class="gRs" id="gEvPrT" inputmode="numeric" placeholder="R$ @"></div><button class="lima" data-g="evTodos">Aplicar venda</button></div></div>
