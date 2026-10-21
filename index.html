@@ -1072,7 +1072,7 @@ body.naInicio .topoTxt h1{font-size:clamp(16px,5vw,28px)!important}
 <div class="toast" id="toast" hidden></div>
 <script>
 'use strict';
-const APP_VERSAO='69';
+const APP_VERSAO='70';
 const APP_DATA='19/10/2026';
 const KEY='confinamento-completo-v1';
 const $=id=>document.getElementById(id);
@@ -2912,7 +2912,10 @@ $('btnAtualizar').onclick=async()=>{if(atualizando)return;
     if(modoVer){await Promise.allSettled([puxarRegistros(true),puxarPrevisto(true),puxarAoVivo()]);}
     else{await sincronizar();await Promise.allSettled([puxarRegistros(true),puxarPrevisto(true)]);}
     render();if(!$('viewHist').hidden)renderHist();if(!$('viewPrev').hidden)renderPrev();
-    toast('Atualizado');
+    /* tem versão nova do aplicativo? já atualiza também (pergunta antes se a balança estiver conectada) */
+    let vNova='';try{vNova=String((await (await fetch('versao.json?t='+Date.now(),{cache:'no-store'})).json()).versao||'');}catch(e){}
+    if(vNova&&vNova!==APP_VERSAO){toast('Dados atualizados · instalando a versão '+vNova+'…');setTimeout(()=>$('btnAtualizarApp').click(),600);}
+    else toast('Atualizado');
   }catch(e){toast('Não consegui atualizar agora');}
   setTimeout(()=>{$('btnAtualizar').classList.remove('girando');atualizando=false;},Math.max(0,700-(Date.now()-t0)));
 };
@@ -2933,13 +2936,21 @@ const geoOk=p=>{const c=p.coords,n={lat:+c.latitude.toFixed(6),lon:+c.longitude.
 try{const g0=JSON.parse(localStorage.getItem('geoUlt')||'null');if(g0&&Date.now()-g0.ts<2*3600e3)geo=g0;}catch(e){}
 const geoFalha=e=>{geoErro=!e?'sem resposta':e.code===1?'não permitida neste aparelho':e.code===2?'GPS sem sinal ou desligado':e.code===3?'demorou para achar':'erro';
   if(e&&e.code===1){try{navigator.geolocation.clearWatch(geoW);}catch(x){}geoW=-1;}};
+let geoIniW=0;
 function geoIniciar(){try{if(!navigator.geolocation){geoErro='aparelho sem GPS';return;}
-  if(geoW==null)geoW=navigator.geolocation.watchPosition(geoOk,geoFalha,{enableHighAccuracy:true,maximumAge:5000,timeout:60000});
-  /* reforço: a cada 1 min pede de novo (alguns tablets param de mandar sozinhos) */
+  const semFix=!geo||Date.now()-geo.ts>120000;
+  /* negado antes: tenta de novo a cada 1 min (pode ter liberado nas configurações) */
+  if(geoW===-1&&Date.now()-geoIniW>60000)geoW=null;
+  /* sem posição nova há mais de 3 min: reinicia o acompanhamento (o Android às vezes para de mandar depois que a tela apaga) */
+  if(geoW!=null&&geoW>=0&&semFix&&Date.now()-geoIniW>180000){try{navigator.geolocation.clearWatch(geoW);}catch(e){}geoW=null;}
+  if(geoW==null){geoIniW=Date.now();geoW=navigator.geolocation.watchPosition(geoOk,geoFalha,{enableHighAccuracy:true,maximumAge:60000});}
   if(geoW!==-1&&Date.now()-geoUltPed>60000){geoUltPed=Date.now();
-    /* GPS demorou: tenta pelo Wi-Fi/rede (menos preciso), mas a posição de GPS recente continua valendo */
-    const velho=!geo||Date.now()-geo.ts>120000;
-    navigator.geolocation.getCurrentPosition(geoOk,e=>{if(!geo)geoFalha(e);},velho?{enableHighAccuracy:false,maximumAge:120000,timeout:20000}:{enableHighAccuracy:true,maximumAge:10000,timeout:30000});}}catch(e){geoErro='erro';}}
+    /* reforço a cada 1 min: GPS (aceita posição de até 2 min); se não vier, tenta pela rede/Wi-Fi */
+    navigator.geolocation.getCurrentPosition(geoOk,e=>{
+      if(e&&e.code===1){geoFalha(e);return;}
+      navigator.geolocation.getCurrentPosition(geoOk,e2=>{if(!geo)geoFalha(e2);},{enableHighAccuracy:false,maximumAge:300000,timeout:20000});},
+      {enableHighAccuracy:true,maximumAge:120000,timeout:45000});}}catch(e){geoErro='erro';}}
+document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible'&&geoW!=null&&geoW>=0){try{navigator.geolocation.clearWatch(geoW);}catch(e){}geoW=null;geoUltPed=0;setTimeout(()=>{try{geoTalvez();}catch(e){}},500);}});
 function geoParar(){try{if(geoW!=null&&geoW>=0)navigator.geolocation.clearWatch(geoW);}catch(e){}geoW=null;}
 /* só pede a localização quando: o aparelho está trabalhando (batida ou fornecimento aberto), a opção está ligada neste aparelho
    e a permissão não foi negada. Depois de permitido uma vez, o navegador guarda e não pergunta mais (Android/Chrome). */
@@ -3131,10 +3142,14 @@ function renderAoVivo(){const box=$('aoVivo');if(!modoVer){box.innerHTML='';pint
   if(JSON.stringify(nf_)!==JSON.stringify(avFiltro)){avFiltro=nf_;setTimeout(()=>{try{render();}catch(e){}},0);}
   const verTxt=`<div class="avVer">👁 ${nVer} ${nVer>1?'pessoas visualizando':'pessoa visualizando'}</div>`;
   const naCarga=document.body.classList.contains('verCarga'),outros=lst.filter(d=>(d.modo==='carga')!==naCarga);
-  if(window.abaAtual)lst=lst.filter(d=>(d.modo==='carga')===naCarga);
-  const outTxt=outros.length&&window.abaAtual?`<div class="avVer" style="text-align:center">${naCarga?'🚜 Tem fornecimento acontecendo: veja em Fornecer':'🚜 Tem batida acontecendo: veja em Carregar'}</div>`:'';
+  /* Manual mostra só o que é do Manual; Automação só o que é da Automação */
+  const ehAuto=d=>d.origem==='auto'||!!d.tela||!!(d.bat&&d.bat.origem==='balanca'),abaAuto=['auto','autoc'].includes(window.abaAtual);
+  const outroModo=window.abaAtual?lst.filter(d=>(d.modo==='carga')===naCarga&&ehAuto(d)!==abaAuto):[];
+  if(window.abaAtual)lst=lst.filter(d=>(d.modo==='carga')===naCarga&&ehAuto(d)===abaAuto);
+  const outTxt=(outros.length&&window.abaAtual?`<div class="avVer" style="text-align:center">${naCarga?'🚜 Tem fornecimento acontecendo: veja em Fornecer':'🚜 Tem batida acontecendo: veja em Carregar'}</div>`:'')
+    +(outroModo.length?`<div class="avVer" style="text-align:center">${abaAuto?'✋ Tem trato sendo feito no Manual: veja em Manual':'⚡ Está sendo feito na Automação: veja em Automação'}</div>`:'');
   pintarAvCarga(naCarga?lst:[]);
-  if(!lst.length){box.innerHTML=verTxt+`<div class="avVazio">${naCarga?'Ninguém carregando agora':'Ninguém fornecendo agora'}</div>`+outTxt;return;}
+  if(!lst.length){box.innerHTML=verTxt+`<div class="avVazio">${window.abaAtual?(naCarga?`Nenhuma batida ${abaAuto?'na Automação':'no Manual'} agora`:`Nenhum trato ${abaAuto?'na Automação':'no Manual'} sendo feito agora`):(naCarga?'Ninguém carregando agora':'Ninguém fornecendo agora')}</div>`+outTxt;return;}
   if(!avAbriu&&window.abaAtual===''&&menuAberto==='trato'){avAbriu=true;const d0=lst[0];
     const au=lst.some(d=>d.origem==='auto'||d.tela||(d.bat&&d.bat.origem==='balanca')),cg=d0.modo==='carga';aba(au?(cg?'autoc':'auto'):(cg?'carga':'trato'));return;}
   box.innerHTML=verTxt+outTxt+lst.map(d=>{if(d.modo==='carga')return cardCargaAoVivo(d);const ini=parseFloat(d.ini),fim=parseFloat(d.fim),pv=d.prev,auto=d.origem==='auto';
