@@ -1071,7 +1071,7 @@ body.naInicio .topoTxt h1{font-size:clamp(16px,5vw,28px)!important}
 <div class="toast" id="toast" hidden></div>
 <script>
 'use strict';
-const APP_VERSAO='67';
+const APP_VERSAO='68';
 const APP_DATA='19/10/2026';
 const KEY='confinamento-completo-v1';
 const $=id=>document.getElementById(id);
@@ -2882,7 +2882,7 @@ $('tecSenha').addEventListener('click',e=>{const b=e.target.closest('button[data
 function entrarExec(m){m=m==='gest'?'gest':'trato';modoVer=false;document.body.classList.remove('naInicio','somenteVer','modoTrato','modoGest');document.body.classList.add(m==='gest'?'modoGest':'modoTrato');$('faixaVer').hidden=true;
   menuAberto=null;abrirMenu(m==='gest'?'gest':'trato');
   if(m==='gest'){try{GT={t:'home'};}catch(e){}window.abaAtual='';document.querySelectorAll('#subGest button[data-gt]').forEach(x=>x.setAttribute('aria-selected','false'));telaEscolha('Escolha uma opção no menu acima.');}else{try{if(escolherTratoDoDia()){$('tratoSel').value=String(S.tratoSel);}render();}catch(e){}escolherModo('auto');}
-  setTimeout(()=>{try{geoIniciar();}catch(e){}},1500);
+  setTimeout(()=>{try{geoTalvez();}catch(e){}},1500);
   if(window.menuCaminho)menuCaminho();}
 $('btnModoVer').onclick=()=>{verSenha(false);if(typeof fecharTeclado==='function')fecharTeclado();if(balCampo)fecharBal();
   guardarExec();modoVer=true;document.body.classList.remove('naInicio','modoTrato','modoGest');document.body.classList.add('somenteVer');$('faixaVer').hidden=false;menuAberto=null;abrirMenu('trato');
@@ -2934,7 +2934,18 @@ function geoIniciar(){try{if(!navigator.geolocation){geoErro='aparelho sem GPS';
   /* reforço: a cada 1 min pede de novo (alguns tablets param de mandar sozinhos) */
   if(geoW!==-1&&Date.now()-geoUltPed>60000){geoUltPed=Date.now();navigator.geolocation.getCurrentPosition(geoOk,e=>{if(!geo)geoFalha(e);},{enableHighAccuracy:true,maximumAge:10000,timeout:30000});}}catch(e){geoErro='erro';}}
 function geoParar(){try{if(geoW!=null&&geoW>=0)navigator.geolocation.clearWatch(geoW);}catch(e){}geoW=null;}
-setInterval(()=>{if(typeof avAtivo==='function'&&avAtivo())geoIniciar();},15000);
+/* só pede a localização quando: o aparelho está trabalhando (batida ou fornecimento aberto), a opção está ligada neste aparelho
+   e a permissão não foi negada. Depois de permitido uma vez, o navegador guarda e não pergunta mais (Android/Chrome). */
+let geoPerm='';
+function geoLigado(){try{return localStorage.getItem('geoAparelho')!=='0';}catch(e){return true;}}
+function geoTrabalhando(){try{return !!(filtroForn()||(typeof CG!=='undefined'&&CG&&CG.ativa));}catch(e){return false;}}
+async function geoTalvez(){if(!(typeof avAtivo==='function'&&avAtivo())||!geoLigado()){geoParar();return;}
+  try{if(navigator.permissions&&navigator.permissions.query){const p=await navigator.permissions.query({name:'geolocation'});geoPerm=p.state;}}catch(e){}
+  if(geoPerm==='denied'){geoErro='não permitida neste aparelho';return;}
+  if(geoPerm==='granted'||geoTrabalhando())geoIniciar();}
+window.geoLigar=v=>{try{localStorage.setItem('geoAparelho',v?'1':'0');}catch(e){}if(v)geoIniciar();else{geoParar();geo=null;geoErro='desligada neste aparelho';}};
+window.geoEstado=()=>({ligado:geoLigado(),perm:geoPerm});
+setInterval(()=>{geoTalvez();},15000);
 function estadoAoVivo(){const e=estadoAoVivo0();if(e){if(geo)e.geo=geo;else if(geoErro)e.geoErro=geoErro;}return e;}
 /* contagem do ao vivo: todos os currais daquele local (pasto ou confinamento) no trato, de qualquer fornecimento do dia */
 function contaLocalTrato(L,regs){try{const f=filtroForn();const T=f&&typeof fornCurrais==='function'?fornCurrais(f.local,null,+S.tratoSel):L;

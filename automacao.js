@@ -59,6 +59,7 @@ const css=`
 :is(#aBox,#acBox,#aoVivo) .aFalta.vermelho{background:#c62828}
 :is(#aBox,#acBox,#aoVivo) .aFalta.continuo{background:#c62828;animation:aPisca .5s steps(2) infinite}
 :is(#aBox,#acBox,#aoVivo) .aFalta.cinza{background:#7c8794}
+#aBox .aChkGeo{display:flex;align-items:center;gap:8px;font-weight:600;margin:4px 0 8px}#aBox .aChkGeo input{width:22px;height:22px}
 #aBox .aPausaBt{padding:8px 12px;font-size:.95rem;width:auto;margin:0 0 0 auto;display:block}
 #aBox .aPausaBt[hidden]{display:none}
 #aBox .aPausaBox{box-sizing:border-box;width:100%;max-width:100%;min-width:0;overflow:hidden;border-radius:18px;padding:34px 16px;text-align:center;background:#1565c0;color:#fff;display:grid;gap:8px;cursor:pointer;min-height:300px;align-content:center;border:4px solid #0d47a1}
@@ -164,6 +165,7 @@ function montar(){
   <section class="panel abrirNovo" id="fNovoA" hidden></section>
 
   <section class="panel">
+    <label class="aChkGeo"><input type="checkbox" id="aGeoChk"> 📍 Mandar a localização deste aparelho no Ao vivo</label>
     <p class="note">Ajustes da balança e dos apitos: Gestão › Config. › Balança.</p>
     <details hidden>
       <summary>🔧 Dados recebidos (para teste)</summary>
@@ -197,6 +199,7 @@ function ligar(){
     setAtual(nx);save();novoCurral(true);render();aRender();};
   $('aDesfazer').onclick=()=>{$('btnDesfazer').click();setTimeout(aRender,300);};
   $('aTestarSom').onclick=testarSom;
+  try{$('aGeoChk').checked=window.geoEstado?geoEstado().ligado:true;$('aGeoChk').onchange=e=>{if(window.geoLigar)geoLigar(e.target.checked);toast(e.target.checked?'Localização ligada neste aparelho':'Localização desligada neste aparelho');};}catch(e){}
   $('aPausar').onclick=()=>{if(!bloqueado())aPausar();};$('aPausaBox').onclick=()=>{if(!bloqueado())aContinuarPausa();};
   $('aCopiarBruto').onclick=()=>copiar(A.bruto.join('\n')+'\n\n'+($('aBtInfo').textContent||''),'Dados copiados');
   document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible'&&A.fonte)pedirTelaLigada();});

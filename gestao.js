@@ -987,7 +987,7 @@ function salvaCfg(){const c=JSON.parse(JSON.stringify(gCfg()));const t=fn('taxa'
 /* =====================================================================================
    EVENTOS
    ===================================================================================== */
-const SO_VER=new Set(['fzCur','fzLoc','fzImg','fzXls','fzXlsHist','cfgAba','coLoc','coAbre','coFecha','estPer','evLoc','evolN','imgDia','imgPer','imgComp','imgLote','xlsGraf','racaAdd','racaRm','grafLoc','grafCur','celGraf','imgGraf','filtroLoc','dataPasso','dataHoje','voltar','ir','lote','raiz','compRel','compDia','xlsDia','xlsPer','xlsComp','xlsLote','perAtalho','nota','racAdd','racRm','notaAdd','notaRm','notaPadrao']);
+const SO_VER=new Set(['fzPdf','fzImgG','fzCur','fzLoc','fzImg','fzXls','fzXlsHist','cfgAba','coLoc','coAbre','coFecha','estPer','evLoc','evolN','imgDia','imgPer','imgComp','imgLote','xlsGraf','racaAdd','racaRm','grafLoc','grafCur','celGraf','imgGraf','filtroLoc','dataPasso','dataHoje','voltar','ir','lote','raiz','compRel','compDia','xlsDia','xlsPer','xlsComp','xlsLote','perAtalho','nota','racAdd','racRm','notaAdd','notaRm','notaPadrao']);
 $('gBox').addEventListener('click',e=>{
   const b=e.target.closest('[data-g]');if(!b)return;const a=b.dataset.g,id=b.dataset.id;
   if(!SO_VER.has(a)&&bloqueado())return;
@@ -1573,7 +1573,8 @@ function tFezes(t){const hj=hojeKey();t.dia=t.dia||hj;t.loc=t.loc||'T';const dia
     ${R.map(o=>`<tr data-g="fzCur" data-c="${esc(o.c)}"><td class="c">${esc(o.c)}</td><td>${o.k.tot}</td>${o.k.pct.map((p,i)=>`<td class="${i===2?'fz3':''}">${p?p.toFixed(0)+'%':'·'}</td>`).join('')}<td class="${fzStatus(o.k).cl}"><b>${fz1(o.k.media)}</b></td></tr>`).join('')}
     <tr class="grp"><td>Geral</td><td>${KG.tot}</td>${KG.pct.map(p=>`<td>${p.toFixed(0)}%</td>`).join('')}<td class="${fzStatus(KG).cl}"><b>${fz1(KG.media)}</b></td></tr></tbody></table></div>
     <p class="note">Ideal: maioria no escore 3 e média entre 2,5 e 3,5. Mais de 20% em 1+2 = fezes moles (risco de acidose). Mais de 20% em 4+5 = fezes firmes.</p>
-    <div class="row compart"><button class="verde" data-g="fzImg">🖼 Imagem</button><button class="verde" data-g="fzXls">📊 Excel</button></div></section>`
+    <div class="row compart"><button class="verde" data-g="fzPdf">📄 PDF com gráficos</button><button class="verde" data-g="fzImgG">🖼 Imagem com gráficos</button></div>
+    <div class="row compart"><button data-g="fzImg">🖼 Tabela (imagem)</button><button data-g="fzXls">📊 Excel</button></div></section>`
     :`<section class="panel"><p class="note">Nenhuma avaliação de fezes em ${dB(dia)}${t.loc!=='T'?' neste local':''}.</p></section>`;
   /* histórico */
   const ini=t.hIni||somaDias(dia,-29),cH=t.hCur||'';
@@ -1610,6 +1611,7 @@ function fzXls(hist){const t=GT;
 $('gBox').addEventListener('click',e=>{const b=e.target.closest('[data-g^="fz"]');if(!b||GT.t!=='fezes')return;const a=b.dataset.g;
   if(a==='fzCur'){GT.cur=GT.cur===b.dataset.c&&b.tagName==='BUTTON'?null:b.dataset.c;gRender();if(GT.cur)setTimeout(()=>{const f=document.querySelector('.fzFicha');if(f)f.scrollIntoView({behavior:'smooth',block:'start'});},50);return;}
   if(a==='fzLoc'){GT.loc=b.dataset.l;GT.cur=null;return gRender();}
+  if(a==='fzPdf')return fzRelPdf();if(a==='fzImgG')return fzRelImg();
   if(a==='fzImg')return fzImg();if(a==='fzXls')return fzXls(false);if(a==='fzXlsHist')return fzXls(true);
   if(typeof bloqueado==='function'&&bloqueado())return;
   if(a==='fzMais'||a==='fzMenos')return fzMudar(+b.dataset.i,a==='fzMais'?1:-1);
@@ -1619,3 +1621,66 @@ $('gBox').addEventListener('change',e=>{if(GT.t!=='fezes')return;
   if(e.target.id==='fzHCur'){GT.hCur=e.target.value;return gRender();}
   if(e.target.id==='fzObs'){if(typeof bloqueado==='function'&&bloqueado())return;const c=GT.cur;if(!c)return;const x=fzItem(GT.dia,c)||{uid:fzId(GT.dia,c),tipo:'fezes',dia:GT.dia,curral:c,c:[0,0,0,0,0]};
     const n=JSON.parse(JSON.stringify(x));n.obs=e.target.value;gPut(n);toast('Observação salva');}});
+
+/* ---------- Escore de fezes: relatório com gráfico de cada curral (PDF e imagem) ---------- */
+const FZ_COR=['#c62828','#f2b705','#2e7d32','#8d6e63','#4e342e'];
+function fzDadosDia(){const t=GT;return gTodos('fezes').filter(x=>x.dia===t.dia&&doLocal(t.loc,x.curral)).map(x=>({c:x.curral,k:fzCalc(x.c),obs:x.obs||''})).filter(o=>o.k.tot)
+  .sort((a,b)=>{const o=S.cadastro||[],ia=o.indexOf(a.c),ib=o.indexOf(b.c);return (ia<0?999:ia)-(ib<0?999:ib)||alfa(a.c,b.c);});}
+/* um quadro com o gráfico de barras do curral */
+function fzQuadro(x,X,Y,W,H,o,dia){const k=o.k,st=fzStatus(k),L=gTodos('lote').filter(l=>curralEm(l,dia)===o.c&&cabPres(l,dia)>0);
+  x.fillStyle='#fff';x.strokeStyle='#d5dde5';x.lineWidth=2;x.beginPath();x.roundRect?x.roundRect(X,Y,W,H,16):x.rect(X,Y,W,H);x.fill();x.stroke();
+  x.textAlign='left';x.fillStyle='#13243d';x.font='bold 34px Arial';x.fillText(o.c,X+24,Y+48);
+  x.font='20px Arial';x.fillStyle='#5d6b7a';x.fillText(L.map(l=>l.nome+' · '+nf(cabPres(l,dia))+' cab').join(' · ').slice(0,60),X+24,Y+78);
+  x.textAlign='right';x.fillStyle='#13243d';x.font='bold 22px Arial';x.fillText(`${k.tot} fezes avaliadas`,X+W-24,Y+44);
+  x.fillStyle=st.cl==='bad'?'#b3261e':st.cl==='warn'?'#a86b00':'#2e7d32';x.font='bold 22px Arial';x.fillText(`Média ${fz1(k.media)} · ${st.txt}`,X+W-24,Y+74);
+  /* barras */
+  const top=Y+110,base=Y+H-(o.obs?96:70),ch=base-top-40,bw=(W-48)/5,mx=Math.max(1,...k.pct);
+  x.strokeStyle='#e3e8ee';x.lineWidth=1;for(let g=0;g<=4;g++){const yy=base-ch*g/4;x.beginPath();x.moveTo(X+24,yy);x.lineTo(X+W-24,yy);x.stroke();}
+  k.pct.forEach((p,i)=>{const bx=X+24+i*bw+bw*0.18,w=bw*0.64,h=ch*p/mx,by=base-h;
+    x.fillStyle=FZ_COR[i];x.fillRect(bx,by,w,Math.max(h,p?2:0));
+    x.textAlign='center';x.fillStyle='#13243d';x.font='bold 24px Arial';x.fillText(fzPc(p),bx+w/2,by-30);
+    x.font='19px Arial';x.fillStyle='#5d6b7a';x.fillText(`${k.cs[i]} de ${k.tot}`,bx+w/2,by-8);
+    x.fillStyle='#13243d';x.font='bold 22px Arial';x.fillText('Escore '+(i+1),bx+w/2,base+28);
+    x.fillStyle='#5d6b7a';x.font='18px Arial';x.fillText(FZ_DESC[i+1],bx+w/2,base+52);});
+  x.strokeStyle='#9aa7b4';x.lineWidth=2;x.beginPath();x.moveTo(X+24,base);x.lineTo(X+W-24,base);x.stroke();
+  if(o.obs){x.textAlign='left';x.fillStyle='#5d6b7a';x.font='italic 18px Arial';x.fillText('Obs.: '+o.obs.slice(0,95),X+24,Y+H-12);}}
+/* monta as páginas (A4 em pé, 3 currais por página) */
+function fzPaginas(){const D=fzDadosDia(),dia=GT.dia,W=1240,H=1754,por=3,pags=[];if(!D.length)return pags;
+  const G5=[0,0,0,0,0];D.forEach(o=>o.k.cs.forEach((n,i)=>G5[i]+=n));const KG=fzCalc(G5);
+  const total=Math.ceil(D.length/por);
+  for(let p=0;p<total;p++){const cv=document.createElement('canvas');cv.width=W;cv.height=H;const x=cv.getContext('2d');
+    x.fillStyle='#f4f6f2';x.fillRect(0,0,W,H);x.fillStyle='#24502a';x.fillRect(0,0,W,130);
+    x.fillStyle='#fff';x.textAlign='left';x.font='bold 40px Arial';x.fillText('Escore de fezes',40,62);
+    x.font='24px Arial';x.fillStyle='#d8f06a';x.fillText(`${dB(dia)}${GT.loc==='C'?' · Confinamento':GT.loc==='P'?' · Pasto':''} · FJK Agropecuária`,40,102);
+    x.textAlign='right';x.fillStyle='#fff';x.font='bold 24px Arial';x.fillText(`Geral: ${KG.tot} fezes · média ${fz1(KG.media)}`,W-40,62);
+    x.font='20px Arial';x.fillText(`${D.length} curral(is) · página ${p+1} de ${total}`,W-40,100);
+    const bh=(H-130-90-3*24)/3;
+    D.slice(p*por,p*por+por).forEach((o,j)=>fzQuadro(x,40,154+j*(bh+24),W-80,bh,o,dia));
+    x.textAlign='left';x.fillStyle='#5d6b7a';x.font='18px Arial';
+    x.fillText('Escala: 1 líquida · 2 mole · 3 ideal (pastosa) · 4 firme · 5 seca. Ideal: maioria no escore 3, média entre 2,5 e 3,5.',40,H-48);
+    x.fillText('Mais de 20% em 1+2 = fezes moles (risco de acidose) · mais de 20% em 4+5 = fezes firmes.',40,H-22);
+    pags.push(cv);}
+  return pags;}
+/* PDF simples: cada página é uma imagem JPEG em folha A4 */
+function fzPdf(cvs){const enc=new TextEncoder(),partes=[],offs=[];let tam=0;const add=d=>{const b=typeof d==='string'?enc.encode(d):d;partes.push(b);tam+=b.length;};
+  const obj=(n,txt,bin)=>{offs[n]=tam;add(`${n} 0 obj\n`+txt);if(bin){add(bin);add('\nendstream');}add('\nendobj\n');};
+  add('%PDF-1.4\n%\xE2\xE3\xCF\xD3\n');const n=cvs.length,kids=[];
+  const imgs=cvs.map(c=>{const u=c.toDataURL('image/jpeg',0.85),b=atob(u.split(',')[1]),a=new Uint8Array(b.length);for(let i=0;i<b.length;i++)a[i]=b.charCodeAt(i);return a;});
+  // 1 catálogo, 2 páginas, depois para cada página: página, conteúdo, imagem
+  const pw=595.28,ph=841.89;
+  cvs.forEach((c,i)=>kids.push(3+i*3));
+  obj(1,'<< /Type /Catalog /Pages 2 0 R >>');
+  obj(2,`<< /Type /Pages /Count ${n} /Kids [${kids.map(k=>k+' 0 R').join(' ')}] >>`);
+  cvs.forEach((c,i)=>{const pg=3+i*3,ct=pg+1,im=pg+2,cmd=`q ${pw} 0 0 ${ph} 0 0 cm /Im0 Do Q`;
+    obj(pg,`<< /Type /Page /Parent 2 0 R /MediaBox [0 0 ${pw} ${ph}] /Resources << /XObject << /Im0 ${im} 0 R >> >> /Contents ${ct} 0 R >>`);
+    obj(ct,`<< /Length ${cmd.length} >>\nstream\n${cmd}\nendstream`);
+    obj(im,`<< /Type /XObject /Subtype /Image /Width ${c.width} /Height ${c.height} /ColorSpace /DeviceRGB /BitsPerComponent 8 /Filter /DCTDecode /Length ${imgs[i].length} >>\nstream\n`,imgs[i]);});
+  const tot=3+n*3,xref=tam;let s=`xref\n0 ${tot}\n0000000000 65535 f \n`;for(let i=1;i<tot;i++)s+=String(offs[i]).padStart(10,'0')+' 00000 n \n';
+  add(s+`trailer\n<< /Size ${tot} /Root 1 0 R >>\nstartxref\n${xref}\n%%EOF`);
+  return new Blob(partes,{type:'application/pdf'});}
+async function fzRelPdf(){const P=fzPaginas();if(!P.length)return toast('Nenhuma avaliação neste dia');
+  try{await compartilharArquivo(fzPdf(P),`Escore de fezes ${dB(GT.dia).replace(/\//g,'-')}.pdf`,'application/pdf');}catch(e){toast('Não consegui gerar o PDF');}}
+async function fzRelImg(){const P=fzPaginas();if(!P.length)return toast('Nenhuma avaliação neste dia');
+  const cv=document.createElement('canvas');cv.width=P[0].width;cv.height=P.reduce((a,c)=>a+c.height,0);const x=cv.getContext('2d');let y=0;P.forEach(c=>{x.drawImage(c,0,y);y+=c.height;});
+  cv.toBlob(b=>compartilharArquivo(b,`Escore de fezes ${dB(GT.dia).replace(/\//g,'-')}.png`,'image/png'),'image/png');}
+window.fzRelPdf=fzRelPdf;window.fzRelImg=fzRelImg;window.fzPdf=fzPdf;window.fzPaginas=fzPaginas;
