@@ -310,13 +310,13 @@ function tLotes(t){
   const todosL=gTodos('lote').filter(noLocal),lista=(t.enc?todosL.filter(l=>!ativo(l)).sort(porNome):todosL.filter(ativo).sort(porCurral));
   const cards=lista.map(l=>{const fim=fimLote(l),ref=fim&&fim<hj?fim:hj,cab=cabPres(l,ref),r=racaoEm(l,ref),c=curralEm(l,ref),m=mediaLote(l,X);
     const sub=[sexoTxt(l.sexo),l.raca,catNorm(l.cat)].filter(Boolean).join(' · ');
-    return `<button class="gLote" data-g="lote" data-id="${l.uid}">${seloCurral(c)}
+    return `<button class="gLote gLoteV" data-g="lote" data-id="${l.uid}"><div class="gLoteTopo">${seloCurral(c)}
       <div class="gLoteInfo"><b>${esc(l.nome)}</b>${sub?`<span>${esc(sub)}</span>`:''}
       <span class="gRacLote">🌾 ${esc(r?r.nome:'sem ração')}</span>
-      ${fim&&fim<hj?`<span>Arquivado em ${dB(fim)}</span>`:l.ent.dia>hj?`<span>Entra em ${dB(l.ent.dia)}</span>`:''}
+      ${fim&&fim<hj?`<span>Arquivado em ${dB(fim)}</span>`:l.ent.dia>hj?`<span>Entra em ${dB(l.ent.dia)}</span>`:''}</div></div><div class="gLoteInfo gLoteBaixo">
       <div class="gLoteNums4"><span><b>${nf(cab)}</b> cab</span><span><b>${nf(+l.ent.peso||0)}</b> kg entrada</span><span><b>${nf(pesoEm(l,ref))}</b> kg projetado</span><span><b>${nf(Math.max(0,difDias(l.ent.dia,ref)))}</b> dias</span></div>
       <div class="gLoteNums4 gMed"><span><b>${m.n?nf(m.mn/m.n,1):'—'}</b> MN/cab</span><span><b>${m.nms?nf(m.ms/m.nms,2):'—'}</b> MS/cab</span><span><b>${m.nms?pc(m.pv/m.nms,2):'—'}</b> % IMS</span><span><b>${nf(m.n)}</b> dias c/ trato</span></div>
-      ${(()=>{const C=calcLote(l);return `<div class="gLoteNums4 gCus"><span><b>${ok(C.custoCabDia)?rs(C.custoCabDia):'—'}</b> R$/cab/dia</span><span><b>${C.cabE?rs(C.custo/C.cabE):'—'}</b> R$/cab total</span><span><b>${rs(C.custo)}</b> R$ total do lote</span></div>`;})()}
+      ${(()=>{const C=calcLote(l);return `<div class="gLoteNums4 gCus"><span><b>${ok(C.custoCabDia)?rs(C.custoCabDia):'—'}</b> R$/cab/dia</span><span><b>${C.cabE?rs((C.alim+C.op)/C.cabE):'—'}</b> R$/cab tratos</span><span><b>${C.cabE?rs(C.compra/C.cabE):'—'}</b> R$/cab compra</span><span><b>${rs(C.custo)}</b> R$ total do lote</span></div>`;})()}
       <small class="gLoteDica">Médias de todos os tratos do lote · custo total inclui a compra · toque para abrir</small></div></button>`;}).join('');
   return `<section class="panel"><div class="curhead"><h2>${t.enc?'Lotes arquivados':'Lotes ativos'}</h2><span class="note">${lista.length}</span></div>
     <div class="linhas gFiltro">${[['T','Todos'],['C','Confinamento'],['P','Pasto']].map(([k,r])=>`<button data-g="filtroLoc" data-l="${k}" class="${loc===k?'sel':''}">${r}</button>`).join('')}</div>
@@ -1297,15 +1297,15 @@ function linhasLotes(enc){const hj=hojeKey(),X=gCtx(),loc=gLoc,noLocal=l=>loc===
   const todos=gTodos('lote').filter(noLocal),L=enc?todos.filter(l=>!ativo(l)).sort(porNome):todos.filter(ativo).sort(porCurral);
   return L.map(l=>{const fim=fimLote(l),ref=fim&&fim<hj?fim:hj,m=mediaLote(l,X),C=calcLote(l),r=racaoEm(l,ref);
     return {c:curralEm(l,ref)||'',nome:l.nome,desc:[sexoTxt(l.sexo),l.raca,catNorm(l.cat)].filter(Boolean).join(' · '),rac:r?r.nome:'',cab:cabPres(l,ref),pe:+l.ent.peso||0,pp:pesoEm(l,ref),
-      dias:Math.max(0,difDias(l.ent.dia,ref)),mn:m.n?m.mn/m.n:NaN,ms:m.nms?m.ms/m.nms:NaN,ims:m.nms?m.pv/m.nms:NaN,cd:C.custoCabDia,ct:C.cabE?C.custo/C.cabE:NaN,tot:C.custo,ent:l.ent.dia,fim:fim||''};});}
+      dias:Math.max(0,difDias(l.ent.dia,ref)),mn:m.n?m.mn/m.n:NaN,ms:m.nms?m.ms/m.nms:NaN,ims:m.nms?m.pv/m.nms:NaN,cd:C.custoCabDia,ctr:C.cabE?(C.alim+C.op)/C.cabE:NaN,cco:C.cabE?C.compra/C.cabE:NaN,ct:C.cabE?C.custo/C.cabE:NaN,tot:C.custo,ent:l.ent.dia,fim:fim||''};});}
 document.addEventListener('click',e=>{const b=e.target.closest('#gBox [data-g="lotesImg"],#gBox [data-g="lotesXls"]');if(!b)return;e.stopPropagation();
   const enc=!!b.dataset.enc,R=linhasLotes(enc),loc=gLoc==='C'?' · Confinamento':gLoc==='P'?' · Pasto':'',tit=`${enc?'Lotes arquivados':'Lotes ativos'}${loc} · ${dB(hojeKey())}`;
   if(!R.length)return toast('Nenhum lote');
-  if(b.dataset.g==='lotesImg')return enviarImg(tit,[{cab:tit,cols:[['Curral',100,'l'],['Lote',200,'l'],['Cab',65,'r'],['Peso proj.',100,'r'],['Dias',60,'r'],['MN/cab',85,'r'],['MS/cab',85,'r'],['% IMS',80,'r'],['R$/cab/dia',110,'r'],['R$ total',140,'r']],
-    linhas:R.map(x=>[x.c,x.nome,nf(x.cab),nf(x.pp),nf(x.dias),ok(x.mn)?nf(x.mn,1):'—',ok(x.ms)?nf(x.ms,2):'—',ok(x.ims)?pc(x.ims,2):'—',ok(x.cd)?rs(x.cd):'—',rs(x.tot)]),
-    total:['TOTAL',`${R.length} lote(s)`,nf(R.reduce((a,x)=>a+x.cab,0)),'','','','','','',rs(R.reduce((a,x)=>a+(ok(x.tot)?x.tot:0),0))]}],`Lotes ${dB(hojeKey()).replace(/\//g,'-')}`);
-  gExcel(`Lotes ${dB(hojeKey()).replace(/\//g,'-')}`,[['Lotes',['Curral','Lote','Sexo · raça · categoria','Ração','Entrada','Arquivado em','Cabeças','Peso entrada (kg)','Peso projetado (kg)','Dias','MN/cab (média)','MS/cab (média)','% IMS (média)','R$/cab/dia','R$/cab total','R$ total do lote'],
-    R.map(x=>[xc(x.c),xc(x.nome),xc(x.desc),xc(x.rac),xc(x.ent,'dia'),xc(x.fim,'dia'),xc(x.cab,'int'),xc(x.pe,'int'),xc(x.pp,'int'),xc(x.dias,'int'),xc(x.mn,'dec'),xc(x.ms,'dec'),xc(ok(x.ims)?x.ims/100:NaN,'pct'),xc(x.cd,'rs'),xc(x.ct,'rs'),xc(x.tot,'rs')]),[10,22,26,16,11,12,9,11,12,7,11,11,10,11,12,14]]]);},true);
+  if(b.dataset.g==='lotesImg')return enviarImg(tit,[{cab:tit,cols:[['Curral',100,'l'],['Lote',200,'l'],['Cab',65,'r'],['Peso proj.',100,'r'],['Dias',60,'r'],['MN/cab',85,'r'],['MS/cab',85,'r'],['% IMS',80,'r'],['R$/cab/dia',110,'r'],['R$/cab tratos',125,'r'],['R$/cab compra',130,'r'],['R$ total',140,'r']],
+    linhas:R.map(x=>[x.c,x.nome,nf(x.cab),nf(x.pp),nf(x.dias),ok(x.mn)?nf(x.mn,1):'—',ok(x.ms)?nf(x.ms,2):'—',ok(x.ims)?pc(x.ims,2):'—',ok(x.cd)?rs(x.cd):'—',ok(x.ctr)?rs(x.ctr):'—',ok(x.cco)?rs(x.cco):'—',rs(x.tot)]),
+    total:['TOTAL',`${R.length} lote(s)`,nf(R.reduce((a,x)=>a+x.cab,0)),'','','','','','','','',rs(R.reduce((a,x)=>a+(ok(x.tot)?x.tot:0),0))]}],`Lotes ${dB(hojeKey()).replace(/\//g,'-')}`);
+  gExcel(`Lotes ${dB(hojeKey()).replace(/\//g,'-')}`,[['Lotes',['Curral','Lote','Sexo · raça · categoria','Ração','Entrada','Arquivado em','Cabeças','Peso entrada (kg)','Peso projetado (kg)','Dias','MN/cab (média)','MS/cab (média)','% IMS (média)','R$/cab/dia','R$/cab tratos','R$/cab compra','R$/cab total','R$ total do lote'],
+    R.map(x=>[xc(x.c),xc(x.nome),xc(x.desc),xc(x.rac),xc(x.ent,'dia'),xc(x.fim,'dia'),xc(x.cab,'int'),xc(x.pe,'int'),xc(x.pp,'int'),xc(x.dias,'int'),xc(x.mn,'dec'),xc(x.ms,'dec'),xc(ok(x.ims)?x.ims/100:NaN,'pct'),xc(x.cd,'rs'),xc(x.ctr,'rs'),xc(x.cco,'rs'),xc(x.ct,'rs'),xc(x.tot,'rs')]),[10,22,26,16,11,12,9,11,12,7,11,11,10,11,12,12,12,14]]]);},true);
 
 /* ---------- Gestão › Config. › Backup: lista das cópias (automáticas e manuais) ---------- */
 async function gBkLista(){const el=$('gBkLista');if(!el)return;

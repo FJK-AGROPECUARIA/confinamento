@@ -104,7 +104,7 @@ tr.grp td span{float:right;font-variant-numeric:tabular-nums}
 #aBox.emSetup>section:first-of-type{display:block!important}
 .fBar{display:flex;justify-content:space-between;align-items:center;gap:8px;background:#eef4e0;border-radius:10px;padding:8px 10px;margin-bottom:10px;font-weight:700;font-size:.92rem}
 body.somenteVer .fBar{display:none!important}
-.gLote2{display:block;text-align:left}.gLoteCur{font-weight:700}.gLoteNums4{display:grid;grid-template-columns:repeat(4,1fr);gap:4px;margin-top:6px;font-size:.78rem;color:var(--muted)}.gLoteNums4 b{display:block;font-size:.95rem;color:var(--fg);white-space:nowrap}.gLoteNums4.gMed{background:#eef4e0;border-radius:8px;padding:4px}.gLoteNums4.gCus{grid-template-columns:repeat(3,1fr);background:#fff6e5;border-radius:8px;padding:4px}.gLoteNums4.gCus b{font-size:.82rem}
+.gLote2{display:block;text-align:left}.gLoteCur{font-weight:700}.gLoteNums4{display:grid;grid-template-columns:repeat(4,1fr);gap:4px;margin-top:6px;font-size:.78rem;color:var(--muted)}.gLoteNums4 b{display:block;font-size:.95rem;color:var(--fg);white-space:nowrap}.gLoteNums4.gMed{background:#eef4e0;border-radius:8px;padding:4px}.gLoteNums4.gCus{grid-template-columns:repeat(2,1fr);row-gap:6px;background:#fff6e5;border-radius:8px;padding:4px}.gLoteNums4.gCus b{font-size:.82rem}
 .gEdLista{display:grid;gap:6px;margin:6px 0 10px}.gEdLista>div{display:grid;grid-template-columns:1fr auto auto;gap:6px;align-items:center;border-bottom:1px solid var(--line);padding:4px 0}.gEdLista span{font-weight:600}
 .gLoteDica{display:block;margin-top:4px;color:var(--muted);font-size:.72rem}
 .gSub{margin:14px 0 6px;font-size:.9rem;color:var(--muted);text-transform:uppercase;letter-spacing:.06em}
@@ -583,6 +583,10 @@ body.comteclado .wrap{padding-bottom:300px!important}
 .gSelo b{word-break:keep-all;overflow-wrap:normal;white-space:nowrap}
 .gSelo b.t1{font-size:2.3rem}.gSelo b.t2{font-size:1.75rem}.gSelo b.t3{font-size:1.08rem}.gSelo b.t4{font-size:.86rem}
 .gCoTopo .gSelo b.t1{font-size:1.9rem}
+.gLote.gLoteV{display:flex;flex-direction:column;gap:8px}
+.gLoteTopo{display:flex;align-items:stretch;gap:12px}
+.gLoteV .gSelo{width:44%;min-width:44%!important;max-width:44%!important;padding:6px 8px}
+.gLoteV .gLoteBaixo{flex:none}.gLote .gSelo b.t3{font-size:1.25rem}.gLote .gSelo b.t4{font-size:1rem}
 
 .gLeg{background:var(--chip);border-radius:10px;padding:8px 12px}
 
@@ -975,7 +979,7 @@ body.menuFechado .menuSeta{background:#2e6b2f;color:#fff;padding:9px 12px;font-s
 <div class="toast" id="toast" hidden></div>
 <script>
 'use strict';
-const APP_VERSAO='37';
+const APP_VERSAO='38';
 const APP_DATA='19/10/2026';
 const KEY='confinamento-completo-v1';
 const $=id=>document.getElementById(id);
