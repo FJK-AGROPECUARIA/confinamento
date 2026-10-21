@@ -1100,7 +1100,7 @@ body.naInicio .topoTxt h1{font-size:clamp(16px,5vw,28px)!important}
 <div class="toast" id="toast" hidden></div>
 <script>
 'use strict';
-const APP_VERSAO='94';
+const APP_VERSAO='95';
 const APP_DATA='19/10/2026';
 const KEY='confinamento-completo-v1';
 const $=id=>document.getElementById(id);
@@ -1675,7 +1675,13 @@ function infoCurral(n){try{const it=gOk()&&G.it.currais;return (it&&!it.del&&it.
 const curralAtivo=n=>infoCurral(n).inativo!==true;
 const linhaDe=n=>{const t=infoCurral(n).tipo;if(t==='C'||t==='P')return t;return /^C-/.test(n)?'C':/^P-/.test(n)?'P':'O';};
 /* nome da ração (dieta) do curral no dia do histórico; sem lote/ração cadastrada, mostra o local */
-function dietaDe(n){try{const d=(typeof intervaloHist==='function'?intervaloHist()[0]:null)||hojeKey(),u=window.racaoDoCurral&&racaoDoCurral(n,d),r=u&&typeof G!=='undefined'&&G.it[u];if(r&&r.nome)return r.nome;}catch(e){}return localDe(n);}
+function dietaDe(n){try{const d=(typeof intervaloHist==='function'?intervaloHist()[0]:null)||hojeKey();
+    let u=window.racaoDoCurral&&racaoDoCurral(n,d);
+    /* curral renomeado (ex.: P-COCAL-1 → COCAL): procura o lote pelo nome atual */
+    if(!u&&typeof gTodos==='function'&&typeof nomeAtual==='function'){const na=nomeAtual(n);const l=gTodos('lote').find(l=>{const c=curralEm(l,d);return c&&nomeAtual(c)===na&&cabPres(l,d)>0;});if(l){const r=racaoEm(l,d);if(r)u=r.uid;}}
+    /* ainda sem lote: se o local (confinamento/pasto) só tem uma ração ativa, é ela */
+    if(!u&&window.racoesDoLocal){const R=racoesDoLocal(linhaDe(n),d);if(R.length===1)u=R[0].uid;}
+    const r=u&&typeof G!=='undefined'&&G.it[u];if(r&&r.nome)return r.nome;}catch(e){}return localDe(n);}
 function localDe(n){const l=linhaDe(n);return l==='C'?'Confinamento':l==='P'?'Pasto':'';}
 let linhaSel='T';
 function somaLinhas(){
