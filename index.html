@@ -131,6 +131,9 @@ body.somenteVer details.gCarga{display:block!important}
 .fzLeg{display:flex;flex-wrap:wrap;gap:4px 10px;font-size:.75rem;color:var(--muted);margin:4px 0 8px}.fzLeg i{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:4px}
 .avVelho{margin:4px 4px 0;padding:6px 10px;border-radius:10px;background:#fdecea;color:#b3261e;font-weight:800;font-size:.9rem}
 #tbHist tr.naoTratado td{color:var(--muted)}#tbHist tr.naoTratado td.c{color:var(--fg)}
+.arqCaixa{position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:9999;display:flex;align-items:center;justify-content:center;padding:16px}
+.arqBox{background:var(--card,#fff);border-radius:16px;max-width:420px;width:100%;padding:18px;display:grid;gap:10px}.arqBox button{margin:0;padding:14px}
+.arqTit{display:flex;flex-wrap:wrap;gap:4px 8px;align-items:baseline;font-size:1rem;margin-bottom:4px;word-break:break-word}.arqTit small{color:var(--muted)}
 .avVer{font-weight:700;font-size:.85rem;color:#4b5b3f;text-align:right;padding:0 4px}
 .abrirNovo{text-align:center}.abrirNovo .note{margin:0 0 8px}
 .fBar{display:flex;justify-content:space-between;align-items:center;gap:8px;background:#eef4e0;border-radius:10px;padding:8px 10px;margin-bottom:10px;font-weight:700;font-size:.92rem}
@@ -1073,7 +1076,7 @@ body.naInicio .topoTxt h1{font-size:clamp(16px,5vw,28px)!important}
 <div class="toast" id="toast" hidden></div>
 <script>
 'use strict';
-const APP_VERSAO='73';
+const APP_VERSAO='74';
 const APP_DATA='19/10/2026';
 const KEY='confinamento-completo-v1';
 const $=id=>document.getElementById(id);
@@ -1250,8 +1253,10 @@ function guardarPrevHoje(){clearTimeout(snapTimer);snapTimer=setTimeout(()=>{try
 function guardarPrevDia(d,obj){if(gOk()&&typeof gPut==='function')gPut({uid:idPrevDia(d),tipo:'prevdia',dia:d,prev:JSON.parse(JSON.stringify(obj||{}))});}
 /* virou o dia: se o previsto de hoje já foi feito ontem (pela leitura de amanhã), ele passa a valer */
 function virarDiaPrev(){if(!S)return;const hj=hojeKey();if(S.prevDia===hj)return;
-  const g=prevGuardado(hj);if(g&&S.prevDia&&S.prevDia<hj){S.prev=JSON.parse(JSON.stringify(g));marcarPrev();if(typeof render==='function')render();}
-  else if(!g&&S.prevDia&&S.prevDia<hj){S.prev={};S.prevOrig=null;marcarPrev();if(typeof render==='function')render();} // virou o dia sem leitura: sem previsto até fazer a leitura
+  /* virou o dia: NÃO manda nada para a nuvem (outro aparelho pode já ter feito a leitura de hoje); só busca o previsto da nuvem */
+  if(S.prevDia&&S.prevDia<hj){const g=prevGuardado(hj);S.prev=g?JSON.parse(JSON.stringify(g)):{};S.prevOrig=null;S.prevPend=false;
+    S.prevSnap=JSON.stringify(S.prev);S.prevSyncTs=0;S.prevTs=0;if(typeof render==='function')render();
+    if(navigator.onLine)setTimeout(()=>{try{puxarPrevisto(true).catch(()=>{});}catch(e){}},300);}
   S.prevDia=hj;save();}
 /* trato do dia terminado: todos os tratos com previsto já têm registro */
 function diaFinalizado(d){d=d||hojeKey();const regs=HIST.filter(r=>r.dia===d);let tem=false;
@@ -1948,21 +1953,29 @@ function nomeArquivo(regs){
 function baixar(blob,nome){const url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download=nome;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),4000);}
 const XT='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
 function exportar(regs){if(!regs.length)return;baixar(gerarXlsx(regs),nomeArquivo(regs));toast('Planilha salva em Downloads');}
-async function compartilhar(regs){
-  if(!regs.length)return;
-  try{await navigator.share({files:[new File([gerarXlsx(regs)],nomeArquivo(regs),{type:XT})],title:nomeArquivo(regs)});}
-  catch(e){if(e.name!=='AbortError')toast('Não deu para compartilhar. Use Exportar.');}
-}
+function compartilhar(regs){if(!regs.length)return;return compartilharArquivo(gerarXlsx(regs),nomeArquivo(regs),XT);}
 try{if(navigator.canShare&&navigator.canShare({files:[new File(['x'],'t.xlsx',{type:XT})]}))document.querySelectorAll('.shareX').forEach(b=>b.hidden=false);}catch(e){}
 $('btnExcel').onclick=()=>exportar(regsAtuais());
 $('btnShareExcel').onclick=()=>compartilhar(regsAtuais());
 
 /* ---------- Compartilhar: Imagem da tabela e Excel ---------- */
-async function compartilharArquivo(blob,nome,tipo){
-  const f=new File([blob],nome,{type:tipo});
-  if(navigator.canShare&&navigator.canShare({files:[f]})){try{await navigator.share({files:[f],title:nome});return;}catch(e){if(e.name==='AbortError')return;}}
-  baixar(blob,nome);toast('Arquivo salvo em Downloads');
-}
+/* todo arquivo gerado (imagem, PDF, Excel): pergunta se quer SALVAR no aparelho/computador ou ENVIAR (WhatsApp, e-mail…) */
+function salvarOuEnviar(blobs,nomes,tipo){return new Promise(res=>{
+  const fs=blobs.map((b,i)=>new File([b],nomes[i],{type:tipo})),podeEnviar=!!(navigator.canShare&&navigator.canShare({files:fs}));
+  const kb=Math.max(1,Math.round(blobs.reduce((a,b)=>a+b.size,0)/1024)),ic=/pdf/.test(tipo)?'📄':/image/.test(tipo)?'🖼':'📊';
+  const w=document.createElement('div');w.className='arqCaixa';
+  w.innerHTML=`<div class="arqBox"><div class="arqTit">${ic} <b>${esc(nomes.length>1?nomes.length+' arquivos':nomes[0])}</b><small>${kb.toLocaleString('pt-BR')} KB</small></div>
+    <button class="primary" data-arq="salvar">⬇ Salvar no ${/Mobi|Android|iPhone|iPad/i.test(navigator.userAgent)?'aparelho':'computador'}</button>
+    ${podeEnviar?'<button class="lima" data-arq="enviar">📤 Enviar (WhatsApp, e-mail…)</button>':''}
+    <button data-arq="x">Cancelar</button></div>`;
+  const fim=()=>{w.remove();res();};
+  w.addEventListener('click',async e=>{const b=e.target.closest('[data-arq]');if(!b&&e.target!==w)return;
+    const a=b?b.dataset.arq:'x';
+    if(a==='salvar'){blobs.forEach((bl,i)=>setTimeout(()=>baixar(bl,nomes[i]),i*400));toast(blobs.length>1?`${blobs.length} arquivos salvos (Downloads / Arquivos)`:'Arquivo salvo (Downloads / Arquivos)');fim();return;}
+    if(a==='enviar'){try{await navigator.share({files:fs,title:nomes[0]});}catch(x){if(x.name!=='AbortError'){blobs.forEach((bl,i)=>baixar(bl,nomes[i]));toast('Não deu para enviar: arquivo salvo');}}fim();return;}
+    fim();});
+  document.body.appendChild(w);});}
+function compartilharArquivo(blob,nome,tipo){return salvarOuEnviar([blob],[nome],tipo);}
 const linhaReg=(nome,prev,rs)=>{const f=rs.reduce((a,r)=>a+r.forn,0),fz=rs.length>0;
   return {curral:nome,hora:fz?horaDe(rs[rs.length-1]):'',prev,ini:fz?rs[0].ini:null,fim:fz?rs[rs.length-1].fim:null,real:fz?f:null,dif:fz&&prev!=null?f-prev:null};};
 function secaoTratar(){
@@ -2022,11 +2035,7 @@ function secaoCurralImg(regs,cab){
     return {v:[n,localDe(n),[...o.t].sort().join(', '),fmt(o.p),fmt(o.f),sgn(o.f-o.p)],prev:o.p,dif:o.f-o.p,neg:[0,4]};});
   return {cab,cols:COLS_CURRAL,linhas:L,total:['TOTAL','','',fmt(tp),fmt(tf),sgn(tf-tp)]};
 }
-async function compartilharVarios(blobs,nomes){
-  const fs=blobs.map((b,i)=>new File([b],nomes[i],{type:'image/png'}));
-  if(navigator.canShare&&navigator.canShare({files:fs})){try{await navigator.share({files:fs,title:nomes[0]});return;}catch(e){if(e.name==='AbortError')return;}}
-  blobs.forEach((b,i)=>baixar(b,nomes[i]));toast(fs.length>1?`${fs.length} imagens salvas em Downloads`:'Imagem salva em Downloads');
-}
+function compartilharVarios(blobs,nomes){return salvarOuEnviar(blobs,nomes,'image/png');}
 async function enviarImagem(secoes,nome){if(!secoes.length||!secoes.some(s=>s.linhas.length)){toast('Nada para mostrar');return;}
   compartilharVarios([await desenharTabela(secoes.map(x=>secaoTratoImg(x.cab,x.linhas)))],[nome]);}
 $('btnImg').onclick=()=>enviarImagem(secaoTratar(),`Trato ${S.tratoSel} - ${dataArq(diaAtivo())}.png`);
@@ -2343,11 +2352,15 @@ function aplicarCadastro(n){try{const a=S.cadastro||[];
   S.cadastro=n.slice();}
 async function enviarPrevisto(){
   if(!S.prevPend)return;
+  if(typeof modoVer!=='undefined'&&modoVer){S.prevPend=false;return;} // quem só olha nunca manda previsto
+  const temAlgo=o=>Object.values(o||{}).some(m=>Object.values(m||{}).some(v=>+v>0));
   try{const j=await (await fetch(apiUrl()+'?acao=previsto',{cache:'no-store'})).json();
     if(j&&j.ok&&j.dados&&j.dados.prev&&+j.dados.ts>(S.prevSyncTs||0)&&j.dados.aparelho!==S.aparelho){
       const snap=S.prevSnap?JSON.parse(S.prevSnap):{};S.prev=juntarPrev(j.dados.prev,S.prev,snap);
       /* lista de currais (nomes): se não mudou aqui, vale a da nuvem (ex.: mudaram o nome de um curral em outro aparelho) */
       if(Array.isArray(j.dados.cadastro)&&(!S.cadSnap||JSON.stringify(S.cadastro)===S.cadSnap))aplicarCadastro(j.dados.cadastro);
+      /* trava de segurança: nunca apaga o previsto inteiro da nuvem (ex.: aparelho que ficou de ontem) */
+      if(!temAlgo(S.prev)&&temAlgo(j.dados.prev)){S.prev=j.dados.prev;S.prevSnap=JSON.stringify(S.prev);S.prevSyncTs=+j.dados.ts;S.prevPend=false;save();try{render();}catch(e){}return;}
       save();try{render();}catch(e){}}}catch(e){}
   const ts=Date.now();S.prevTs=ts;
   await postApi({acao:'previsto',cadastro:S.cadastro,prev:S.prev,ts,aparelho:S.aparelho});
