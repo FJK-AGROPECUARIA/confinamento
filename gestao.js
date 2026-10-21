@@ -156,7 +156,7 @@ const UNID_C=[['arroba','R$ por @ (peso vivo ÷ 30)'],['cab','R$ por cabeça'],[
 const UNID_V=[['arroba','R$ por @ (carcaça ÷ 15)'],['cab','R$ por cabeça'],['kg','R$ por kg vivo']];
 
 const RAIZ={home:'home',estoque:'estoque',estIns:'estoque',estForm:'estoque',currais:'currais',curForm:'currais',lotes:'lotes',lote:'lotes',loteForm:'lotes',pesForm:'lotes',saiForm:'lotes',mudForm:'lotes',rel:'lotes',custoForm:'lotes',
-  cocho:'cocho',cochoGraf:'cocho',fezes:'cocho',rels:'rels',dia:'rels',periodo:'rels',comp:'rels',racoes:'racoes',racForm:'racoes',insumos:'insumos',insForm:'insumos',insMS:'insumos',cfg:'cfg'};
+  cocho:'cocho',cochoGraf:'cocho',fezes:'cocho',rels:'rels',dia:'rels',periodo:'rels',comp:'rels',racoes:'racoes',racForm:'racoes',insumos:'insumos',insForm:'insumos',insMS:'insumos',ms:'cocho',cfg:'cfg'};
 /* Leitura de cocho fica no menu Tratos (aba 'leit'); o resto da Gestão na aba 'gest' — as duas usam a mesma tela */
 function gRaiz(t){GT={t};gPilha.length=0;const alvo=RAIZ[t]==='cocho'&&!document.body.classList.contains('modoGest')?'leit':'gest';if(window.abaAtual!==alvo)aba(alvo);else gRender();window.scrollTo({top:0});}
 window.gAbrir=modo=>{const leit=RAIZ[GT.t]==='cocho';if(modo==='leit'&&!leit)GT={t:'cocho'};if(modo==='gest'&&leit&&!document.body.classList.contains('modoGest'))GT={t:'home'};gRender();if(navigator.onLine)gSync(true).catch(()=>{});};
@@ -165,11 +165,11 @@ function gRender(){
   if(window.abaAtual==='gest'&&RAIZ[GT.t]==='cocho'&&!document.body.classList.contains('modoGest')){aba('leit');return;}  // leitura abre no menu Tratos
   if(window.abaAtual==='leit'&&RAIZ[GT.t]!=='cocho'){aba('gest');return;}
   const f={home:tHome,estoque:tEstoque,estIns:tEstIns,estForm:tEstForm,currais:tCurrais,curForm:tCurForm,lotes:tLotes,lote:tLote,loteForm:tLoteForm,pesForm:tPesForm,saiForm:tSaiForm,mudForm:tMudForm,rel:tRelLote,custoForm:tCustoForm,
-    cocho:tCocho,cochoGraf:tCochoGraf,fezes:t=>tFezes(t),rels:tRels,dia:tDia,periodo:tPeriodo,comp:tComp,racoes:tRacoes,racForm:tRacForm,insumos:tInsumos,insForm:tInsForm,insMS:tInsMS,cfg:tCfg}[GT.t]||tHome;
+    cocho:tCocho,cochoGraf:tCochoGraf,fezes:t=>tFezes(t),rels:tRels,dia:tDia,periodo:tPeriodo,comp:tComp,racoes:tRacoes,racForm:tRacForm,insumos:tInsumos,insForm:tInsForm,insMS:tInsMS,ms:tInsMS,cfg:tCfg}[GT.t]||tHome;
   const raiz=RAIZ[GT.t]||'home';document.querySelectorAll('#subGest button[data-gt]').forEach(x=>x.setAttribute('aria-selected',String(x.dataset.gt===raiz)));
   const cb=$('cfgTBox');if(cb&&$('cfgTParque')&&cb.parentNode!==$('cfgTParque'))$('cfgTParque').appendChild(cb); // ajustes da balança: guarda antes de redesenhar
   b.innerHTML=f(GT);
-  try{const fz=GT.t==='fezes';if($('tabFez'))$('tabFez').setAttribute('aria-selected',String(fz&&window.abaAtual==='leit'));if($('tabLeit')&&window.abaAtual==='leit')$('tabLeit').setAttribute('aria-selected',String(!fz));}catch(e){}
+  try{const fz=GT.t==='fezes',ms=GT.t==='ms',lt=window.abaAtual==='leit';if($('tabFez'))$('tabFez').setAttribute('aria-selected',String(fz&&lt));if($('tabMS'))$('tabMS').setAttribute('aria-selected',String(ms&&lt));if($('tabLeit')&&lt)$('tabLeit').setAttribute('aria-selected',String(!fz&&!ms));}catch(e){}
   if(GT.t==='cfg'&&cb&&$('cfgBalHost')){$('cfgBalHost').appendChild(cb);if(window.cfgTAoAbrir)cfgTAoAbrir();}
   if(GT.t==='racForm')calcRacao();
   if(GT.t==='rel')calcSimul();
@@ -935,25 +935,35 @@ function tInsumos(){
     <button data-g="ir" data-t="insMS">💧 Matéria seca</button></section>`;
 }
 function msHistTodos(){const L=[];gTodos('insumo').forEach(i=>{const h=Array.isArray(i.msHist)?i.msHist:[];
-    if(h.length)h.forEach(x=>L.push({nome:i.nome,...x}));else if(i.msDia&&i.msAnt!=null)L.push({nome:i.nome,dia:i.msDia,ts:0,de:+i.msAnt,para:+i.ms});});
+    if(h.length)h.forEach(x=>L.push({nome:i.nome,uid:i.uid,...x}));else if(i.msDia&&i.msAnt!=null)L.push({nome:i.nome,uid:i.uid,dia:i.msDia,ts:0,de:+i.msAnt,para:+i.ms});});
   return L.sort((a,b)=>(b.dia||'').localeCompare(a.dia||'')||(b.ts||0)-(a.ts||0));}
-function tInsMS(){const I=gTodos('insumo').sort(porNome),H=msHistTodos().slice(0,40);
-  return `${voltar()}<section class="panel"><h2>💧 Alterar matéria seca</h2>
+function tInsMS(t){const I=gTodos('insumo').sort(porNome),H=msHistTodos(),sel=(t&&t.ins)||'',iS=sel&&G.it[sel];
+  const linhas=H.map(x=>`<tr data-msh="${esc(x.uid||'')}"${sel&&x.uid!==sel?' hidden':''}><td>${dB(x.dia)}${x.hora?`<small>${esc(x.hora)}</small>`:''}</td><td class="c">${esc(x.nome)}</td><td>${pc(+x.de,1)}</td><td><b>${pc(+x.para,1)}</b></td></tr>`).join('');
+  return `${t&&t.t==='ms'?'':voltar()}<section class="panel"><h2>💧 Alterar matéria seca</h2>
     <p class="note">Escolha o produto e digite a nova % de MS. Vale para os cálculos de hoje em diante (rações, MS/cab, % IMS).</p>
-    <label>Produto<select id="gMsIns" onchange="var o=this.selectedOptions[0];document.getElementById('gMsAtual').textContent=o&&o.dataset.ms?o.dataset.ms+'%':'—';var n=document.getElementById('gMsNova');n.value='';n.focus();">
-      <option value="" selected disabled>Escolha o produto</option>${I.map(i=>`<option value="${i.uid}" data-ms="${String(+i.ms).replace('.',',')}">${esc(i.nome)}</option>`).join('')}</select></label>
-    <div class="gMsLinha"><div><span>MS atual</span><b id="gMsAtual">—</b></div>
+    <label>Produto<select id="gMsIns" onchange="msFiltrar(this.value)">
+      <option value=""${sel?'':' selected'} disabled>Escolha o produto</option>${I.map(i=>`<option value="${i.uid}"${i.uid===sel?' selected':''} data-ms="${String(+i.ms).replace('.',',')}">${esc(i.nome)}</option>`).join('')}</select></label>
+    <div class="gMsLinha"><div><span>MS atual</span><b id="gMsAtual">${iS?String(+iS.ms).replace('.',',')+'%':'—'}</b></div>
       <label>Nova MS (%)<input type="text" inputmode="decimal" id="gMsNova" placeholder="ex.: 35,5"></label></div>
     <button class="primary" data-g="salvaMS">Alterar matéria seca</button></section>
-    <section class="panel"><h2>Últimas alterações</h2>
-    ${H.length?`<div class="tablebox"><table class="gTab"><thead><tr><th>Data</th><th>Produto</th><th>De</th><th>Para</th></tr></thead><tbody>${H.map(x=>`<tr><td>${dB(x.dia)}${x.hora?`<small>${esc(x.hora)}</small>`:''}</td><td class="c">${esc(x.nome)}</td><td>${pc(+x.de,1)}</td><td><b>${pc(+x.para,1)}</b></td></tr>`).join('')}</tbody></table></div>`:'<p class="note">Nenhuma alteração de matéria seca ainda.</p>'}</section>`;}
+    <section class="panel"><h2 id="gMsHTit">${iS?'Últimas alterações · '+esc(iS.nome):'Últimas alterações'}</h2>
+    <div class="tablebox"${H.length?'':' hidden'}><table class="gTab"><thead><tr><th>Data</th><th>Produto</th><th>De</th><th>Para</th></tr></thead><tbody>${linhas}</tbody></table></div>
+    <p class="note" id="gMsVazio"${H.some(x=>!sel||x.uid===sel)?' hidden':''}>Nenhuma alteração de matéria seca${iS?' desse produto':''} ainda.</p></section>`;}
+/* escolheu o produto: mostra a MS atual e só as alterações dele */
+window.msFiltrar=uid=>{const i=G.it[uid];if(GT&&(GT.t==='ms'||GT.t==='insMS'))GT.ins=uid;
+  const a=document.getElementById('gMsAtual');if(a)a.textContent=i?String(+i.ms).replace('.',',')+'%':'—';
+  const t=document.getElementById('gMsHTit');if(t)t.textContent='Últimas alterações'+(i?' · '+i.nome:'');let n=0;
+  document.querySelectorAll('#gBox tr[data-msh]').forEach(r=>{const v=!uid||r.dataset.msh===uid;r.hidden=!v;if(v)n++;});
+  const tb=document.querySelector('#gBox tr[data-msh]');if(tb)tb.closest('.tablebox').hidden=!n;
+  const z=document.getElementById('gMsVazio');if(z){z.hidden=!!n;z.textContent='Nenhuma alteração de matéria seca'+(i?' desse produto':'')+' ainda.';}
+  const nv=document.getElementById('gMsNova');if(nv){nv.value='';nv.focus();}};
 function salvaMS(){const sel=document.getElementById('gMsIns'),i=sel&&G.it[sel.value];if(!i)return toast('Escolha o produto');
   const v=gNum(document.getElementById('gMsNova').value);if(!(v>0&&v<=100))return toast('A MS deve ficar entre 1 e 100%');
   if(Math.abs(v-(+i.ms))<1e-9)return toast('Essa já é a MS atual de '+i.nome);
   const x=JSON.parse(JSON.stringify(i)),d=new Date(),hist=Array.isArray(x.msHist)?x.msHist:(x.msDia&&x.msAnt!=null?[{dia:x.msDia,ts:0,de:+x.msAnt,para:+x.ms}]:[]);
   hist.push({dia:hojeKey(),ts:Date.now(),hora:String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0'),de:+i.ms,para:v});
   x.msHist=hist.slice(-30);x.msAnt=+i.ms;x.ms=v;x.msDia=hojeKey();gPut(x);
-  toast(`${i.nome}: MS ${pc(+i.ms,1)} → ${pc(v,1)}`);gRender();}
+  toast(`${i.nome}: MS ${pc(+i.ms,1)} → ${pc(v,1)}`);GT.ins=i.uid;gRender();}
 function tInsForm(t){const i=t.id?G.it[t.id]:null,hj=hojeKey();
   const hist=i?(i.precos||[]).slice().reverse().map((p,k,a)=>`<tr><td>${dB(p.desde)}</td><td>${rs(+p.rs,2)}</td><td class="acoes">${a.length>1?`<button class="mini danger" data-g="insPrecoRm" data-id="${i.uid}" data-d="${p.desde}">✕</button>`:''}</td></tr>`).join(''):'';
   return `${voltar()}<section class="panel"><h2>${i?'Insumo':'Novo insumo'}</h2><div class="gForm">${[

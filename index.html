@@ -83,7 +83,7 @@ pre.msg{background:var(--chip);border-radius:10px;padding:12px;margin:0;white-sp
 
 .menu{position:sticky;top:env(safe-area-inset-top,0px);z-index:4;background:var(--bg);padding-block:6px;display:flex;flex-direction:column;gap:6px;box-shadow:0 6px 8px -8px rgba(17,37,61,.25)}
 .tabs{display:flex;gap:6px}
-.subtabs{display:grid;gap:6px}.subtabs.sub3{grid-template-columns:repeat(3,1fr)}.subtabs.sub4{grid-template-columns:repeat(4,1fr)}.subtabs.sub5{grid-template-columns:repeat(5,1fr)}.subtabs.sub5 button{font-size:.8rem;padding:7px 2px}.subtabs.sub6{grid-template-columns:repeat(6,minmax(0,1fr))}.subtabs.sub6 button{grid-column:span 2;font-size:.86rem;padding:7px 2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.subtabs.sub6 #tabModoAuto{grid-column:span 3}.subtabs.sub6 #tabHist{grid-column:span 2}.subtabs.sub6 #tabMan{grid-column:span 1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:0;padding:3px 0;font-size:.95rem;line-height:1;opacity:.85}.subtabs.sub6 #tabMan small{font-size:.58rem;font-weight:600;margin-top:2px}
+.subtabs{display:grid;gap:6px}.subtabs.sub3{grid-template-columns:repeat(3,1fr)}.subtabs.sub4{grid-template-columns:repeat(4,1fr)}.subtabs.sub5{grid-template-columns:repeat(5,1fr)}.subtabs.sub5 button{font-size:.8rem;padding:7px 2px}.subtabs.sub6{grid-template-columns:repeat(6,minmax(0,1fr))}.subtabs.sub6 button{grid-column:span 2;font-size:.86rem;padding:7px 2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.subtabs.sub6 #tabModoAuto{grid-column:span 3}.subtabs.sub6 #tabHist{grid-column:span 2}.subtabs.sub6 #tabMan{grid-column:span 1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:0;padding:3px 0;font-size:.95rem;line-height:1;opacity:.85}.subtabs.sub6 #tabMan small{font-size:.58rem;font-weight:600;margin-top:2px}.subtabs.sub6 #tabFez,.subtabs.sub6 #tabMS{grid-column:span 1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:0;padding:3px 0;font-size:.95rem;line-height:1}.subtabs.sub6 #tabFez small,.subtabs.sub6 #tabMS small{font-size:.62rem;font-weight:700;margin-top:2px}
 .subModo{display:grid;grid-template-columns:auto 1fr 1fr;gap:6px;align-items:center;margin-top:6px;background:#11253d;border-radius:99px;padding:4px 4px 4px 12px}
 .subModo span{color:#fff;font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em}
 .subModo button{border-radius:99px;padding:7px 4px;font-size:.9rem;font-weight:700;background:#2a3f58;border-color:#2a3f58;color:#fff}
@@ -559,6 +559,7 @@ input[type=date]::-webkit-calendar-picker-indicator{margin-left:2px;padding:0}
 .gHero b{display:block;font-family:var(--display);font-stretch:condensed;font-size:2.3rem;line-height:1.05;white-space:nowrap}
 .gHero span{display:block;font-size:.8rem;color:#c9d3df;margin-top:3px}
 .gHero.pos{background:#2f6b3a}.gHero.pos small{color:#d9ef7a}.gHero.neg{background:#9e2a24}.gHero.neg small{color:#ffd2cf}
+.fTodosOk{margin-top:10px;background:#2e7d32;color:#fff;font-weight:800;text-align:center;border-radius:14px;padding:14px 10px;font-size:1.05rem;letter-spacing:.02em}
 .gMsLinha{display:grid;grid-template-columns:1fr 1.3fr;gap:10px;align-items:end;margin:8px 0}.gMsLinha>div{background:var(--chip);border-radius:12px;padding:8px 12px}.gMsLinha>div span{display:block;font-size:.75rem;color:var(--muted);font-weight:600}.gMsLinha>div b{font-size:1.4rem}.gMsLinha input{font-size:1.2rem}
 .gCustos td,.gCustos th{font-size:.84rem;white-space:nowrap;padding-left:2px;padding-right:2px}.gCustos td:first-child{white-space:normal}.gCustos td small{display:block;font-size:.68rem;color:var(--muted);font-weight:500}.gCustos td,.gCustos th{font-size:.8rem}.gCustos td:first-child{font-weight:600}.gCustos tr.grp td{font-weight:800}
 .stat b small{font-size:.7rem;font-family:var(--body);color:var(--muted)}
@@ -804,7 +805,7 @@ body.naInicio .topoTxt h1{font-size:clamp(16px,5vw,28px)!important}
   <div class="subtabs sub6" id="subTrato" hidden>
     <button id="tabLeit" aria-selected="false">🔍 Leitura</button>
     <button id="tabPrev" aria-selected="false">🕒 Previsto</button>
-    <button id="tabFez" aria-selected="false">💩 Fezes</button>
+    <button id="tabFez" aria-selected="false">💩<small>Fezes</small></button><button id="tabMS" aria-selected="false" title="Atualizar % de matéria seca">💧<small>% MS</small></button>
     <button id="tabModoAuto" aria-selected="false">⚡ Automação</button>
     <button id="tabHist" aria-selected="false">📖 Histórico</button>
     <button id="tabMan" aria-selected="false" title="Manual (só se a Automação não estiver funcionando)">✋<small>Manual</small></button>
@@ -1080,7 +1081,7 @@ body.naInicio .topoTxt h1{font-size:clamp(16px,5vw,28px)!important}
 <div class="toast" id="toast" hidden></div>
 <script>
 'use strict';
-const APP_VERSAO='76';
+const APP_VERSAO='77';
 const APP_DATA='19/10/2026';
 const KEY='confinamento-completo-v1';
 const $=id=>document.getElementById(id);
@@ -1324,8 +1325,9 @@ function fornSetupHTML0(){if(!FS.local)FS.passo=1;const cont=n=>`<button type="b
   const L=fornCurrais(FS.local,FS.rac,FS.trato),pend=fornPendentes(FS.local,FS.rac,FS.trato),tot=L.reduce((a,x)=>a+x.prev,0);
   return passoRac+`
     <label for="fTrato">3. Trato</label>${tratoSeta('fTrato',FS.trato,'',trF)}${`
-    <p class="note">${L.length?`<b>${L.length} curral(is)</b> · ${fmt(tot)} kg previstos · ${pend.length===L.length?'nenhum fornecido ainda':pend.length?`faltam ${pend.length}`:'✓ todos já fornecidos'}<br>${L.map(x=>esc(x.nome)).join(', ')}`:(Object.keys(S.prev||{}).some(k=>Object.keys(S.prev[k]||{}).length)?'Nenhum curral com previsto neste trato para este local e ração.':'Ainda não tem previsto hoje: faça a leitura de cocho (Tratos › Leitura).')}</p>
-    <button class="primary" id="fIniciar"${L.length?'':' disabled'}>▶ Iniciar fornecimento</button>`}`;}
+    ${L.length?'':`<p class="note">${Object.keys(S.prev||{}).some(k=>Object.keys(S.prev[k]||{}).length)?'Nenhum curral com previsto neste trato para este local e ração.':'Ainda não tem previsto hoje: faça a leitura de cocho (Tratos › Leitura).'}</p>`}
+    <button class="primary" id="fIniciar"${L.length?'':' disabled'}>▶ Iniciar fornecimento</button>
+    ${L.length&&!pend.length?`<div class="fTodosOk">✓ TRATO ${FS.trato}: TODOS JÁ FORAM FORNECIDOS</div>`:''}`}`;}
 const FORN_NOVO_TXT=()=>{const f=S&&S.forn;return f&&f.dia&&f.dia<hojeKey()?`<p class="note" style="color:#b3261e;font-weight:700">⚠ Este fornecimento está aberto desde ${diaBR(f.dia).slice(0,5)}. Termine os currais ou encerre abrindo outro.</p>`:'<p class="note">Este fornecimento está em aberto. Quer abrir outro (outro local, ração ou trato)?</p>';};
 const FORN_NOVO={toString(){return FORN_NOVO_TXT()+'<button data-ftrocar="novo">＋ Abrir outro fornecimento</button>';}};
 function fornBarHTML(){const f=filtroForn();if(!f)return '';const r=f.rac&&typeof G!=='undefined'&&G.it[f.rac];
@@ -2074,7 +2076,7 @@ function aba(qual){const vq=qual;if(modoVer&&(qual==='auto'||qual==='autoc'||qua
   if(typeof fecharBal==='function'&&balCampo)fecharBal();
   if(qual!=='prev'&&typeof modoOrdem==='function')modoOrdem(false);
   if(typeof camStream!=='undefined'&&camStream)fecharCamera();
-  $('viewPrev').hidden=qual!=='prev';$('viewTrato').hidden=qual!=='trato';$('viewHist').hidden=qual!=='hist';$('viewGest').hidden=!(qual==='gest'||qual==='leit');window.abaAtual=qual;$('tabLeit').setAttribute('aria-selected',String(qual==='leit'));if(qual==='leit'&&window.gAbrir)gAbrir('leit');$('viewCarga').hidden=qual!=='carga';$('viewAuto').hidden=qual!=='auto';$('viewAutoC').hidden=qual!=='autoc';$('tabAutoC').setAttribute('aria-selected',String(qual==='autoc'));if(qual==='autoc'&&window.acAoAbrir)acAoAbrir();$('tabAuto').setAttribute('aria-selected',String(qual==='auto'));if(qual==='auto'&&window.aAoAbrir)aAoAbrir();$('tabCarga').setAttribute('aria-selected',String(qual==='carga'));if(qual==='carga'&&window.cAoAbrir)cAoAbrir();
+  $('viewPrev').hidden=qual!=='prev';$('viewTrato').hidden=qual!=='trato';$('viewHist').hidden=qual!=='hist';$('viewGest').hidden=!(qual==='gest'||qual==='leit');window.abaAtual=qual;$('tabLeit').setAttribute('aria-selected',String(qual==='leit'));if(qual!=='leit')['tabFez','tabMS'].forEach(i=>$(i)&&$(i).setAttribute('aria-selected','false'));if(qual==='leit'&&window.gAbrir)gAbrir('leit');$('viewCarga').hidden=qual!=='carga';$('viewAuto').hidden=qual!=='auto';$('viewAutoC').hidden=qual!=='autoc';$('tabAutoC').setAttribute('aria-selected',String(qual==='autoc'));if(qual==='autoc'&&window.acAoAbrir)acAoAbrir();$('tabAuto').setAttribute('aria-selected',String(qual==='auto'));if(qual==='auto'&&window.aAoAbrir)aAoAbrir();$('tabCarga').setAttribute('aria-selected',String(qual==='carga'));if(qual==='carga'&&window.cAoAbrir)cAoAbrir();
   if(qual==='hist'&&$('viewHist').dataset.aberta!=='1'){HD.dia=HD.ini=HD.fim=hojeKey();HD.per=false;HD.t=0;localSel='T';}
   $('viewHist').dataset.aberta=qual==='hist'?'1':'';
   if(qual==='prev'&&$('viewPrev').dataset.aberta!=='1'){linhaSel='T';PV.dia=PV.ini=PV.fim=hojeKey();PV.per=false;PV.t=0;PV.ims=false;PV.am=null;virarDiaPrev();} // Previsto abre em hoje, Todos
@@ -2113,12 +2115,13 @@ function abrirMenu(g){menuAberto=g;$('subGest').hidden=g!=='gest';$('subTrato').
 function tocarGrupo(g){if(menuAberto===g){abrirMenu(null);return;}abrirMenu(g);if(g!=='gest'&&!abaTrato){escolherModo('auto');return;}aba(g==='gest'?'gest':abaTrato);}
 $('tabGrpTrato').onclick=()=>tocarGrupo('trato');
 $('tabPrev').onclick=()=>aba('prev');
-$('tabLeit').onclick=()=>{try{if(GT.t==='fezes')GT={t:'cocho'};}catch(e){}aba('leit');};
+$('tabLeit').onclick=()=>{try{if(GT.t==='fezes'||GT.t==='ms')GT={t:'cocho'};}catch(e){}aba('leit');};
+$('tabMS').onclick=()=>{try{GT={t:'ms'};}catch(e){}if(window.abaAtual==='leit'&&window.gAoAbrir)gAoAbrir();else aba('leit');};
 $('tabFez').onclick=()=>{try{GT={t:'fezes',dia:hojeKey(),loc:'T'};}catch(e){}if(window.abaAtual==='leit'&&window.gAoAbrir)gAoAbrir();else aba('leit');};
 /* Manual / Automação: só abre as opções (Carregar e Tratar), sem abrir a tela sozinho */
 function telaEscolha(txt){['viewPrev','viewTrato','viewHist','viewGest','viewCarga','viewAuto','viewAutoC'].forEach(i=>{const e=$(i);if(e)e.hidden=true;});
   $('escolhaTxt').textContent=txt;$('viewEscolha').hidden=false;window.abaAtual='';if(window.menuAbre)menuAbre();
-  ['tabPrev','tabLeit','tabHist','tabTrato','tabCarga','tabAuto','tabAutoC'].forEach(i=>$(i).setAttribute('aria-selected','false'));window.scrollTo({top:0});}
+  ['tabPrev','tabLeit','tabFez','tabMS','tabHist','tabTrato','tabCarga','tabAuto','tabAutoC'].forEach(i=>$(i).setAttribute('aria-selected','false'));window.scrollTo({top:0});}
 function escolherModo(m){if(m!=='man'&&m!=='auto'){modoAtual=null;$('subModo').hidden=true;$('tabMan').setAttribute('aria-selected','false');$('tabModoAuto').setAttribute('aria-selected','false');
     telaEscolha('Escolha ⚡ Automação ou ✋ Manual no menu acima.');return;}
   modoAtual=m;$('tabMan').setAttribute('aria-selected',String(m==='man'));$('tabModoAuto').setAttribute('aria-selected',String(m==='auto'));
@@ -2910,6 +2913,10 @@ $('btnModoExec').onclick=()=>pedirSenha('trato');
 $('btnModoGest').onclick=()=>pedirSenha('gest');
 $('senhaFundo').onclick=()=>{verSenha(false);senhaDig='';};
 $('tecSenha').addEventListener('pointerdown',e=>e.preventDefault());
+/* no computador: dá para digitar a senha no teclado (números, ⌫, Enter, Esc) além do teclado da tela */
+document.addEventListener('keydown',e=>{if($('tecSenha').hidden||e.ctrlKey||e.metaKey||e.altKey)return;
+  const k=/^[0-9]$/.test(e.key)?e.key:e.key==='Backspace'||e.key==='Delete'?'del':e.key==='Enter'?'ok':e.key==='Escape'?'cancelar':null;if(!k)return;
+  e.preventDefault();const b=$('tecSenha').querySelector(`button[data-s="${k}"]`);if(b)b.click();});
 $('tecSenha').addEventListener('click',e=>{const b=e.target.closest('button[data-s]');if(!b)return;const k=b.dataset.s,sn=senhaAtual();
   if(k==='cancelar'){verSenha(false);senhaDig='';return;}
   if(k==='del')senhaDig=senhaDig.slice(0,-1);
@@ -3274,7 +3281,7 @@ if('serviceWorker' in navigator){
   const abre=()=>{document.body.classList.remove('menuFechado');pinta();const y=m.getBoundingClientRect().top+scrollY-8;if(scrollY>y)window.scrollTo({top:Math.max(0,y)});};
   b.onclick=()=>document.body.classList.contains('menuFechado')?abre():fecha();
   m.addEventListener('click',e=>{const t=e.target.closest('button');if(!t||t===b)return;
-    const final=t.closest('#subGest')||t.closest('#subModo')||['tabPrev','tabLeit','tabHist'].includes(t.id);
+    const final=t.closest('#subGest')||t.closest('#subModo')||['tabPrev','tabLeit','tabFez','tabMS','tabHist'].includes(t.id);
     if(final)setTimeout(fecha,150);else setTimeout(pinta,0);});
   window.menuCaminho=pinta;window.menuFecha=fecha;window.menuAbre=()=>{if(document.body.classList.contains('menuFechado'))abre();};pinta();})();
 </script>
