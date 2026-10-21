@@ -119,6 +119,9 @@ body.somenteVer .fBar{display:none!important}
 /* telas de início (Carregar e Fornecer): título e campo bem juntos */
 :is(#cBox,#acBox,.fornSetup) label{margin:12px 0 4px}
 :is(#cBox,#acBox,.fornSetup) h2+label{margin-top:4px}
+:is(#cBox,#acBox) section.panel>label+*,.fornSetup>label+*{margin-top:-14px!important}
+.cBotoes{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:6px}.cBotoes>button{margin:0!important;width:100%;font-size:.82rem;padding:8px 6px}
+.cJuntoLista{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}
 :is(#cBox,#acBox,.fornSetup) .gLocal{margin:0}
 :is(#cBox,#acBox,.fornSetup) .tSeta{margin:0}
 :is(#cBox,#acBox,.fornSetup) select{margin:0}
@@ -373,6 +376,7 @@ body.somenteVer #btnRestaurar{display:none!important}
 .atualizarBtn.girando{animation:girar .8s linear infinite}
 @keyframes girar{from{transform:translateY(-50%) rotate(0)}to{transform:translateY(-50%) rotate(360deg)}}
 body.naInicio .atualizarBtn{visibility:hidden}
+.gBkIt{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid var(--line);font-size:.92rem}.gBkIt a{font-size:.82rem}
 .bkLista{display:flex;flex-direction:column;gap:8px;max-height:55vh;overflow:auto}
 .bkLista button.verde{font-size:1.05rem;padding:12px;text-align:left}
 /* ordem dos currais: o ☰ só aparece no modo Alterar ordem */
@@ -626,6 +630,11 @@ body.menuFechado .menuSeta{background:#2e6b2f;color:#fff;padding:9px 12px;font-s
 .dPer input{width:20px;height:20px;margin:0}
 .dPerCampos{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:8px;margin-top:8px}
 .tNav{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,2fr);gap:6px}
+.tNav2{grid-template-columns:1fr}.tTodos{display:grid;grid-template-columns:1fr 1fr;gap:6px}.tTodos button{border-radius:12px;margin:0}.tTodos button.sel{background:var(--accent);color:#fff;border-color:var(--accent)}
+.tEsc{flex:1;position:relative;display:flex;align-items:center;justify-content:center;min-width:0;align-self:stretch}
+.tEsc b{flex:1;text-align:center;font-family:var(--display);font-stretch:condensed;font-size:1.15rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tEsc select{position:absolute;inset:0;width:100%;height:100%;opacity:0;cursor:pointer;margin:0;padding:0;border:0}
+#hPerBox .dPer{padding:6px 10px}
 .tNav>button{border-radius:12px}
 .tSel{display:flex;align-items:center;border:2px solid var(--line);border-radius:12px;background:var(--surface);overflow:hidden}
 .tSel button{border:0;background:transparent;padding:9px 16px;font-size:1rem;border-radius:0}
@@ -690,8 +699,8 @@ body.menuFechado .menuSeta{background:#2e6b2f;color:#fff;padding:9px 12px;font-s
     <button id="tabGrpTrato" role="tab" aria-selected="false">Tratos</button>
   </nav>
   <div class="subtabs sub6" id="subTrato" hidden>
-    <button id="tabPrev" aria-selected="false">Previsto</button>
     <button id="tabLeit" aria-selected="false">Leitura</button>
+    <button id="tabPrev" aria-selected="false">Previsto</button>
     <button id="tabHist" aria-selected="false">Histórico</button>
     <button id="tabModoAuto" aria-selected="false">⚡ Automação</button>
     <button id="tabMan" aria-selected="false">✋ Manual</button>
@@ -722,7 +731,7 @@ body.menuFechado .menuSeta{background:#2e6b2f;color:#fff;padding:9px 12px;font-s
     <p class="note pvEstado" id="pvEstado" hidden></p>
     <div hidden>
       <select class="trato" id="pvTrato">
-        <option value="1">Trato 1</option><option value="2">Trato 2</option><option value="3">Trato 3</option><option value="4">Trato 4</option><option value="5">Trato 5</option><option value="6">Trato 6</option>
+        <option value="1">Trato 1</option><option value="2">Trato 2</option><option value="3">Trato 3</option>
       </select>
     </div>
     <p class="aviso bad" id="pvAviso" hidden></p>
@@ -780,7 +789,7 @@ body.menuFechado .menuSeta{background:#2e6b2f;color:#fff;padding:9px 12px;font-s
     <div class="linhaTrato">
       <label for="tratoSel">Selecionar trato</label>
       <select class="trato" id="tratoSel">
-        <option value="1">Trato 1</option><option value="2">Trato 2</option><option value="3">Trato 3</option><option value="4">Trato 4</option><option value="5">Trato 5</option><option value="6">Trato 6</option>
+        <option value="1">Trato 1</option><option value="2">Trato 2</option><option value="3">Trato 3</option>
       </select>
     </div>
     <div class="aoVivo" id="aoVivo"></div>
@@ -831,7 +840,7 @@ body.menuFechado .menuSeta{background:#2e6b2f;color:#fff;padding:9px 12px;font-s
 <div id="viewHist" hidden>
   <div class="linhas hModo" id="hModo"><button data-hm="T" class="sel">🐂 Tratos</button><button data-hm="B">🚜 Batidas</button></div>
   <section class="panel">
-    <h2>Filtrar</h2>
+    <div class="curhead"><h2>Filtrar</h2><span id="hPerBox"></span></div>
     <div id="hData"></div>
     <div class="linhas hLocal" id="hLocal"><button data-loc="T" class="sel">Todos</button><button data-loc="C">Confinamento</button><button data-loc="P">Pasto</button></div>
     <div id="hTN"></div>
@@ -877,7 +886,7 @@ body.menuFechado .menuSeta{background:#2e6b2f;color:#fff;padding:9px 12px;font-s
     </details>
   </section>
 
-  <section class="panel">
+  <section class="panel" hidden>
     <h2>Backup</h2>
     <p class="note" id="bkInfo"></p>
     <button class="lima" id="btnBackupNuvem">Fazer backup agora</button>
@@ -966,7 +975,7 @@ body.menuFechado .menuSeta{background:#2e6b2f;color:#fff;padding:9px 12px;font-s
 <div class="toast" id="toast" hidden></div>
 <script>
 'use strict';
-const APP_VERSAO='35';
+const APP_VERSAO='37';
 const APP_DATA='19/10/2026';
 const KEY='confinamento-completo-v1';
 const $=id=>document.getElementById(id);
@@ -1095,23 +1104,39 @@ function filtroForn(){if(typeof modoVer!=='undefined'&&modoVer)return null;const
 /* ================= Previsto por dia · nº de tratos por curral · divisão em % =================
    S.prev = previsto de HOJE (o que o Tratar usa e vai para a nuvem).
    Cada dia fica guardado na Gestão (item 'prev-AAAA-MM-DD') para consultar depois; o de AMANHÃ fica lá até virar o dia. */
-const MAXT=6;
+const MAXT=8;
+/* Tratos cadastrados (Gestão › Config. › Tratos): nome e ativo/inativo. Nas telas que perguntam o trato só aparecem os ativos. */
+function tratosCadItem(){try{const it=gOk()&&G.it.tratosCad;return it&&!it.del&&it.v?it:null;}catch(e){return null;}}
+function tratosUsados(){let u=1;try{const m=ntMapa();Object.keys(m).forEach(c=>{if((typeof curralAtivo!=='function'||curralAtivo(c))&&+m[c]>u)u=Math.min(MAXT,+m[c]);});
+  for(let k=1;k<=MAXT;k++){const o=(S.prev||{})[k];if(o&&Object.values(o).some(v=>typeof v==='number'&&v>0)&&k>u)u=k;}}catch(e){}return u;}
+function tratosCad(){const it=tratosCadItem(),r=[];
+  if(it){const n=Math.max(1,Math.min(MAXT,+it.n||6));for(let k=1;k<=n;k++){const x=it.v[k]||{};r.push({k,nome:x.nome||'',ativo:x.ativo!==false});}return r;}
+  const u=tratosUsados();for(let k=1;k<=Math.max(6,u);k++)r.push({k,nome:'',ativo:k<=u});return r;}
+function tratosAtivos(){const a=tratosCad().filter(t=>t.ativo).map(t=>t.k);return a.length?a:[1];}
+function nomeTrato(k){const t=tratosCad().find(x=>x.k===+k);return 'Trato '+k+(t&&t.nome?' · '+t.nome:'');}
+function opcoesTrato(v){const a=tratosAtivos();v=+v||0;if(v&&!a.includes(v))a.push(v);a.sort((x,y)=>x-y);return a.map(k=>`<option value="${k}"${v===k?' selected':''}>${esc(nomeTrato(k))}</option>`).join('');}
+function encherSelTrato(){['tratoSel','aTrato','pvTrato'].forEach(id=>{const s=$(id);if(!s)return;const v=+s.value||+S.tratoSel||1;const h=opcoesTrato(v);if(s.dataset.op!==h){s.innerHTML=h;s.dataset.op=h;}s.value=String(v);});}
+function salvarTratosCad(lista){const v={};lista.forEach(t=>{v[t.k]={nome:t.nome||'',ativo:t.ativo!==false};});gPut({uid:'tratosCad',tipo:'tratosCad',n:lista.length,v});encherSelTrato();try{render();}catch(e){}}
+window.tratosApi={MAXT,cad:tratosCad,ativos:tratosAtivos,nome:nomeTrato,opcoes:opcoesTrato,encher:encherSelTrato,salvar:salvarTratosCad};
+window.opcoesTrato=opcoesTrato;
 const gOk=()=>typeof G!=='undefined'&&G&&G.it;
 function divisao(n){n=Math.max(1,Math.min(MAXT,+n||1));const c=gOk()&&typeof gCfg==='function'?gCfg():{};const v=c.div&&c.div[n];
   if(Array.isArray(v)&&v.length===n&&Math.abs(v.reduce((a,b)=>a+(+b||0),0)-100)<0.6)return v.map(Number);
   const base=Math.floor(1000/n)/10,r=[];for(let i=0;i<n;i++)r.push(base);r[0]=Math.round((100-base*(n-1))*10)/10;return r;}
 function ntMapa(){return (gOk()&&G.it.prevNTr&&G.it.prevNTr.v)||{};}
 /* nº de tratos do curral: o escolhido; senão, quantos tratos têm previsto hoje; senão 1 */
-function nTratos(c,obj){const m=ntMapa();if(+m[c]>=1)return Math.min(MAXT,+m[c]);obj=obj||S.prev||{};let n=0;for(let k=1;k<=MAXT;k++){const v=(obj[k]||{})[c];if(typeof v==='number'&&v>0)n=k;}return n||1;}
+function nTratos(c,obj){const m=ntMapa(),na=tratosAtivos().length;if(+m[c]>=1)return Math.min(na,+m[c]);obj=obj||S.prev||{};let n=0;for(let k=1;k<=MAXT;k++){const v=(obj[k]||{})[c];if(typeof v==='number'&&v>0)n++;}return Math.min(na,n||1);}
+const tratosDoCurral=(c,obj,n)=>tratosAtivos().slice(0,n||nTratos(c,obj));
 function setNTratos(c,n){const m=Object.assign({},ntMapa());m[c]=Math.max(1,Math.min(MAXT,+n||1));if(gOk()&&typeof gPut==='function')gPut({uid:'prevNTr',tipo:'prevNTr',v:m});}
 function totalCurral(c,obj){obj=obj||S.prev||{};let t=0;for(let k=1;k<=MAXT;k++){const v=(obj[k]||{})[c];if(typeof v==='number')t+=v;}return t;}
 function arredPrev(v){let a=gOk()&&typeof gCfg==='function'?+gCfg().arred:10;if(!(a>0))a=10;return Math.round(v/a)*a;}
 /* divide o total do curral nos tratos pela % configurada; o último trato fica com a sobra do arredondamento */
 /* tudo em dezena (ou no arredondamento do Config.): unidade 1–4 desce, 5–9 sobe; o total também, então a soma dos tratos fecha certinho */
 function distribuir(c,total,n,obj){obj=obj||S.prev;if(obj===S.prev&&S.prevOrig&&S.prevOrig.v){delete S.prevOrig.v[c];delete S.prevOrig.set[c];}n=n||nTratos(c,obj);const pc=divisao(n);let resto=Math.max(0,arredPrev(total||0));
-  for(let k=1;k<=MAXT;k++){const key=String(k);if(!obj[key])obj[key]={};
-    if(k>n||!total){delete obj[key][c];continue;}
-    const v=k===n?resto:Math.max(0,arredPrev(total*pc[k-1]/100));obj[key][c]=v;resto-=v;}
+  const ks=tratosAtivos().slice(0,n);
+  for(let k=1;k<=MAXT;k++){const key=String(k);if(!obj[key])obj[key]={};const i=ks.indexOf(k);
+    if(i<0||!total){delete obj[key][c];continue;}
+    const v=i===ks.length-1?resto:Math.max(0,arredPrev(total*pc[i]/100));obj[key][c]=v;resto-=v;}
   return obj;}
 /* previsto guardado de um dia (cópia); para dias sem cópia monta pelos registros do Histórico */
 const idPrevDia=d=>'prev-'+d;
@@ -1160,9 +1185,9 @@ function compensarCurral(c){try{
 window.compensarCurral=compensarCurral;
 const FS={local:null,rac:null,trato:null,passo:1};
 /* trato com setinhas: ◀ [Trato N ▾] ▶ (toca no meio para escolher, ou nas setas para ir e voltar) */
-function tratoSeta(id,v){v=+v||1;return `<div class="tSeta"><button type="button" data-tsd="-1" aria-label="Trato anterior"${v<=1?' disabled':''}>◀</button><select class="trato" id="${id}">${[1,2,3,4,5,6].map(k=>`<option value="${k}"${v===k?' selected':''}>Trato ${k}</option>`).join('')}</select><button type="button" data-tsd="1" aria-label="Próximo trato"${v>=6?' disabled':''}>▶</button></div>`;}
+function tratoSeta(id,v){v=+v||tratosAtivos()[0];const a=tratosAtivos();return `<div class="tSeta"><button type="button" data-tsd="-1" aria-label="Trato anterior"${v<=a[0]?' disabled':''}>◀</button><select class="trato" id="${id}">${opcoesTrato(v)}</select><button type="button" data-tsd="1" aria-label="Próximo trato"${v>=a[a.length-1]?' disabled':''}>▶</button></div>`;}
 window.tratoSeta=tratoSeta;
-document.addEventListener('click',e=>{const b=e.target.closest('.tSeta [data-tsd]');if(!b)return;const sel=b.parentElement.querySelector('select');const v=Math.max(1,Math.min(6,(+sel.value||1)+(+b.dataset.tsd)));if(v===+sel.value)return;sel.value=String(v);sel.dispatchEvent(new Event('change',{bubbles:true}));});
+document.addEventListener('click',e=>{const b=e.target.closest('.tSeta [data-tsd]');if(!b)return;const sel=b.parentElement.querySelector('select');const op=[...sel.options].map(o=>+o.value),i=op.indexOf(+sel.value),v=op[Math.max(0,Math.min(op.length-1,i+(+b.dataset.tsd)))];if(v==null||v===+sel.value)return;sel.value=String(v);sel.dispatchEvent(new Event('change',{bubbles:true}));});
 function fornCurrais(loc,rac,k){const m=(S.prev&&S.prev[String(k)])||{};return S.cadastro.filter(n=>curralAtivo(n)&&typeof m[n]==='number'&&m[n]>0&&linhaDe(n)===loc&&(!rac||(window.racaoDoCurral&&racaoDoCurral(n)===rac))).map(n=>({nome:n,prev:m[n]}));}
 function fornPendentes(loc,rac,k){const L=fornCurrais(loc,rac,k),hj=diaAtivo();return L.filter(x=>!HIST.some(r=>r.dia===hj&&+r.trato===k&&r.curral===x.nome));}
 /* em passos: local → ração → trato → resumo e Iniciar */
@@ -1174,11 +1199,11 @@ function fornSetupHTML(){if(!FS.local)FS.passo=1;const cont=n=>`<button type="bu
     <label>1. Local</label>${window.escolhaLocal?escolhaLocal('data-floc',FS.local):''}
     <label for="fRac">2. Ração que vai distribuir</label><select id="fRac">${FS.rac==null?'<option value="-" selected>— escolha a ração —</option>':''}${R.map(r=>`<option value="${r.uid}"${r.uid===FS.rac?' selected':''}>${esc(r.nome)}</option>`).join('')}<option value=""${FS.rac===''?' selected':''}>Todas as rações</option></select>
     ${R.length===1?`<p class="note">Única ração ativa no ${FS.local==='C'?'confinamento':'pasto'}: já selecionada.</p>`:''}`;
-  if(FS.passo<=2||FS.rac==null)return passoRac+(FS.rac!=null?cont(3):'');
-  if(!FS.trato||!fornCurrais(FS.local,FS.rac,FS.trato).length||!fornPendentes(FS.local,FS.rac,FS.trato).length){let k0=null;for(let k=1;k<=6;k++){if(fornPendentes(FS.local,FS.rac,k).length){k0=k;break;}}FS.trato=k0||FS.trato||1;}
+  if(FS.rac==null)return passoRac;
+  if(!FS.trato||!fornCurrais(FS.local,FS.rac,FS.trato).length||!fornPendentes(FS.local,FS.rac,FS.trato).length){let k0=null;for(const k of tratosAtivos()){if(fornPendentes(FS.local,FS.rac,k).length){k0=k;break;}}FS.trato=k0||FS.trato||1;}
   const L=fornCurrais(FS.local,FS.rac,FS.trato),pend=fornPendentes(FS.local,FS.rac,FS.trato),tot=L.reduce((a,x)=>a+x.prev,0);
   return passoRac+`
-    <label for="fTrato">3. Trato</label>${tratoSeta('fTrato',FS.trato)}${FS.passo<=3?cont(4):`
+    <label for="fTrato">3. Trato</label>${tratoSeta('fTrato',FS.trato)}${`
     <p class="note">${L.length?`<b>${L.length} curral(is)</b> · ${fmt(tot)} kg previstos · ${pend.length===L.length?'nenhum fornecido ainda':pend.length?`faltam ${pend.length}`:'✓ todos já fornecidos'}<br>${L.map(x=>esc(x.nome)).join(', ')}`:(Object.keys(S.prev||{}).some(k=>Object.keys(S.prev[k]||{}).length)?'Nenhum curral com previsto neste trato para este local e ração.':'Ainda não tem previsto hoje: faça a leitura de cocho (Tratos › Leitura).')}</p>
     <button class="primary" id="fIniciar"${L.length?'':' disabled'}>▶ Iniciar fornecimento</button>`}`;}
 function fornBarHTML(){const f=filtroForn();if(!f)return '';const r=f.rac&&typeof G!=='undefined'&&G.it[f.rac];
@@ -1207,7 +1232,7 @@ function proximoTratoSeCompleto(){try{const f=filtroForn();
   if(f){const L=lista(),regs=regsAtuais();if(!L.length||!L.every(x=>feito(x.nome,regs)))return false;
     toast(`✓ Fornecimento completo · ${f.local==='C'?'Confinamento':'Pasto'} · Trato ${S.tratoSel}`);FS.local=f.local;FS.rac=f.rac;FS.trato=null;FS.passo=3;S.forn=Object.assign({},f,{ativo:false});save();mostrarFornecimento();return true;}
   if(!tratoCompleto(S.tratoSel))return false;const antes=S.tratoSel;
-  let alvo=null;for(let k=antes+1;k<=6;k++){if(lista(k).length&&!tratoCompleto(k)){alvo=k;break;}}
+  let alvo=null;for(let k=antes+1;k<=MAXT;k++){if(lista(k).length&&!tratoCompleto(k)){alvo=k;break;}}
   if(alvo==null)return false;$('tratoSel').value=String(alvo);$('tratoSel').dispatchEvent(new Event('change'));
   if($('aTrato'))$('aTrato').value=String(alvo);toast(`✓ Trato ${antes} completo · agora Trato ${alvo}`);return true;}catch(e){return false;}}
 window.proximoTratoSeCompleto=proximoTratoSeCompleto;
@@ -1232,7 +1257,7 @@ function escolherTratoDoDia(){
   const hj=hojeKey(),novoDia=S.diaAberto!==hj;
   if(novoDia)S.dataManual=null; // dia novo: volta para a data automática
   if(!novoDia&&!tratoCompleto(S.tratoSel))return false;
-  let alvo=null;for(let k=1;k<=6;k++){if(lista(k).length&&!tratoCompleto(k)){alvo=k;break;}}
+  let alvo=null;for(let k=1;k<=MAXT;k++){if(lista(k).length&&!tratoCompleto(k)){alvo=k;break;}}
   if(alvo==null)alvo=novoDia?1:S.tratoSel;
   const mudou=alvo!==S.tratoSel||novoDia;
   S.diaAberto=hj;S.tratoSel=alvo;
@@ -1250,6 +1275,7 @@ function classeDesv(d,p){const pc=Math.abs(d)/(p||1);return pc<=.03?'ok':pc<=.08
 const horaDe=r=>r.hora||new Date(r.ts).toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});
 
 function render(){
+  try{encherSelTrato();}catch(e){}
   const man=!!S.dataManual;
   const amh=diaAtivo()===amanhaKey();
   const ant=man&&!amh;
@@ -1448,7 +1474,7 @@ function renderPrev(){
     const ac=`<td class="acoes">${modoRemover&&hoje?`<button class="mini danger" tabindex="-1" data-a="rm" data-i="${i}" aria-label="Excluir ${esc_}">✕</button>`:''}</td>`;
     if(PV.per)return `<tr${ocultar?' hidden':''}><td></td>${nome}<td class="num"><b>${v?fmt(v):'—'}</b></td><td></td></tr>`;
     if(PV.t===0){const n=nTratos(c,o);
-      const sel=ed?`<select class="mini ntSel" data-nt="${esc_}">${[1,2,3,4,5,6].map(x=>`<option value="${x}"${x===n?' selected':''}>${x}</option>`).join('')}</select>`:`<b>${n}</b>`;
+      const sel=ed?`<select class="mini ntSel" data-nt="${esc_}">${tratosAtivos().map((_,i)=>i+1).map(x=>`<option value="${x}"${x===n?' selected':''}>${x}</option>`).join('')}</select>`:`<b>${n}</b>`;
       const imsC=ims?`<td><input class="cell imsIn" type="text" inputmode="decimal" data-ims="${esc_}" placeholder="${(()=>{const p=window.gImsDe?gImsDe(c,PV.dia,v||0):null;return p?nf(p,2):'%';})()}" value="${PV.imsV&&PV.imsV[c]!=null?esc(PV.imsV[c]):''}"><small class="imsKg" data-imskg="${esc_}"></small></td>`:'';
       return `<tr${ocultar?' hidden':''}><td class="alca" title="Arraste para mudar a ordem" aria-label="Arrastar ${esc_}">☰</td>${nome}${ims?imsC:''}${cel}${colR}${ac}</tr>`;}
     return `<tr${ocultar?' hidden':''}><td class="alca" title="Arraste para mudar a ordem" aria-label="Arrastar ${esc_}">☰</td>${nome}${cel}${colR}${ac}</tr>`;}).join('');
@@ -1514,7 +1540,7 @@ function aplicarPrev(i,t){
     const antesT=totalCurral(nome,o);if(Math.round(v)!==Math.round(antesT)){const antes=snapTratos(nome,o);
       /* já tem trato feito hoje: os tratos feitos não mudam; a diferença vai para o último trato que falta */
       const feitosK=new Set(HIST.filter(r=>r.dia===PV.dia&&r.curral===nome).map(r=>+r.trato)),nt=nTratos(nome,o);
-      if(feitosK.size){const pend=[];for(let k=1;k<=nt;k++)if(!feitosK.has(k))pend.push(k);
+      if(feitosK.size){const pend=tratosDoCurral(nome,o,nt).filter(k=>!feitosK.has(k));
         if(!pend.length){toast(`${nome}: todos os tratos de hoje já foram feitos`);const x=campoPrev(i);if(x)x.value=valPrev(antesT||null);return true;}
         const real=HIST.filter(r=>r.dia===PV.dia&&r.curral===nome).reduce((a,r)=>a+(+r.forn||0),0);
         const fixo=real+pend.slice(0,-1).reduce((a,k)=>a+(+((o[k]||{})[nome])||0),0);
@@ -1884,8 +1910,8 @@ $('escolhaImg').addEventListener('click',async e=>{const b=e.target.closest('but
   compartilharVarios(blobs,nomes);
 });
 $('hModo').addEventListener('click',e=>{const b=e.target.closest('[data-hm]');if(!b)return;hModo=b.dataset.hm;renderHist();});
-$('hBatImg').onclick=()=>{const [pa,pb]=intervaloHist();const L=batidasLista(pa,pb,localSel,HD.per?0:HD.t);if(!L.length)return toast('Nenhuma batida');imgBatidas(L,pa===pb?diaBR(pa):diaBR(pa)+' a '+diaBR(pb));};
-$('hBatXls').onclick=()=>{const [pa,pb]=intervaloHist();const L=batidasLista(pa,pb,localSel,HD.per?0:HD.t);if(!L.length)return toast('Nenhuma batida');xlsBatidas(L,pa===pb?diaBR(pa):diaBR(pa)+' a '+diaBR(pb));};
+$('hBatImg').onclick=()=>{const [pa,pb]=intervaloHist();const L=batidasLista(pa,pb,localSel,HD.per||HD.t<0?0:HD.t);if(!L.length)return toast('Nenhuma batida');imgBatidas(L,pa===pb?diaBR(pa):diaBR(pa)+' a '+diaBR(pb));};
+$('hBatXls').onclick=()=>{const [pa,pb]=intervaloHist();const L=batidasLista(pa,pb,localSel,HD.per||HD.t<0?0:HD.t);if(!L.length)return toast('Nenhuma batida');xlsBatidas(L,pa===pb?diaBR(pa):diaBR(pa)+' a '+diaBR(pb));};
 $('hXls').onclick=()=>{const f=filtrados();if(f.length)compartilharArquivo(gerarXlsx(f),nomeArquivo(f),XT);};
 
 /* ---------- Abas ---------- */
@@ -1954,15 +1980,15 @@ const SEMN=['dom.','seg.','ter.','qua.','qui.','sex.','sáb.'];
 function rotDia(d){const hj=hojeKey(),[y,m,dd]=d.split('-').map(Number),sem=SEMN[new Date(y,m-1,dd).getDay()];
   const tag=d===hj?'Hoje':d===somaDias(hj,-1)?'Ontem':d===somaDias(hj,1)?'Amanhã':'';
   return `${sem} ${diaBR(d).slice(0,6)}${diaBR(d).slice(8)}${tag?` <i>${tag}</i>`:''}`;}
-function navDiaHTML(st,semPer){const hj=hojeKey();
-  const per=semPer?'':`<label class="dPer"><input type="checkbox" data-dp ${st.per?'checked':''}> Período</label>`;
-  if(st.per)return `<div class="dLinha dSoPer">${per}</div><div class="dPerCampos">
+function navDiaHTML(st,semPer,perFora){const hj=hojeKey();
+  const per=semPer||perFora?'':`<label class="dPer"><input type="checkbox" data-dp ${st.per?'checked':''}> Período</label>`;
+  if(st.per)return `${per?`<div class="dLinha dSoPer">${per}</div>`:''}<div class="dPerCampos">
     <div><label>Data inicial</label><label class="gDataBox"><span>${rotDia(st.ini)}</span><input type="date" data-di value="${st.ini}"></label></div>
     <div><label>Data final</label><label class="gDataBox"><span>${rotDia(st.fim)}</span><input type="date" data-df value="${st.fim}"></label></div></div>`;
   return `<div class="gNavData"><button class="gSeta" data-dn="-1" aria-label="Dia anterior">◀</button>
     <label class="gDataBox"><span>${rotDia(st.dia)}</span><input type="date" data-dd value="${st.dia}"></label>
     <button class="gSeta" data-dn="1" aria-label="Dia seguinte">▶</button></div>
-    <div class="dLinha dSoPer">${st.dia!==hj?'<button class="mini gHoje" data-dh>Voltar para hoje</button>':''}${per}</div>`;}
+    ${st.dia!==hj||per?`<div class="dLinha dSoPer">${st.dia!==hj?'<button class="mini gHoje" data-dh>Voltar para hoje</button>':''}${per}</div>`:''}`;}
 function ligarNavDia(box,st,mudou){
   box.addEventListener('click',e=>{const i=e.target.closest('.gDataBox input');if(i&&i.showPicker){try{i.showPicker();}catch(_){}}
     const b=e.target.closest('[data-dn],[data-dh]');if(!b)return;
@@ -1974,31 +2000,39 @@ function ligarNavDia(box,st,mudou){
     else if(t.matches('[data-di]')){if(t.value){st.ini=t.value;if(st.fim<st.ini)st.fim=st.ini;mudou();
       setTimeout(()=>{const x=box.querySelector('[data-df]');if(x&&x.showPicker){try{x.showPicker();}catch(_){}}},80);}}  // escolheu a inicial: já abre a final
     else if(t.matches('[data-df]')){if(t.value){st.fim=t.value;if(st.fim<st.ini)st.ini=st.fim;mudou();}}});}
-/* Todos | ◀ Trato N ▶ */
-function tratoNavHTML(t){return `<div class="tNav"><button data-tt="0" class="${t===0?'sel':''}">Todos</button>
-  <div class="tSel ${t>0?'sel':''}"><button data-tp="-1" ${t===0?'disabled':''} aria-label="Trato anterior">◀</button><b data-tt="${t||1}">Trato ${t||1}</b><button data-tp="1" ${t>=MAXT?'disabled':''} aria-label="Próximo trato">▶</button></div></div>`;}
+/* Todos | ◀ Escolher trato ▶ (tocando no nome abre a lista dos tratos ativos). dois=true: Todos (total) e Todos (separado) */
+function tratoNavHTML(t,dois,extra){const a=[...new Set(tratosAtivos().concat(extra||[]).map(Number))].filter(k=>k>0).sort((x,y)=>x-y),tem=t>0,ult=a[a.length-1];
+  const todos=dois?`<div class="tTodos"><button data-tt="-1" class="${t===-1?'sel':''}">Todos (total)</button><button data-tt="0" class="${t===0?'sel':''}">Todos (separado)</button></div>`
+    :`<button data-tt="0" class="${t<=0?'sel':''}">Todos</button>`;
+  return `<div class="tNav${dois?' tNav2':''}" data-lista="${a.join(',')}">${todos}
+  <div class="tSel ${tem?'sel':''}"><button data-tp="-1" ${!tem||t<=a[0]?'disabled':''} aria-label="Trato anterior">◀</button><span class="tEsc"><b>${tem?esc(nomeTrato(t)):'Escolher trato'}</b><select data-tsel aria-label="Escolher trato"><option value="" disabled${tem?'':' selected'}>Escolher trato</option>${a.map(k=>`<option value="${k}"${k===t?' selected':''}>${esc(nomeTrato(k))}</option>`).join('')}</select></span><button data-tp="1" ${tem&&t>=ult?'disabled':''} aria-label="Próximo trato">▶</button></div></div>`;}
 function ligarTratoNav(box,st,mudou){box.addEventListener('click',e=>{const b=e.target.closest('[data-tt],[data-tp]');if(!b||b.disabled)return;
-  st.t=b.dataset.tt!=null?+b.dataset.tt:Math.max(0,Math.min(MAXT,(st.t||0)+(+b.dataset.tp)));mudou();});}
+  if(b.dataset.tt!=null)st.t=+b.dataset.tt;else{const nv=b.closest('[data-lista]'),a=nv?nv.dataset.lista.split(',').map(Number):tratosAtivos();if(!(st.t>0))st.t=a[0];else{const i=Math.max(0,a.indexOf(st.t));st.t=a[Math.max(0,Math.min(a.length-1,i+(+b.dataset.tp)))];}}mudou();});
+  box.addEventListener('change',e=>{const s_=e.target.closest('select[data-tsel]');if(!s_||!s_.value)return;st.t=+s_.value;mudou();});}
 const HD={dia:null,per:false,ini:null,fim:null,t:0};let localSel='T';
-function pintarFiltrosHist(){if(!HD.dia){HD.dia=hojeKey();HD.ini=HD.fim=HD.dia;}$('hData').innerHTML=navDiaHTML(HD);$('hTN').innerHTML=HD.per?'':tratoNavHTML(HD.t);}
+function pintarFiltrosHist(){if(!HD.dia){HD.dia=hojeKey();HD.ini=HD.fim=HD.dia;}if(hModo!=='T'&&HD.t===-1)HD.t=0;
+  $('hData').innerHTML=navDiaHTML(HD,false,true);$('hPerBox').innerHTML=`<label class="dPer"><input type="checkbox" data-dp ${HD.per?'checked':''}> Período</label>`;
+  const [ia,ib]=intervaloHist();$('hTN').innerHTML=HD.per?'':tratoNavHTML(HD.t,hModo==='T',HIST.filter(r=>r.dia>=ia&&r.dia<=ib).map(r=>+r.trato));}
 ligarNavDia($('hData'),HD,()=>renderHist());ligarTratoNav($('hTN'),HD,()=>renderHist());
+$('hPerBox').addEventListener('change',e=>{if(!e.target.matches('[data-dp]'))return;HD.per=e.target.checked;if(HD.per){HD.ini=HD.dia;HD.fim=HD.dia;}renderHist();
+  if(HD.per)setTimeout(()=>{const x=$('hData').querySelector('[data-di]');if(x&&x.showPicker){try{x.showPicker();}catch(_){}}},50);});
 $('hLocal').addEventListener('click',e=>{const b=e.target.closest('button[data-loc]');if(!b)return;localSel=b.dataset.loc;renderHist();});
 function intervaloHist(){if(!HD.dia){HD.dia=hojeKey();HD.ini=HD.fim=HD.dia;}return HD.per?[HD.ini,HD.fim]:[HD.dia,HD.dia];}
 function rotuloData(){const [a,b]=intervaloHist();return HD.per?`Período ${diaBR(a)}${a===b?'':' a '+diaBR(b)}`:diaBR(a);}
 function filtrados(){
-  const [a,b]=intervaloHist(),t=HD.per?0:HD.t;
+  const [a,b]=intervaloHist(),t=HD.per||HD.t<0?0:HD.t;
   return HIST.filter(r=>(!a||r.dia>=a)&&(!b||r.dia<=b)&&(!t||r.trato===t)&&(localSel==='T'||linhaDe(r.curral)===localSel));
 }
 /* período: só o total de cada curral, sem separar os tratos */
 function totaisPorCurral(regs){const m=new Map();regs.forEach(r=>{const x=m.get(r.curral)||{curral:r.curral,prev:0,forn:0,n:0};x.prev+=r.prev||0;x.forn+=r.forn||0;x.n++;m.set(r.curral,x);});
   const ordem=S.cadastro;return [...m.values()].sort((a,b)=>{const ia=ordem.indexOf(a.curral),ib=ordem.indexOf(b.curral);return (ia<0?999:ia)-(ib<0?999:ib)||alfa(a.curral,b.curral);});}
-let hModo='T';
+var hModo='T';
 function renderHist(){
   pintarFiltrosHist();
   document.querySelectorAll('#hModo [data-hm]').forEach(b=>b.classList.toggle('sel',b.dataset.hm===hModo));
   document.querySelectorAll('#viewHist .hSoTratos').forEach(e=>e.hidden=hModo!=='T');$('hBatSec').hidden=hModo!=='B';
   if(hModo==='B'){document.querySelectorAll('#hLocal button[data-loc]').forEach(b=>b.classList.toggle('sel',b.dataset.loc===localSel));
-    const [pa,pb]=intervaloHist(),L=window.batidasLista?batidasLista(pa,pb,localSel,HD.per?0:HD.t):[];
+    const [pa,pb]=intervaloHist(),L=window.batidasLista?batidasLista(pa,pb,localSel,HD.per||HD.t<0?0:HD.t):[];
     const tp=L.reduce((a,c)=>a+c.itens.reduce((s,x)=>s+(+x.prev||0),0),0),tr=L.reduce((a,c)=>a+c.itens.reduce((s,x)=>s+(+x.real||0),0),0);
     $('hPrev').textContent=L.length?fmt(tp):'—';$('hReal').textContent=L.length?fmt(tr):'—';$('hDif').textContent=L.length?sgn(tr-tp):'—';$('hDif').className='num '+(L.length?classeDesv(tr-tp,tp):'');
     $('hBatN').textContent=L.length?`${L.length} batida(s)`:'';$('hBat').innerHTML=window.batidasHTML?batidasHTML(L,pa!==pb):'';return;}
@@ -2008,8 +2042,8 @@ function renderHist(){
   $('hPrev').textContent=regs.length?fmt(p):'—';$('hReal').textContent=regs.length?fmt(f):'—';
   $('hDif').textContent=regs.length?sgn(f-p):'—';$('hDif').className='num '+(regs.length?classeDesv(f-p,p):'');
   $('hN').textContent=regs.length?`${regs.length} registro(s)`:'';
-  if(HD.per){selModo=false;const L=totaisPorCurral(regs),[pa,pb]=intervaloHist();
-    $('tbHist').innerHTML=regs.length?`<tr class="grp"><td colspan="5">Total do período · ${diaBR(pa)} a ${diaBR(pb)}<span>${fmt(f)} kg (${sgn(f-p)})</span></td></tr>`+
+  if(HD.per||HD.t===-1){selModo=false;const L=totaisPorCurral(regs),[pa,pb]=intervaloHist();
+    $('tbHist').innerHTML=regs.length?`<tr class="grp"><td colspan="5">${HD.per?`Total do período · ${diaBR(pa)} a ${diaBR(pb)}`:`${diaBR(pa)} · Todos os tratos`}<span>${fmt(f)} kg (${sgn(f-p)})</span></td></tr>`+
       L.map(x=>`<tr><td class="hora">${x.n}×</td><td class="c">${esc(x.curral)}</td><td>${fmt(x.prev)}</td><td><b>${fmt(x.forn)}</b></td><td class="${classeDesv(x.forn-x.prev,x.prev)}">${sgn(x.forn-x.prev)}</td></tr>`).join(''):`<tr><td colspan="5" class="note" style="text-align:left">Nenhum registro nesse período.</td></tr>`;}
   else
   $('tbHist').innerHTML=regs.length?grupos(regs).reverse().map(g=>{
@@ -2019,7 +2053,7 @@ function renderHist(){
   }).join(''):`<tr><td colspan="5" class="note" style="text-align:left">Nenhum registro para esse filtro.</td></tr>`;
   caberTabela($('tbHist'));
   ['hWa','hCopiar','hExcel','hShare','hApagar','hImg','hXls'].forEach(id=>$(id).disabled=!regs.length);
-  $('hApagar').hidden=selModo||HD.per;$('selBar').hidden=!selModo;
+  $('hApagar').hidden=selModo||HD.per||HD.t===-1;$('selBar').hidden=!selModo;
   if(selModo){$('selInfo').textContent=sel.size?`${sel.size} registro(s) selecionado(s).`:'Toque nos registros que quer apagar.';$('selApagar').disabled=!sel.size;$('selApagar').textContent=sel.size?`Apagar selecionados (${sel.size})`:'Apagar selecionados';}
   const nd=new Set(HIST.map(r=>r.dia)).size;
   $('dbInfo').textContent=`${HIST.length.toLocaleString('pt-BR')} registros guardados neste celular, de ${nd} dia(s).`;
@@ -2059,8 +2093,10 @@ $('btnRestaurar').onclick=async()=>{if(bloqueado())return;
   senhaBk=sn.trim();$('bkLista').innerHTML='<p class="note">Buscando as cópias…</p>';$('escolhaBk').hidden=false;
   try{const j=await (await fetch(apiUrl()+'?acao=backups',{cache:'no-store'})).json();
     const L=(j&&j.backups)||[];
-    $('bkLista').innerHTML=L.length?L.map(b=>{const d=new Date(b.criado);const man=/manual/i.test(b.nome);
-      return `<button class="verde" data-bk="${esc(b.id)}" data-rot="${esc(d.toLocaleString('pt-BR',{day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'}))}">${d.toLocaleDateString('pt-BR',{weekday:'short',day:'2-digit',month:'2-digit',year:'numeric'})} · ${d.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'})}<small>${man?'backup manual':'backup automático'}</small></button>`;}).join(''):
+    const bt=b=>{const d=new Date(b.criado);const man=b.tipo?b.tipo==='manual':/manual/i.test(b.nome);
+      return `<button class="verde" data-bk="${esc(b.id)}" data-rot="${esc(d.toLocaleString('pt-BR',{day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'}))}">${d.toLocaleDateString('pt-BR',{weekday:'short',day:'2-digit',month:'2-digit',year:'numeric'})} · ${d.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'})}<small>${man?'backup manual':'backup automático'}</small></button>`;};
+    const au=L.filter(b=>!(b.tipo?b.tipo==='manual':/manual/i.test(b.nome))),ma=L.filter(b=>(b.tipo?b.tipo==='manual':/manual/i.test(b.nome)));
+    $('bkLista').innerHTML=L.length?(au.length?`<h3 class="gSub">🕑 Automáticos · ${au.length}</h3>`+au.map(bt).join(''):'')+(ma.length?`<h3 class="gSub">✋ Manuais · ${ma.length}</h3>`+ma.map(bt).join(''):''):
       '<p class="note">Nenhuma cópia encontrada ainda.</p>';
   }catch(e){$('bkLista').innerHTML='<p class="note">Não consegui buscar as cópias. Tente de novo.</p>';}
 };
@@ -2200,7 +2236,7 @@ async function sincronizar(avisar){
   if(avisar)toast(erro?'Não consegui enviar: '+(erro.message||erro):'Tudo salvo na nuvem');
   if(!erro&&navigator.onLine){ultAtualiz=Date.now();try{localStorage.setItem('ultAtualiz',String(ultAtualiz));}catch(e){}}
   sincronizando=false;statusNuvem();pintarHoje();
-  if(S.backupPend)fazerBackup(false);
+  if(S.backupPend)fazerBackup(true);
 }
 async function puxarNuvem(){
   if(!apiUrl()){toast('Cole o link do Google Script primeiro');return;}
@@ -2248,9 +2284,11 @@ async function fazerBackup(manual){
   fazendoBackup=false;$('btnBackupNuvem').disabled=false;$('btnBackupNuvem').textContent='Fazer backup agora';
   infoBackup();statusNuvem();
 }
-function checarBackup(){if(!S)return;const d=new Date();if(d.getHours()>=HORA_BACKUP&&S.ultBackup!==hojeKey())fazerBackup(false);}
+function checarBackup(){if(!S)return;if(S.backupPend&&navigator.onLine)fazerBackup(true);}
 setInterval(checarBackup,60000);
 $('btnBackupNuvem').onclick=()=>fazerBackup(true);
+window.bkApi={agora:()=>fazerBackup(true),restaurar:()=>$('btnRestaurar').click(),info:()=>({ult:S.ultBackupHora||'',pend:!!S.backupPend}),
+  async lista(){const j=await (await fetch(apiUrl()+'?acao=backups',{cache:'no-store'})).json();return (j&&j.backups)||[];}};
 
 /* ---------- Lista em texto ---------- */
 function fecharEdicao(){$('editBox').hidden=true;$('revBox').hidden=true;$('listaBtns').hidden=false;$('ocrBox').hidden=true;}
@@ -2540,7 +2578,7 @@ async function fotoBase64(file){
 let REV=[];
 function renderRev(){
   $('tbRev').innerHTML=REV.map((x,i)=>`<tr><td class="c" style="cursor:default">${esc(x.nome)}${x.obs?`<br><small class="note">${esc(x.obs)}</small>`:''}</td>
-    <td><select class="mini" data-t="${i}">${[1,2,3,4,5,6].map(t=>`<option value="${t}" ${t===x.trato?'selected':''}>${t}</option>`).join('')}</select></td>
+    <td><select class="mini" data-t="${i}">${tratosCad().map(t=>t.k).map(t=>`<option value="${t}" ${t===x.trato?'selected':''}>${t}</option>`).join('')}</select></td>
     <td><input class="cell${x.prev==='?'?' duv':''}" type="text" inputmode="decimal" data-v="${i}" value="${esc(valPrev(x.prev))}"></td>
     <td><button class="mini" data-x="${i}" aria-label="Tirar ${esc(x.nome)}">✕</button></td></tr>`).join('');
 }

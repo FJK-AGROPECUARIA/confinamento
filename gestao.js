@@ -855,7 +855,7 @@ function salvaIns(id){const nome=fv('nome'),ms=fn('ms'),preco=fn('preco'),desde=
 
 /* ---------- configurações ---------- */
 /* Config. da Gestão separado em botões: Custo · Notas · Raça · Tratos · Balança */
-const CFG_ABAS=[['custo','Custo'],['notas','Notas'],['raca','Animais'],['tratos','Tratos'],['balanca','Balança']];
+const CFG_ABAS=[['custo','Custo'],['notas','Notas'],['raca','Animais'],['tratos','Tratos'],['balanca','Balança'],['backup','Backup']];
 function tCfg(){const c=gCfg(),hj=hojeKey(),tx=vig(c.taxa,hj),ab=GT.cab||'custo';
   if(!GT.racasEd)GT.racasEd=c.racas.slice().sort(alfa);if(!GT.catsEd)GT.catsEd=c.cats.slice();
   if(!GT.notasEd)GT.notasEd=c.notas.slice().sort((a,b)=>a.n-b.n).map(x=>Object.assign({},x));
@@ -881,19 +881,34 @@ function tCfg(){const c=gCfg(),hj=hojeKey(),tx=vig(c.taxa,hj),ab=GT.cab||'custo'
     <div class="gRacaAdd"><input type="text" id="gNovaCat" placeholder="Nova categoria" autocomplete="off"><button class="lima" data-g="catAdd">+ Incluir</button></div>
     <p class="note">Aparecem na ficha do lote (junto com sexo e raça). Depois de mexer, toque em Salvar.</p>${salvar}</section>`;
   if(ab==='tratos'){const P=window.prevApi,lt=GT.ntLoc||'T',cads=(S.cadastro||[]).filter(n=>(typeof curralAtivo!=='function'||curralAtivo(n))&&(lt==='T'||linhaDe(n)===lt)).sort(alfa);
-    h=`<section class="panel gCfgP"><h2>Quantidade de tratos por curral</h2>
+    const TC=tratosCad();
+    h=`<section class="panel gCfgP"><h2>Tratos</h2>
+    <p class="note">Só os tratos ativos aparecem nas telas que perguntam o trato (Carregar, Fornecer, Previsto). O nome é opcional (ex.: Manhã, 7h).</p>
+    <div class="gEdLista gTrLista">${TC.map(t=>`<div class="${t.ativo?'':'gInativa'}"><span><b>Trato ${t.k}</b>${t.nome?' · '+esc(t.nome):''} <span class="pill${t.ativo?' done':''}">${t.ativo?'ativo':'inativo'}</span></span><button class="mini" data-g="trEd" data-k="${t.k}">✎ Editar</button><button class="mini${t.ativo?' danger':''}" data-g="trAt" data-k="${t.k}">${t.ativo?'Desativar':'Ativar'}</button></div>`).join('')}</div>
+    ${TC.length<tratosApi.MAXT?`<button class="lima" data-g="trAdd">+ Novo trato (Trato ${TC.length+1})</button>`:''}</section>
+  <section class="panel gCfgP"><h2>Quantidade de tratos por curral</h2>
     <p class="note">Em quantas vezes o total do dia do curral é dividido. Mudou aqui, o previsto de hoje já é redividido.</p>
     <div class="linhas gFiltro">${[['T','Todos'],['C','Confinamento'],['P','Pasto']].map(([k,r])=>`<button data-g="ntLoc" data-l="${k}" class="${lt===k?'sel':''}">${r}</button>`).join('')}</div>
-    <div class="gNtLista">${cads.map(cu=>{const n=P?P.nTratos(cu):1;return `<label class="gNt"><span>${esc(cu)}</span><select data-ntc="${esc(cu)}">${[1,2,3,4,5,6].map(x=>`<option value="${x}"${x===n?' selected':''}>${x} trato${x>1?'s':''}</option>`).join('')}</select></label>`;}).join('')||'<p class="note">Cadastre os currais no Previsto.</p>'}</div></section>
+    <div class="gNtLista">${cads.map(cu=>{const n=P?P.nTratos(cu):1;return `<label class="gNt"><span>${esc(cu)}</span><select data-ntc="${esc(cu)}">${tratosAtivos().map((_,i)=>i+1).map(x=>`<option value="${x}"${x===n?' selected':''}>${x} trato${x>1?'s':''}</option>`).join('')}</select></label>`;}).join('')||'<p class="note">Cadastre os currais no Previsto.</p>'}</div></section>
   <section class="panel gCfgP"><h2>Divisão do trato (%)</h2>
     <p class="note">Quando o curral tem 2 ou mais tratos, o total do dia é dividido assim. 1 trato = 100% no Trato 1.</p>
-    ${[2,3,4,5,6].map(n=>{const v=P?P.divisao(n):[];return `<div class="gDiv"><b>${n} tratos</b><div class="gDivIn">${v.map((x,k)=>`<label><small>T${k+1}</small><input class="cell" inputmode="decimal" data-div="${n}" value="${String(x).replace('.',',')}"></label>`).join('')}</div><small class="gDivSoma" data-divsoma="${n}">${nf(v.reduce((a,b)=>a+b,0),1)}%</small></div>`;}).join('')}
+    ${tratosAtivos().map((_,i)=>i+1).filter(n=>n>1).map(n=>{const v=P?P.divisao(n):[];return `<div class="gDiv"><b>${n} tratos</b><div class="gDivIn">${v.map((x,k)=>`<label><small>T${tratosAtivos()[k]}</small><input class="cell" inputmode="decimal" data-div="${n}" value="${String(x).replace('.',',')}"></label>`).join('')}</div><small class="gDivSoma" data-divsoma="${n}">${nf(v.reduce((a,b)=>a+b,0),1)}%</small></div>`;}).join('')}
     <button class="primary" data-g="salvaDiv">Salvar divisão</button></section>
   <section class="panel gCfgP"><h2>Compensar no último trato</h2>
     <p class="note">O que for a mais ou a menos nos tratos do dia é ajustado no último trato do curral, para fechar o total do dia. Ex.: total 2.000 (1.000 + 1.000); tratou 1.200 no 1º → o 2º vira 800.</p>
     <select id="cfgComp"><option value="1"${c.compensa===false?'':' selected'}>Ligado (recomendado)</option><option value="0"${c.compensa===false?' selected':''}>Desligado</option></select></section>
   <section class="panel gCfgP"><h2>Arredondamento</h2><div class="gForm">${campo({k:'arred',l:'Arredondar o previsto de',suf:'kg',t:'num',v:c.arred,meia:1})}</div>${salvar}</section>`;}
   if(ab==='balanca')h='<div id="cfgBalHost"></div>';
+  if(ab==='backup'){const I=window.bkApi?bkApi.info():{};
+    h=`<section class="panel gCfgP"><h2>Backup</h2>
+    <p class="note"><b>Automático:</b> todo dia às 2h da manhã, no Google Drive (pasta SISTEMA COMPLETO - CONFINAMENTO › Backups). Ficam os 20 mais novos.<br>
+    <b>Manual:</b> no botão abaixo. Ficam os 10 mais novos.<br>Cada backup tem 2 arquivos: a cópia do sistema (para restaurar) e a planilha geral com tudo separado em abas.<br>
+    A cada 10 dias os 2 arquivos do automático vão por e-mail para alexandre@grupofjk.com.br.</p>
+    <p class="note">${I.ult?'Último backup manual feito por este celular: '+esc(I.ult)+'.':''}${I.pend?' Tem backup esperando sinal de internet.':''}</p>
+    <button class="lima" data-g="bkAgora">✋ Fazer backup manual agora</button>
+    <button data-g="bkRest">↩ Restaurar cópia</button></section>
+    <section class="panel gCfgP"><h2>Cópias guardadas</h2><div id="gBkLista"><p class="note">Buscando…</p></div></section>`;
+    setTimeout(gBkLista,0);}
   return botoes+h;}
 function lerNotasEd(){(GT.notasEd||[]).forEach((x,k)=>{const n=document.querySelector(`#gBox [data-nn="${k}"]`),t=document.querySelector(`#gBox [data-nt="${k}"]`),p=document.querySelector(`#gBox [data-np="${k}"]`);
   if(n)x.n=gNum(n.value);if(t)x.t=t.value.trim();if(p)x.p=gNum(p.value);});}
@@ -928,6 +943,13 @@ $('gBox').addEventListener('click',e=>{
   if(a==='racaAdd'){lerNotasEd();const v=($('gNovaRaca').value||'').trim();if(!v)return toast('Digite o nome da raça');
     if(GT.racasEd.some(r=>alfa(r,v)===0))return toast('Essa raça já está na lista');GT.racasEd.push(v);GT.racasEd.sort(alfa);gRender();return toast('Incluída. Toque em Salvar configurações.');}
   if(a==='ntLoc'){GT.ntLoc=b.dataset.l;return gRender();}
+  if(a==='bkAgora'){if(!window.bkApi)return;Promise.resolve(bkApi.agora()).then(()=>setTimeout(()=>{if(GT.cab==='backup')gRender();},800));return;}
+  if(a==='bkRest'){if(window.bkApi)bkApi.restaurar();return;}
+  if(a==='trEd'||a==='trAt'||a==='trAdd'){const L=tratosCad().map(t=>Object.assign({},t)),k=+b.dataset.k,t=L.find(x=>x.k===k);
+    if(a==='trAdd'){if(L.length>=tratosApi.MAXT)return toast('Máximo de '+tratosApi.MAXT+' tratos');L.push({k:L.length+1,nome:'',ativo:true});tratosApi.salvar(L);gRender();return toast(`Trato ${L.length} cadastrado e ativo`);}
+    if(a==='trEd'){const v=prompt(`Nome do Trato ${k} (opcional, ex.: Manhã ou 7h). Deixe vazio para só "Trato ${k}":`,t.nome||'');if(v==null)return;t.nome=v.trim().slice(0,20);tratosApi.salvar(L);gRender();return toast('Trato salvo');}
+    if(t.ativo&&L.filter(x=>x.ativo).length<=1)return toast('Precisa ficar pelo menos um trato ativo');
+    t.ativo=!t.ativo;tratosApi.salvar(L);gRender();return toast(`Trato ${k} ${t.ativo?'ativado':'desativado'}. Confira a quantidade de tratos dos currais.`);}
   if(a==='catAdd'){lerNotasEd();const v=($('gNovaCat').value||'').trim();if(!v)return toast('Digite o nome da categoria');
     if(GT.catsEd.some(r=>alfa(r,v)===0))return toast('Essa categoria já está na lista');GT.catsEd.push(v);gRender();return toast('Incluída. Toque em Salvar configurações.');}
   if(a==='racaEd'||a==='catEd'){lerNotasEd();const arr=a==='racaEd'?GT.racasEd:GT.catsEd,i=+b.dataset.i,ant=arr[i];const v=(prompt('Novo nome:',ant)||'').trim();if(!v||v===ant)return;
@@ -1089,7 +1111,7 @@ function cTelaNova(){if(!CG.passo){CG.passo=1;CG.local=null;}if(!CG.local)CG.pas
     <label>1. Local</label>${escolhaLocal('data-cloc',CG.local)}
     <div><label for="cRac">2. Ração</label><select id="cRac">${CG.rac?'':'<option value="" selected>— escolha a ração —</option>'}${R.map(r=>`<option value="${r.uid}"${r.uid===CG.rac?' selected':''}>${esc(r.nome)}</option>`).join('')}</select>
       ${doLocal.length===1?`<p class="note">Única ração ativa no ${NOMELOC[CG.local].toLowerCase()}: já selecionada.</p>`:!doLocal.length?`<p class="note">Nenhum lote com ração no ${NOMELOC[CG.local].toLowerCase()}: mostrando todas.</p>`:''}</div>`;
-  if(ps<=2||!CG.rac)return passoRac+(CG.rac?cont(3):'')+'</section>';
+  if(!CG.rac)return passoRac+'</section>';
   CG.juntos=CG.avulso?[]:(CG.juntos||[]).filter(k=>k!==+CG.trato);const trs=[+CG.trato].concat(CG.juntos).sort((a,b)=>a-b);
   const partes=trs.map(k=>({k,sg:sugestaoCarga(k,CG.rac,CG.local)})),sg={tot:partes.reduce((a,p)=>a+p.sg.tot,0),cs:[...new Set(partes.flatMap(p=>p.sg.cs))]};
   const chave=CG.avulso?'avulso|'+CG.rac:CG.local+'|'+trs.join('+')+'|'+CG.rac;if(CG.totalDe!==chave){CG.total=CG.avulso?0:(sg.tot||0);CG.totalDe=chave;cSave();}
@@ -1097,10 +1119,9 @@ function cTelaNova(){if(!CG.passo){CG.passo=1;CG.local=null;}if(!CG.local)CG.pas
   const passoTrato=passoRac+(CG.avulso?`
     <label>3. Trato</label><div class="cAvInfo">✳ Trato avulso · sem previsto, você digita a quantidade</div>`:`
     <label for="cTrato">3. Trato</label>${window.tratoSeta?tratoSeta('cTrato',CG.trato):''}
-    <div class="cJunto"><button type="button" class="mini cJtTog${CG.juntoAberto?' sel':''}" data-cjtog="1">＋ Carregar junto${CG.juntos.length?' (T'+CG.juntos.join(', T')+')':''}</button>
-    ${CG.juntoAberto?[1,2,3,4,5,6].filter(k=>k!==+CG.trato).map(k=>{const t=sugestaoCarga(k,CG.rac,CG.local).tot;return `<button type="button" data-cjunto="${k}" class="${CG.juntos.includes(k)?'sel':''}"${t||CG.juntos.includes(k)?'':' disabled'}>T${k}${t?`<small>${nf(t)}</small>`:''}</button>`;}).join(''):''}</div>`)+
-    `<button type="button" class="mini cAvulso${CG.avulso?' sel':''}" data-cavulso="1">${CG.avulso?'↩ Voltar para os tratos do previsto':'✳ Trato avulso (sem previsto)'}</button>`;
-  if(ps<=3)return passoTrato+cont(4)+'</section>';
+    <div class="cBotoes"><button type="button" class="mini cJtTog${CG.juntoAberto?' sel':''}" data-cjtog="1">＋ Carregar junto${CG.juntos.length?' (T'+CG.juntos.join(', T')+')':''}</button><button type="button" class="mini cAvulso" data-cavulso="1">✳ Trato avulso</button></div>
+    <div class="cJuntoLista">${CG.juntoAberto?tratosAtivos().filter(k=>k!==+CG.trato).map(k=>{const t=sugestaoCarga(k,CG.rac,CG.local).tot;return `<button type="button" data-cjunto="${k}" class="${CG.juntos.includes(k)?'sel':''}"${t||CG.juntos.includes(k)?'':' disabled'}>T${k}${t?`<small>${nf(t)}</small>`:''}</button>`;}).join(''):''}</div>`)+
+    (CG.avulso?`<button type="button" class="mini cAvulso sel" data-cavulso="1">↩ Voltar para os tratos do previsto</button>`:'');
   return passoTrato+`
     <div><label>4. Total a carregar (kg)${CG.avulso?' · digite':' · pode mudar'}</label><div class="campoX cTotWrap"><input class="big num" id="cTotal" type="text" readonly inputmode="none" value="${CG.total?nf(CG.total):''}" placeholder="${CG.avulso?'digite':''}" data-ct="total"><div class="cSetas"><button type="button" data-ctot="-50" aria-label="Menos 50 kg">▼</button><button type="button" data-ctot="50" aria-label="Mais 50 kg">▲</button></div></div>
 </div>
@@ -1285,3 +1306,13 @@ document.addEventListener('click',e=>{const b=e.target.closest('#gBox [data-g="l
     total:['TOTAL',`${R.length} lote(s)`,nf(R.reduce((a,x)=>a+x.cab,0)),'','','','','','',rs(R.reduce((a,x)=>a+(ok(x.tot)?x.tot:0),0))]}],`Lotes ${dB(hojeKey()).replace(/\//g,'-')}`);
   gExcel(`Lotes ${dB(hojeKey()).replace(/\//g,'-')}`,[['Lotes',['Curral','Lote','Sexo · raça · categoria','Ração','Entrada','Arquivado em','Cabeças','Peso entrada (kg)','Peso projetado (kg)','Dias','MN/cab (média)','MS/cab (média)','% IMS (média)','R$/cab/dia','R$/cab total','R$ total do lote'],
     R.map(x=>[xc(x.c),xc(x.nome),xc(x.desc),xc(x.rac),xc(x.ent,'dia'),xc(x.fim,'dia'),xc(x.cab,'int'),xc(x.pe,'int'),xc(x.pp,'int'),xc(x.dias,'int'),xc(x.mn,'dec'),xc(x.ms,'dec'),xc(ok(x.ims)?x.ims/100:NaN,'pct'),xc(x.cd,'rs'),xc(x.ct,'rs'),xc(x.tot,'rs')]),[10,22,26,16,11,12,9,11,12,7,11,11,10,11,12,14]]]);},true);
+
+/* ---------- Gestão › Config. › Backup: lista das cópias (automáticas e manuais) ---------- */
+async function gBkLista(){const el=$('gBkLista');if(!el)return;
+  if(!navigator.onLine||!window.bkApi||typeof apiUrl!=='function'||!apiUrl()){el.innerHTML='<p class="note">Precisa de internet para ver as cópias.</p>';return;}
+  try{const L=await bkApi.lista(),man=b=>b.tipo?b.tipo==='manual':/manual/i.test(b.nome||'');
+    const li=b=>{const d=new Date(b.criado);return `<div class="gBkIt"><b>${d.toLocaleDateString('pt-BR',{weekday:'short',day:'2-digit',month:'2-digit',year:'numeric'})} · ${d.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'})}</b>${b.url?`<a href="${esc(b.url)}" target="_blank" rel="noopener">abrir planilha</a>`:''}</div>`;};
+    const au=L.filter(b=>!man(b)),ma=L.filter(man);
+    el.innerHTML=`<h3 class="gSub">🕑 Automáticos · ${au.length} de 20</h3>${au.map(li).join('')||'<p class="note">Nenhum ainda.</p>'}
+      <h3 class="gSub">✋ Manuais · ${ma.length} de 10</h3>${ma.map(li).join('')||'<p class="note">Nenhum ainda.</p>'}`;
+  }catch(e){el.innerHTML='<p class="note">Não consegui buscar as cópias agora.</p>';}}
