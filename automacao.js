@@ -149,6 +149,7 @@ function montar(){
     <button id="aDesfazer">Desfazer último</button>
     <p class="note">Os tratos registrados aqui aparecem também na aba Tratar, no Histórico, nos relatórios e na nuvem.</p>
   </section>
+  <section class="panel abrirNovo" id="fNovoA" hidden></section>
 
   <section class="panel">
     <p class="note">Ajustes da balança e dos apitos: Gestão › Config. › Balança.</p>
