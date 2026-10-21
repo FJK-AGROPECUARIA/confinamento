@@ -337,7 +337,7 @@ function tHome(t){
     ${bat.length?`<p class="note">Vagão: previsto ${nf(bp)} kg · carregado ${nf(br)} kg (${br-bp>0?'+':''}${nf(br-bp)} kg).</p>`:''}
     ${Object.keys(ins).length?`<h3>Insumos gastos no dia</h3>${tabInsumos(ins)}`:''}`):''}
   ${abHTML}
-  ${A.length?`<section class="panel"><div class="row compart"><button class="verde" data-g="resPdf">📄 Resumo em PDF</button><button class="verde" data-g="resImg">🖼 Resumo em imagem</button></div></section>`:''}`;
+  ${A.length?`<section class="panel"><div class="row compart"><button class="verde" data-g="resPdf">📄 PDF</button><button class="verde" data-g="resImg">🖼 Foto</button></div></section>`:''}`;
 }
 /* ---------- Resumo: relatório (imagem ou PDF) ---------- */
 function resSecoes(){const R=window.resDados;if(!R)return [];const S_=[];
@@ -385,7 +385,7 @@ function tLotes(t){
   return `<section class="panel"><div class="curhead"><h2>${t.enc?'Lotes arquivados':'Lotes ativos'}</h2><span class="note">${lista.length}</span></div>
     ${(()=>{const base=gTodos('lote').filter(l=>t.enc?!ativo(l):ativo(l));return locBotoes('filtroLoc',loc,k=>base.filter(l=>doLocal(k,curralEm(l,fimLote(l)||hj))).length);})()}
     ${cards||`<p class="note">${t.enc?'Nenhum lote arquivado.':'Nenhum lote ainda. Toque em “+ Novo lote”.'}</p>`}
-    ${lista.length?`<div class="row compart"><button class="verde" data-g="lotesImg" data-enc="${t.enc?'1':''}">🖼 Imagem</button><button class="verde" data-g="lotesXls" data-enc="${t.enc?'1':''}">📊 Excel</button></div>`:''}
+    ${lista.length?`<div class="row compart"><button class="verde" data-g="lotesImg" data-enc="${t.enc?'1':''}">🖼 Foto</button><button class="verde" data-g="lotesXls" data-enc="${t.enc?'1':''}">📊 Excel</button></div>`:''}
     ${t.enc?'':'<button class="lima" data-g="novoLote">+ Novo lote</button>'}
     <button data-g="ir" data-t="lotes" data-enc="${t.enc?'':'1'}">${t.enc?'Ver lotes ativos':'Ver lotes arquivados'}</button></section>`;
 }
@@ -555,7 +555,7 @@ function tRelLote(t){
   return `${voltar()}<section class="panel"><div class="gLoteTopo">${seloCurral(curralEm(l,C.ate))}<div><h2>${esc(l.nome)}</h2><span class="pill${fim?'':' done'}">${fim?'Relatório final':'Resultado até hoje'}</span>
       <p class="note">${dB(l.ent.dia)} a ${dB(C.ate)} · ${nf(C.dias)} dias · ${nf(cabE)} cab · entrada ${nf(C.pesoE)} kg</p></div></div>
     ${hero}
-    <div class="row compart"><button class="verde" data-g="imgLote" data-id="${l.uid}">🖼 Imagem</button><button class="verde" data-g="xlsLote" data-id="${l.uid}">📊 Excel</button></div></section>
+    <div class="row compart"><button class="verde" data-g="imgLote" data-id="${l.uid}">🖼 Foto</button><button class="verde" data-g="xlsLote" data-id="${l.uid}">📊 Excel</button></div></section>
   ${dados}
   ${card('Desempenho',desemp)}
   ${card('Custos',custos)}
@@ -682,7 +682,7 @@ function tCochoGraf(t){const fim=t.dia||GT.dia||hojeKey();GT.dia=fim;const D=dad
     ${rows?`<div class="tablebox"><table class="gHeat"><colgroup><col class="cC">${D.dias.map(()=>'<col>').join('')}<col class="cM"></colgroup><thead><tr><th class="gHc">Local</th>${cab}<th class="gHm">Méd.</th></tr></thead><tbody>${rows}</tbody></table></div>
     <div class="gLegNota">${notas.map(x=>{const [bg,fg]=corNota(x.p);return `<span style="background:${bg};color:${fg}">${notaTxt(x.n)}<small>${x.p>0?'+':''}${nf(x.p,0)}%</small></span>`;}).join('')}</div>
     <p class="note">Azul = aumentou o trato · vermelho = diminuiu · cinza = manteve · ponto = sem leitura. Toque num quadro para ver os kg.</p>
-    <div class="row compart"><button class="verde" data-g="imgGraf">🖼 Imagem</button><button class="verde" data-g="xlsGraf">📊 Excel</button></div>`:'<p class="note">Nenhuma leitura nesse período.</p>'}
+    <div class="row compart"><button class="verde" data-g="imgGraf">🖼 Foto</button><button class="verde" data-g="xlsGraf">📊 Excel</button></div>`:'<p class="note">Nenhuma leitura nesse período.</p>'}
     <button class="gVoltarFim" data-g="voltar">❮ Voltar para a leitura</button></section>`;}
 function imagemGraf(){const fim=GT.dia,D=dadosGraf(fim);if(!D.linhas.length)return toast('Nada para mostrar');
   const esq=120,cw=46,ch=34,top=112,W=esq+cw*10+70+20,H=top+ch*D.linhas.length+110,cv=document.createElement('canvas'),s=2;cv.width=W*s;cv.height=H*s;
@@ -794,7 +794,7 @@ function tDia(t){
     <p class="note">Ração ${rs(T.cr)} + operacional ${rs(T.co)}.</p>
     ${rows||'<p class="note">Nenhum lote nesta data.</p>'}
     <p class="note">Peso = projetado pela última pesagem e a meta de ganho. MN = trato realizado no curral (dividido por cabeça se houver mais de um lote).</p>
-    ${rows?'<div class="row compart"><button class="verde" data-g="imgDia">🖼 Imagem</button><button class="verde" data-g="xlsDia">📊 Excel</button></div>':''}</section>
+    ${rows?'<div class="row compart"><button class="verde" data-g="imgDia">🖼 Foto</button><button class="verde" data-g="xlsDia">📊 Excel</button></div>':''}</section>
   ${Object.keys(ins).length?card('Insumos usados no dia',tabInsumos(ins)+'<p class="note">Calculado pelo trato realizado em cada curral × fórmula da ração do dia.</p>'):''}
   ${batidasDiaCard(dia)}`;
 }
@@ -838,7 +838,7 @@ function tPeriodo(t){
       ${st('Custo total',rs(tot))}${st('R$/cab/dia',rs(T.cd?(T.cr+T.co)/T.cd:NaN))}${st('Sanidade',rs(T.out))}</div>
     <p class="note">Ração ${rs(T.cr)} + operacional ${rs(T.co)}${T.out?` + sanidade ${rs(T.out)}`:''}.</p>
     ${rows||'<p class="note">Nada nesse período.</p>'}
-    ${rows?'<div class="row compart"><button class="verde" data-g="imgPer">🖼 Imagem</button><button class="verde" data-g="xlsPer">📊 Excel</button></div>':''}</section>
+    ${rows?'<div class="row compart"><button class="verde" data-g="imgPer">🖼 Foto</button><button class="verde" data-g="xlsPer">📊 Excel</button></div>':''}</section>
   ${Object.keys(D.ins).length?card('Insumos usados no período',tabInsumos(D.ins)):''}`;
 }
 function xlsPer(){const ini=GT.ini,fim=GT.fim,D=periodoDados(ini,fim);
@@ -858,7 +858,7 @@ function tComp(t){
     <div class="row"><button class="mini${t.enc?'':' sel'}" data-g="ir" data-t="comp">Todos</button><button class="mini${t.enc?' sel':''}" data-g="ir" data-t="comp" data-enc="1">Só arquivados</button></div>
     ${rows||'<p class="note">Nenhum lote.</p>'}
     <p class="note">Conversão e custo da @ produzida aparecem depois das vendas. Lote arquivado: lucro real. Lote ativo: resultado estimado (peso projetado × rendimento × preço da @ do lote − custo); fica — se o lote não tem preço da @ de venda.</p>
-    ${rows?'<div class="row compart"><button class="verde" data-g="imgComp">🖼 Imagem</button><button class="verde" data-g="xlsComp">📊 Excel</button></div>':''}</section>`;
+    ${rows?'<div class="row compart"><button class="verde" data-g="imgComp">🖼 Foto</button><button class="verde" data-g="xlsComp">📊 Excel</button></div>':''}</section>`;
 }
 function xlsComp(){const todosL=gTodos('lote').filter(l=>GT.compEnc?!ativo(l):true).sort(porCurral);
   const r=todosL.map(l=>{const C=calcLote(l),e=l.ent;return [xc(l.nome),xc(C.fim?'Arquivado':'Ativo'),xc(curralEm(l,C.ate)),xc(sexoTxt(l.sexo)),xc(l.raca||''),xc(e.dia,'dia'),xc(C.fim||'','dia'),xc(C.dias,'int'),xc(C.cabE,'int'),xc(C.cabV,'int'),xc(C.mortes,'int'),
@@ -1073,7 +1073,7 @@ function salvaCfg(){const c=JSON.parse(JSON.stringify(gCfg()));const t=fn('taxa'
 /* =====================================================================================
    EVENTOS
    ===================================================================================== */
-const SO_VER=new Set(['fzFotoVer','resPdf','resImg','fzPdf','fzImgG','fzCur','fzLoc','fzImg','fzXls','fzXlsHist','cfgAba','coLoc','coAbre','coFecha','estPer','evLoc','evolN','imgDia','imgPer','imgComp','imgLote','xlsGraf','racaAdd','racaRm','grafLoc','grafCur','celGraf','imgGraf','filtroLoc','dataPasso','dataHoje','voltar','ir','lote','raiz','compRel','compDia','xlsDia','xlsPer','xlsComp','xlsLote','perAtalho','nota','racAdd','racRm','notaAdd','notaRm','notaPadrao']);
+const SO_VER=new Set(['fzFotoVer','fzHN','fzHPdf','fzHImg','resPdf','resImg','fzPdf','fzImgG','fzCur','fzLoc','fzImg','fzXls','fzXlsHist','cfgAba','coLoc','coAbre','coFecha','estPer','evLoc','evolN','imgDia','imgPer','imgComp','imgLote','xlsGraf','racaAdd','racaRm','grafLoc','grafCur','celGraf','imgGraf','filtroLoc','dataPasso','dataHoje','voltar','ir','lote','raiz','compRel','compDia','xlsDia','xlsPer','xlsComp','xlsLote','perAtalho','nota','racAdd','racRm','notaAdd','notaRm','notaPadrao']);
 $('gBox').addEventListener('click',e=>{
   const b=e.target.closest('[data-g]');if(!b)return;const a=b.dataset.g,id=b.dataset.id;
   if(!SO_VER.has(a)&&bloqueado())return;
@@ -1372,7 +1372,7 @@ function cTelaDia(){const dia=CG.verDia||hojeKey(),L=cargasDia(dia);
   const tp=L.reduce((a,c)=>a+c.itens.reduce((s,x)=>s+x.prev,0),0),tr=L.reduce((a,c)=>a+c.itens.reduce((s,x)=>s+(+x.real||0),0),0);
   return `<section class="panel"><h2>Batidas do dia</h2>${navData('cDia',dia,'Data')}
     ${L.length?`<div class="stat gStat3">${st('Batidas',nf(L.length))}${st('Previsto',nf(tp)+' kg')}${st('Carregado',nf(tr)+' kg')}</div>${cards}
-    <div class="row compart"><button class="verde" data-c="imgCarga">🖼 Imagem</button><button class="verde" data-c="xlsCarga">📊 Excel</button></div>`:'<p class="note">Nenhuma batida nesta data.</p>'}</section>`;}
+    <div class="row compart"><button class="verde" data-c="imgCarga">🖼 Foto</button><button class="verde" data-c="xlsCarga">📊 Excel</button></div>`:'<p class="note">Nenhuma batida nesta data.</p>'}</section>`;}
 /* teclado numérico grande (igual ao do Tratar) */
 function cTeclado(campo){if(bloqueado())return;cTec=campo;const A=cAtiva(),it=A&&A.itens[A.atual];
   const v=campo==='total'?CG.total:it?it[campo]:null;cBuf=ok(v)&&v?String(Math.round(v)):'';
@@ -1670,21 +1670,21 @@ function tFezes(t){const hj=hojeKey();t.dia=t.dia||hj;t.loc=t.loc||'T';const dia
     ${R.map(o=>`<tr data-g="fzCur" data-c="${esc(o.c)}"><td class="c">${esc(o.c)}</td><td>${o.k.tot}</td>${o.k.pct.map((p,i)=>`<td class="${i===2?'fz3':''}">${p?p.toFixed(0)+'%':'·'}</td>`).join('')}<td class="${fzStatus(o.k).cl}"><b>${fz1(o.k.media)}</b></td></tr>`).join('')}
     <tr class="grp"><td>Geral</td><td>${KG.tot}</td>${KG.pct.map(p=>`<td>${p.toFixed(0)}%</td>`).join('')}<td class="${fzStatus(KG).cl}"><b>${fz1(KG.media)}</b></td></tr></tbody></table></div>
     <p class="note">Ideal: maioria no escore 3 e média entre 2,5 e 3,5. Mais de 20% em 1+2 = fezes moles (risco de acidose). Mais de 20% em 4+5 = fezes firmes.</p>
-    <div class="row compart fz3"><button class="verde" data-g="fzPdf">📄 PDF</button><button class="verde" data-g="fzImg">🖼 Tabela</button><button class="verde" data-g="fzXls">📊 Excel</button></div></section>`
+    <div class="row compart fz3"><button class="verde" data-g="fzPdf">📄 PDF</button><button class="verde" data-g="fzImg">🖼 Foto</button><button class="verde" data-g="fzXls">📊 Excel</button></div></section>`
     :`<section class="panel"><p class="note">Nenhuma avaliação de fezes em ${dB(dia)}${t.loc!=='T'?' neste local':''}.</p></section>`;
   /* histórico */
-  const ini=t.hIni||somaDias(dia,-29),cH=t.hCur||'';
+  const hN=[7,15,30].includes(+t.hN)?+t.hN:30,ini=somaDias(dia,-(hN-1)),cH=t.hCur||'';
   const HI=gTodos('fezes').filter(x=>x.dia>=ini&&x.dia<=dia&&(cH?x.curral===cH:doLocal(t.loc,x.curral)));
   const porDia={};HI.forEach(x=>{const k=fzCalc(x.c);if(!k.tot)return;const d=porDia[x.dia]||(porDia[x.dia]=[0,0,0,0,0]);k.cs.forEach((n,i)=>d[i]+=n);});
   const dias=Object.keys(porDia).sort().reverse();
   const opC=[...new Set(gTodos('fezes').map(x=>x.curral))].sort(alfa);
-  const hist=`<section class="panel"><div class="curhead"><h2>Histórico</h2><span class="note">últimos 30 dias</span></div>
+  const hist=`<section class="panel"><div class="curhead"><h2>Histórico</h2><div class="fzHN">${[7,15,30].map(n=>`<button class="${n===hN?'sel':''}" data-g="fzHN" data-n="${n}">${n} dias</button>`).join('')}</div></div>
     <select id="fzHCur"><option value="">${t.loc==='T'?'Todos os currais':t.loc==='C'?'Todo o confinamento':'Todo o pasto'}</option>${opC.map(c=>`<option${c===cH?' selected':''}>${esc(c)}</option>`).join('')}</select>
     ${dias.length?`<div class="fzBarras">${dias.slice().reverse().map(d=>{const k=fzCalc(porDia[d]);return `<div class="fzBar" title="${dB(d)} · média ${fz1(k.media)}">${k.pct.map((p,i)=>`<i class="e${i+1}" style="height:${p}%"></i>`).join('')}<small>${dB(d).slice(0,5)}</small></div>`;}).join('')}</div>
       <div class="fzLeg">${[1,2,3,4,5].map(i=>`<span><i class="e${i}"></i>${i} ${FZ_DESC[i]}</span>`).join('')}</div>
       <div class="tablebox"><table class="gTab fzTab"><thead><tr><th>Dia</th><th>N</th><th>1</th><th>2</th><th>3</th><th>4</th><th>5</th><th>Média</th></tr></thead><tbody>
       ${dias.map(d=>{const k=fzCalc(porDia[d]);return `<tr><td class="c">${dB(d).slice(0,5)}</td><td>${k.tot}</td>${k.pct.map((p,i)=>`<td class="${i===2?'fz3':''}">${p?p.toFixed(0)+'%':'·'}</td>`).join('')}<td class="${fzStatus(k).cl}"><b>${fz1(k.media)}</b></td></tr>`;}).join('')}</tbody></table></div>
-      <div class="row compart"><button class="verde" data-g="fzXlsHist">📊 Excel do histórico</button></div>`:'<p class="note">Sem avaliações nesse período.</p>'}</section>`;
+      <div class="row compart fz3"><button class="verde" data-g="fzHPdf">📄 PDF</button><button class="verde" data-g="fzHImg">🖼 Foto</button><button class="verde" data-g="fzXlsHist">📊 Excel</button></div>`:'<p class="note">Sem avaliações nesse período.</p>'}</section>`;
   return `<section class="panel"><h2>Escore de fezes</h2>${navData('fzDia',dia,'Dia da avaliação')}${locBotoes('fzLoc',t.loc)}
     <p class="note">Escolha o curral e toque em + para cada fezes avaliada.</p>
     <div class="fzChips">${chips||'<p class="note">Nenhum curral com lote neste local.</p>'}</div></section>${ficha}${rel}${hist}`;}
@@ -1700,15 +1700,17 @@ function fzXls(hist){const t=GT;
   if(!hist){const R=gTodos('fezes').filter(x=>x.dia===t.dia&&doLocal(t.loc,x.curral)).map(x=>({c:x.curral,k:fzCalc(x.c),obs:x.obs})).filter(o=>o.k.tot).sort((a,b)=>alfa(a.c,b.c));
     return gExcel(`Escore de fezes ${dB(t.dia).replace(/\//g,'-')}`,[['Escore de fezes',['Dia','Curral','Total','Esc. 1','Esc. 2','Esc. 3','Esc. 4','Esc. 5','% 1','% 2','% 3','% 4','% 5','Média','Situação','Observação'],
       R.map(o=>[xc(t.dia,'dia'),xc(o.c),xc(o.k.tot,'int')].concat(o.k.cs.map(n=>xc(n,'int')),o.k.pct.map(p=>xc(p/100,'pct')),[xc(o.k.media,'dec'),xc(fzStatus(o.k).txt),xc(o.obs||'')])),[11,16,8,7,7,7,7,7,8,8,8,8,8,8,24,40]]]);}
-  const ini=t.hIni||somaDias(t.dia,-29),cH=t.hCur||'';
+  const hN=[7,15,30].includes(+t.hN)?+t.hN:30,ini=somaDias(t.dia,-(hN-1)),cH=t.hCur||'';
   const HI=gTodos('fezes').filter(x=>x.dia>=ini&&x.dia<=t.dia&&(cH?x.curral===cH:doLocal(t.loc,x.curral))).map(x=>({d:x.dia,c:x.curral,k:fzCalc(x.c),obs:x.obs})).filter(o=>o.k.tot).sort((a,b)=>a.d.localeCompare(b.d)||alfa(a.c,b.c));
-  gExcel(`Escore de fezes historico ate ${dB(t.dia).replace(/\//g,'-')}`,[['Histórico',['Dia','Curral','Total','% 1','% 2','% 3','% 4','% 5','Média','Situação','Observação'],
+  gExcel(`Escore de fezes historico ${hN} dias ${(cH||'todos').replace(/[\\/:*?"<>|]/g,'-')} ${dB(t.dia).replace(/\//g,'-')}`,[['Histórico',['Dia','Curral','Total','% 1','% 2','% 3','% 4','% 5','Média','Situação','Observação'],
     HI.map(o=>[xc(o.d,'dia'),xc(o.c),xc(o.k.tot,'int')].concat(o.k.pct.map(p=>xc(p/100,'pct')),[xc(o.k.media,'dec'),xc(fzStatus(o.k).txt),xc(o.obs||'')])),[11,16,8,8,8,8,8,8,8,24,40]]]);}
 $('gBox').addEventListener('click',e=>{const b=e.target.closest('[data-g^="fz"]');if(!b||GT.t!=='fezes')return;const a=b.dataset.g;
   if(a==='fzCur'){GT.cur=GT.cur===b.dataset.c&&b.tagName==='BUTTON'?null:b.dataset.c;gRender();if(GT.cur)setTimeout(()=>{const f=document.querySelector('.fzFicha');if(f)f.scrollIntoView({behavior:'smooth',block:'start'});},50);return;}
   if(a==='fzLoc'){GT.loc=b.dataset.l;GT.cur=null;return gRender();}
   if(a==='fzPdf')return fzRelPdf();if(a==='fzImgG')return fzRelImg();
   if(a==='fzImg')return fzImg();if(a==='fzXls')return fzXls(false);if(a==='fzXlsHist')return fzXls(true);
+  if(a==='fzHN'){GT.hN=+b.dataset.n;const y=window.scrollY;gRender();window.scrollTo({top:y});return;}
+  if(a==='fzHPdf'||a==='fzHImg')return fzHistExport(a==='fzHPdf');
   if(typeof bloqueado==='function'&&bloqueado())return;
   if(a==='fzMais'||a==='fzMenos')return fzMudar(+b.dataset.i,a==='fzMais'?1:-1);
   if(a==='fzFotoAdd'){const f=document.getElementById('fzFotoIn');if(f)f.click();return;}
@@ -1802,6 +1804,118 @@ function fzPaginas(){const D=fzDadosDia(),dia=GT.dia,W=1240,H=1754,por=3,pags=[]
     x.fillText('Mais de 20% em 1+2 = fezes moles (risco de acidose) · mais de 20% em 4+5 = fezes firmes.',40,H-22);
     pags.push(cv);}
   return pags;}
+/* histórico do escore (7/15/30 dias, um curral ou todos): gráfico + tabela, em PDF ou imagem */
+function fzHistCanvas(){const t=GT,dia=t.dia,hN=[7,15,30].includes(+t.hN)?+t.hN:30,ini=somaDias(dia,-(hN-1)),cH=t.hCur||'';
+  const porDia={};gTodos('fezes').filter(x=>x.dia>=ini&&x.dia<=dia&&(cH?x.curral===cH:doLocal(t.loc,x.curral))).forEach(x=>{const k=fzCalc(x.c);if(!k.tot)return;const d=porDia[x.dia]||(porDia[x.dia]=[0,0,0,0,0]);k.cs.forEach((n,i)=>d[i]+=n);});
+  const dias=Object.keys(porDia).sort();if(!dias.length)return null;
+  const W=1240,top=130,gH=460,rowH=44,H=top+40+gH+70+60+(dias.length+1)*rowH+90,cv=document.createElement('canvas');cv.width=W;cv.height=H;const x=cv.getContext('2d');
+  const quem=cH||(t.loc==='C'?'Todo o confinamento':t.loc==='P'?'Todo o pasto':'Todos os currais');
+  x.fillStyle='#fff';x.fillRect(0,0,W,H);x.fillStyle='#24502a';x.fillRect(0,0,W,top);
+  x.fillStyle='#fff';x.textAlign='left';x.font='bold 40px Arial';x.fillText('Escore de fezes · Histórico',40,62);
+  x.font='24px Arial';x.fillStyle='#d8f06a';x.fillText(`${quem} · últimos ${hN} dias (${dB(ini).slice(0,5)} a ${dB(dia).slice(0,5)}) · FJK Agropecuária`,40,102);
+  const T5=[0,0,0,0,0];dias.forEach(d=>porDia[d].forEach((n,i)=>T5[i]+=n));const KT=fzCalc(T5);
+  x.textAlign='right';x.fillStyle='#fff';x.font='bold 24px Arial';x.fillText(`${KT.tot} fezes · média ${fz1(KT.media)}`,W-40,62);
+  /* gráfico: uma coluna por dia avaliado, empilhada 1→5 em % */
+  const gx=90,gy=top+40,gw=W-130,n=dias.length,slot=gw/n,bw=Math.min(70,slot*.7);
+  x.strokeStyle='#d5dccd';x.lineWidth=1;x.fillStyle='#5d6b7a';x.font='18px Arial';x.textAlign='right';
+  [0,25,50,75,100].forEach(v=>{const yy=gy+gH-gH*v/100;x.beginPath();x.moveTo(gx,yy);x.lineTo(gx+gw,yy);x.stroke();x.fillText(v+'%',gx-10,yy+6);});
+  dias.forEach((d,j)=>{const k=fzCalc(porDia[d]),bx=gx+slot*j+(slot-bw)/2;let yy=gy+gH;
+    k.pct.forEach((p,i)=>{const h=gH*p/100;x.fillStyle=FZ_COR[i];x.fillRect(bx,yy-h,bw,h);yy-=h;});
+    x.fillStyle='#1d2b3a';x.textAlign='center';x.font=(n>15?'15px':'18px')+' Arial';x.fillText(dB(d).slice(0,5),bx+bw/2,gy+gH+26);
+    x.font='bold '+(n>15?'14px':'17px')+' Arial';x.fillStyle=fzStatus(k).cl==='ok'?'#2e7d32':fzStatus(k).cl==='warn'?'#b26a00':'#b3261e';x.fillText(fz1(k.media),bx+bw/2,gy-8);});
+  /* legenda */
+  let lx=gx;const ly=gy+gH+62;x.font='20px Arial';x.textAlign='left';
+  [1,2,3,4,5].forEach(i=>{x.fillStyle=FZ_COR[i-1];x.fillRect(lx,ly-16,20,20);x.fillStyle='#1d2b3a';const tx=`${i} ${FZ_DESC[i]}`;x.fillText(tx,lx+28,ly);lx+=28+x.measureText(tx).width+34;});
+  /* tabela */
+  const cols=[['Dia',40,'l'],['N',300,'r'],['1',420,'r'],['2',540,'r'],['3',660,'r'],['4',780,'r'],['5',900,'r'],['Média',1180,'r']];let ty=ly+60;
+  x.font='bold 20px Arial';x.fillStyle='#5d6b7a';cols.forEach(([c,cx,al])=>{x.textAlign=al==='l'?'left':'right';x.fillText(c,cx,ty);});
+  dias.slice().reverse().concat(['__tot']).forEach((d,r)=>{ty+=rowH;const tot=d==='__tot',k=tot?KT:fzCalc(porDia[d]);
+    if(tot){x.fillStyle='#eef3e4';x.fillRect(30,ty-30,W-60,rowH);}else{x.strokeStyle='#e3e8dc';x.beginPath();x.moveTo(30,ty-30);x.lineTo(W-30,ty-30);x.stroke();}
+    const v=[tot?'Período':dB(d).slice(0,5),String(k.tot)].concat(k.pct.map(p=>p?p.toFixed(0)+'%':'·')).concat([fz1(k.media)]);
+    cols.forEach(([c,cx,al],i)=>{x.textAlign=al==='l'?'left':'right';x.font=(tot||i===4||i===7?'bold ':'')+'21px Arial';
+      x.fillStyle=i===7?(fzStatus(k).cl==='ok'?'#2e7d32':fzStatus(k).cl==='warn'?'#b26a00':'#b3261e'):'#1d2b3a';x.fillText(v[i],cx,ty);});});
+  x.textAlign='left';x.fillStyle='#5d6b7a';x.font='18px Arial';x.fillText('Ideal: maioria no escore 3, média entre 2,5 e 3,5 · >20% em 1+2 = moles (acidose) · >20% em 4+5 = firmes.',40,H-30);
+  return cv;}
+async function fzHistExport(pdf){const cv=fzHistCanvas();if(!cv)return toast('Sem avaliações nesse período');const t=GT,hN=[7,15,30].includes(+t.hN)?+t.hN:30;
+  const nome=`Escore de fezes historico ${hN} dias ${(t.hCur||'todos').replace(/[\\/:*?"<>|]/g,'-')} ${dB(t.dia).replace(/\//g,'-')}`;
+  try{if(pdf)await compartilharArquivo(fzPdf([cv]),nome+'.pdf','application/pdf');
+    else cv.toBlob(b=>compartilharArquivo(b,nome+'.png','image/png'),'image/png');}catch(e){toast('Não consegui gerar o arquivo');}}
+window.fzHistCanvas=fzHistCanvas;
+/* ---------- Relatório zootécnico do dia (Tratos › Histórico): por lote/curral, com consumo MN, MS e % PV ---------- */
+function zootDados(dia,loc){const X=gCtx(),L=gTodos('lote').filter(l=>l.ent&&cabPres(l,dia,X.sd.get(l.uid))>0);
+  const media=(l,ini,fim,f)=>{let s=0,n=0;for(let d=ini,i=0;d<=fim&&i<4000;d=somaDias(d,1),i++){const x=diaLote(l,d,X);if(x&&x.mn>0){const v=f(x);if(ok(v)){s+=v;n++;}}}return n?s/n:NaN;};
+  const rows=[];L.forEach(l=>{const x=diaLote(l,dia,X);if(!x||!doLocal(loc||'T',x.c))return;
+    const d1=diaLote(l,somaDias(dia,-1),X),lt=G.it[idLeit(dia,x.c)],ini5=somaDias(dia,-4),ini0=l.ent.dia>ini5?l.ent.dia:ini5;
+    rows.push({c:x.c,lote:l.nome,ent:l.ent.dia,cab:x.cab,dias:difDias(l.ent.dia,dia),rac:x.rac,nota:lt&&!lt.del&&lt.nota!=null?+lt.nota:null,msRac:x.cp?Math.round(x.cp.ms*10)/10:NaN,
+      pE:+l.ent.peso,pP:x.peso,gmd:+l.gmd||NaN,
+      mnG:media(l,l.ent.dia,dia,y=>y.mnCab),mnD:x.mn>0?x.mnCab:NaN,
+      msG:media(l,l.ent.dia,dia,y=>y.msCab),msD:x.mn>0?x.msCab:NaN,ms1:d1&&d1.mn>0?d1.msCab:NaN,ms5:media(l,ini0,dia,y=>y.msCab),
+      pvG:media(l,l.ent.dia,dia,y=>y.pv),pvD:x.mn>0?x.pv:NaN,pv1:d1&&d1.mn>0?d1.pv:NaN,pv5:media(l,ini0,dia,y=>y.pv)});});
+  rows.sort((a,b)=>(linhaDe(a.c)==='C'?0:1)-(linhaDe(b.c)==='C'?0:1)||alfa(a.c,b.c)||alfa(a.lote,b.lote));
+  /* totais: médias ponderadas pelas cabeças */
+  const cab=rows.reduce((a,r)=>a+r.cab,0),pond=k=>{let s=0,w=0;rows.forEach(r=>{if(ok(r[k])){s+=r[k]*r.cab;w+=r.cab;}});return w?s/w:NaN;};
+  const T={cab};['dias','msRac','pE','pP','gmd','mnG','mnD','msG','msD','ms1','ms5','pvG','pvD','pv1','pv5'].forEach(k=>T[k]=pond(k));
+  return {dia,loc:loc||'T',rows,T};}
+const ZCOLS=[ // [chave, título, grupo, casas, largura no PDF]
+  ['c','Curral','id',null,130],['lote','Lote','id',null,130],['ent','Entrada','id','dia',120],['cab','Cab.','id',0,70],['dias','Dias','id',0,60],['rac','Dieta','id',null,160],['nota','Nota','id',0,60],['msRac','MS dieta','id',1,95],
+  ['pE','Entrada','pes',0,90],['pP','Projetado','pes',0,105],['gmd','GMD','pes',2,70],
+  ['mnG','Geral','mn',2,85],['mnD','Dia','mn',2,85],
+  ['msG','Geral','ms',2,80],['msD','Dia','ms',2,80],['ms1','D-1','ms',2,80],['ms5','5 dias','ms',2,80],
+  ['pvG','Geral','pv',2,75],['pvD','Dia','pv',2,75],['pv1','D-1','pv',2,75],['pv5','5 dias','pv',2,75]];
+const ZGRP={id:'Identificação',pes:'Peso (kg)',mn:'MN kg/cab/dia',ms:'MS kg/cab/dia',pv:'% IMS do PV'};
+const zVal=(r,k,d)=>{const v=r[k];if(d==='dia')return v?dB(v):'';if(d==null)return v==null?'':String(v);return ok(+v)&&v!==null&&v!==''?nf(+v,d):'—';};
+function zootCards(T){return [['Cabeças',nf(T.cab)],['Peso entrada',nf(T.pE,1)+' kg'],['Peso projetado',nf(T.pP,1)+' kg'],['GMD',nf(T.gmd,2)],['Dias (média)',nf(T.dias)],['MN dia',nf(T.mnD,2)+' kg/cab'],['MS dia',nf(T.msD,2)+' kg/cab'],['% PV dia',pc(T.pvD,2)]];}
+window.zootSecHTML=(dia,loc)=>{const D=zootDados(dia,loc);
+  const top=`<div class="curhead"><h2>Relatório do dia</h2><input type="date" id="zDia" value="${dia}" max="${hojeKey()}" aria-label="Dia do relatório"></div>
+    <p class="note">Zootécnico de ${dB(dia)}${D.loc==='C'?' · Confinamento':D.loc==='P'?' · Pasto':''}: consumo de matéria natural, matéria seca e % do peso vivo por lote.</p>`;
+  if(!D.rows.length)return top+'<p class="note">Nenhum lote com animais neste dia.</p>';
+  const cards=`<div class="zCards">${zootCards(D.T).map(([a,b])=>`<div><small>${a}</small><b>${b}</b></div>`).join('')}</div>`;
+  const tab=`<div class="tablebox"><table class="gTab zTab"><thead><tr><th>Curral</th><th>Cab</th><th>Dias</th><th>MN dia</th><th>MS dia</th><th>% PV</th></tr></thead><tbody>
+    ${D.rows.map(r=>`<tr><td class="c">${esc(r.c)}<small>${esc(r.lote)}${r.nota!=null?' · nota '+r.nota:''}</small></td><td>${nf(r.cab)}</td><td>${nf(r.dias)}</td><td>${nf(r.mnD,2)}</td><td><b>${nf(r.msD,2)}</b></td><td>${pc(r.pvD,2)}</td></tr>`).join('')}
+    <tr class="grp"><td>Média</td><td>${nf(D.T.cab)}</td><td>${nf(D.T.dias)}</td><td>${nf(D.T.mnD,2)}</td><td>${nf(D.T.msD,2)}</td><td>${pc(D.T.pvD,2)}</td></tr></tbody></table></div>
+    <p class="note">MN e MS em kg por cabeça no dia. O PDF, a Foto e o Excel trazem o relatório completo (pesos, GMD, médias geral, D-1 e 5 dias).</p>`;
+  return top+cards+tab+`<div class="row compart fz3"><button class="verde" data-z="pdf">📄 PDF</button><button class="verde" data-z="img">🖼 Foto</button><button class="verde" data-z="xls">📊 Excel</button></div>`;};
+function zootCanvas(D){const W=1754,top=130,cardH=96,rowH=38,hd=72,porPag=Math.max(5,Math.floor((1240-top-30-cardH-30-hd-60)/rowH)),pags=[];
+  const all=D.rows.concat([{__tot:1}]),nP=Math.ceil(all.length/porPag);
+  const totW=ZCOLS.reduce((a,c)=>a+c[4],0),esc_=(W-60)/totW;
+  for(let p=0;p<nP;p++){const R=all.slice(p*porPag,(p+1)*porPag),H=top+30+cardH+30+hd+R.length*rowH+70,cv=document.createElement('canvas');cv.width=W;cv.height=Math.max(H,p===0?0:400);const x=cv.getContext('2d');
+    x.fillStyle='#fff';x.fillRect(0,0,W,cv.height);x.fillStyle='#24502a';x.fillRect(0,0,W,top);
+    x.fillStyle='#fff';x.textAlign='left';x.font='bold 42px Arial';x.fillText('Relatório zootécnico do dia',40,62);
+    x.font='24px Arial';x.fillStyle='#d8f06a';x.fillText(`${dB(D.dia)}${D.loc==='C'?' · Confinamento':D.loc==='P'?' · Pasto':''} · FJK Agropecuária`,40,102);
+    x.textAlign='right';x.fillStyle='#fff';x.font='20px Arial';x.fillText(`página ${p+1} de ${nP}`,W-40,102);
+    /* cartões */
+    const C=zootCards(D.T),cw=(W-80-(C.length-1)*14)/C.length;let y=top+30;
+    C.forEach(([a,b],i)=>{const cx=40+i*(cw+14);x.fillStyle='#eef3e4';x.beginPath();x.roundRect?x.roundRect(cx,y,cw,cardH,14):x.rect(cx,y,cw,cardH);x.fill();
+      x.textAlign='left';x.fillStyle='#5d6b7a';x.font='18px Arial';x.fillText(a,cx+16,y+32);x.fillStyle='#1d2b3a';x.font='bold 28px Arial';x.fillText(b,cx+16,y+74);});
+    y+=cardH+30;
+    /* cabeçalho da tabela: grupos e colunas */
+    let cx=30;const pos=ZCOLS.map(c=>{const w=c[4]*esc_,o={x:cx,w};cx+=w;return o;});
+    let g0=0;for(let i=1;i<=ZCOLS.length;i++){if(i===ZCOLS.length||ZCOLS[i][2]!==ZCOLS[g0][2]){const gx=pos[g0].x,gw=pos[i-1].x+pos[i-1].w-gx;
+      x.fillStyle=ZCOLS[g0][2]==='id'?'#24502a':'#3b6b2f';x.fillRect(gx+2,y,gw-4,32);x.fillStyle='#fff';x.font='bold 18px Arial';x.textAlign='center';x.fillText(ZGRP[ZCOLS[g0][2]],gx+gw/2,y+22);g0=i;}}
+    x.fillStyle='#5d6b7a';x.font='bold 17px Arial';ZCOLS.forEach((c,i)=>{x.textAlign='center';x.fillText(c[1],pos[i].x+pos[i].w/2,y+60);});
+    y+=hd;
+    R.forEach((r,j)=>{const tot=!!r.__tot,v=tot?Object.assign({c:'MÉDIA',lote:'',ent:'',rac:'',nota:null},D.T):r;
+      if(tot){x.fillStyle='#e3ead6';x.fillRect(30,y,W-60,rowH);}else if(j%2){x.fillStyle='#f6f8f3';x.fillRect(30,y,W-60,rowH);}
+      ZCOLS.forEach((c,i)=>{let t=zVal(v,c[0],c[3]);if(tot&&c[0]==='cab')t=nf(D.T.cab);if(tot&&c[0]==='nota')t='';
+        x.font=(tot||c[0]==='c'||c[0]==='msD'?'bold ':'')+'18px Arial';x.fillStyle='#1d2b3a';
+        const al=['c','lote','rac'].includes(c[0])?'left':'center';x.textAlign=al;
+        let tt=t;while(tt.length>3&&x.measureText(tt).width>pos[i].w-10)tt=tt.slice(0,-2)+'…';
+        x.fillText(tt,al==='left'?pos[i].x+8:pos[i].x+pos[i].w/2,y+26);});
+      y+=rowH;});
+    x.textAlign='left';x.fillStyle='#5d6b7a';x.font='17px Arial';
+    x.fillText('MN/MS em kg por cabeça por dia · Geral = média desde a entrada · D-1 = dia anterior · 5 dias = média dos últimos 5 dias · Média ponderada pelas cabeças.',40,cv.height-26);
+    pags.push(cv);}
+  return pags;}
+async function zootExport(tipo,dia,loc){const D=zootDados(dia,loc);if(!D.rows.length)return toast('Nenhum lote com animais neste dia');
+  const nome=`Relatorio zootecnico ${dB(dia).replace(/\//g,'-')}${D.loc==='C'?' confinamento':D.loc==='P'?' pasto':''}`;
+  try{if(tipo==='xls'){const lin=r=>ZCOLS.map(c=>{const v=r[c[0]];return c[3]==='dia'?xc(v||null,'dia'):c[3]==null?xc(v==null?'':v):xc(ok(+v)&&v!==null?+v:'',c[3]===0?'int':'dec');});
+      return gExcel(nome,[['Zootécnico',ZCOLS.map(c=>(c[0]==='gmd'?'GMD':c[2]==='id'?(c[0]==='msRac'?'MS dieta %':c[1]):ZGRP[c[2]].replace(' kg/cab/dia','').replace('% IMS do PV','%PV').replace(' (kg)','')+' '+c[1])),D.rows.map(lin).concat([lin(Object.assign({c:'MÉDIA',lote:'',ent:'',rac:'',nota:''},D.T))]),ZCOLS.map(c=>Math.max(8,Math.round(c[4]/9)))]]);}
+    const P=zootCanvas(D);
+    if(tipo==='pdf')return await compartilharArquivo(fzPdf(P),nome+'.pdf','application/pdf');
+    if(P.length===1)return P[0].toBlob(b=>compartilharArquivo(b,nome+'.png','image/png'),'image/png');
+    const bl=await Promise.all(P.map(c=>new Promise(r=>c.toBlob(r,'image/png'))));return compartilharVarios(bl,bl.map((_,i)=>`${nome} (${i+1}).png`));}
+  catch(e){toast('Não consegui gerar o relatório');}}
+window.zootExport=zootExport;window.zootDados=zootDados;
 /* PDF simples: cada página é uma imagem JPEG em folha A4 */
 function fzPdf(cvs){const enc=new TextEncoder(),partes=[],offs=[];let tam=0;const add=d=>{const b=typeof d==='string'?enc.encode(d):d;partes.push(b);tam+=b.length;};
   const obj=(n,txt,bin)=>{offs[n]=tam;add(`${n} 0 obj\n`+txt);if(bin){add(bin);add('\nendstream');}add('\nendobj\n');};
@@ -1812,8 +1926,8 @@ function fzPdf(cvs){const enc=new TextEncoder(),partes=[],offs=[];let tam=0;cons
   cvs.forEach((c,i)=>kids.push(3+i*3));
   obj(1,'<< /Type /Catalog /Pages 2 0 R >>');
   obj(2,`<< /Type /Pages /Count ${n} /Kids [${kids.map(k=>k+' 0 R').join(' ')}] >>`);
-  cvs.forEach((c,i)=>{const pg=3+i*3,ct=pg+1,im=pg+2,ph=(pw*c.height/c.width).toFixed(2),cmd=`q ${pw} 0 0 ${ph} 0 0 cm /Im0 Do Q`;
-    obj(pg,`<< /Type /Page /Parent 2 0 R /MediaBox [0 0 ${pw} ${ph}] /Resources << /XObject << /Im0 ${im} 0 R >> >> /Contents ${ct} 0 R >>`);
+  cvs.forEach((c,i)=>{const pg=3+i*3,ct=pg+1,im=pg+2,pwc=c.width>c.height?841.89:pw,ph=(pwc*c.height/c.width).toFixed(2),cmd=`q ${pwc} 0 0 ${ph} 0 0 cm /Im0 Do Q`;
+    obj(pg,`<< /Type /Page /Parent 2 0 R /MediaBox [0 0 ${pwc} ${ph}] /Resources << /XObject << /Im0 ${im} 0 R >> >> /Contents ${ct} 0 R >>`);
     obj(ct,`<< /Length ${cmd.length} >>\nstream\n${cmd}\nendstream`);
     obj(im,`<< /Type /XObject /Subtype /Image /Width ${c.width} /Height ${c.height} /ColorSpace /DeviceRGB /BitsPerComponent 8 /Filter /DCTDecode /Length ${imgs[i].length} >>\nstream\n`,imgs[i]);});
   const tot=3+n*3,xref=tam;let s=`xref\n0 ${tot}\n0000000000 65535 f \n`;for(let i=1;i<tot;i++)s+=String(offs[i]).padStart(10,'0')+' 00000 n \n';
