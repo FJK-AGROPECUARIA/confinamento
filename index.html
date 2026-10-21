@@ -575,7 +575,7 @@ input[type=date]::-webkit-calendar-picker-indicator{margin-left:2px;padding:0}
 .zCards{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin:10px 0}.zCards div{background:#eef3e4;border-radius:12px;padding:8px 12px}.zCards small{display:block;font-size:.72rem;color:var(--muted);font-weight:600}.zCards b{font-size:1.1rem}
 #zootSec .curhead input{width:auto;max-width:170px;margin:0}.zTab td.c small{display:block;font-size:.7rem;color:var(--muted);font-weight:500}
 .cJaFeito{margin:10px 0;background:#c62828;color:#fff;font-weight:800;text-align:center;border-radius:14px;padding:14px 10px;font-size:1.05rem;letter-spacing:.02em;line-height:1.3}.fTodosOk small,.cJaFeito small{display:block;font-weight:600;font-size:.82rem;letter-spacing:0;margin-top:4px;opacity:.95}
-#viewHist.modoRel>*:not(#hModo):not(#zootSec){display:none!important}.hModo{grid-template-columns:repeat(3,1fr)}.zLoc{margin:8px 0}.zTab tbody tr:nth-child(even):not(.grp) td{background:#e4ebd8}.zTab td.c{white-space:normal;min-width:0}.zTab td small.zFin{color:#1f5fa8;font-weight:700;font-size:.64rem;white-space:normal;line-height:1.2}.zTab th,.zTab td{padding-left:3px;padding-right:3px}.zTab tr.grp td small{display:block;font-size:.7rem}
+#viewHist.modoRel>*:not(#hModo):not(#zootSec){display:none!important}.hModo{grid-template-columns:repeat(3,1fr)}.zLoc{margin:8px 0}.gCarga .gTab td.c,.gCarga .gTab th:nth-child(2){text-align:center!important}.zTab tbody tr:nth-child(even):not(.grp) td{background:#e4ebd8}.zTab td.c{white-space:normal;min-width:0}.zTab td small.zFin{color:#1f5fa8;font-weight:700;font-size:.64rem;white-space:normal;line-height:1.2}.zTab th,.zTab td{padding-left:3px;padding-right:3px}.zTab tr.grp td small{display:block;font-size:.7rem}
 .gMsLinha{display:grid;grid-template-columns:1fr 1.3fr;gap:10px;align-items:end;margin:8px 0}.gMsLinha>div{background:var(--chip);border-radius:12px;padding:8px 12px}.gMsLinha>div span{display:block;font-size:.75rem;color:var(--muted);font-weight:600}.gMsLinha>div b{font-size:1.4rem}.gMsLinha input{font-size:1.2rem}
 .gCustos td,.gCustos th{font-size:.84rem;white-space:nowrap;padding-left:2px;padding-right:2px}.gCustos td:first-child{white-space:normal}.gCustos td small{display:block;font-size:.68rem;color:var(--muted);font-weight:500}.gCustos td,.gCustos th{font-size:.8rem}.gCustos td:first-child{font-weight:600}.gCustos tr.grp td{font-weight:800}
 .stat b small{font-size:.7rem;font-family:var(--body);color:var(--muted)}
@@ -976,7 +976,7 @@ body.naInicio .topoTxt h1{font-size:clamp(16px,5vw,28px)!important}
   <section class="panel" id="hBatSec" hidden>
     <div class="curhead"><h2>Batidas do vagão</h2><span class="note num" id="hBatN"></span></div>
     <div id="hBat"></div>
-    <div class="row compart"><button class="verde" id="hBatImg">🖼 Foto</button><button class="verde" id="hBatXls">📊 Excel</button></div>
+    <div class="row compart fz3"><button class="verde" id="hBatPdf">📄 PDF</button><button class="verde" id="hBatImg">🖼 Foto</button><button class="verde" id="hBatXls">📊 Excel</button></div>
   </section>
   <section class="panel hSoTratos">
     <div class="curhead"><h2>Registros</h2><span class="note num" id="hN"></span></div>
@@ -989,7 +989,7 @@ body.naInicio .topoTxt h1{font-size:clamp(16px,5vw,28px)!important}
       <div class="row"><button id="selTodos">Selecionar todos</button><button id="selCanc">Cancelar</button></div>
       <button class="dangerfill" id="selApagar" disabled>Apagar selecionados</button>
     </div>
-    <div class="row compart"><button class="verde" id="hImg">🖼 Foto</button><button class="verde" id="hXls">📊 Excel</button></div>
+    <div class="row compart fz3"><button class="verde" id="hPdf">📄 PDF</button><button class="verde" id="hImg">🖼 Foto</button><button class="verde" id="hXls">📊 Excel</button></div>
     <div hidden>
       <button class="wa" id="hWa">Enviar no WhatsApp</button><button id="hCopiar">Copiar lista</button>
       <button id="hExcel">Exportar Excel</button><button id="hShare" class="shareX" hidden>Compartilhar planilha</button>
@@ -1099,7 +1099,7 @@ body.naInicio .topoTxt h1{font-size:clamp(16px,5vw,28px)!important}
 <div class="toast" id="toast" hidden></div>
 <script>
 'use strict';
-const APP_VERSAO='90';
+const APP_VERSAO='91';
 const APP_DATA='19/10/2026';
 const KEY='confinamento-completo-v1';
 const $=id=>document.getElementById(id);
@@ -1673,6 +1673,8 @@ function snapTratos(c,o){const r={};for(let k=1;k<=MAXT;k++){const v=(o[k]||{})[
 function infoCurral(n){try{const it=gOk()&&G.it.currais;return (it&&!it.del&&it.v&&it.v[n])||{};}catch(e){return {};}}
 const curralAtivo=n=>infoCurral(n).inativo!==true;
 const linhaDe=n=>{const t=infoCurral(n).tipo;if(t==='C'||t==='P')return t;return /^C-/.test(n)?'C':/^P-/.test(n)?'P':'O';};
+/* nome da ração (dieta) do curral no dia do histórico; sem lote/ração cadastrada, mostra o local */
+function dietaDe(n){try{const d=(typeof intervaloHist==='function'?intervaloHist()[0]:null)||hojeKey(),u=window.racaoDoCurral&&racaoDoCurral(n,d),r=u&&typeof G!=='undefined'&&G.it[u];if(r&&r.nome)return r.nome;}catch(e){}return localDe(n);}
 function localDe(n){const l=linhaDe(n);return l==='C'?'Confinamento':l==='P'?'Pasto':'';}
 let linhaSel='T';
 function somaLinhas(){
@@ -1980,9 +1982,9 @@ function montarXlsx(ws){
 function nomeArquivo(regs){
   const dias=[...new Set(regs.map(r=>r.dia))].sort(),tr=[...new Set(regs.map(r=>r.trato))];
   const d=dias.length===1?dias[0]:`${dias[0]}_a_${dias[dias.length-1]}`;
-  return nomeBase(regs)+'.xlsx';
+  const ds=dias.map(dataArq);return `FJK - Tratos - ${ds[0]}${ds.length>1?' a '+ds[ds.length-1]:''}.xlsx`;
 }
-function baixar(blob,nome){const url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download=nome;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),120000);}  // Safari pergunta se deixa baixar: não pode apagar o arquivo antes
+function baixar(blob,nome){const url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download=String(nome).normalize('NFD').replace(/[\u0300-\u036f]/g,'');/* baixar: sem acento (alguns navegadores recusam); compartilhar mantém o acento */document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),120000);}  // Safari pergunta se deixa baixar: não pode apagar o arquivo antes
 const XT='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
 function exportar(regs){if(!regs.length)return;baixar(gerarXlsx(regs),nomeArquivo(regs));toast('Planilha salva em Downloads');}
 function compartilhar(regs){if(!regs.length)return;return compartilharArquivo(gerarXlsx(regs),nomeArquivo(regs),XT);}
@@ -2023,17 +2025,17 @@ function secoesHist(){
   return grupos(filtrados()).map(g=>{const m=new Map();g.rs.forEach(r=>{if(!m.has(r.curral))m.set(r.curral,[]);m.get(r.curral).push(r);});
     return {dia:g.dia,trato:g.trato,cab:`${diaBR(g.dia)} · Trato ${g.trato}`,linhas:[...m.entries()].map(([n,rs])=>linhaReg(n,rs[0].prev,rs))};});
 }
-const COLS_TRATO=[['Hora',100,'c'],['Curral',260,'l'],['Local',180,'l'],['Previsto',150,'r'],['Realizado',160,'r'],['Dif.',130,'r']];
-const COLS_CURRAL=[['Curral',250,'l'],['Local',180,'l'],['Tratos',130,'c'],['Previsto',160,'r'],['Realizado',160,'r'],['Dif.',140,'r']];
+const COLS_TRATO=[['Hora',100,'c'],['Curral',240,'c'],['Dieta',220,'c'],['Previsto',150,'r'],['Realizado',160,'r'],['Dif.',130,'r']];
+const COLS_CURRAL=[['Curral',240,'c'],['Dieta',220,'c'],['Tratos',130,'c'],['Previsto',160,'r'],['Realizado',160,'r'],['Dif.',140,'r']];
 // secoes: [{cab, cols, linhas:[{v:[...], prev, dif, neg:[índices em negrito]}], total:[...]}]
-function desenharTabela(secoes){
+function desenharTabela(secoes,titulo){window.__tituloImg=titulo||(()=>{try{const [a,b]=intervaloHist();return `FJK - Tratos - ${diaBR(a)}${a!==b?' a '+diaBR(b):''}`;}catch(e){return 'FJK - Tratos';}})();
   const cols=secoes[0].cols,M=30,W=M*2+cols.reduce((a,c)=>a+c[1],0),RH=46,esc=2;
   let H=120;secoes.forEach(s=>{H+=50+40+RH*s.linhas.length+52+20;});H+=30;
   const cv=document.createElement('canvas');cv.width=W*esc;cv.height=H*esc;const c=cv.getContext('2d');c.scale(esc,esc);
   const F='-apple-system,"Segoe UI",Roboto,Arial,sans-serif';
   c.fillStyle='#ffffff';c.fillRect(0,0,W,H);
   c.fillStyle='#11253d';c.fillRect(0,0,W,90);c.fillStyle='#a7bc09';c.fillRect(0,90,W,6);
-  c.fillStyle='#ffffff';c.font=`700 34px ${F}`;c.textBaseline='middle';c.fillText('Tratos - Vagão · FJK',M,46);
+  c.fillStyle='#ffffff';c.font=`700 34px ${F}`;c.textBaseline='middle';c.fillText(window.__tituloImg||'FJK - Tratos',M,46);
   c.font=`500 18px ${F}`;c.textAlign='right';c.fillStyle='#c8dd1e';c.fillText('Gerado em '+new Date().toLocaleString('pt-BR',{day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'}),W-M,46);c.textAlign='left';
   const cor=(d,p)=>{if(d==null)return '#11253d';const k=classeDesv(d,p);return k==='ok'?'#5f7a00':k==='warn'?'#b26a00':'#b3261e';};
   const px=(k,a)=>{let x=M;for(let i=0;i<k;i++)x+=cols[i][1];const w=cols[k][1];return a==='l'?x+8:a==='c'?x+w/2:x+w-8;};
@@ -2058,7 +2060,7 @@ const fx=n=>n==null||isNaN(n)?'':fmt(n);
 function secaoTratoImg(cab,linhas){
   let tp=0,tf=0,tpf=0;
   const L=linhas.map(l=>{if(l.prev!=null)tp+=l.prev;if(l.real!=null){tf+=l.real;tpf+=l.prev||0;}
-    return {v:[l.hora,l.curral,localDe(l.curral),fx(l.prev),fx(l.real),l.dif==null?'':sgn(l.dif)],prev:l.prev,dif:l.dif,neg:[1,4]};});
+    return {v:[l.hora,l.curral,dietaDe(l.curral),fx(l.prev),fx(l.real),l.dif==null?'':sgn(l.dif)],prev:l.prev,dif:l.dif,neg:[1,4]};});
   return {cab,cols:COLS_TRATO,linhas:L,total:['TOTAL','','',fmt(tp),fmt(tf),tf?sgn(tf-tpf):'']};
 }
 // resumo por curral (soma dos tratos)
@@ -2067,7 +2069,7 @@ function secaoCurralImg(regs,cab){
   const ordem=n=>{const i=S.cadastro.indexOf(n);return i<0?999:i;};
   let tp=0,tf=0;
   const L=[...m.entries()].sort((a,b)=>ordem(a[0])-ordem(b[0])||a[0].localeCompare(b[0])).map(([n,o])=>{tp+=o.p;tf+=o.f;
-    return {v:[n,localDe(n),[...o.t].sort().join(', '),fmt(o.p),fmt(o.f),sgn(o.f-o.p)],prev:o.p,dif:o.f-o.p,neg:[0,4]};});
+    return {v:[n,dietaDe(n),[...o.t].sort().join(', '),fmt(o.p),fmt(o.f),sgn(o.f-o.p)],prev:o.p,dif:o.f-o.p,neg:[0,4]};});
   return {cab,cols:COLS_CURRAL,linhas:L,total:['TOTAL','','',fmt(tp),fmt(tf),sgn(tf-tp)]};
 }
 function compartilharVarios(blobs,nomes){return salvarOuEnviar(blobs,nomes,'image/png');}
@@ -2076,19 +2078,24 @@ async function enviarImagem(secoes,nome){if(!secoes.length||!secoes.some(s=>s.li
 $('btnImg').onclick=()=>enviarImagem(secaoTratar(),`Trato ${S.tratoSel} - ${dataArq(diaAtivo())}.png`);
 $('btnXls').onclick=()=>{const r=regsAtuais();if(r.length)compartilharArquivo(gerarXlsx(r),nomeArquivo(r),XT);};
 // Histórico: escolhe Por trato / Por curral / Todos
-$('hImg').onclick=()=>{if(!filtrados().length)return;if(HD.per){const b=document.querySelector('#escolhaImg button[data-img="curral"]');if(b){b.click();return;}}$('escolhaImg').hidden=false;};
+let expPdfHist=false;
+$('hPdf').onclick=()=>{expPdfHist=true;abrirEscolhaImg();};
+$('hImg').onclick=()=>{expPdfHist=false;abrirEscolhaImg();};
+function abrirEscolhaImg(){const h=$('escolhaImg').querySelector('h2');if(h)h.textContent=expPdfHist?'PDF':'Foto';if(!filtrados().length)return;if(HD.per){const b=document.querySelector('#escolhaImg button[data-img="curral"]');if(b){b.click();return;}}$('escolhaImg').hidden=false;}
 $('escolhaImg').addEventListener('click',async e=>{const b=e.target.closest('button[data-img]');if(!b){if(e.target.id==='escolhaImg')$('escolhaImg').hidden=true;return;}
   const tipo=b.dataset.img;$('escolhaImg').hidden=true;if(tipo==='cancelar')return;
   const f=filtrados();if(!f.length)return;
   const blobs=[],nomes=[];
-  if(tipo==='trato'||tipo==='todos'){for(const g of secoesHist()){blobs.push(await desenharTabela([secaoTratoImg(g.cab,g.linhas)]));nomes.push(`Trato ${g.trato} - ${dataArq(g.dia)}.png`);}}
+  if(tipo==='trato'||tipo==='todos'){for(const g of secoesHist()){blobs.push(await desenharTabela([secaoTratoImg(g.cab,g.linhas)]));nomes.push(`FJK - Tratos - ${dataArq(g.dia)} (Trato ${g.trato}).png`);}}
   if(tipo==='curral'||tipo==='todos'){const t=HD.per?'':(HD.t||'');
     const cab=`Por curral · ${rotuloData()} · ${t?'Trato '+t:'todos os tratos'}${localSel==='C'?' · Confinamento':localSel==='P'?' · Pasto':''}`;
-    blobs.push(await desenharTabela([secaoCurralImg(f,cab)]));nomes.push(`${nomeBase(f)} - Por curral.png`);}
+    blobs.push(await desenharTabela([secaoCurralImg(f,cab)]));{const [pa,pb]=intervaloHist();nomes.push(`FJK - Tratos - ${dataArq(pa)}${pa!==pb?' a '+dataArq(pb):''} (por curral).png`);}}
+  if(expPdfHist){const [pa,pb]=intervaloHist(),nm=`FJK - Tratos - ${dataArq(pa)}${pa!==pb?' a '+dataArq(pb):''}.pdf`;return compartilharArquivo(await pngsParaPdf(blobs),nm,'application/pdf');}
   compartilharVarios(blobs,nomes);
 });
 $('hModo').addEventListener('click',e=>{const b=e.target.closest('[data-hm]');if(!b)return;hModo=b.dataset.hm;renderHist();});
-$('hBatImg').onclick=()=>{const [pa,pb]=intervaloHist();const L=batidasLista(pa,pb,localSel,HD.per||HD.t<0?0:HD.t);if(!L.length)return toast('Nenhuma batida');imgBatidas(L,pa===pb?diaBR(pa):diaBR(pa)+' a '+diaBR(pb));};
+$('hBatPdf').onclick=()=>{window.__expPdf=true;$('hBatImg').onclick(true);};
+$('hBatImg').onclick=(viaPdf)=>{if(viaPdf!==true)window.__expPdf=false;const [pa,pb]=intervaloHist();const L=batidasLista(pa,pb,localSel,HD.per||HD.t<0?0:HD.t);if(!L.length){window.__expPdf=false;return toast('Nenhuma batida');}imgBatidas(L,pa===pb?diaBR(pa):diaBR(pa)+' a '+diaBR(pb));};
 $('hBatXls').onclick=()=>{const [pa,pb]=intervaloHist();const L=batidasLista(pa,pb,localSel,HD.per||HD.t<0?0:HD.t);if(!L.length)return toast('Nenhuma batida');xlsBatidas(L,pa===pb?diaBR(pa):diaBR(pa)+' a '+diaBR(pb));};
 $('hXls').onclick=()=>{const f=filtrados();if(f.length)compartilharArquivo(gerarXlsx(f),nomeArquivo(f),XT);};
 

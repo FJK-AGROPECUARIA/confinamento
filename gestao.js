@@ -705,7 +705,7 @@ const xc=(v,f)=>(v==null||(typeof v==='number'&&!isFinite(v)))?{v:''}:(f?{v:f===
 const diaSer=k=>{const [y,m,d]=k.split('-').map(Number);return (Date.UTC(y,m-1,d)-Date.UTC(1899,11,30))/864e5;};
 async function gExcel(nome,abas){
   try{const ws=abas.map(([n,cab,ls,w])=>[n.slice(0,31),[cab.map(t=>({v:t,s:1})),...ls],w||cab.map(()=>14)]);
-    const blob=montarXlsx(ws);await compartilharArquivo(blob,nome.normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[\\/:*?"<>|]/g,'-')+'.xlsx',blob.type);}
+    const blob=montarXlsx(ws);await compartilharArquivo(blob,nome.replace(/[\\/:*?"<>|]/g,'-')+'.xlsx',blob.type);}
   catch(e){toast('Não consegui gerar o Excel');}
 }
 /* insumos que entraram no cocho (pela fórmula da ração do lote naquele dia) */
@@ -738,9 +738,14 @@ function gImagem(titulo,secoes){
     y+=24;});
   return new Promise(ok=>cv.toBlob(ok,'image/png'));
 }
-const nomeArq=s=>s.normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/[\\/:*?"<>|]/g,'-');
+const nomeArq=s=>s.replace(/[\\/:*?"<>|]/g,'-');
 async function enviarImg(titulo,secoes,nome){if(!secoes.some(s=>s.linhas.length))return toast('Nada para mostrar');
-  try{const b=await gImagem(titulo,secoes);await compartilharArquivo(b,nomeArq(nome)+'.png','image/png');}catch(e){toast('Não consegui gerar a imagem');}}
+  const pdf=window.__expPdf;window.__expPdf=false;
+  try{const b=await gImagem(titulo,secoes);if(pdf)return await compartilharArquivo(await pngsParaPdf([b]),nomeArq(nome)+'.pdf','application/pdf');
+    await compartilharArquivo(b,nomeArq(nome)+'.png','image/png');}catch(e){toast(pdf?'Não consegui gerar o PDF':'Não consegui gerar a imagem');}}
+/* imagens (png) → um PDF, uma imagem por página */
+async function pngsParaPdf(blobs){const cvs=[];for(const b of blobs){const im=await createImageBitmap(b),cv=document.createElement('canvas');cv.width=im.width;cv.height=im.height;const x=cv.getContext('2d');x.fillStyle='#fff';x.fillRect(0,0,cv.width,cv.height);x.drawImage(im,0,0);cvs.push(cv);}return fzPdf(cvs);}
+window.pngsParaPdf=pngsParaPdf;
 const kv=(cab,pares)=>({cab,cols:[['',360,'l'],['',300,'r']],linhas:pares.map(([a,b])=>[a,b])});
 const corV='#5f7a00',corR='#b3261e';
 function imgDia(){const dia=$('gDiaDia').value,ls=linhasDia(dia),ins={};let T={cab:0,mn:0,ms:0,c:0};
@@ -1464,7 +1469,7 @@ function imgCarga(){const dia=CG.verDia||hojeKey(),L=cargasDia(dia);
   enviarImg(`Batidas do vagão · ${dB(dia)}`,L.map(c=>{const tp=c.itens.reduce((a,x)=>a+x.prev,0),tr=c.itens.reduce((a,x)=>a+(+x.real||0),0);
     return {cab:`${c.hora} · Trato ${c.trato} · ${c.racNome}`,cols:[['Produto',330,'l'],['Previsto',170,'r'],['Carregado',170,'r'],['Diferença',170,'r']],
       linhas:c.itens.map(x=>[x.nome,nf(x.prev),ok(+x.real)?nf(+x.real):'—',ok(+x.real)?((x.real-x.prev)>0?'+':'')+nf(x.real-x.prev):'']),
-      cores:c.itens.map(x=>{const d=x.real-x.prev;return [null,null,null,!ok(+x.real)?null:Math.abs(d)/x.prev<=.03?'#5f7a00':Math.abs(d)/x.prev<=.08?'#b26a00':'#b3261e'];}),
+      cores:c.itens.map(x=>{const d=x.real-x.prev;return [null,null,null,null,!ok(+x.real)?null:Math.abs(d)/x.prev<=.03?'#5f7a00':Math.abs(d)/x.prev<=.08?'#b26a00':'#b3261e'];}),
       total:['TOTAL',nf(tp),nf(tr),(tr-tp>0?'+':'')+nf(tr-tp)]};}),`Batidas ${dB(dia).replace(/\//g,'-')}`);}
 function xlsCarga(){const dia=CG.verDia||hojeKey(),L=cargasDia(dia),r=[];
   L.forEach(c=>c.itens.forEach(x=>r.push([xc(dia,'dia'),xc(c.hora),xc(c.trato,'int'),xc(c.racNome),xc(x.nome),xc(x.prev,'int'),xc(ok(+x.real)?+x.real:NaN,'int'),xc(ok(+x.real)?x.real-x.prev:NaN,'int'),xc(ok(+x.ini)?+x.ini:NaN,'int'),xc(ok(+x.fim)?+x.fim:NaN,'int')])));
@@ -1489,20 +1494,20 @@ document.addEventListener('change',e=>{if(e.target&&e.target.id==='cfgComp'){con
 
 /* ---------- Histórico › Batidas: o que foi carregado no vagão (previsto e carregado de cada ingrediente, data e hora) ---------- */
 window.batidasLista=(pa,pb,loc,t)=>gTodos('carga').filter(c=>c.dia>=pa&&c.dia<=pb&&(!loc||loc==='T'||c.local===loc||(!c.local&&false))&&(!t||+c.trato===+t||(c.tratos||[]).includes(+t)))
-  .sort((a,b)=>(b.dia+b.hora).localeCompare(a.dia+a.hora));
+  .sort((a,b)=>(a.dia+(a.hora||'')).localeCompare(b.dia+(b.hora||'')));  // da primeira batida para a última
 window.batidasHTML=(L,mostrarDia,semApagar)=>{if(!L.length)return '<p class="note">Nenhuma batida neste filtro.</p>';
   return L.map(c=>{const tp=c.itens.reduce((a,x)=>a+(+x.prev||0),0),tr=c.itens.reduce((a,x)=>a+(+x.real||0),0),d=tr-tp,cls=(dd,p)=>typeof classeDesv==='function'?classeDesv(dd,p):'';
     return `<details class="gMais gCarga" open><summary><b>${mostrarDia?diaBR(c.dia).slice(0,5)+' ':''}${esc(c.hora||'')}</b> · ${c.avulso?'Avulsa':c.tratos&&c.tratos.length>1?'Tratos '+c.tratos.join('+'):'Trato '+c.trato}${c.local?' · '+(c.local==='C'?'Confinamento':'Pasto'):''} · ${esc(c.racNome||'')} <span class="num">${nf(tr)} kg <i class="${cls(d,tp)}">(${d>0?'+':''}${nf(d)})</i></span></summary>
-      <div class="tablebox"><table class="gTab"><thead><tr><th>Ingrediente</th><th>Hora</th><th>Previsto</th><th>Carreg.</th><th>Dif.</th></tr></thead><tbody>${c.itens.map(x=>{const dd=x.real-x.prev;return `<tr><td class="c">${esc(x.nome)}</td><td>${esc(x.hora||'')}</td><td>${nf(x.prev)}</td><td>${ok(+x.real)?nf(+x.real):'—'}</td><td class="${ok(+x.real)?cls(dd,x.prev):''}">${ok(+x.real)?(dd>0?'+':'')+nf(dd):''}</td></tr>`;}).join('')}
-      <tr class="grp"><td>Total</td><td></td><td>${nf(tp)}</td><td>${nf(tr)}</td><td>${(d>0?'+':'')+nf(d)}</td></tr></tbody></table></div>
+      <div class="tablebox"><table class="gTab"><thead><tr><th>Hora</th><th>Insumos</th><th>Previsto</th><th>Carreg.</th><th>Dif.</th></tr></thead><tbody>${c.itens.map(x=>{const dd=x.real-x.prev;return `<tr><td>${esc(x.hora||'')}</td><td class="c">${esc(x.nome)}</td><td>${nf(x.prev)}</td><td>${ok(+x.real)?nf(+x.real):'—'}</td><td class="${ok(+x.real)?cls(dd,x.prev):''}">${ok(+x.real)?(dd>0?'+':'')+nf(dd):''}</td></tr>`;}).join('')}
+      <tr class="grp"><td></td><td>Total</td><td>${nf(tp)}</td><td>${nf(tr)}</td><td>${(d>0?'+':'')+nf(d)}</td></tr></tbody></table></div>
       ${semApagar||(typeof modoVer!=='undefined'&&modoVer)?'':`<button class="mini danger" data-hbdel="${c.uid}">Apagar esta batida</button>`}</details>`;}).join('');};
-window.imgBatidas=(L,rot)=>enviarImg(`Batidas do vagão · ${rot}`,L.map(c=>{const tp=c.itens.reduce((a,x)=>a+x.prev,0),tr=c.itens.reduce((a,x)=>a+(+x.real||0),0);
-    return {cab:`${diaBR(c.dia).slice(0,5)} ${c.hora} · Trato ${c.trato}${c.local?' · '+(c.local==='C'?'Confinamento':'Pasto'):''} · ${c.racNome}`,cols:[['Ingrediente',330,'l'],['Previsto',170,'r'],['Carregado',170,'r'],['Diferença',170,'r']],
-      linhas:c.itens.map(x=>[x.nome,nf(x.prev),ok(+x.real)?nf(+x.real):'—',ok(+x.real)?((x.real-x.prev)>0?'+':'')+nf(x.real-x.prev):'']),
+window.imgBatidas=(L,rot)=>enviarImg(`FJK - Fabricação de Ração - ${rot}`,L.map(c=>{const tp=c.itens.reduce((a,x)=>a+x.prev,0),tr=c.itens.reduce((a,x)=>a+(+x.real||0),0);
+    return {cab:`${diaBR(c.dia).slice(0,5)} ${c.hora} · Trato ${c.trato}${c.local?' · '+(c.local==='C'?'Confinamento':'Pasto'):''} · ${c.racNome}`,cols:[['Hora',110,'l'],['Insumos',330,'c'],['Previsto',170,'r'],['Carregado',170,'r'],['Diferença',170,'r']],
+      linhas:c.itens.map(x=>[x.hora||'',x.nome,nf(x.prev),ok(+x.real)?nf(+x.real):'—',ok(+x.real)?((x.real-x.prev)>0?'+':'')+nf(x.real-x.prev):'']),
       cores:c.itens.map(x=>{const d=x.real-x.prev;return [null,null,null,!ok(+x.real)?null:Math.abs(d)/x.prev<=.03?'#5f7a00':Math.abs(d)/x.prev<=.08?'#b26a00':'#b3261e'];}),
-      total:['TOTAL',nf(tp),nf(tr),(tr-tp>0?'+':'')+nf(tr-tp)]};}),`Batidas ${rot.replace(/\//g,'-')}`);
-window.xlsBatidas=(L,rot)=>{const r=[];L.slice().reverse().forEach(c=>c.itens.forEach(x=>r.push([xc(c.dia,'dia'),xc(c.hora),xc(x.hora||''),xc(c.trato,'int'),xc(c.local==='C'?'Confinamento':c.local==='P'?'Pasto':''),xc(c.racNome),xc(x.nome),xc(x.prev,'int'),xc(ok(+x.real)?+x.real:NaN,'int'),xc(ok(+x.real)?x.real-x.prev:NaN,'int'),xc(ok(+x.ini)?+x.ini:NaN,'int'),xc(ok(+x.fim)?+x.fim:NaN,'int')])));
-  gExcel(`Batidas ${rot.replace(/\//g,'-')}`,[['Batidas',['Data','Início batida','Hora ingrediente','Trato','Local','Ração','Ingrediente','Previsto (kg)','Carregado (kg)','Diferença (kg)','Balança início','Balança final'],r,[11,9,9,7,13,16,22,12,13,13,13,13]]]);};
+      total:['','TOTAL',nf(tp),nf(tr),(tr-tp>0?'+':'')+nf(tr-tp)]};}),`Fabricação-${rot.replace(/\//g,'-').replace(/ a /,'_a_')}`);
+window.xlsBatidas=(L,rot)=>{const r=[];L.forEach(c=>c.itens.forEach(x=>r.push([xc(c.dia,'dia'),xc(c.hora),xc(x.hora||''),xc(c.trato,'int'),xc(c.local==='C'?'Confinamento':c.local==='P'?'Pasto':''),xc(c.racNome),xc(x.nome),xc(x.prev,'int'),xc(ok(+x.real)?+x.real:NaN,'int'),xc(ok(+x.real)?x.real-x.prev:NaN,'int'),xc(ok(+x.ini)?+x.ini:NaN,'int'),xc(ok(+x.fim)?+x.fim:NaN,'int')])));
+  gExcel(`Fabricação-${rot.replace(/\//g,'-').replace(/ a /,'_a_')}`,[['Fabricação',['Data','Início batida','Hora insumo','Trato','Local','Ração','Insumo','Previsto (kg)','Carregado (kg)','Diferença (kg)','Balança início','Balança final'],r,[11,9,9,7,13,16,22,12,13,13,13,13]]]);};
 document.addEventListener('click',e=>{const b=e.target.closest('[data-hbdel]');if(!b)return;if(typeof bloqueado==='function'&&bloqueado())return;if(!confirm('Apagar esta batida?'))return;gDel(b.dataset.hbdel);if(typeof renderHist==='function')renderHist();});
 
 /* ---------- Gestão › Currais: nome, tipo (confinamento/pasto) e ativo/inativo ---------- */
