@@ -1099,7 +1099,7 @@ body.naInicio .topoTxt h1{font-size:clamp(16px,5vw,28px)!important}
 <div class="toast" id="toast" hidden></div>
 <script>
 'use strict';
-const APP_VERSAO='84';
+const APP_VERSAO='85';
 const APP_DATA='19/10/2026';
 const KEY='confinamento-completo-v1';
 const $=id=>document.getElementById(id);
@@ -1314,6 +1314,9 @@ function compensarCurral(c){try{
   return novo;}catch(e){return null;}}
 window.compensarCurral=compensarCurral;
 const FS={local:null,rac:null,trato:null,passo:1};
+/* fornecimento ainda não iniciado: sempre começa limpo (entrar no Fornecer, 10 min com o app em segundo plano). Fornecimento aberto fica. */
+function fLimparSetup(){if(typeof filtroForn==='function'&&filtroForn())return;FS.local=null;FS.rac=null;FS.trato=null;FS.tAuto=false;FS.passo=1;}
+{let saiuF=0;document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='hidden')saiuF=Date.now();else if(saiuF&&Date.now()-saiuF>600000){fLimparSetup();try{if(['trato','auto'].includes(window.abaAtual))mostrarFornecimento();}catch(e){}}});}
 /* trato com setinhas: ◀ [Trato N ▾] ▶ (toca no meio para escolher, ou nas setas para ir e voltar) */
 /* trato com setinhas verdes dos lados; sem trato escolhido mostra "Escolher trato" */
 function tratoSeta(id,v,extra,lista){v=+v||0;const a=lista&&lista.length?lista.slice().sort((x,y)=>x-y):tratosAtivos();return `<div class="tSeta"><button type="button" data-tsd="-1" aria-label="Trato anterior"${!v||v<=a[0]?' disabled':''}>◀</button><select class="trato" id="${id}"${extra||''}>${v?'':'<option value="" selected disabled>Escolher trato</option>'}${a.concat(v&&!a.includes(v)?[v]:[]).sort((x,y)=>x-y).map(k=>`<option value="${k}"${k===v?' selected':''}>${esc(nomeTrato(k))}</option>`).join('')}</select><button type="button" data-tsd="1" aria-label="Próximo trato"${v>=a[a.length-1]?' disabled':''}>▶</button></div>`;}
@@ -2090,7 +2093,8 @@ $('hBatXls').onclick=()=>{const [pa,pb]=intervaloHist();const L=batidasLista(pa,
 $('hXls').onclick=()=>{const f=filtrados();if(f.length)compartilharArquivo(gerarXlsx(f),nomeArquivo(f),XT);};
 
 /* ---------- Abas ---------- */
-function aba(qual){const vq=qual;if(modoVer&&(qual==='auto'||qual==='autoc'||qual==='carga'))qual='trato'; // no Visualizar, todas mostram o Ao vivo (manual e automação, carregar e fornecer)
+function aba(qual){const vq=qual;if(modoVer&&(qual==='auto'||qual==='autoc'||qual==='carga'))qual='trato';
+  if(!modoVer&&['trato','auto'].includes(qual)&&window.abaAtual!==qual)fLimparSetup();  // entrou no Fornecer: começa limpo (se não tiver fornecimento aberto) // no Visualizar, todas mostram o Ao vivo (manual e automação, carregar e fornecer)
   try{if((qual==='carga'||qual==='autoc')&&typeof CG!=='undefined'&&!CG.ativa){CG.passo=1;CG.local=null;CG.trato=null;CG.juntos=[];CG.avulso=false;CG.juntoAberto=false;}
     if((qual==='trato'||qual==='auto')&&window.abaAtual!==qual&&typeof filtroForn==='function'&&!filtroForn()){FS.local=null;FS.rac=null;FS.trato=null;FS.passo=1;FS.fim='';}}catch(e){}
   $('viewEscolha').hidden=true;

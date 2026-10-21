@@ -1296,7 +1296,7 @@ function cContinuarRem(ap){const d=cRem.find(x=>x.ap===ap);if(!d)return;
 async function cVerTomado(){try{const A=cAtiva();if(!A||modoVer||!navigator.onLine||!apiUrl())return;
   const j=await (await fetch(apiUrl()+'?acao=aovivo',{cache:'no-store'})).json();if(!j||!j.ok)return;
   const t=Object.entries(j.dados||{}).find(([ap,d])=>ap!==S.aparelho&&d&&d.deAp===S.aparelho&&d.bat&&d.bat.ts0===A.ts0&&(+d.contTs||0)>(A.contTs||0));
-  if(!t||cAtiva()!==A)return;CG.ativa=null;CG.passo=1;CG.local=null;cSave();cRender();
+  if(!t||cAtiva()!==A)return;CG.ativa=null;cLimparSetup();cRender();
   try{window.diagLog&&diagLog('batida_tomada',{por:t[0],trato:A.trato});}catch(e){}
   toast('Esta batida foi continuada em outro aparelho. Ela foi fechada aqui.');}catch(e){}}
 setInterval(()=>{if(document.visibilityState==='visible')cVerTomado();},15000);
@@ -1407,7 +1407,7 @@ function cConfirma(){const v=cBuf===''?null:+cBuf,A=cAtiva();
   d.addEventListener('click',e=>{const b=e.target.closest('button[data-k]');if(!b)return;const k=b.dataset.k;
     if(k==='fechar')return cFecha();if(k==='ok')return cConfirma();if(k==='limpar')cBuf='';else if(k==='del')cBuf=cBuf.slice(0,-1);else if(cBuf.length<6)cBuf=(cBuf+k).replace(/^0+(?=\d)/,'');cMostra();});})();
 function cClique(e){
-  const lb=e.target.closest('[data-cloc]');if(lb){CG.local=lb.dataset.cloc;CG.juntos=[];CG.rac=null;CG.trato=null;CG.passo=2;cSave();return cRender();}
+  const lb=e.target.closest('[data-cloc]');if(lb){const loc=lb.dataset.cloc;cLimparSetup();CG.local=loc;CG.passo=2;cSave();return cRender();}
   const cp=e.target.closest('[data-cpasso]');if(cp){CG.passo=+cp.dataset.cpasso;cSave();return cRender();}
   if(e.target.closest('[data-ccancel]')){cLimparSetup();cRender();window.scrollTo({top:0});toast('Batida cancelada');return;}
   if(e.target.closest('[data-cjtog]')){CG.juntoAberto=!CG.juntoAberto;cSave();return cRender();}
@@ -1444,11 +1444,11 @@ function cClique(e){
     const [x,j]=feitos[0];x.real=null;x.fim=null;A.atual=j;cSave();return cRender();}
   if(a==='cancelar'){const feitos=A.itens.filter(x=>ok(x.real)).length;
     confirmaVermelho('Deseja realmente cancelar a batida?',`${feitos?`Os ${feitos} produto(s) já carregado(s) nesta batida serão perdidos.`:'Esta batida será descartada.'} Nada dela será salvo e não dá para desfazer.`,'Sim, cancelar batida','Não, continuar carregando')
-      .then(sim=>{if(!sim)return;if(CG.ativa!==A)return;CG.passo=1;CG.local=null;CG.juntos=[];CG.avulso=false;CG.juntoAberto=false;try{window.diagLog&&diagLog('batida_cancelada',{trato:A.trato,itens:A.itens.map(x=>[x.nome,x.prev,x.real])});}catch(e){}CG.ativa=null;cSave();cRender();toast('Batida cancelada');window.scrollTo({top:0});});return;}
+      .then(sim=>{if(!sim)return;if(CG.ativa!==A)return;CG.passo=1;CG.local=null;CG.juntos=[];CG.avulso=false;CG.juntoAberto=false;try{window.diagLog&&diagLog('batida_cancelada',{trato:A.trato,itens:A.itens.map(x=>[x.nome,x.prev,x.real])});}catch(e){}CG.ativa=null;cLimparSetup();cRender();toast('Batida cancelada');window.scrollTo({top:0});});return;}
   if(a==='concluir'){const falta=A.itens.filter(x=>!ok(x.real)).length;if(falta&&!confirm(`Faltam ${falta} produto(s). Finalizar assim mesmo?`))return;
     gPut({uid:novoId('carga'),tipo:'carga',dia:A.dia,local:A.local||'',avulso:!!A.avulso,trato:A.trato,tratos:A.tratos||[A.trato],racao:A.rac,racNome:A.racNome,total:A.total,ts0:A.ts0,hora:new Date(A.ts0).toTimeString().slice(0,5),
       itens:A.itens.map(x=>({ins:x.ins,nome:x.nome,pMN:x.pMN,prev:x.prev,ini:x.ini,fim:x.fim,real:ok(x.real)?x.real:null,hora:x.hora||''})),origem:A.origem||''});
-    CG.ativa=null;CG.passo=1;CG.local=null;CG.juntos=[];CG.avulso=false;CG.juntoAberto=false;CG.verDia=A.dia;cSave();toast('Batida salva');cRender();window.scrollTo({top:0});return;}
+    CG.ativa=null;CG.verDia=A.dia;cLimparSetup();toast('Batida salva');cRender();window.scrollTo({top:0});return;}
   if(a==='apagaCarga'){if(!confirm('Apagar esta batida?'))return;gDel(b.dataset.id);return cRender();}
 }
 $('cBox').addEventListener('click',cClique);$('acBox').addEventListener('click',cClique);
