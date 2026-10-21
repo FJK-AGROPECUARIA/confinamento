@@ -572,6 +572,7 @@ function tCocho(t){
     const nota=sel&&sel.n!=null?sel.n:null,cn=notas.find(x=>x.n===nota);
     const sug=cn?arred(base*(1+cn.p/100),cfg.arred):null,kg=sel&&ok(sel.kg)?sel.kg:sug;
     const ant=[3,2,1].map(i=>{const x=G.it[idLeit(somaDias(dia,-i),c)];return x&&!x.del?notaTxt(x.nota):'·';}).join('  ');
+    if(lt&&!lt.del&&!GT.sel[c]&&!(GT.coAberto||{})[c])return `<button class="gCochoMin" data-g="coAbre" data-c="${esc(c)}">${seloCurral(c)}<span><b>Nota ${notaTxt(lt.nota)}</b> · ${ok(+lt.novo)?nf(+lt.novo)+' kg/dia':'—'}<small>✓ feita · toque para abrir e alterar</small></span></button>`;  // feita: fica recolhida
     return `<div class="gCocho${lt&&!lt.del?' feito':''}" data-c="${esc(c)}" data-base="${base}">
       <div class="gCoTopo">${seloCurral(c)}<div><span>${esc(L.map(l=>l.nome).join(', '))}</span><span>${nf(cab)} cab · últimas notas: <b>${ant}</b></span></div></div>
       <div class="gCoBase">Base: <b class="num">${nf(base)} kg</b> <small>(${orig})</small></div>${baseOp}
@@ -601,9 +602,9 @@ function salvaCocho(){
     const bs=(GT.base||{})[c]||(lt&&!lt.del&&lt.baseM?{m:lt.baseM,d:lt.baseDia}:null)||{m:'ontem'};
     gPut({uid:idLeit(dia,c),tipo:'leitura',dia,curral:c,nota,pct:cn?cn.p:0,base:+el.dataset.base||0,baseM:bs.m,baseDia:bs.m==='dia'?bs.d:null,novo:ok(kg)?kg:null});n++;
     if(ok(kg)&&kg>0&&aplicaPrev(c,kg,obj))ap++;});
-  if(!n&&!rm)return toast('Marque a nota de pelo menos um curral');if(!n){if(ap){if(hoje){marcarPrev();if(typeof render==='function')render();}else prevApi.guardarPrevDia(dia,obj);}GT.sel={};GT.base={};toast(`${rm} leitura(s) apagada(s) junto com o previsto que tinham gerado`);return gRender();}
+  if(!n&&!rm)return toast('Marque a nota de pelo menos um curral');if(!n){if(ap){if(hoje){marcarPrev();if(typeof render==='function')render();}else prevApi.guardarPrevDia(dia,obj);}GT.sel={};GT.base={};GT.coAberto={};window.scrollTo({top:0,behavior:'smooth'});toast(`${rm} leitura(s) apagada(s) junto com o previsto que tinham gerado`);return gRender();}
   if(ap){if(hoje){marcarPrev();if(typeof render==='function')render();}else prevApi.guardarPrevDia(dia,obj);}
-  GT.sel={};GT.base={};toast(`${n} leitura(s) salva(s) · previsto ${hoje?'de hoje':'de amanhã'} ${ap?`mudou em ${ap} curral(is)`:'já estava com esses valores'}${rm?` · ${rm} apagada(s)`:''}`);gRender();
+  GT.sel={};GT.base={};GT.coAberto={};window.scrollTo({top:0,behavior:'smooth'});toast(`${n} leitura(s) salva(s) · previsto ${hoje?'de hoje':'de amanhã'} ${ap?`mudou em ${ap} curral(is)`:'já estava com esses valores'}${rm?` · ${rm} apagada(s)`:''}`);gRender();
 }
 function aplicaPrev(c,total,obj){obj=obj||S.prev;const antes=JSON.stringify([1,2,3,4,5,6].map(k=>(obj[k]||{})[c]));
   prevApi.distribuir(c,total,prevApi.nTratos(c,obj),obj);return JSON.stringify([1,2,3,4,5,6].map(k=>(obj[k]||{})[c]))!==antes;}
@@ -982,7 +983,7 @@ function salvaCfg(){const c=JSON.parse(JSON.stringify(gCfg()));const t=fn('taxa'
 /* =====================================================================================
    EVENTOS
    ===================================================================================== */
-const SO_VER=new Set(['cfgAba','coLoc','estPer','evLoc','evolN','imgDia','imgPer','imgComp','imgLote','xlsGraf','racaAdd','racaRm','grafLoc','grafCur','celGraf','imgGraf','filtroLoc','dataPasso','dataHoje','voltar','ir','lote','raiz','compRel','compDia','xlsDia','xlsPer','xlsComp','xlsLote','perAtalho','nota','racAdd','racRm','notaAdd','notaRm','notaPadrao']);
+const SO_VER=new Set(['cfgAba','coLoc','coAbre','estPer','evLoc','evolN','imgDia','imgPer','imgComp','imgLote','xlsGraf','racaAdd','racaRm','grafLoc','grafCur','celGraf','imgGraf','filtroLoc','dataPasso','dataHoje','voltar','ir','lote','raiz','compRel','compDia','xlsDia','xlsPer','xlsComp','xlsLote','perAtalho','nota','racAdd','racRm','notaAdd','notaRm','notaPadrao']);
 $('gBox').addEventListener('click',e=>{
   const b=e.target.closest('[data-g]');if(!b)return;const a=b.dataset.g,id=b.dataset.id;
   if(!SO_VER.has(a)&&bloqueado())return;
@@ -995,6 +996,7 @@ $('gBox').addEventListener('click',e=>{
   if(a==='racaAdd'){lerNotasEd();const v=($('gNovaRaca').value||'').trim();if(!v)return toast('Digite o nome da raça');
     if(GT.racasEd.some(r=>alfa(r,v)===0))return toast('Essa raça já está na lista');GT.racasEd.push(v);GT.racasEd.sort(alfa);gRender();return toast('Incluída. Toque em Salvar configurações.');}
   if(a==='ntLoc'){GT.ntLoc=b.dataset.l;return gRender();}
+  if(a==='coAbre'){GT.coAberto=GT.coAberto||{};GT.coAberto[b.dataset.c]=1;const y=window.scrollY;gRender();window.scrollTo({top:y});return;}
   if(a==='coLoc'){document.querySelectorAll('#gBox .gCocho').forEach(el=>{const i=el.querySelector('input[data-kg]'),c=el.dataset.c;if(i&&GT.sel&&GT.sel[c]&&i.value)GT.sel[c].kg=gNum(i.value);});GT.coLoc=b.dataset.l;return gRender();}
   if(a==='evLoc'){GT.evLoc=b.dataset.l;return gRender();}
   if(a==='ecTodos'){const rc=gNum(($('gEcRcT')||{}).value),pr=gNum(($('gEcPrT')||{}).value);if(!ok(rc)&&!ok(pr))return toast('Coloque o preço e/ou o rendimento da compra');

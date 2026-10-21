@@ -375,7 +375,7 @@ body.somenteVer #btnRestaurar{display:none!important}
 .atualizarBtn{position:absolute;right:0;top:50%;transform:translateY(-50%);border:0;background:none;font-size:1.7rem;line-height:1;padding:6px 12px;color:var(--fg);min-height:0}
 .atualizarBtn.girando{animation:girar .8s linear infinite}
 @keyframes girar{from{transform:translateY(-50%) rotate(0)}to{transform:translateY(-50%) rotate(360deg)}}
-body.naInicio .atualizarBtn{visibility:hidden}
+
 .gBkIt{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid var(--line);font-size:.92rem}.gBkIt a{font-size:.82rem}
 .bkLista{display:flex;flex-direction:column;gap:8px;max-height:55vh;overflow:auto}
 .bkLista button.verde{font-size:1.05rem;padding:12px;text-align:left}
@@ -602,6 +602,7 @@ body.comteclado .wrap{padding-bottom:300px!important}
 .gEvLin2{display:grid;grid-template-columns:1.25fr .8fr .8fr 1.25fr;gap:4px;margin-top:4px}.gEvLin2 input{width:100%;padding:7px 4px;font-size:.88rem;margin:0}
 .gEvLin2 input:nth-child(-n+2){background:#f4f8ea}.gEvLock{display:flex;align-items:center;justify-content:center;font-size:.8rem;color:var(--muted);background:#eceff1;border-radius:8px;padding:7px 2px;white-space:nowrap;overflow:hidden}.gEvTrava .gEvLock+input{}.gEvLin2 input:nth-child(n+3){background:#fffaf0}
 .gEvLin2.gEvCab span{font-size:.62rem;line-height:1.15;text-align:center}.gEvCab .gEvC{color:#4a6b14}.gEvCab .gEvV{color:#9a6200}
+.gCochoMin{display:flex;align-items:center;gap:12px;width:100%;text-align:left;padding:8px 10px;margin:0 0 8px;background:#eef4e0;border:2px solid #cfe3a0;border-radius:14px}.gCochoMin .gSelo{width:96px;min-width:96px!important;max-width:96px!important;padding:6px}.gCochoMin span{display:flex;flex-direction:column;font-size:.95rem}.gCochoMin small{font-size:.75rem;color:var(--muted);font-weight:500}
 .gEstBtns{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin:8px 0}.gEstBtns button{margin:0;padding:10px 4px;font-size:.88rem}
 .gEstIt small{display:block;color:var(--muted);font-size:.78rem;margin-top:2px}.gEstSaldo{font-weight:800;white-space:nowrap}.gEstBaixo{border-color:#c62828!important}.gEstBaixo .gEstSaldo{color:#c62828}
 .gEstTab{table-layout:auto;width:100%}.gEstTab td.c,.gEstTab th:nth-child(2){text-align:left}.gEstTab td,.gEstTab th{padding-left:3px;padding-right:3px}.gEstTab td:last-child{width:34px}.gEstTab td small{white-space:normal}
@@ -998,7 +999,7 @@ body.menuFechado .menuSeta{background:#2e6b2f;color:#fff;padding:9px 12px;font-s
 <div class="toast" id="toast" hidden></div>
 <script>
 'use strict';
-const APP_VERSAO='46';
+const APP_VERSAO='48';
 const APP_DATA='19/10/2026';
 const KEY='confinamento-completo-v1';
 const $=id=>document.getElementById(id);
@@ -1952,7 +1953,7 @@ $('hXls').onclick=()=>{const f=filtrados();if(f.length)compartilharArquivo(gerar
 
 /* ---------- Abas ---------- */
 function aba(qual){
-  try{if((qual==='carga'||qual==='autoc')&&window.CG&&!CG.ativa&&window.abaAtual!==qual){CG.passo=1;CG.local=null;CG.trato=null;CG.juntos=[];CG.avulso=false;CG.juntoAberto=false;}
+  try{if((qual==='carga'||qual==='autoc')&&typeof CG!=='undefined'&&!CG.ativa){CG.passo=1;CG.local=null;CG.trato=null;CG.juntos=[];CG.avulso=false;CG.juntoAberto=false;}
     if((qual==='trato'||qual==='auto')&&window.abaAtual!==qual&&typeof filtroForn==='function'&&!filtroForn()){FS.local=null;FS.rac=null;FS.trato=null;FS.passo=1;}}catch(e){}
   $('viewEscolha').hidden=true;
   if(window.cFecha&&$('tecCarga')&&!$('tecCarga').hidden)cFecha();
