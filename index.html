@@ -103,6 +103,7 @@ tr.grp td span{float:right;font-variant-numeric:tabular-nums}
 .emSetup>section:not(.fornSetup){display:none!important}
 #aBox.emSetup>section:first-of-type{display:block!important}
 .fFim{background:#e6f4d7;border:2px solid #6aa121;border-radius:12px;padding:10px 12px;margin-bottom:12px;font-weight:800;color:#2e5a12;text-align:center}.fFim small{display:block;font-weight:600;color:#4b5b3f;margin-top:4px}
+body.somenteVer #dataLinha,body.somenteVer #cal{display:none!important} /* no Visualizar é sempre o dia de hoje (ao vivo) */
 body.somenteVer.verCarga #viewTrato>section:not(#painel),body.somenteVer.verCarga #dataLinha,body.somenteVer.verCarga #painel>.tSetaFixa,body.somenteVer.verCarga .navtrato,body.somenteVer.verCarga #cal{display:none!important}
 #avCargaBox tr.atual td{background:#eef4e0}
 .contRem{border:3px solid #1565c0}.contRem h2{color:#1565c0}.contIt{display:grid;gap:4px;padding:8px 0;border-top:1px solid #dde3ea}.contIt span{font-size:.9rem;color:var(--muted)}.contIt button{margin-top:4px}
@@ -1051,7 +1052,7 @@ body.naInicio .topoTxt h1{font-size:clamp(16px,5vw,28px)!important}
 <div class="toast" id="toast" hidden></div>
 <script>
 'use strict';
-const APP_VERSAO='64';
+const APP_VERSAO='65';
 const APP_DATA='19/10/2026';
 const KEY='confinamento-completo-v1';
 const $=id=>document.getElementById(id);
@@ -1364,7 +1365,17 @@ const feito=(nome,regs)=>regs.some(r=>r.curral===nome);
 function classeDesv(d,p){const pc=Math.abs(d)/(p||1);return pc<=.03?'ok':pc<=.08?'warn':'bad';}
 const horaDe=r=>r.hora||new Date(r.ts).toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});
 
-function render(){
+/* curral que mudou de nome: os tratos já lançados com o nome antigo passam a aparecer com o nome novo
+   (o nome antigo vem do histórico do lote: era X e no mesmo lote passou a ser Y, e X não existe mais na lista de currais) */
+let renMemo={k:'',m:{}};
+function mapaRenomes(){try{const cad=S.cadastro||[],L=(typeof gTodos==='function'&&typeof G!=='undefined')?gTodos('lote'):[],ext=(typeof G!=='undefined'&&G.it&&G.it.renomes&&!G.it.renomes.del&&G.it.renomes.v)||{};
+  const k=cad.join('|')+'#'+L.length+'#'+L.reduce((a,l)=>a+(l.ts||0),0)+'#'+JSON.stringify(ext);if(k===renMemo.k)return renMemo.m;
+  const m=Object.assign({},ext),tem=new Set(cad);
+  L.forEach(l=>{const c=(l.curr||[]).slice().sort((a,b)=>String(a.desde).localeCompare(String(b.desde)));for(let i=1;i<c.length;i++){const a=c[i-1].c,b=c[i].c;if(a&&b&&a!==b&&!tem.has(a)&&tem.has(b)&&!m[a])m[a]=b;}});
+  renMemo={k,m};return m;}catch(e){return {};}}
+function nomeAtual(c){const m=mapaRenomes();let n=c,i=0;while(m[n]&&i<10){n=m[n];i++;}return n;}
+function aplicarRenomesHist(){const m=mapaRenomes();if(!Object.keys(m).length)return;HIST.forEach(r=>{const n=nomeAtual(r.curral);if(n!==r.curral){r.curralOrig=r.curralOrig||r.curral;r.curral=n;}});}
+function render(){try{aplicarRenomesHist();}catch(e){}
   try{encherSelTrato();}catch(e){}
   const man=!!S.dataManual;
   const amh=diaAtivo()===amanhaKey();
@@ -1742,6 +1753,7 @@ $('tbPrev').addEventListener('click',e=>{
     C[i]=novo;Object.values(S.prev).forEach(m=>{if(n in m){m[novo]=m[n];delete m[n];}});
     if(S.atualNome===n)S.atualNome=novo;
     if(window.gRenomearCurral)gRenomearCurral(n,novo);
+    try{const r=G.it.renomes&&!G.it.renomes.del?JSON.parse(JSON.stringify(G.it.renomes)):{uid:'renomes',tipo:'renomes',v:{}};r.v=r.v||{};r.v[n]=novo;Object.keys(r.v).forEach(k=>{if(r.v[k]===n)r.v[k]=novo;});delete r.v[novo];gPut(r);}catch(e){}
     toast(`${n} agora é ${novo}`);
   }else if(b.dataset.a==='rm'){
     if(!confirm(`Excluir o ${n}? O previsto dele em todos os tratos também sai. Os registros já feitos continuam no histórico.`))return;
@@ -1753,6 +1765,7 @@ $('tbPrev').addEventListener('click',e=>{
 function renomearCurral(n,novo){const C=S.cadastro,i=C.indexOf(n);if(i<0)return false;
   C[i]=novo;Object.values(S.prev).forEach(m=>{if(m&&n in m){m[novo]=m[n];delete m[n];}});if(S.atualNome===n)S.atualNome=novo;
   if(window.gRenomearCurral)gRenomearCurral(n,novo);
+  try{const r=G.it.renomes&&!G.it.renomes.del?JSON.parse(JSON.stringify(G.it.renomes)):{uid:'renomes',tipo:'renomes',v:{}};r.v=r.v||{};r.v[n]=novo;Object.keys(r.v).forEach(k=>{if(r.v[k]===n)r.v[k]=novo;});delete r.v[novo];gPut(r);}catch(e){}
   try{const it=G.it.currais;if(it&&it.v&&it.v[n]){const x=JSON.parse(JSON.stringify(it));x.v[novo]=x.v[n];delete x.v[n];gPut(x);}}catch(e){}
   marcarPrev();render();return true;}
 function salvarInfoCurral(n,info){const it=G.it.currais&&!G.it.currais.del?JSON.parse(JSON.stringify(G.it.currais)):{uid:'currais',tipo:'currais',v:{}};
@@ -2127,7 +2140,7 @@ function filtrados(){
 function totaisPorCurral(regs){const m=new Map();regs.forEach(r=>{const x=m.get(r.curral)||{curral:r.curral,prev:0,forn:0,n:0};x.prev+=r.prev||0;x.forn+=r.forn||0;x.n++;m.set(r.curral,x);});
   const ordem=S.cadastro;return [...m.values()].sort((a,b)=>{const ia=ordem.indexOf(a.curral),ib=ordem.indexOf(b.curral);return (ia<0?999:ia)-(ib<0?999:ib)||alfa(a.curral,b.curral);});}
 var hModo='T';
-function renderHist(){
+function renderHist(){try{aplicarRenomesHist();}catch(e){}
   pintarFiltrosHist();
   document.querySelectorAll('#hModo [data-hm]').forEach(b=>b.classList.toggle('sel',b.dataset.hm===hModo));
   document.querySelectorAll('#viewHist .hSoTratos').forEach(e=>e.hidden=hModo!=='T');$('hBatSec').hidden=hModo!=='B';
@@ -2279,14 +2292,22 @@ function curralPrev(obj,c){const r={};Object.keys(obj||{}).forEach(k=>{const v=(
 function juntarPrev(remoto,local,snap){const cs=new Set();[remoto,local,snap].forEach(o=>Object.values(o||{}).forEach(m=>Object.keys(m||{}).forEach(c=>cs.add(c))));
   const out={};for(let k=1;k<=MAXT;k++)out[String(k)]={};
   cs.forEach(c=>{const mudouAqui=curralPrev(local,c)!==curralPrev(snap,c),fonte=mudouAqui?local:remoto;Object.keys(fonte||{}).forEach(k=>{const v=(fonte[k]||{})[c];if(v!==undefined){if(!out[k])out[k]={};out[k][c]=v;}});});return out;}
+/* troca a lista de currais pela da nuvem; nome mudado: o curral atual e o previsto acompanham */
+function aplicarCadastro(n){try{const a=S.cadastro||[];
+  if(a.length===n.length)a.forEach((v,i)=>{const nv=n[i];if(nv!==v&&!n.includes(v)&&!a.includes(nv)){
+    if(S.atualNome===v)S.atualNome=nv;Object.values(S.prev||{}).forEach(m=>{if(m&&v in m){if(!(nv in m))m[nv]=m[v];delete m[v];}});}});}catch(e){}
+  S.cadastro=n.slice();}
 async function enviarPrevisto(){
   if(!S.prevPend)return;
   try{const j=await (await fetch(apiUrl()+'?acao=previsto',{cache:'no-store'})).json();
     if(j&&j.ok&&j.dados&&j.dados.prev&&+j.dados.ts>(S.prevSyncTs||0)&&j.dados.aparelho!==S.aparelho){
-      const snap=S.prevSnap?JSON.parse(S.prevSnap):{};S.prev=juntarPrev(j.dados.prev,S.prev,snap);save();try{render();}catch(e){}}}catch(e){}
+      const snap=S.prevSnap?JSON.parse(S.prevSnap):{};S.prev=juntarPrev(j.dados.prev,S.prev,snap);
+      /* lista de currais (nomes): se não mudou aqui, vale a da nuvem (ex.: mudaram o nome de um curral em outro aparelho) */
+      if(Array.isArray(j.dados.cadastro)&&(!S.cadSnap||JSON.stringify(S.cadastro)===S.cadSnap))aplicarCadastro(j.dados.cadastro);
+      save();try{render();}catch(e){}}}catch(e){}
   const ts=Date.now();S.prevTs=ts;
   await postApi({acao:'previsto',cadastro:S.cadastro,prev:S.prev,ts,aparelho:S.aparelho});
-  S.prevSyncTs=ts;S.prevSnap=JSON.stringify(S.prev);S.prevPend=false;save();
+  S.prevSyncTs=ts;S.prevSnap=JSON.stringify(S.prev);S.cadSnap=JSON.stringify(S.cadastro);S.prevPend=false;save();
 }
 /* Traz o previsto que outro celular mudou (o mais novo vale) */
 async function puxarPrevisto(forcar){
@@ -2296,9 +2317,7 @@ async function puxarPrevisto(forcar){
   const r=await fetch(apiUrl()+'?acao=previsto',{cache:'no-store'});const j=await r.json();
   if(j&&j.ok&&j.dados&&Array.isArray(j.dados.cadastro)&&+j.dados.ts>(S.prevTs||0)){
     if(S.prevPend){const snap=S.prevSnap?JSON.parse(S.prevSnap):{};S.prev=juntarPrev(j.dados.prev||{},S.prev,snap);}else S.prev=j.dados.prev||{};
-    /* mudaram o nome de um curral em outro aparelho: o curral atual daqui acompanha */
-    try{const a=S.cadastro||[],n=j.dados.cadastro;if(a.length===n.length&&S.atualNome){const i=a.indexOf(S.atualNome);if(i>=0&&n[i]!==S.atualNome&&!n.includes(S.atualNome))S.atualNome=n[i];}}catch(e){}
-    S.cadastro=j.dados.cadastro;S.prevTs=Math.max(+j.dados.ts,S.prevTs||0);S.prevSyncTs=+j.dados.ts;if(!S.prevPend)S.prevSnap=JSON.stringify(S.prev);padronizarNomes();save();render();
+    aplicarCadastro(j.dados.cadastro);S.cadSnap=JSON.stringify(S.cadastro);S.prevTs=Math.max(+j.dados.ts,S.prevTs||0);S.prevSyncTs=+j.dados.ts;if(!S.prevPend)S.prevSnap=JSON.stringify(S.prev);padronizarNomes();save();render();
   }
 }
 /* Traz sozinho os tratos que outros celulares lançaram (últimos 7 dias), a cada 2 minutos com internet */
