@@ -1100,7 +1100,7 @@ body.naInicio .topoTxt h1{font-size:clamp(16px,5vw,28px)!important}
 <div class="toast" id="toast" hidden></div>
 <script>
 'use strict';
-const APP_VERSAO='93';
+const APP_VERSAO='94';
 const APP_DATA='19/10/2026';
 const KEY='confinamento-completo-v1';
 const $=id=>document.getElementById(id);
@@ -2037,9 +2037,9 @@ function secaoJuntosImg(gs,cab){let tp=0,tf=0,tpf=0;
   return {cab,cols:COLS_JUNTOS,linhas:L,total:['TOTAL','','','',fmt(tp),fmt(tf),tf?sgn(tf-tpf):'']};}
 const COLS_CURRAL=[['Curral',220,'c'],['Dieta',200,'c'],['Tratos',100,'c'],['Previsto',150,'r'],['Realizado',150,'r'],['Dif.',120,'r'],['% IMS',120,'c']];
 // secoes: [{cab, cols, linhas:[{v:[...], prev, dif, neg:[índices em negrito]}], total:[...]}]
-function desenharTabela(secoes,titulo){window.__tituloImg=titulo||(()=>{try{const [a,b]=intervaloHist();return `FJK - Tratos - ${diaBR(a)}${a!==b?' a '+diaBR(b):''}`;}catch(e){return 'FJK - Tratos';}})();
+function desenharTabela(secoes,titulo,totalGeral){window.__tituloImg=titulo||(()=>{try{const [a,b]=intervaloHist();return `FJK - Tratos - ${diaBR(a)}${a!==b?' a '+diaBR(b):''}`;}catch(e){return 'FJK - Tratos';}})();
   const cols=secoes[0].cols,M=30,W=M*2+cols.reduce((a,c)=>a+c[1],0),RH=46,esc=2;
-  let H=120;secoes.forEach(s=>{H+=50+40+RH*s.linhas.length+52+20;});H+=30;
+  let H=120;secoes.forEach(s=>{H+=50+40+RH*s.linhas.length+52+20;});H+=30+(totalGeral?76:0);
   const cv=document.createElement('canvas');cv.width=W*esc;cv.height=H*esc;const c=cv.getContext('2d');c.scale(esc,esc);
   const F='-apple-system,"Segoe UI",Roboto,Arial,sans-serif';
   c.fillStyle='#ffffff';c.fillRect(0,0,W,H);
@@ -2062,6 +2062,10 @@ function desenharTabela(secoes,titulo){window.__tituloImg=titulo||(()=>{try{cons
     cols.forEach(([t,w,a],k)=>{const v=s.total[k];if(v==null||v==='')return;c.textAlign=a==='l'?'left':a==='c'?'center':'right';
       c.fillStyle=t==='Realizado'?'#c8dd1e':'#ffffff';if(k===0)c.textAlign='left';c.fillText(String(v),k===0?M+12:px(k,a),y+28);});
     y+=52+20;});
+  /* total geral (soma de todos os tratos): linha separada e destacada no fim */
+  if(totalGeral){y+=6;c.fillStyle='#11253d';c.fillRect(M,y,W-2*M,56);c.fillStyle='#a7bc09';c.fillRect(M,y,W-2*M,4);c.font=`800 24px ${F}`;
+    cols.forEach(([t,w,a],k)=>{const v=totalGeral[k];if(v==null||v==='')return;c.textAlign=a==='l'?'left':a==='c'?'center':'right';
+      c.fillStyle=t==='Realizado'?'#c8dd1e':'#ffffff';if(k===0)c.textAlign='left';c.fillText(String(v),k===0?M+12:px(k,a),y+31);});}
   return new Promise(ok=>cv.toBlob(ok,'image/png'));
 }
 const fx=n=>n==null||isNaN(n)?'':fmt(n);
@@ -2099,7 +2103,9 @@ $('escolhaImg').addEventListener('click',async e=>{const b=e.target.closest('but
   if(tipo==='trato'||tipo==='todos'){for(const g of secoesHist()){blobs.push(await desenharTabela([secaoTratoImg(g.cab,g.linhas)]));nomes.push(`FJK - Tratos - ${dataArq(g.dia)} (Trato ${g.trato}).png`);}}
   if(tipo==='juntos'||tipo==='todos'){const gs=secoesHist();if(gs.length){const [pa,pb]=intervaloHist();
     /* um arquivo só: Trato 1, e logo abaixo Trato 2 (cada um com a sua faixa e o seu total) */
-    blobs.push(await desenharTabela(gs.map(g=>secaoTratoImg(g.cab,g.linhas))));nomes.push(`FJK - Tratos - ${dataArq(pa)}${pa!==pb?' a '+dataArq(pb):''} (tratos juntos).png`);}}
+    const secs=gs.map(g=>{const x=secaoTratoImg(g.cab,g.linhas);if(gs.length>1)x.total[0]='SUBTOTAL';return x;});
+    let tg=null;if(gs.length>1){let tp=0,tf=0,tpf=0;gs.forEach(g=>g.linhas.forEach(l=>{if(l.prev!=null)tp+=l.prev;if(l.real!=null){tf+=l.real;tpf+=l.prev||0;}}));tg=['TOTAL','','',fmt(tp),fmt(tf),tf?sgn(tf-tpf):''];}
+    blobs.push(await desenharTabela(secs,null,tg));nomes.push(`FJK - Tratos - ${dataArq(pa)}${pa!==pb?' a '+dataArq(pb):''} (tratos juntos).png`);}}
   if(tipo==='curral'||tipo==='todos'){const t=HD.per?'':(HD.t>0?HD.t:'');
     const cab=`${t?'Trato '+t:'Todos os tratos'} - ${rotuloData()}${localSel==='C'?' · Confinamento':localSel==='P'?' · Pasto':''}`;
     blobs.push(await desenharTabela([secaoCurralImg(f,cab)]));{const [pa,pb]=intervaloHist();nomes.push(`FJK - Tratos - ${dataArq(pa)}${pa!==pb?' a '+dataArq(pb):''} (por curral).png`);}}
