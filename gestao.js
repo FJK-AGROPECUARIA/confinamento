@@ -1957,13 +1957,13 @@ function zootCanvas(D){const W=1754,top=84,rowH=38,hd=72,porPag=Math.max(5,Math.
     const ROXO='#24502a';  // linha MÉDIA: verde escuro do cabeçalho
     /* linha dos títulos das colunas: cada grupo na cor do seu título de cima (verde escuro / verde claro alternados; financeiro azul) */
     {let a=0;for(let i=1;i<=ZCOLS.length;i++){if(i===ZCOLS.length||ZCOLS[i][2]!==ZCOLS[a][2]){const gx=pos[a].x,gw=pos[i-1].x+pos[i-1].w-gx;x.fillStyle=ZCOR[ZCOLS[a][2]]||'#24502a';x.fillRect(gx+2,y+38,gw-4,32);a=i;}}}
-    x.fillStyle='#fff';x.font='bold 17px Arial';ZCOLS.forEach((c,i)=>{if(c[0]==='c'&&window.ZCALIGN!=='center'){x.textAlign='left';x.fillText(c[1],pos[i].x+8,y+60);}else{x.textAlign='center';x.fillText(c[1],pos[i].x+pos[i].w/2,y+60);}});
+    x.fillStyle='#fff';x.font='bold 17px Arial';ZCOLS.forEach((c,i)=>{if(c[0]==='c'&&window.ZCALIGN==='left'){x.textAlign='left';x.fillText(c[1],pos[i].x+8,y+60);}else{x.textAlign='center';x.fillText(c[1],pos[i].x+pos[i].w/2,y+60);}});
     y+=hd;
     R.forEach((r,j)=>{const tot=!!r.__tot,v=tot?Object.assign({c:'MÉDIA',lote:'',sexo:'',ent:'',rac:'',nota:null},D.T):r;
       if(tot){x.fillStyle=ROXO;x.fillRect(30,y,W-60,rowH);}else if(j%2){x.fillStyle=window.ZSTRIPE||'#dde6cf';x.fillRect(30,y,W-60,rowH);}  // linhas alternadas: uma clara, uma mais escura
       ZCOLS.forEach((c,i)=>{let t=zVal(v,c[0],c[3]);if(tot&&c[0]==='cab')t=nf(D.T.cab);if(tot&&['nota','dias','msRac'].includes(c[0]))t='';
         x.font=(tot||c[0]==='c'||c[0]==='msD'?'bold ':'')+'18px Arial';x.fillStyle=tot?'#fff':'#1d2b3a';
-        const al=c[0]==='c'&&window.ZCALIGN!=='center'?'left':'center';x.textAlign=al;
+        const al=c[0]==='c'&&window.ZCALIGN==='left'?'left':'center';x.textAlign=al;
         let tt=t;if(c[0]==='c'){let fs=18;while(fs>11&&x.measureText(tt).width>pos[i].w-10){fs--;x.font=(tot||true?'bold ':'')+fs+'px Arial';}}  // nome do curral: diminui a letra para caber inteiro
         while(tt.length>3&&x.measureText(tt).width>pos[i].w-10)tt=tt.slice(0,-2)+'…';
         x.fillText(tt,al==='left'?pos[i].x+8:pos[i].x+pos[i].w/2,y+26);});
