@@ -1000,7 +1000,7 @@ body.menuFechado .menuSeta{background:#2e6b2f;color:#fff;padding:9px 12px;font-s
 <div class="toast" id="toast" hidden></div>
 <script>
 'use strict';
-const APP_VERSAO='41';
+const APP_VERSAO='42';
 const APP_DATA='19/10/2026';
 const KEY='confinamento-completo-v1';
 const $=id=>document.getElementById(id);
@@ -2137,6 +2137,11 @@ $('escolhaBk').addEventListener('click',async e=>{if(e.target.id==='escolhaBk'){
   }catch(err){$('escolhaBk').hidden=true;toast('Não consegui restaurar: '+(err.message||err));}
 });
 /* traz todos os tratos da planilha para este celular (sem limite de dias) */
+/* uma vez: os tratos antigos (31/07 a 17/10) foram lançados na nuvem; troca o histórico estimado (hist-) pelos lançados e traz tudo */
+async function migrarTratosAntigos(){try{if(!S||S.imp1||!apiUrl()||!navigator.onLine)return;
+  const velhos=HIST.filter(x=>String(x.uid||'').startsWith('hist-'));for(const x of velhos){try{await dbDel(x.id);}catch(e){}}
+  if(velhos.length)HIST=await dbAll();await puxarTudo();if(HIST.some(x=>String(x.uid||'').startsWith('imp-'))){S.imp1=true;save();}}catch(e){}}
+setTimeout(()=>migrarTratosAntigos(),4000);window.addEventListener('online',()=>setTimeout(migrarTratosAntigos,2000));
 async function puxarTudo(){try{
   const j=await (await fetch(apiUrl()+'?acao=listar',{cache:'no-store'})).json();if(!j.ok)return;
   const tem=new Set(HIST.map(x=>x.uid));
