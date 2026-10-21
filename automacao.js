@@ -97,7 +97,7 @@ function montar(){
   const st=document.createElement('style');st.textContent=css;document.head.appendChild(st);
   $('aBox').innerHTML=`
   <section class="panel">
-    <div class="curhead balHead"><button type="button" class="mini balTog" data-baltog="1" aria-label="Mostrar ou esconder a conexão">▲</button><h2>Balança automática</h2><span class="note" id="aData"></span><span class="balMini" id="aBalMini"></span></div>
+    <div class="curhead balHead"><button type="button" class="mini balTog" data-baltog="1" aria-label="Mostrar ou esconder a conexão">▲</button><h2>Balança</h2><span class="note" id="aData" hidden></span><span class="balMini" id="aBalMini"></span></div>
     <div class="aStatus" id="aStatus"><i></i><span id="aStatusTxt">Desconectado</span></div>
     <div class="aConn">
       <button id="aBtSer" hidden>🔵 Bluetooth</button>
@@ -206,7 +206,7 @@ function pintarSinal(){const segs=A.ultDado?(Date.now()-A.ultDado)/1000:null;let
   ['aSinal','acSinal'].forEach(id=>{const e=$(id);if(!e)return;if(e.innerHTML!==t)e.innerHTML=t;e.className='aSinal '+cl;});
   /* depois de conectar e o peso chegar, recolhe a parte da conexão (fica só a bolinha no título; a setinha abre de novo) */
   if(cl!==A.sinalAnt){if(cl==='ok')A.balRec=true;else if(cl==='ruim'||(cl==='desc'&&A.sinalAnt))A.balRec=false;A.sinalAnt=cl;} // conectou: recolhe; parou o peso ou caiu: abre; fora isso, vale a setinha
-  const mini=!A.fonte?(A.statusTipo==='wait'?'🟡 conectando…':A.statusTipo==='err'?'🔴 erro ao conectar':'⚪ desconectada'):cl==='ok'?'🟢 conectada':cl==='ruim'?'🔴 sem peso':'🟡 esperando peso';
+  const mini=!A.fonte?(A.statusTipo==='wait'?'🟡 conectando…':A.statusTipo==='err'?'🔴 erro ao conectar':'🔴 desconectada'):cl==='ok'?'🟢 conectada':cl==='ruim'?'🔴 sem peso':'🟡 esperando peso';
   ['aBalMini','acBalMini'].forEach(id=>{const e=$(id);if(!e)return;if(e.textContent!==mini)e.textContent=mini;e.className='balMini '+(cl==='ruim'?'ruim':'');});
   aplicarBalRec();}
 function aplicarBalRec(){[['aBox',$('aBox')&&$('aBox').querySelector(':scope>section')],['acBox',$('acBox')&&$('acBox').querySelector(':scope>section')]].forEach(([_,sec])=>{if(!sec)return;
@@ -729,7 +729,7 @@ function zonaC(){const it=acItem();if(!naCargaAuto()||!it||!ok(it.ini)||A.peso==
   return {falta,fp,taxa,carregado,caindo:sub,z:falta<0?'passou':fp<=c.continuo?'continuo':fp<=c.vermelho?'vermelho':fp<=c.amarelo?'amarelo':'verde'};}
 window.acTela=(nova,dia)=>{
   const topo=`<section class="panel">
-    <div class="curhead balHead"><button type="button" class="mini balTog" data-baltog="1" aria-label="Mostrar ou esconder a conexão">▲</button><h2>Carregar com a balança</h2><span class="balMini" id="acBalMini"></span></div>
+    <div class="curhead balHead"><button type="button" class="mini balTog" data-baltog="1" aria-label="Mostrar ou esconder a conexão">▲</button><h2>Balança</h2><span class="balMini" id="acBalMini"></span></div>
     <div class="aStatus" id="acStatus"><i></i><span id="acStatusTxt">Desconectado</span></div>
     <div class="aConn"><button data-ac="ser" id="acBtSer" hidden>🔵 Bluetooth</button><button data-ac="bt" id="acBtBt">🔷 Conectar balança (Bluetooth)</button><button data-ac="ws" id="acBtWs" hidden>📶 Caixinha Wi-Fi</button><button data-ac="sim" id="acBtSim" hidden>🧪 Simulador</button><button data-ac="desc" id="acDesc" class="aDescBt" disabled>Desconectar</button></div>
     <div class="aSinal" id="acSinal">⚪ Balança desconectada</div>

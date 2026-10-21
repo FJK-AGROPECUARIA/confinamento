@@ -1174,7 +1174,7 @@ function contaLocalPrev(k,modo){try{const hj=hojeKey(),P=S.prev||{},tot=cochoCur
   const tsDe=c=>Object.keys(P).filter(t=>+((P[t]||{})[c])>0);
   if(modo!=='forn')return tot.filter(c=>tsDe(c).length).length+'/'+tot.length;
   const H=typeof HIST!=='undefined'?HIST:[];const f=tot.filter(c=>{const ts=tsDe(c);return ts.length&&ts.every(t=>H.some(r=>r.dia===hj&&r.curral===c&&+r.trato===+t));}).length;return f+'/'+tot.length;}catch(e){return '';}}
-function escolhaLocal(attr,sel){const modo=attr==='data-floc'?'forn':'carga';return `<div class="gLocal">${['C','P'].map(l=>`<button type="button" ${attr}="${l}" class="${sel===l?'sel':''}">${l==='C'?'🏠 Confinamento':'🌾 Pasto'}<small> ${contaLocalPrev(l,modo)}</small></button>`).join('')}</div>`;}
+function escolhaLocal(attr,sel){const modo=attr==='data-floc'?'forn':'carga';return `<div class="gLocal">${['C','P'].map(l=>`<button type="button" ${attr}="${l}" class="${sel===l?'sel':''}">${l==='C'?'🏠 Confinamento':'🌾 Pasto'}</button>`).join('')}</div>`;}
 window.escolhaLocal=escolhaLocal;
 /* tela de início em passos: escolhe o local → abre a ração → abre o trato → abre o total e o botão de iniciar */
 function cTelaNova(){if(!CG.passo){CG.passo=1;CG.local=null;}if(!CG.local)CG.passo=1;
@@ -1188,13 +1188,14 @@ function cTelaNova(){if(!CG.passo){CG.passo=1;CG.local=null;}if(!CG.local)CG.pas
     <div><label for="cRac">2. Ração</label><select id="cRac">${CG.rac?'':'<option value="" selected>— escolha a ração —</option>'}${R.map(r=>`<option value="${r.uid}"${r.uid===CG.rac?' selected':''}>${esc(r.nome)}</option>`).join('')}</select>
       ${doLocal.length===1?`<p class="note">Única ração ativa no ${NOMELOC[CG.local].toLowerCase()}: já selecionada.</p>`:!doLocal.length?`<p class="note">Nenhum lote com ração no ${NOMELOC[CG.local].toLowerCase()}: mostrando todas.</p>`:''}</div>`;
   if(!CG.rac)return passoRac+'</section>';
+  const trC=tratosAtivos().filter(k=>sugestaoCarga(k,CG.rac,CG.local).tot>0);if(!CG.trato&&!CG.avulso&&trC.length===1)CG.trato=trC[0];  // só os tratos com previsto; se for um só, já vem escolhido
   CG.juntos=CG.avulso?[]:(CG.juntos||[]).filter(k=>k!==+CG.trato);const trs=[+CG.trato].concat(CG.juntos).sort((a,b)=>a-b);
   const partes=trs.map(k=>({k,sg:sugestaoCarga(k,CG.rac,CG.local)})),sg={tot:partes.reduce((a,p)=>a+p.sg.tot,0),cs:[...new Set(partes.flatMap(p=>p.sg.cs))]};
   const chave=CG.avulso?'avulso|'+CG.rac:CG.local+'|'+trs.join('+')+'|'+CG.rac;if(CG.totalDe!==chave){CG.total=CG.avulso?0:(sg.tot||0);CG.totalDe=chave;cSave();}
   const its=itensCarga(CG.rac,CG.total||0);
   const passoTrato=passoRac+(CG.avulso?`
     <label>3. Trato</label><div class="cAvInfo">✳ Trato avulso · sem previsto, você digita a quantidade</div>`:`
-    <label for="cTrato">3. Trato</label>${window.tratoSeta?tratoSeta('cTrato',CG.trato):''}
+    <label for="cTrato">3. Trato</label>${window.tratoSeta?tratoSeta('cTrato',CG.trato,'',trC):''}
     <div class="cBotoes"><button type="button" class="mini cJtTog${CG.juntoAberto?' sel':''}" data-cjtog="1">＋ Carregar junto${CG.juntos.length?' (T'+CG.juntos.join(', T')+')':''}</button><button type="button" class="mini cAvulso" data-cavulso="1">✳ Trato avulso</button></div>
     <div class="cJuntoLista">${CG.juntoAberto?tratosAtivos().filter(k=>k!==+CG.trato).map(k=>{const t=sugestaoCarga(k,CG.rac,CG.local).tot;return `<button type="button" data-cjunto="${k}" class="${CG.juntos.includes(k)?'sel':''}"${t||CG.juntos.includes(k)?'':' disabled'}>T${k}${t?`<small>${nf(t)}</small>`:''}</button>`;}).join(''):''}</div>`)+
     (CG.avulso?`<button type="button" class="mini cAvulso sel" data-cavulso="1">↩ Voltar para os tratos do previsto</button>`:'');
@@ -1258,7 +1259,7 @@ function cConfirma(){const v=cBuf===''?null:+cBuf,A=cAtiva();
   d.addEventListener('click',e=>{const b=e.target.closest('button[data-k]');if(!b)return;const k=b.dataset.k;
     if(k==='fechar')return cFecha();if(k==='ok')return cConfirma();if(k==='limpar')cBuf='';else if(k==='del')cBuf=cBuf.slice(0,-1);else if(cBuf.length<6)cBuf=(cBuf+k).replace(/^0+(?=\d)/,'');cMostra();});})();
 function cClique(e){
-  const lb=e.target.closest('[data-cloc]');if(lb){CG.local=lb.dataset.cloc;CG.juntos=[];CG.rac=null;CG.passo=2;cSave();return cRender();}
+  const lb=e.target.closest('[data-cloc]');if(lb){CG.local=lb.dataset.cloc;CG.juntos=[];CG.rac=null;CG.trato=null;CG.passo=2;cSave();return cRender();}
   const cp=e.target.closest('[data-cpasso]');if(cp){CG.passo=+cp.dataset.cpasso;cSave();return cRender();}
   if(e.target.closest('[data-cjtog]')){CG.juntoAberto=!CG.juntoAberto;cSave();return cRender();}
   if(e.target.closest('[data-cavulso]')){CG.avulso=!CG.avulso;CG.juntos=[];CG.juntoAberto=false;CG.totalDe=null;cSave();return cRender();}
@@ -1297,7 +1298,7 @@ function cClique(e){
 $('cBox').addEventListener('click',cClique);$('acBox').addEventListener('click',cClique);
 function cMuda(e){const t=e.target;
   if(t.id==='cTrato'){CG.trato=+t.value||null;cSave();cRender();}
-  if(t.id==='cRac'){CG.rac=t.value||null;if(CG.rac)CG.passo=Math.max(CG.passo||1,3);cSave();cRender();}
+  if(t.id==='cRac'){CG.rac=t.value||null;CG.trato=null;if(CG.rac)CG.passo=Math.max(CG.passo||1,3);cSave();cRender();}
   if(t.id==='cDia'){CG.verDia=t.value||hojeKey();cSave();cRender();}}
 $('cBox').addEventListener('change',cMuda);$('acBox').addEventListener('change',cMuda);
 function imgCarga(){const dia=CG.verDia||hojeKey(),L=cargasDia(dia);

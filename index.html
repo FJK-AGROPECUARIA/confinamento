@@ -998,7 +998,7 @@ body.menuFechado .menuSeta{background:#2e6b2f;color:#fff;padding:9px 12px;font-s
 <div class="toast" id="toast" hidden></div>
 <script>
 'use strict';
-const APP_VERSAO='45';
+const APP_VERSAO='46';
 const APP_DATA='19/10/2026';
 const KEY='confinamento-completo-v1';
 const $=id=>document.getElementById(id);
@@ -1212,7 +1212,7 @@ window.compensarCurral=compensarCurral;
 const FS={local:null,rac:null,trato:null,passo:1};
 /* trato com setinhas: ◀ [Trato N ▾] ▶ (toca no meio para escolher, ou nas setas para ir e voltar) */
 /* trato com setinhas verdes dos lados; sem trato escolhido mostra "Escolher trato" */
-function tratoSeta(id,v,extra){v=+v||0;const a=tratosAtivos();return `<div class="tSeta"><button type="button" data-tsd="-1" aria-label="Trato anterior"${!v||v<=a[0]?' disabled':''}>◀</button><select class="trato" id="${id}"${extra||''}>${v?'':'<option value="" selected disabled>Escolher trato</option>'}${opcoesTrato(v||'')}</select><button type="button" data-tsd="1" aria-label="Próximo trato"${v>=a[a.length-1]?' disabled':''}>▶</button></div>`;}
+function tratoSeta(id,v,extra,lista){v=+v||0;const a=lista&&lista.length?lista.slice().sort((x,y)=>x-y):tratosAtivos();return `<div class="tSeta"><button type="button" data-tsd="-1" aria-label="Trato anterior"${!v||v<=a[0]?' disabled':''}>◀</button><select class="trato" id="${id}"${extra||''}>${v?'':'<option value="" selected disabled>Escolher trato</option>'}${a.concat(v&&!a.includes(v)?[v]:[]).sort((x,y)=>x-y).map(k=>`<option value="${k}"${k===v?' selected':''}>${esc(nomeTrato(k))}</option>`).join('')}</select><button type="button" data-tsd="1" aria-label="Próximo trato"${v>=a[a.length-1]?' disabled':''}>▶</button></div>`;}
 window.tratoSeta=tratoSeta;
 function setasTrato(box){if(!box)return;const sel=box.querySelector('select');if(!sel)return;const op=[...sel.options].filter(o=>o.value!==''&&!o.disabled).map(o=>+o.value),v=+sel.value||0,bs=box.querySelectorAll('[data-tsd]');
   if(bs[0])bs[0].disabled=!v||v<=op[0];if(bs[1])bs[1].disabled=!!v&&v>=op[op.length-1];}
@@ -1232,11 +1232,12 @@ function fornSetupHTML(){if(!FS.local)FS.passo=1;const cont=n=>`<button type="bu
     <label for="fRac">2. Ração que vai distribuir</label><select id="fRac">${FS.rac==null?'<option value="-" selected>— escolha a ração —</option>':''}${R.map(r=>`<option value="${r.uid}"${r.uid===FS.rac?' selected':''}>${esc(r.nome)}</option>`).join('')}<option value=""${FS.rac===''?' selected':''}>Todas as rações</option></select>
     ${R.length===1?`<p class="note">Única ração ativa no ${FS.local==='C'?'confinamento':'pasto'}: já selecionada.</p>`:''}`;
   if(FS.rac==null)return passoRac;
-  if(!FS.trato){const pend=tratosAtivos().map(k=>({k,n:fornPendentes(FS.local,FS.rac,k).length,t:fornCurrais(FS.local,FS.rac,k).length})).filter(x=>x.t);
-    return passoRac+`<label for="fTrato">3. Trato</label>${tratoSeta('fTrato',null)}<p class="note">${pend.length?pend.map(x=>`Trato ${x.k}: ${x.n?`faltam ${x.n} de ${x.t}`:'✓ todos fornecidos'}`).join(' · '):'Ainda não tem previsto para este local e ração.'}</p>`;}
+  const trF=tratosAtivos().filter(k=>fornCurrais(FS.local,FS.rac,k).length);if(!FS.trato&&trF.length===1)FS.trato=trF[0];
+  if(!FS.trato){const pend=trF.map(k=>({k,n:fornPendentes(FS.local,FS.rac,k).length,t:fornCurrais(FS.local,FS.rac,k).length}));
+    return passoRac+`<label for="fTrato">3. Trato</label>${tratoSeta('fTrato',null,'',trF)}<p class="note">${pend.length?pend.map(x=>`Trato ${x.k}: ${x.n?`faltam ${x.n} de ${x.t}`:'✓ todos fornecidos'}`).join(' · '):'Ainda não tem previsto para este local e ração.'}</p>`;}
   const L=fornCurrais(FS.local,FS.rac,FS.trato),pend=fornPendentes(FS.local,FS.rac,FS.trato),tot=L.reduce((a,x)=>a+x.prev,0);
   return passoRac+`
-    <label for="fTrato">3. Trato</label>${tratoSeta('fTrato',FS.trato)}${`
+    <label for="fTrato">3. Trato</label>${tratoSeta('fTrato',FS.trato,'',trF)}${`
     <p class="note">${L.length?`<b>${L.length} curral(is)</b> · ${fmt(tot)} kg previstos · ${pend.length===L.length?'nenhum fornecido ainda':pend.length?`faltam ${pend.length}`:'✓ todos já fornecidos'}<br>${L.map(x=>esc(x.nome)).join(', ')}`:(Object.keys(S.prev||{}).some(k=>Object.keys(S.prev[k]||{}).length)?'Nenhum curral com previsto neste trato para este local e ração.':'Ainda não tem previsto hoje: faça a leitura de cocho (Tratos › Leitura).')}</p>
     <button class="primary" id="fIniciar"${L.length?'':' disabled'}>▶ Iniciar fornecimento</button>`}`;}
 function fornBarHTML(){const f=filtroForn();if(!f)return '';const r=f.rac&&typeof G!=='undefined'&&G.it[f.rac];
