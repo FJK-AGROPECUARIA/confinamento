@@ -103,7 +103,7 @@ tr.grp td span{float:right;font-variant-numeric:tabular-nums}
 .emSetup>section:not(.fornSetup){display:none!important}
 #aBox.emSetup>section:first-of-type{display:block!important}
 .fFim{background:#e6f4d7;border:2px solid #6aa121;border-radius:12px;padding:10px 12px;margin-bottom:12px;font-weight:800;color:#2e5a12;text-align:center}.fFim small{display:block;font-weight:600;color:#4b5b3f;margin-top:4px}
-body.somenteVer #dataLinha,body.somenteVer #cal{display:none!important} /* no Visualizar é sempre o dia de hoje (ao vivo) */
+body.somenteVer #dataLinha,body.somenteVer #cal,body.somenteVer #painel>.tSetaFixa,body.somenteVer #painel .navtrato{display:none!important} /* no Visualizar é sempre o dia de hoje (ao vivo) */
 body.somenteVer.verCarga #viewTrato>section:not(#painel),body.somenteVer.verCarga #dataLinha,body.somenteVer.verCarga #painel>.tSetaFixa,body.somenteVer.verCarga .navtrato,body.somenteVer.verCarga #cal{display:none!important}
 #avCargaBox tr.atual td{background:#eef4e0}
 .contRem{border:3px solid #1565c0}.contRem h2{color:#1565c0}.contIt{display:grid;gap:4px;padding:8px 0;border-top:1px solid #dde3ea}.contIt span{font-size:.9rem;color:var(--muted)}.contIt button{margin-top:4px}
@@ -1072,7 +1072,7 @@ body.naInicio .topoTxt h1{font-size:clamp(16px,5vw,28px)!important}
 <div class="toast" id="toast" hidden></div>
 <script>
 'use strict';
-const APP_VERSAO='70';
+const APP_VERSAO='71';
 const APP_DATA='19/10/2026';
 const KEY='confinamento-completo-v1';
 const $=id=>document.getElementById(id);
@@ -3139,6 +3139,8 @@ function renderAoVivo(){const box=$('aoVivo');if(!modoVer){box.innerHTML='';pint
   if(lst.some(ativo))lst=lst.filter(ativo);
   const vis=new Set();lst=lst.filter(d=>{const k=d.modo+'|'+d.trato+'|'+(d.curral||'')+'|'+(d.local||'');if(vis.has(k))return false;vis.add(k);return true;});
   const tr0=lst.find(d=>d.modo==='trato'&&d.local),nf_=tr0?{ativo:true,dia:tr0.dia,local:tr0.local,rac:tr0.rac||'',trato:+tr0.trato}:null;
+  /* no Visualizar o trato acompanha o de quem está fornecendo (o seletor de trato fica escondido) */
+  if(nf_&&+S.tratoSel!==+nf_.trato){S.tratoSel=+nf_.trato;try{$('tratoSel').value=String(S.tratoSel);}catch(e){}avFiltro=null;}
   if(JSON.stringify(nf_)!==JSON.stringify(avFiltro)){avFiltro=nf_;setTimeout(()=>{try{render();}catch(e){}},0);}
   const verTxt=`<div class="avVer">👁 ${nVer} ${nVer>1?'pessoas visualizando':'pessoa visualizando'}</div>`;
   const naCarga=document.body.classList.contains('verCarga'),outros=lst.filter(d=>(d.modo==='carga')!==naCarga);
