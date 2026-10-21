@@ -932,18 +932,28 @@ function tInsumos(){
     <div class="tablebox"><table class="gTab"><thead><tr><th>Insumo</th><th>MS</th><th>Preço por tonelada</th></tr></thead><tbody>${rows||'<tr><td colspan="3">Nenhum insumo ainda.</td></tr>'}</tbody></table></div>
     <p class="note">Preço por tonelada como comprado (matéria natural). Toque no insumo para mudar o preço.</p>
     <button class="lima" data-g="ir" data-t="insForm">+ Novo insumo</button>
-    <button data-g="ir" data-t="insMS">💧 Atualizar % de matéria seca</button></section>`;
+    <button data-g="ir" data-t="insMS">💧 Matéria seca</button></section>`;
 }
-function tInsMS(){const I=gTodos('insumo').sort(porNome);
-  return `${voltar()}<section class="panel"><h2>Atualizar % de matéria seca</h2>
-    <p class="note">Mostra a MS atual de cada insumo. Mude só os que precisar e toque em Salvar. Vale para os cálculos de hoje em diante (rações, MS/cab, % IMS).</p>
-    <div class="tablebox"><table class="gTab gMsTab"><thead><tr><th>Insumo</th><th>MS atual</th><th>Nova MS (%)</th></tr></thead><tbody>
-    ${I.map(i=>`<tr><td class="c">${esc(i.nome)}${i.msDia?`<small>desde ${dB(i.msDia)}</small>`:''}</td><td>${pc(+i.ms,1)}</td><td><input type="text" inputmode="decimal" class="gMsIn" data-ms="${i.uid}" value="${String(+i.ms).replace('.',',')}"></td></tr>`).join('')||'<tr><td colspan="3">Nenhum insumo ainda.</td></tr>'}
-    </tbody></table></div>
-    <button class="primary" data-g="salvaMS">Salvar matéria seca</button></section>`;}
-function salvaMS(){let n=0,erro='';document.querySelectorAll('#gBox [data-ms]').forEach(inp=>{const i=G.it[inp.dataset.ms];if(!i)return;const v=gNum(inp.value);
-    if(!(v>0&&v<=100)){erro=i.nome;return;}if(Math.abs(v-(+i.ms))>1e-9){const x=JSON.parse(JSON.stringify(i));x.msAnt=+i.ms;x.ms=v;x.msDia=hojeKey();gPut(x);n++;}});
-  if(erro)return toast(`MS de ${erro} deve ficar entre 1 e 100%`);toast(n?`Matéria seca atualizada em ${n} insumo(s)`:'Nada mudou');if(n)gVoltar();}
+function msHistTodos(){const L=[];gTodos('insumo').forEach(i=>{const h=Array.isArray(i.msHist)?i.msHist:[];
+    if(h.length)h.forEach(x=>L.push({nome:i.nome,...x}));else if(i.msDia&&i.msAnt!=null)L.push({nome:i.nome,dia:i.msDia,ts:0,de:+i.msAnt,para:+i.ms});});
+  return L.sort((a,b)=>(b.dia||'').localeCompare(a.dia||'')||(b.ts||0)-(a.ts||0));}
+function tInsMS(){const I=gTodos('insumo').sort(porNome),H=msHistTodos().slice(0,40);
+  return `${voltar()}<section class="panel"><h2>💧 Alterar matéria seca</h2>
+    <p class="note">Escolha o produto e digite a nova % de MS. Vale para os cálculos de hoje em diante (rações, MS/cab, % IMS).</p>
+    <label>Produto<select id="gMsIns" onchange="var o=this.selectedOptions[0];document.getElementById('gMsAtual').textContent=o&&o.dataset.ms?o.dataset.ms+'%':'—';var n=document.getElementById('gMsNova');n.value='';n.focus();">
+      <option value="" selected disabled>Escolha o produto</option>${I.map(i=>`<option value="${i.uid}" data-ms="${String(+i.ms).replace('.',',')}">${esc(i.nome)}</option>`).join('')}</select></label>
+    <div class="gMsLinha"><div><span>MS atual</span><b id="gMsAtual">—</b></div>
+      <label>Nova MS (%)<input type="text" inputmode="decimal" id="gMsNova" placeholder="ex.: 35,5"></label></div>
+    <button class="primary" data-g="salvaMS">Alterar matéria seca</button></section>
+    <section class="panel"><h2>Últimas alterações</h2>
+    ${H.length?`<div class="tablebox"><table class="gTab"><thead><tr><th>Data</th><th>Produto</th><th>De</th><th>Para</th></tr></thead><tbody>${H.map(x=>`<tr><td>${dB(x.dia)}${x.hora?`<small>${esc(x.hora)}</small>`:''}</td><td class="c">${esc(x.nome)}</td><td>${pc(+x.de,1)}</td><td><b>${pc(+x.para,1)}</b></td></tr>`).join('')}</tbody></table></div>`:'<p class="note">Nenhuma alteração de matéria seca ainda.</p>'}</section>`;}
+function salvaMS(){const sel=document.getElementById('gMsIns'),i=sel&&G.it[sel.value];if(!i)return toast('Escolha o produto');
+  const v=gNum(document.getElementById('gMsNova').value);if(!(v>0&&v<=100))return toast('A MS deve ficar entre 1 e 100%');
+  if(Math.abs(v-(+i.ms))<1e-9)return toast('Essa já é a MS atual de '+i.nome);
+  const x=JSON.parse(JSON.stringify(i)),d=new Date(),hist=Array.isArray(x.msHist)?x.msHist:(x.msDia&&x.msAnt!=null?[{dia:x.msDia,ts:0,de:+x.msAnt,para:+x.ms}]:[]);
+  hist.push({dia:hojeKey(),ts:Date.now(),hora:String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0'),de:+i.ms,para:v});
+  x.msHist=hist.slice(-30);x.msAnt=+i.ms;x.ms=v;x.msDia=hojeKey();gPut(x);
+  toast(`${i.nome}: MS ${pc(+i.ms,1)} → ${pc(v,1)}`);gRender();}
 function tInsForm(t){const i=t.id?G.it[t.id]:null,hj=hojeKey();
   const hist=i?(i.precos||[]).slice().reverse().map((p,k,a)=>`<tr><td>${dB(p.desde)}</td><td>${rs(+p.rs,2)}</td><td class="acoes">${a.length>1?`<button class="mini danger" data-g="insPrecoRm" data-id="${i.uid}" data-d="${p.desde}">✕</button>`:''}</td></tr>`).join(''):'';
   return `${voltar()}<section class="panel"><h2>${i?'Insumo':'Novo insumo'}</h2><div class="gForm">${[

@@ -99,6 +99,7 @@ select.trato{font-family:var(--display);font-stretch:condensed;font-size:1.4rem;
 tr.grp td{background:var(--chip);font-weight:600;text-align:left;font-size:.85rem}
 .gTab tr.grp td:not(:first-child){text-align:right}
 tr.grp td span{float:right;font-variant-numeric:tabular-nums}
+#tbHist tr.tot td{background:var(--chip);font-weight:800;border-top:0;font-variant-numeric:tabular-nums}#tbHist tr.tot td.c{text-align:left}#tbHist tr.grp+tr.tot td{padding-top:2px}
 .danger{border-color:var(--bad);color:var(--bad)}
 .emSetup>section:not(.fornSetup){display:none!important}
 #aBox.emSetup>section:first-of-type{display:block!important}
@@ -558,6 +559,7 @@ input[type=date]::-webkit-calendar-picker-indicator{margin-left:2px;padding:0}
 .gHero b{display:block;font-family:var(--display);font-stretch:condensed;font-size:2.3rem;line-height:1.05;white-space:nowrap}
 .gHero span{display:block;font-size:.8rem;color:#c9d3df;margin-top:3px}
 .gHero.pos{background:#2f6b3a}.gHero.pos small{color:#d9ef7a}.gHero.neg{background:#9e2a24}.gHero.neg small{color:#ffd2cf}
+.gMsLinha{display:grid;grid-template-columns:1fr 1.3fr;gap:10px;align-items:end;margin:8px 0}.gMsLinha>div{background:var(--chip);border-radius:12px;padding:8px 12px}.gMsLinha>div span{display:block;font-size:.75rem;color:var(--muted);font-weight:600}.gMsLinha>div b{font-size:1.4rem}.gMsLinha input{font-size:1.2rem}
 .gCustos td,.gCustos th{font-size:.84rem;white-space:nowrap;padding-left:2px;padding-right:2px}.gCustos td:first-child{white-space:normal}.gCustos td small{display:block;font-size:.68rem;color:var(--muted);font-weight:500}.gCustos td,.gCustos th{font-size:.8rem}.gCustos td:first-child{font-weight:600}.gCustos tr.grp td{font-weight:800}
 .stat b small{font-size:.7rem;font-family:var(--body);color:var(--muted)}
 .gLoteRel{display:flex;flex-direction:column;gap:8px;width:100%;text-align:left;padding:10px;background:var(--surface);border-radius:14px}
@@ -1041,7 +1043,7 @@ body.naInicio .topoTxt h1{font-size:clamp(16px,5vw,28px)!important}
 </div>
 <div class="escolhaImg" id="escolhaImg" hidden>
   <div class="eiCaixa">
-    <h2>Enviar imagem</h2>
+    <h2>Imagem</h2>
     <button class="verde" data-img="trato">Por trato<small>uma imagem para cada trato</small></button>
     <button class="verde" data-img="curral">Por curral<small>total de cada curral</small></button>
     <button class="verde" data-img="todos">Todos<small>por trato e por curral</small></button>
@@ -1078,7 +1080,7 @@ body.naInicio .topoTxt h1{font-size:clamp(16px,5vw,28px)!important}
 <div class="toast" id="toast" hidden></div>
 <script>
 'use strict';
-const APP_VERSAO='75';
+const APP_VERSAO='76';
 const APP_DATA='19/10/2026';
 const KEY='confinamento-completo-v1';
 const $=id=>document.getElementById(id);
@@ -1969,14 +1971,14 @@ function salvarOuEnviar(blobs,nomes,tipo){return new Promise(res=>{
   const kb=Math.max(1,Math.round(blobs.reduce((a,b)=>a+b.size,0)/1024)),ic=/pdf/.test(tipo)?'📄':/image/.test(tipo)?'🖼':'📊';
   const w=document.createElement('div');w.className='arqCaixa';
   w.innerHTML=`<div class="arqBox"><div class="arqTit">${ic} <b>${esc(nomes.length>1?nomes.length+' arquivos':nomes[0])}</b><small>${kb.toLocaleString('pt-BR')} KB</small></div>
-    <button class="primary" data-arq="salvar">⬇ Salvar no ${/Mobi|Android|iPhone|iPad/i.test(navigator.userAgent)?'aparelho':'computador'}</button>
-    ${podeEnviar?'<button class="lima" data-arq="enviar">📤 Enviar (WhatsApp, e-mail…)</button>':''}
+    <button class="primary" data-arq="salvar">⬇ Salvar</button>
+    ${podeEnviar?'<button class="lima" data-arq="enviar">📤 Compartilhar</button>':''}
     <button data-arq="x">Cancelar</button></div>`;
   const fim=()=>{w.remove();res();};
   w.addEventListener('click',async e=>{const b=e.target.closest('[data-arq]');if(!b&&e.target!==w)return;
     const a=b?b.dataset.arq:'x';
     if(a==='salvar'){blobs.forEach((bl,i)=>setTimeout(()=>baixar(bl,nomes[i]),i*400));toast(blobs.length>1?`${blobs.length} arquivos salvos (Downloads / Arquivos)`:'Arquivo salvo (Downloads / Arquivos)');fim();return;}
-    if(a==='enviar'){try{await navigator.share({files:fs,title:nomes[0]});}catch(x){if(x.name!=='AbortError'){blobs.forEach((bl,i)=>baixar(bl,nomes[i]));toast('Não deu para enviar: arquivo salvo');}}fim();return;}
+    if(a==='enviar'){try{await navigator.share({files:fs,title:nomes[0]});}catch(x){if(x.name!=='AbortError'){blobs.forEach((bl,i)=>baixar(bl,nomes[i]));toast('Não deu para compartilhar: arquivo salvo');}}fim();return;}
     fim();});
   document.body.appendChild(w);});}
 function compartilharArquivo(blob,nome,tipo){return salvarOuEnviar([blob],[nome],tipo);}
@@ -2183,6 +2185,8 @@ function filtrados(){
 function totaisPorCurral(regs){const m=new Map();regs.forEach(r=>{const x=m.get(r.curral)||{curral:r.curral,prev:0,forn:0,n:0};x.prev+=r.prev||0;x.forn+=r.forn||0;x.n++;m.set(r.curral,x);});
   const ordem=S.cadastro;return [...m.values()].sort((a,b)=>{const ia=ordem.indexOf(a.curral),ib=ordem.indexOf(b.curral);return (ia<0?999:ia)-(ib<0?999:ib)||alfa(a.curral,b.curral);});}
 var hModo='T';
+/* linha de total do grupo: previsto, realizado e diferença cada um na sua coluna */
+function totHTML(p,f,dif,rot){return `<tr class="tot"><td class="hora"></td><td class="c">${rot||'Total'}</td><td>${fmt(p)}</td><td><b>${f||dif!=null?fmt(f):"—"}</b></td><td class="${dif==null?'':classeDesv(dif,p)}">${dif==null?'':sgn(dif)}</td></tr>`;}
 function renderHist(){try{aplicarRenomesHist();}catch(e){}
   pintarFiltrosHist();
   document.querySelectorAll('#hModo [data-hm]').forEach(b=>b.classList.toggle('sel',b.dataset.hm===hModo));
@@ -2199,7 +2203,7 @@ function renderHist(){try{aplicarRenomesHist();}catch(e){}
   $('hDif').textContent=regs.length?sgn(f-p):'—';$('hDif').className='num '+(regs.length?classeDesv(f-p,p):'');
   $('hN').textContent=regs.length?`${regs.length} registro(s)`:'';
   if(HD.per||HD.t===-1){selModo=false;const L=totaisPorCurral(regs),[pa,pb]=intervaloHist();
-    $('tbHist').innerHTML=regs.length?`<tr class="grp"><td colspan="5">${HD.per?`Total do período · ${diaBR(pa)} a ${diaBR(pb)}`:`${diaBR(pa)} · Todos os tratos`}<span>${fmt(f)} kg (${sgn(f-p)})</span></td></tr>`+
+    $('tbHist').innerHTML=regs.length?`<tr class="grp"><td colspan="5">${HD.per?`Total do período · ${diaBR(pa)} a ${diaBR(pb)}`:`${diaBR(pa)} · Todos os tratos`}</td></tr>`+totHTML(p,f,f-p)+
       L.map(x=>`<tr><td class="hora">${x.n}×</td><td class="c">${esc(x.curral)}</td><td>${fmt(x.prev)}</td><td><b>${fmt(x.forn)}</b></td><td class="${classeDesv(x.forn-x.prev,x.prev)}">${sgn(x.forn-x.prev)}</td></tr>`).join(''):`<tr><td colspan="5" class="note" style="text-align:left">Nenhum registro nesse período.</td></tr>`;}
   else
   { /* um dia: todos os currais da lista (na ordem do cadastro), com ou sem trato — o que não foi tratado aparece com o previsto e "—" */
@@ -2209,6 +2213,7 @@ function renderHist(){try{aplicarRenomesHist();}catch(e){}
     const ks=(HD.t>0?[HD.t]:[...new Set(tratosAtivos().map(Number).concat(regs.map(r=>+r.trato)))].filter(k=>regs.some(r=>+r.trato===k)||temPrev(k))).sort((a,b)=>a-b);
     const doLoc=c=>localSel==='T'||linhaDe(c)===localSel;
     const cad=(S.cadastro||[]).filter(c=>doLoc(c)&&((typeof curralAtivo!=='function'||curralAtivo(c))||regs.some(r=>r.curral===c)));
+    let TP=0,TF=0,TT=0;
     const html=ks.map(k=>{const rk=regs.filter(r=>+r.trato===k),pk=P[k]||P[String(k)]||{};
       /* o curral entra nos tratos em que ele está (quantos tratos ele tem no dia); tratado ou com previsto sempre entra */
       const noTrato=c=>{if(rk.some(r=>r.curral===c)||+pk[c]>0)return true;let n=0;try{n=nTratos(c,P);}catch(e){}
@@ -2219,8 +2224,10 @@ function renderHist(){try{aplicarRenomesHist();}catch(e){}
         if(rs.length){rs.forEach(r=>{gp+=r.prev||0;gt+=r.prev||0;gf+=r.forn||0;});return rs.map(linhaR).join('');}
         const pv=pk[c];if(+pv>0)gp+=+pv;
         return `<tr class="naoTratado"><td class="hora"></td><td class="c">${esc(c)}</td><td>${+pv>0?fmt(+pv):'—'}</td><td>—</td><td></td></tr>`;}).join('');
-      return `<tr class="grp"><td colspan="5">${diaBR(dia)} · Trato ${k}<span>${fmt(gf)} de ${fmt(gp)} kg${gt?' ('+sgn(gf-gt)+')':''}</span></td></tr>`+linhas;}).join('');
-    $('tbHist').innerHTML=html||`<tr><td colspan="5" class="note" style="text-align:left">Nenhum trato nem previsto para esse filtro.</td></tr>`;}
+      TP+=gp;TF+=gf;TT+=gt;
+      return `<tr class="grp"><td colspan="5">${diaBR(dia)} · Trato ${k}</td></tr>`+totHTML(gp,gf,gt?gf-gt:null)+linhas;}).join('');
+    const topo=ks.length>1?`<tr class="grp"><td colspan="5">${diaBR(dia)} · Todos os tratos</td></tr>`+totHTML(TP,TF,TT?TF-TT:null):'';
+    $('tbHist').innerHTML=(html&&topo+html)||`<tr><td colspan="5" class="note" style="text-align:left">Nenhum trato nem previsto para esse filtro.</td></tr>`;}
   caberTabela($('tbHist'));
   ['hWa','hCopiar','hExcel','hShare','hApagar','hImg','hXls'].forEach(id=>$(id).disabled=!regs.length);
   $('hApagar').hidden=selModo||HD.per||HD.t===-1;$('selBar').hidden=!selModo;
