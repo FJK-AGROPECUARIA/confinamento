@@ -130,6 +130,7 @@ body.somenteVer details.gCarga{display:block!important}
 .fzBar i.e1,.fzLeg i.e1{background:#c62828}.fzBar i.e2,.fzLeg i.e2{background:#f2b705}.fzBar i.e3,.fzLeg i.e3{background:#2e7d32}.fzBar i.e4,.fzLeg i.e4{background:#8d6e63}.fzBar i.e5,.fzLeg i.e5{background:#4e342e}
 .fzLeg{display:flex;flex-wrap:wrap;gap:4px 10px;font-size:.75rem;color:var(--muted);margin:4px 0 8px}.fzLeg i{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:4px}
 .avVelho{margin:4px 4px 0;padding:6px 10px;border-radius:10px;background:#fdecea;color:#b3261e;font-weight:800;font-size:.9rem}
+#tbHist tr.naoTratado td{color:var(--muted)}#tbHist tr.naoTratado td.c{color:var(--fg)}
 .avVer{font-weight:700;font-size:.85rem;color:#4b5b3f;text-align:right;padding:0 4px}
 .abrirNovo{text-align:center}.abrirNovo .note{margin:0 0 8px}
 .fBar{display:flex;justify-content:space-between;align-items:center;gap:8px;background:#eef4e0;border-radius:10px;padding:8px 10px;margin-bottom:10px;font-weight:700;font-size:.92rem}
@@ -1072,7 +1073,7 @@ body.naInicio .topoTxt h1{font-size:clamp(16px,5vw,28px)!important}
 <div class="toast" id="toast" hidden></div>
 <script>
 'use strict';
-const APP_VERSAO='72';
+const APP_VERSAO='73';
 const APP_DATA='19/10/2026';
 const KEY='confinamento-completo-v1';
 const $=id=>document.getElementById(id);
@@ -2188,11 +2189,25 @@ function renderHist(){try{aplicarRenomesHist();}catch(e){}
     $('tbHist').innerHTML=regs.length?`<tr class="grp"><td colspan="5">${HD.per?`Total do período · ${diaBR(pa)} a ${diaBR(pb)}`:`${diaBR(pa)} · Todos os tratos`}<span>${fmt(f)} kg (${sgn(f-p)})</span></td></tr>`+
       L.map(x=>`<tr><td class="hora">${x.n}×</td><td class="c">${esc(x.curral)}</td><td>${fmt(x.prev)}</td><td><b>${fmt(x.forn)}</b></td><td class="${classeDesv(x.forn-x.prev,x.prev)}">${sgn(x.forn-x.prev)}</td></tr>`).join(''):`<tr><td colspan="5" class="note" style="text-align:left">Nenhum registro nesse período.</td></tr>`;}
   else
-  $('tbHist').innerHTML=regs.length?grupos(regs).reverse().map(g=>{
-    const gp=g.rs.reduce((a,r)=>a+r.prev,0),gf=g.rs.reduce((a,r)=>a+r.forn,0);
-    return `<tr class="grp"><td colspan="5">${diaBR(g.dia)} · Trato ${g.trato}<span>${fmt(gf)} kg (${sgn(gf-gp)})</span></td></tr>`+
-      g.rs.map(r=>`<tr class="${selModo?'selrow':''} ${selModo&&sel.has(r.uid)?'marcado':''}" ${selModo?`data-sel="${esc(r.uid)}"`:''}><td class="hora">${selModo?`<span class="chk">${sel.has(r.uid)?'☑':'☐'}</span> `:''}${horaDe(r)}</td><td class="c">${esc(r.curral)}</td><td>${fmt(r.prev)}</td><td><button class="editq" data-uid="${esc(r.uid)}" aria-label="Editar quantidade do ${esc(r.curral)}"><b>${fmt(r.forn)}</b> ✎</button></td><td class="${classeDesv(r.forn-r.prev,r.prev)}">${sgn(r.forn-r.prev)}</td></tr>`).join('');
-  }).join(''):`<tr><td colspan="5" class="note" style="text-align:left">Nenhum registro para esse filtro.</td></tr>`;
+  { /* um dia: todos os currais da lista (na ordem do cadastro), com ou sem trato — o que não foi tratado aparece com o previsto e "—" */
+    const dia=intervaloHist()[0],P=(typeof prevDoDia==='function'&&prevDoDia(dia))||{};
+    const linhaR=r=>`<tr class="${selModo?'selrow':''} ${selModo&&sel.has(r.uid)?'marcado':''}" ${selModo?`data-sel="${esc(r.uid)}"`:''}><td class="hora">${selModo?`<span class="chk">${sel.has(r.uid)?'☑':'☐'}</span> `:''}${horaDe(r)}</td><td class="c">${esc(r.curral)}</td><td>${fmt(r.prev)}</td><td><button class="editq" data-uid="${esc(r.uid)}" aria-label="Editar quantidade do ${esc(r.curral)}"><b>${fmt(r.forn)}</b> ✎</button></td><td class="${classeDesv(r.forn-r.prev,r.prev)}">${sgn(r.forn-r.prev)}</td></tr>`;
+    const temPrev=k=>Object.values(P[k]||P[String(k)]||{}).some(v=>+v>0);
+    const ks=(HD.t>0?[HD.t]:[...new Set(tratosAtivos().map(Number).concat(regs.map(r=>+r.trato)))].filter(k=>regs.some(r=>+r.trato===k)||temPrev(k))).sort((a,b)=>a-b);
+    const doLoc=c=>localSel==='T'||linhaDe(c)===localSel;
+    const cad=(S.cadastro||[]).filter(c=>doLoc(c)&&((typeof curralAtivo!=='function'||curralAtivo(c))||regs.some(r=>r.curral===c)));
+    const html=ks.map(k=>{const rk=regs.filter(r=>+r.trato===k),pk=P[k]||P[String(k)]||{};
+      /* o curral entra nos tratos em que ele está (quantos tratos ele tem no dia); tratado ou com previsto sempre entra */
+      const noTrato=c=>{if(rk.some(r=>r.curral===c)||+pk[c]>0)return true;let n=0;try{n=nTratos(c,P);}catch(e){}
+        const ts=tratosAtivos().map(Number);return n>0?ts.slice(0,n).includes(k):k===ts[0];};
+      const cs=cad.filter(noTrato).concat([...new Set(rk.map(r=>r.curral))].filter(c=>!cad.includes(c)));
+      let gp=0,gf=0,gt=0;
+      const linhas=cs.map(c=>{const rs=rk.filter(r=>r.curral===c).sort((a,b)=>a.ts-b.ts);
+        if(rs.length){rs.forEach(r=>{gp+=r.prev||0;gt+=r.prev||0;gf+=r.forn||0;});return rs.map(linhaR).join('');}
+        const pv=pk[c];if(+pv>0)gp+=+pv;
+        return `<tr class="naoTratado"><td class="hora"></td><td class="c">${esc(c)}</td><td>${+pv>0?fmt(+pv):'—'}</td><td>—</td><td></td></tr>`;}).join('');
+      return `<tr class="grp"><td colspan="5">${diaBR(dia)} · Trato ${k}<span>${fmt(gf)} de ${fmt(gp)} kg${gt?' ('+sgn(gf-gt)+')':''}</span></td></tr>`+linhas;}).join('');
+    $('tbHist').innerHTML=html||`<tr><td colspan="5" class="note" style="text-align:left">Nenhum trato nem previsto para esse filtro.</td></tr>`;}
   caberTabela($('tbHist'));
   ['hWa','hCopiar','hExcel','hShare','hApagar','hImg','hXls'].forEach(id=>$(id).disabled=!regs.length);
   $('hApagar').hidden=selModo||HD.per||HD.t===-1;$('selBar').hidden=!selModo;
