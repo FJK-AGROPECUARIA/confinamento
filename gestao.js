@@ -76,10 +76,15 @@ const taxaEm=dia=>{const v=vig(gCfg().taxa,dia);return v?+v.rs||0:0;};
 
 /* ---------- insumos e rações ---------- */
 const precoIns=(ins,dia)=>{const v=vig(ins.precos,dia);return v?+v.rs:NaN;}; // R$ por tonelada (matéria natural)
+/* MS do insumo valendo no dia: cada alteração vale do dia dela em diante; antes da 1ª, vale a MS de antes */
+function msEm(ins,dia){if(!ins)return NaN;let h=Array.isArray(ins.msHist)&&ins.msHist.length?ins.msHist:(ins.msDia&&ins.msAnt!=null?[{dia:ins.msDia,ts:0,de:+ins.msAnt,para:+ins.ms}]:null);
+  if(!h||!dia)return +ins.ms;h=h.slice().sort((a,b)=>(a.dia||'').localeCompare(b.dia||'')||(a.ts||0)-(b.ts||0));
+  let v=+h[0].de;h.forEach(x=>{if((x.dia||'')<=dia)v=+x.para;});return v>0?v:+ins.ms;}
+window.msEm=msEm;
 function compRacao(rac,dia){
   const v=vig(rac&&rac.versoes,dia);if(!v)return null;
   const itens=(v.itens||[]).map(i=>{const ins=G.it[i.ins];const vivo=ins&&!ins.del;
-    return {ins:vivo?ins:null,nome:vivo?ins.nome:'(insumo apagado)',pMS:+i.pMS||0,ms:vivo?+ins.ms:NaN,preco:vivo?precoIns(ins,dia):NaN};});
+    return {ins:vivo?ins:null,nome:vivo?ins.nome:'(insumo apagado)',pMS:+i.pMS||0,ms:vivo?msEm(ins,dia):NaN,preco:vivo?precoIns(ins,dia):NaN};});
   let somaM=0;itens.forEach(i=>{i.m=i.pMS/((i.ms||NaN)/100);somaM+=i.m;});
   const somaMS=itens.reduce((a,i)=>a+i.pMS,0);
   itens.forEach(i=>i.pMN=i.m/somaM*100);
@@ -905,7 +910,7 @@ function calcRacao(){
   if(!cp){box.innerHTML='<p class="note">Escolha os insumos e a % de cada um na matéria seca (soma 100%).</p>';$('gVagRes').innerHTML='';return;}
   const soma=cp.somaMS,okS=Math.abs(soma-100)<0.05;
   box.innerHTML=`<div class="tablebox"><table class="gTab gRacTab"><thead><tr><th>Insumo</th><th>% MS</th><th>% MN</th></tr></thead><tbody>
-    ${cp.itens.map(i=>`<tr><td class="c">${esc(i.nome)}<small>MS ${pc(i.ms,0)} · ${rs(i.preco)}/t</small></td><td>${nf(i.pMS,1)}</td><td>${nf(i.pMN,1)}</td></tr>`).join('')}
+    ${cp.itens.map(i=>`<tr><td class="c">${esc(i.nome)}<small>MS ${pc(i.ms,1)} · ${rs(i.preco)}/t</small></td><td>${nf(i.pMS,1)}</td><td>${nf(i.pMN,1)}</td></tr>`).join('')}
     <tr class="grp"><td>Total</td><td class="${okS?'ok':'bad'}">${nf(soma,1)}</td><td>100,0</td></tr></tbody></table></div>
     ${okS?'':`<p class="aviso bad">A soma na matéria seca está em ${nf(soma,1)}%. Precisa dar 100%.</p>`}
     <div class="stat gStat2">${st('MS da ração',pc(cp.ms))}${st('Custo por kg MN',rs(cp.custoMN,3))}${st('Custo por kg MS',rs(cp.custoMS,3))}${st('Custo por tonelada MN',rs(cp.custoMN*1000))}</div>`;
@@ -927,7 +932,7 @@ function salvaRac(id){
 /* ---------- insumos ---------- */
 function tInsumos(){
   const hj=hojeKey(),I=gTodos('insumo').sort(porNome);
-  const rows=I.map(i=>{const p=precoIns(i,hj),e=estoqueIns(i);return `<tr data-g="ir" data-t="insForm" data-id="${i.uid}" class="gClic"><td class="c">${esc(i.nome)}<small>${e.saldo==null?'estoque: sem lançamento':'estoque: '+nf(e.saldo)+' kg'}</small></td><td>${pc(+i.ms,0)}</td><td>${rs(p)}<small>${rs(p/1000/(i.ms/100),3)}/kg MS</small></td></tr>`;}).join('');
+  const rows=I.map(i=>{const p=precoIns(i,hj),e=estoqueIns(i);return `<tr data-g="ir" data-t="insForm" data-id="${i.uid}" class="gClic"><td class="c">${esc(i.nome)}<small>${e.saldo==null?'estoque: sem lançamento':'estoque: '+nf(e.saldo)+' kg'}</small></td><td>${pc(+i.ms,1)}</td><td>${rs(p)}<small>${rs(p/1000/(i.ms/100),3)}/kg MS</small></td></tr>`;}).join('');
   return `<section class="panel"><h2>Insumos</h2>
     <div class="tablebox"><table class="gTab"><thead><tr><th>Insumo</th><th>MS</th><th>Preço por tonelada</th></tr></thead><tbody>${rows||'<tr><td colspan="3">Nenhum insumo ainda.</td></tr>'}</tbody></table></div>
     <p class="note">Preço por tonelada como comprado (matéria natural). Toque no insumo para mudar o preço.</p>
@@ -935,35 +940,48 @@ function tInsumos(){
     <button data-g="ir" data-t="insMS">💧 Matéria seca</button></section>`;
 }
 function msHistTodos(){const L=[];gTodos('insumo').forEach(i=>{const h=Array.isArray(i.msHist)?i.msHist:[];
-    if(h.length)h.forEach(x=>L.push({nome:i.nome,uid:i.uid,...x}));else if(i.msDia&&i.msAnt!=null)L.push({nome:i.nome,uid:i.uid,dia:i.msDia,ts:0,de:+i.msAnt,para:+i.ms});});
+    const hh=h.length?h:(i.msDia&&i.msAnt!=null?[{dia:i.msDia,ts:0,de:+i.msAnt,para:+i.ms}]:[]);hh.forEach(x=>L.push({nome:i.nome,uid:i.uid,...x}));
+    const pri=hh.slice().sort((a,b)=>(a.dia||'').localeCompare(b.dia||'')||(a.ts||0)-(b.ts||0))[0];
+    L.push({nome:i.nome,uid:i.uid,dia:'2026-01-01',ts:-1,de:null,para:pri?+pri.de:+i.ms,ini:true});});
   return L.sort((a,b)=>(b.dia||'').localeCompare(a.dia||'')||(b.ts||0)-(a.ts||0));}
+/* quando pode alterar a MS: com trato do dia em andamento NÃO; terminou todos os tratos do dia → vale de amanhã; ainda não tratou hoje → vale de hoje */
+function msStatus(){const hj=hojeKey(),H=typeof HIST!=='undefined'?HIST:[],P=(typeof S!=='undefined'&&S&&S.prev)||{};
+  const feitoHoje=H.filter(r=>r.dia===hj);let pend=0,tot=0;
+  Object.keys(P).forEach(k=>Object.keys(P[k]||{}).forEach(c=>{if(!(+P[k][c]>0))return;tot++;if(!feitoHoje.some(r=>+r.trato===+k&&r.curral===c))pend++;}));
+  if(feitoHoje.length&&pend)return {bloq:true,pend,tot};
+  const dia=feitoHoje.length?somaDias(hj,1):hj,leit=gTodos('leitura').some(l=>l.dia===dia);return {bloq:false,dia,leit,amanha:dia!==hj};}
+function msAvisoHTML(){const m=msStatus();
+  if(m.bloq)return `<div class="gMsAviso bloq">⛔ Trato em andamento: faltam ${m.pend} de ${m.tot} curral(is) nos tratos de hoje.<br>A matéria seca só pode ser alterada depois que <b>todos os tratos do dia</b> forem finalizados (e antes da leitura do dia seguinte).</div>`;
+  return `<div class="gMsAviso${m.leit?' atencao':''}">${m.amanha?'✓ Tratos de hoje finalizados. ':''}A nova MS vale a partir de <b>${dB(m.dia)}</b>${m.amanha?' (amanhã)':' (hoje)'}: leitura, previsto, rações e batidas desse dia em diante. Os dias anteriores ficam como estão.${m.leit?`<br>⚠ A leitura de ${dB(m.dia)} já foi feita com a MS antiga: depois de alterar, refaça a leitura para recalcular o previsto.`:''}</div>`;}
 function tInsMS(t){const I=gTodos('insumo').sort(porNome),H=msHistTodos(),sel=(t&&t.ins)||'',iS=sel&&G.it[sel];
-  const linhas=H.map(x=>`<tr data-msh="${esc(x.uid||'')}"${sel&&x.uid!==sel?' hidden':''}><td>${dB(x.dia)}${x.hora?`<small>${esc(x.hora)}</small>`:''}</td><td class="c">${esc(x.nome)}</td><td>${pc(+x.de,1)}</td><td><b>${pc(+x.para,1)}</b></td></tr>`).join('');
+  const linhas=H.map(x=>`<tr data-msh="${esc(x.uid||'')}"${sel&&x.uid!==sel?' hidden':''}><td>${dB(x.dia)}${x.hora?`<small>${esc(x.hora)}</small>`:''}</td><td class="c">${esc(x.nome)}</td><td>${x.ini?'inicial':pc(+x.de,1)}</td><td><b>${pc(+x.para,1)}</b></td></tr>`).join('');
   return `${t&&t.t==='ms'?'':voltar()}<section class="panel"><h2>💧 Alterar matéria seca</h2>
-    <p class="note">Escolha o produto e digite a nova % de MS. Vale para os cálculos de hoje em diante (rações, MS/cab, % IMS).</p>
+    <p class="note">Escolha o produto e digite a nova % de MS.</p>
     <label>Produto<select id="gMsIns" onchange="msFiltrar(this.value)">
-      <option value=""${sel?'':' selected'} disabled>Escolha o produto</option>${I.map(i=>`<option value="${i.uid}"${i.uid===sel?' selected':''} data-ms="${String(+i.ms).replace('.',',')}">${esc(i.nome)}</option>`).join('')}</select></label>
-    <div class="gMsLinha"><div><span>MS atual</span><b id="gMsAtual">${iS?String(+iS.ms).replace('.',',')+'%':'—'}</b></div>
+      <option value=""${sel?'':' selected'} disabled>Escolha o produto</option>${I.map(i=>`<option value="${i.uid}"${i.uid===sel?' selected':''} data-ms="${nf(+i.ms,1)}">${esc(i.nome)}</option>`).join('')}</select></label>
+    <div class="gMsLinha"><div><span>MS atual</span><b id="gMsAtual">${iS?pc(+iS.ms,1):'—'}</b></div>
       <label>Nova MS (%)<input type="text" inputmode="decimal" id="gMsNova" placeholder="ex.: 35,5"></label></div>
-    <button class="primary" data-g="salvaMS">Alterar matéria seca</button></section>
+    ${msAvisoHTML()}
+    <button class="primary" data-g="salvaMS"${msStatus().bloq?' disabled':''}>Alterar matéria seca</button></section>
     <section class="panel"><h2 id="gMsHTit">${iS?'Últimas alterações · '+esc(iS.nome):'Últimas alterações'}</h2>
-    <div class="tablebox"${H.length?'':' hidden'}><table class="gTab"><thead><tr><th>Data</th><th>Produto</th><th>De</th><th>Para</th></tr></thead><tbody>${linhas}</tbody></table></div>
+    <div class="tablebox"${H.length?'':' hidden'}><table class="gTab"><thead><tr><th>Vale de</th><th>Produto</th><th>De</th><th>Para</th></tr></thead><tbody>${linhas}</tbody></table></div>
     <p class="note" id="gMsVazio"${H.some(x=>!sel||x.uid===sel)?' hidden':''}>Nenhuma alteração de matéria seca${iS?' desse produto':''} ainda.</p></section>`;}
 /* escolheu o produto: mostra a MS atual e só as alterações dele */
 window.msFiltrar=uid=>{const i=G.it[uid];if(GT&&(GT.t==='ms'||GT.t==='insMS'))GT.ins=uid;
-  const a=document.getElementById('gMsAtual');if(a)a.textContent=i?String(+i.ms).replace('.',',')+'%':'—';
+  const a=document.getElementById('gMsAtual');if(a)a.textContent=i?pc(+i.ms,1):'—';
   const t=document.getElementById('gMsHTit');if(t)t.textContent='Últimas alterações'+(i?' · '+i.nome:'');let n=0;
   document.querySelectorAll('#gBox tr[data-msh]').forEach(r=>{const v=!uid||r.dataset.msh===uid;r.hidden=!v;if(v)n++;});
   const tb=document.querySelector('#gBox tr[data-msh]');if(tb)tb.closest('.tablebox').hidden=!n;
   const z=document.getElementById('gMsVazio');if(z){z.hidden=!!n;z.textContent='Nenhuma alteração de matéria seca'+(i?' desse produto':'')+' ainda.';}
   const nv=document.getElementById('gMsNova');if(nv){nv.value='';nv.focus();}};
-function salvaMS(){const sel=document.getElementById('gMsIns'),i=sel&&G.it[sel.value];if(!i)return toast('Escolha o produto');
-  const v=gNum(document.getElementById('gMsNova').value);if(!(v>0&&v<=100))return toast('A MS deve ficar entre 1 e 100%');
+function salvaMS(){const st_=msStatus();if(st_.bloq)return toast('Termine todos os tratos de hoje antes de alterar a MS');const sel=document.getElementById('gMsIns'),i=sel&&G.it[sel.value];if(!i)return toast('Escolha o produto');
+  const v=Math.round(gNum(document.getElementById('gMsNova').value)*10)/10;if(!(v>0&&v<=100))return toast('A MS deve ficar entre 1 e 100%');
   if(Math.abs(v-(+i.ms))<1e-9)return toast('Essa já é a MS atual de '+i.nome);
+  if(st_.leit&&!confirm(`A leitura de ${dB(st_.dia)} já foi feita com a MS antiga. Alterar mesmo assim? (depois refaça a leitura)`))return;
   const x=JSON.parse(JSON.stringify(i)),d=new Date(),hist=Array.isArray(x.msHist)?x.msHist:(x.msDia&&x.msAnt!=null?[{dia:x.msDia,ts:0,de:+x.msAnt,para:+x.ms}]:[]);
-  hist.push({dia:hojeKey(),ts:Date.now(),hora:String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0'),de:+i.ms,para:v});
-  x.msHist=hist.slice(-30);x.msAnt=+i.ms;x.ms=v;x.msDia=hojeKey();gPut(x);
-  toast(`${i.nome}: MS ${pc(+i.ms,1)} → ${pc(v,1)}`);GT.ins=i.uid;gRender();}
+  hist.push({dia:st_.dia,ts:Date.now(),hora:String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0'),de:+i.ms,para:v});
+  x.msHist=hist.slice(-30);x.msAnt=+i.ms;x.ms=v;x.msDia=st_.dia;gPut(x);
+  toast(`${i.nome}: MS ${pc(+i.ms,1)} → ${pc(v,1)} a partir de ${dB(st_.dia)}`);GT.ins=i.uid;gRender();}
 function tInsForm(t){const i=t.id?G.it[t.id]:null,hj=hojeKey();
   const hist=i?(i.precos||[]).slice().reverse().map((p,k,a)=>`<tr><td>${dB(p.desde)}</td><td>${rs(+p.rs,2)}</td><td class="acoes">${a.length>1?`<button class="mini danger" data-g="insPrecoRm" data-id="${i.uid}" data-d="${p.desde}">✕</button>`:''}</td></tr>`).join(''):'';
   return `${voltar()}<section class="panel"><h2>${i?'Insumo':'Novo insumo'}</h2><div class="gForm">${[
@@ -973,7 +991,7 @@ function tInsForm(t){const i=t.id?G.it[t.id]:null,hj=hojeKey();
     <button class="primary" data-g="salvaIns" data-id="${t.id||''}">Salvar</button></section>
     ${i?`<section class="panel"><h2>Histórico de preço</h2><div class="tablebox"><table><thead><tr><th>Desde</th><th>R$/t</th><th></th></tr></thead><tbody>${hist}</tbody></table></div>
     <button class="dangerfill" data-g="apagaIns" data-id="${i.uid}">Apagar insumo</button></section>`:''}`;}
-function salvaIns(id){const nome=fv('nome'),ms=fn('ms'),preco=fn('preco'),desde=fv('desde')||hojeKey();
+function salvaIns(id){const nome=fv('nome'),ms=Math.round(fn('ms')*10)/10,preco=fn('preco'),desde=fv('desde')||hojeKey();
   if(!nome)return toast('Coloque o nome');if(!(ms>0&&ms<=100))return toast('Matéria seca entre 1 e 100%');if(!(preco>=0))return toast('Coloque o preço por tonelada');
   const i=id?JSON.parse(JSON.stringify(G.it[id])):{uid:novoId('ins'),tipo:'insumo',precos:[]};
   i.nome=nome;i.ms=ms;const v=vig(i.precos,desde);if(!v||+v.rs!==preco)setHist(i.precos,desde,{rs:preco});
@@ -1055,7 +1073,7 @@ function salvaCfg(){const c=JSON.parse(JSON.stringify(gCfg()));const t=fn('taxa'
 /* =====================================================================================
    EVENTOS
    ===================================================================================== */
-const SO_VER=new Set(['resPdf','resImg','fzPdf','fzImgG','fzCur','fzLoc','fzImg','fzXls','fzXlsHist','cfgAba','coLoc','coAbre','coFecha','estPer','evLoc','evolN','imgDia','imgPer','imgComp','imgLote','xlsGraf','racaAdd','racaRm','grafLoc','grafCur','celGraf','imgGraf','filtroLoc','dataPasso','dataHoje','voltar','ir','lote','raiz','compRel','compDia','xlsDia','xlsPer','xlsComp','xlsLote','perAtalho','nota','racAdd','racRm','notaAdd','notaRm','notaPadrao']);
+const SO_VER=new Set(['fzFotoVer','resPdf','resImg','fzPdf','fzImgG','fzCur','fzLoc','fzImg','fzXls','fzXlsHist','cfgAba','coLoc','coAbre','coFecha','estPer','evLoc','evolN','imgDia','imgPer','imgComp','imgLote','xlsGraf','racaAdd','racaRm','grafLoc','grafCur','celGraf','imgGraf','filtroLoc','dataPasso','dataHoje','voltar','ir','lote','raiz','compRel','compDia','xlsDia','xlsPer','xlsComp','xlsLote','perAtalho','nota','racAdd','racRm','notaAdd','notaRm','notaPadrao']);
 $('gBox').addEventListener('click',e=>{
   const b=e.target.closest('[data-g]');if(!b)return;const a=b.dataset.g,id=b.dataset.id;
   if(!SO_VER.has(a)&&bloqueado())return;
@@ -1627,7 +1645,7 @@ const fz1=v=>v==null?'—':v.toFixed(2).replace('.',',');
 const fzPc=v=>v.toFixed(1).replace('.',',')+'%';
 function fzCurrais(dia,loc){const s=new Set();gTodos('lote').filter(l=>cabPres(l,dia)>0).forEach(l=>{const c=curralEm(l,dia);if(c&&doLocal(loc||'T',c))s.add(c);});
   gTodos('fezes').filter(x=>x.dia===dia&&doLocal(loc||'T',x.curral)).forEach(x=>s.add(x.curral));
-  const ord=S.cadastro||[];return [...s].sort((a,b)=>{const ia=ord.indexOf(a),ib=ord.indexOf(b);return (ia<0?999:ia)-(ib<0?999:ib)||alfa(a,b);});}
+  return [...s].sort(alfa);}  // ordem alfabética (C-3, C-4 … C-10)
 function tFezes(t){const hj=hojeKey();t.dia=t.dia||hj;t.loc=t.loc||'T';const dia=t.dia,Cs=fzCurrais(dia,t.loc);
   if(t.cur&&!Cs.includes(t.cur))t.cur=null;
   const chips=Cs.map(c=>{const k=fzCalc((fzItem(dia,c)||{}).c),st=fzStatus(k);
@@ -1641,6 +1659,7 @@ function tFezes(t){const hj=hojeKey();t.dia=t.dia||hj;t.loc=t.loc||'T';const dia
         <button class="fzBt" data-g="fzMenos" data-i="${i}" aria-label="Menos escore ${i}"${k.cs[i-1]?'':' disabled'}>−</button><b class="fzN">${k.cs[i-1]}</b>
         <button class="fzBt mais" data-g="fzMais" data-i="${i}" aria-label="Mais escore ${i}">+</button></div>`).join('')}
       <div class="fzMedia ${st.cl}"><span>Escore médio ponderado</span><b>${fz1(k.media)}</b><em>${st.txt}</em></div>
+      ${fzFotosHTML(x)}
       <label for="fzObs">Observações</label><textarea id="fzObs" rows="2" placeholder="Ex.: fezes com grãos inteiros, muco, bolhas…">${esc((x&&x.obs)||'')}</textarea>
       ${k.tot?`<button class="mini danger" data-g="fzApagar">Apagar avaliação deste curral</button>`:''}</section>`;}
   /* relatório do dia */
@@ -1651,8 +1670,7 @@ function tFezes(t){const hj=hojeKey();t.dia=t.dia||hj;t.loc=t.loc||'T';const dia
     ${R.map(o=>`<tr data-g="fzCur" data-c="${esc(o.c)}"><td class="c">${esc(o.c)}</td><td>${o.k.tot}</td>${o.k.pct.map((p,i)=>`<td class="${i===2?'fz3':''}">${p?p.toFixed(0)+'%':'·'}</td>`).join('')}<td class="${fzStatus(o.k).cl}"><b>${fz1(o.k.media)}</b></td></tr>`).join('')}
     <tr class="grp"><td>Geral</td><td>${KG.tot}</td>${KG.pct.map(p=>`<td>${p.toFixed(0)}%</td>`).join('')}<td class="${fzStatus(KG).cl}"><b>${fz1(KG.media)}</b></td></tr></tbody></table></div>
     <p class="note">Ideal: maioria no escore 3 e média entre 2,5 e 3,5. Mais de 20% em 1+2 = fezes moles (risco de acidose). Mais de 20% em 4+5 = fezes firmes.</p>
-    <div class="row compart"><button class="verde" data-g="fzPdf">📄 PDF com gráficos</button><button class="verde" data-g="fzImgG">🖼 Imagem com gráficos</button></div>
-    <div class="row compart"><button data-g="fzImg">🖼 Tabela (imagem)</button><button data-g="fzXls">📊 Excel</button></div></section>`
+    <div class="row compart fz3"><button class="verde" data-g="fzPdf">📄 PDF</button><button class="verde" data-g="fzImg">🖼 Tabela</button><button class="verde" data-g="fzXls">📊 Excel</button></div></section>`
     :`<section class="panel"><p class="note">Nenhuma avaliação de fezes em ${dB(dia)}${t.loc!=='T'?' neste local':''}.</p></section>`;
   /* histórico */
   const ini=t.hIni||somaDias(dia,-29),cH=t.hCur||'';
@@ -1693,17 +1711,62 @@ $('gBox').addEventListener('click',e=>{const b=e.target.closest('[data-g^="fz"]'
   if(a==='fzImg')return fzImg();if(a==='fzXls')return fzXls(false);if(a==='fzXlsHist')return fzXls(true);
   if(typeof bloqueado==='function'&&bloqueado())return;
   if(a==='fzMais'||a==='fzMenos')return fzMudar(+b.dataset.i,a==='fzMais'?1:-1);
+  if(a==='fzFotoAdd'){const f=document.getElementById('fzFotoIn');if(f)f.click();return;}
+  if(a==='fzFotoVer')return fzFotoVer(+b.dataset.n);
+  if(a==='fzFotoRm')return fzFotoRm(+b.dataset.n);
   if(a==='fzApagar'){if(!confirm(`Apagar a avaliação de fezes do ${GT.cur} em ${dB(GT.dia)}?`))return;const x=fzItem(GT.dia,GT.cur);if(x)gDel(x.uid);return gRender();}});
 $('gBox').addEventListener('change',e=>{if(GT.t!=='fezes')return;
   if(e.target.id==='fzDia'){GT.dia=e.target.value||hojeKey();GT.cur=null;return gRender();}
   if(e.target.id==='fzHCur'){GT.hCur=e.target.value;return gRender();}
+  if(e.target.id==='fzFotoIn'){const fs=[...(e.target.files||[])];e.target.value='';return fzFotosAnexar(fs);}
   if(e.target.id==='fzObs'){if(typeof bloqueado==='function'&&bloqueado())return;const c=GT.cur;if(!c)return;const x=fzItem(GT.dia,c)||{uid:fzId(GT.dia,c),tipo:'fezes',dia:GT.dia,curral:c,c:[0,0,0,0,0]};
     const n=JSON.parse(JSON.stringify(x));n.obs=e.target.value;gPut(n);toast('Observação salva');}});
+
+/* ---------- Escore de fezes: fotos (até 4 por curral/dia), guardadas no Google Drive pela planilha ---------- */
+const FZ_MAXF=4,FZ_FOTO={},FZ_ENV={};   // FZ_FOTO: cache id → dataURL; FZ_ENV: fotos subindo (por curral)
+function fzFotosHTML(x){const fo=(x&&x.fotos)||[],env=FZ_ENV[GT.dia+'|'+GT.cur]||0,livre=FZ_MAXF-fo.length-env;
+  const th=fo.map((f,n)=>{const src=FZ_FOTO[f.idMini];if(!src)fzFotoCarregar(f.idMini);
+    return `<div class="fzFoto"><button class="fzFotoImg" data-g="fzFotoVer" data-n="${n}" aria-label="Ver foto ${n+1}">${src?`<img src="${src}" alt="">`:'<span>⏳</span>'}</button>${typeof modoVer!=='undefined'&&modoVer?'':`<button class="fzFotoX" data-g="fzFotoRm" data-n="${n}" aria-label="Apagar foto ${n+1}">✕</button>`}</div>`;}).join('')
+    +Array.from({length:env},()=>'<div class="fzFoto"><span class="fzFotoUp">⬆ enviando…</span></div>').join('');
+  return `<div class="fzFotos"><div class="fzFotosTopo"><span>📷 Fotos <small>(${fo.length} de ${FZ_MAXF})</small></span>
+    ${livre>0&&!(typeof modoVer!=='undefined'&&modoVer)?`<button class="mini" data-g="fzFotoAdd">📎 Anexar imagens</button>`:''}</div>
+    ${th?`<div class="fzFotoGrade">${th}</div>`:''}<input type="file" id="fzFotoIn" accept="image/*" multiple hidden></div>`;}
+function fzRedim(file,max,q){return new Promise((ok_,erro)=>{const u=URL.createObjectURL(file),im=new Image();
+  im.onload=()=>{const k=Math.min(1,max/Math.max(im.width,im.height)),cv=document.createElement('canvas');cv.width=Math.round(im.width*k);cv.height=Math.round(im.height*k);
+    cv.getContext('2d').drawImage(im,0,0,cv.width,cv.height);URL.revokeObjectURL(u);ok_(cv.toDataURL('image/jpeg',q));};
+  im.onerror=()=>{URL.revokeObjectURL(u);erro(new Error('imagem inválida'));};im.src=u;});}
+async function fzFotosAnexar(files){if(typeof bloqueado==='function'&&bloqueado())return;const t=GT,c=t.cur,dia=t.dia;if(!c||!files.length)return;
+  if(!navigator.onLine)return toast('Sem internet: anexe as fotos quando tiver sinal');
+  const chave=dia+'|'+c,ja=((fzItem(dia,c)||{}).fotos||[]).length,livre=FZ_MAXF-ja-(FZ_ENV[chave]||0);
+  if(livre<=0)return toast(`Máximo de ${FZ_MAXF} fotos por curral`);
+  if(files.length>livre)toast(`Só cabem mais ${livre} foto(s): as outras ficaram de fora`);
+  files=files.slice(0,livre);FZ_ENV[chave]=(FZ_ENV[chave]||0)+files.length;gRender();let okN=0;
+  for(const f of files){try{const big=await fzRedim(f,1280,.8),mini=await fzRedim(f,360,.7);
+      const r=await postApi({acao:'fotoSalvar',img:big.split(',')[1],mini:mini.split(',')[1],nome:`${dB(dia).replace(/\//g,'-')} ${c} ${Date.now()}`});
+      if(!r.id)throw new Error('sem id');FZ_FOTO[r.idMini||r.id]=mini;
+      const x=fzItem(dia,c)||{uid:fzId(dia,c),tipo:'fezes',dia,curral:c,c:[0,0,0,0,0],obs:''},n=JSON.parse(JSON.stringify(x));
+      n.fotos=(n.fotos||[]).concat([{id:r.id,idMini:r.idMini||r.id}]).slice(0,FZ_MAXF);const o=$('fzObs');if(o&&GT.cur===c)n.obs=o.value;gPut(n);okN++;}
+    catch(e){toast('Não consegui enviar a foto: '+(e.message||e));}
+    finally{FZ_ENV[chave]=Math.max(0,(FZ_ENV[chave]||1)-1);if(GT.t==='fezes'){const y=window.scrollY;gRender();window.scrollTo({top:y});}}}
+  if(okN)toast(`${okN} foto(s) anexada(s)`);}
+const FZ_CARR={};
+async function fzFotoCarregar(id){if(!id||FZ_FOTO[id]||FZ_CARR[id])return;FZ_CARR[id]=1;
+  try{const u=apiUrl()+(apiUrl().includes('?')?'&':'?')+'acao=fotoVer&id='+encodeURIComponent(id);const j=await (await fetch(u)).json();
+    if(j&&j.ok&&j.imagem){FZ_FOTO[id]='data:'+(j.tipo||'image/jpeg')+';base64,'+j.imagem;if(GT.t==='fezes'){const y=window.scrollY;gRender();window.scrollTo({top:y});}}}
+  catch(e){}finally{delete FZ_CARR[id];}}
+async function fzFotoVer(n){const f=((fzItem(GT.dia,GT.cur)||{}).fotos||[])[n];if(!f)return;
+  const w=document.createElement('div');w.className='fzFotoTela';w.innerHTML=`<img src="${FZ_FOTO[f.id]||FZ_FOTO[f.idMini]||''}" alt=""><span class="fzFotoCarr">${FZ_FOTO[f.id]?'':'carregando…'}</span><button aria-label="Fechar">✕</button>`;
+  w.onclick=()=>w.remove();document.body.appendChild(w);
+  if(!FZ_FOTO[f.id]){await fzFotoCarregar(f.id);const im=w.querySelector('img'),s_=w.querySelector('.fzFotoCarr');if(FZ_FOTO[f.id]){im.src=FZ_FOTO[f.id];s_.textContent='';}else s_.textContent='não consegui abrir a foto (sem internet?)';}}
+async function fzFotoRm(n){if(typeof bloqueado==='function'&&bloqueado())return;const x=fzItem(GT.dia,GT.cur);const f=x&&(x.fotos||[])[n];if(!f)return;
+  if(!confirm('Apagar esta foto?'))return;const nx=JSON.parse(JSON.stringify(x));nx.fotos.splice(n,1);gPut(nx);const y=window.scrollY;gRender();window.scrollTo({top:y});
+  try{await postApi({acao:'fotoApagar',ids:[f.id,f.idMini].filter((v,i,a)=>v&&a.indexOf(v)===i)});}catch(e){}}
+window.fzFotoCarregar=fzFotoCarregar;window.FZ_FOTO=FZ_FOTO;
 
 /* ---------- Escore de fezes: relatório com gráfico de cada curral (PDF e imagem) ---------- */
 const FZ_COR=['#c62828','#f2b705','#2e7d32','#8d6e63','#4e342e'];
 function fzDadosDia(){const t=GT;return gTodos('fezes').filter(x=>x.dia===t.dia&&doLocal(t.loc,x.curral)).map(x=>({c:x.curral,k:fzCalc(x.c),obs:x.obs||''})).filter(o=>o.k.tot)
-  .sort((a,b)=>{const o=S.cadastro||[],ia=o.indexOf(a.c),ib=o.indexOf(b.c);return (ia<0?999:ia)-(ib<0?999:ib)||alfa(a.c,b.c);});}
+  .sort((a,b)=>alfa(a.c,b.c));}
 /* um quadro com o gráfico de barras do curral */
 function fzQuadro(x,X,Y,W,H,o,dia){const k=o.k,st=fzStatus(k),L=gTodos('lote').filter(l=>curralEm(l,dia)===o.c&&cabPres(l,dia)>0);
   x.fillStyle='#fff';x.strokeStyle='#d5dde5';x.lineWidth=2;x.beginPath();x.roundRect?x.roundRect(X,Y,W,H,16):x.rect(X,Y,W,H);x.fill();x.stroke();

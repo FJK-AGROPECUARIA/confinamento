@@ -560,6 +560,13 @@ input[type=date]::-webkit-calendar-picker-indicator{margin-left:2px;padding:0}
 .gHero span{display:block;font-size:.8rem;color:#c9d3df;margin-top:3px}
 .gHero.pos{background:#2f6b3a}.gHero.pos small{color:#d9ef7a}.gHero.neg{background:#9e2a24}.gHero.neg small{color:#ffd2cf}
 .fTodosOk{margin-top:10px;background:#2e7d32;color:#fff;font-weight:800;text-align:center;border-radius:14px;padding:14px 10px;font-size:1.05rem;letter-spacing:.02em}
+.gMsAviso{margin:10px 0;padding:10px 12px;border-radius:12px;background:#e8f2dc;color:#2e5a12;font-size:.88rem;line-height:1.35}.gMsAviso.atencao{background:#fff4dc;color:#7a4b00}.gMsAviso.bloq{background:#fde7e5;color:#b3261e;font-weight:600}
+.row.compart.fz3{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}.row.compart.fz3 button{margin:0;padding-left:4px;padding-right:4px;white-space:nowrap}
+.fzFotos{margin:12px 0 4px;padding:10px;border:1px dashed #b9c7a5;border-radius:12px}.fzFotosTopo{display:flex;justify-content:space-between;align-items:center;gap:8px;font-weight:700}.fzFotosTopo small{font-weight:500;color:var(--muted)}.fzFotosTopo .mini{margin:0}
+.fzFotoGrade{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-top:8px}.fzFoto{position:relative;aspect-ratio:1;border-radius:10px;overflow:hidden;background:#eef2e8;display:flex;align-items:center;justify-content:center}
+.fzFotoImg{all:unset;width:100%;height:100%;display:flex;align-items:center;justify-content:center;cursor:pointer}.fzFotoImg img{width:100%;height:100%;object-fit:cover}.fzFotoUp{font-size:.7rem;color:var(--muted);text-align:center}
+.fzFotoX{position:absolute;top:3px;right:3px;width:24px;height:24px;min-height:0;padding:0;margin:0;border-radius:50%;background:rgba(0,0,0,.6);color:#fff;border:0;font-size:.8rem;line-height:24px}
+.fzFotoTela{position:fixed;inset:0;background:rgba(0,0,0,.92);z-index:9999;display:flex;align-items:center;justify-content:center}.fzFotoTela img{max-width:100%;max-height:100%}.fzFotoTela button{position:absolute;top:14px;right:14px;width:44px;height:44px;border-radius:50%;background:#fff;color:#000;border:0;font-size:1.2rem}.fzFotoCarr{position:absolute;bottom:20px;color:#fff;left:0;right:0;text-align:center}
 .gMsLinha{display:grid;grid-template-columns:1fr 1.3fr;gap:10px;align-items:end;margin:8px 0}.gMsLinha>div{background:var(--chip);border-radius:12px;padding:8px 12px}.gMsLinha>div span{display:block;font-size:.75rem;color:var(--muted);font-weight:600}.gMsLinha>div b{font-size:1.4rem}.gMsLinha input{font-size:1.2rem}
 .gCustos td,.gCustos th{font-size:.84rem;white-space:nowrap;padding-left:2px;padding-right:2px}.gCustos td:first-child{white-space:normal}.gCustos td small{display:block;font-size:.68rem;color:var(--muted);font-weight:500}.gCustos td,.gCustos th{font-size:.8rem}.gCustos td:first-child{font-weight:600}.gCustos tr.grp td{font-weight:800}
 .stat b small{font-size:.7rem;font-family:var(--body);color:var(--muted)}
@@ -792,9 +799,9 @@ body.naInicio .topoTxt h1{font-size:clamp(16px,5vw,28px)!important}
 </header>
 <div class="wrap">
   <div class="inicio" id="inicio">
-    <button class="grande gExec" id="btnModoExec">🚜 Tratos<small>Executar e lançar · com senha</small></button>
-    <button class="grande gVer" id="btnModoVer">👁 Visualizar<small>Só acompanhar os tratos, sem alterar nada</small></button>
-    <button class="grande gGest" id="btnModoGest">📊 Gestão<small>Lotes, relatórios, rações e configurações · com senha</small></button>
+    <button class="grande gExec" id="btnModoExec">🚜 Tratos<small>Executar e lançar</small></button>
+    <button class="grande gVer" id="btnModoVer">👁 Visualizar<small>Acompanhar os tratos</small></button>
+    <button class="grande gGest" id="btnModoGest">📊 Gestão<small>Resumo, relatórios, currais, lotes, insumos, rações, estoque e configurações</small></button>
   </div>
   <div class="faixaVer" id="faixaVer" hidden><span>👁 Modo visualização · atualiza aut.</span><button class="mini" id="btnSairVer">Sair</button></div>
   <div class="menu" id="menu">
@@ -1081,7 +1088,7 @@ body.naInicio .topoTxt h1{font-size:clamp(16px,5vw,28px)!important}
 <div class="toast" id="toast" hidden></div>
 <script>
 'use strict';
-const APP_VERSAO='77';
+const APP_VERSAO='78';
 const APP_DATA='19/10/2026';
 const KEY='confinamento-completo-v1';
 const $=id=>document.getElementById(id);
@@ -1958,7 +1965,7 @@ function nomeArquivo(regs){
   const d=dias.length===1?dias[0]:`${dias[0]}_a_${dias[dias.length-1]}`;
   return nomeBase(regs)+'.xlsx';
 }
-function baixar(blob,nome){const url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download=nome;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),4000);}
+function baixar(blob,nome){const url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download=nome;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),120000);}  // Safari pergunta se deixa baixar: não pode apagar o arquivo antes
 const XT='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
 function exportar(regs){if(!regs.length)return;baixar(gerarXlsx(regs),nomeArquivo(regs));toast('Planilha salva em Downloads');}
 function compartilhar(regs){if(!regs.length)return;return compartilharArquivo(gerarXlsx(regs),nomeArquivo(regs),XT);}
@@ -1967,21 +1974,24 @@ $('btnExcel').onclick=()=>exportar(regsAtuais());
 $('btnShareExcel').onclick=()=>compartilhar(regsAtuais());
 
 /* ---------- Compartilhar: Imagem da tabela e Excel ---------- */
-/* todo arquivo gerado (imagem, PDF, Excel): pergunta se quer SALVAR no aparelho/computador ou ENVIAR (WhatsApp, e-mail…) */
-function salvarOuEnviar(blobs,nomes,tipo){return new Promise(res=>{
-  const fs=blobs.map((b,i)=>new File([b],nomes[i],{type:tipo})),podeEnviar=!!(navigator.canShare&&navigator.canShare({files:fs}));
+/* todo arquivo gerado (imagem, PDF, Excel): no celular abre direto a tela do próprio aparelho (WhatsApp, Salvar imagem, Salvar em Arquivos…);
+   no computador baixa direto. Se o aparelho não deixar abrir sozinho (demorou para gerar), mostra 1 botão para abrir. */
+function salvarOuEnviar(blobs,nomes,tipo){return new Promise(async res=>{
+  const fs=blobs.map((b,i)=>new File([b],nomes[i],{type:tipo}));let pode=false;try{pode=!!(navigator.canShare&&navigator.canShare({files:fs}));}catch(e){}
+  const movel=/Android|iPhone|iPad|iPod/i.test(navigator.userAgent)||(navigator.platform==='MacIntel'&&navigator.maxTouchPoints>1);
+  const baixarTudo=()=>{blobs.forEach((bl,i)=>setTimeout(()=>baixar(bl,nomes[i]),i*600));toast(blobs.length>1?`${blobs.length} arquivos salvos (Downloads)`:'Arquivo salvo (Downloads)');};
+  if(!movel||!pode){baixarTudo();return res();}
+  try{await navigator.share({files:fs});return res();}
+  catch(x){if(x&&x.name==='AbortError')return res();
+    if(!x||x.name!=='NotAllowedError'){baixarTudo();return res();}}
+  /* o aparelho exige um toque: um botão só, que abre a tela de compartilhar */
   const kb=Math.max(1,Math.round(blobs.reduce((a,b)=>a+b.size,0)/1024)),ic=/pdf/.test(tipo)?'📄':/image/.test(tipo)?'🖼':'📊';
   const w=document.createElement('div');w.className='arqCaixa';
-  w.innerHTML=`<div class="arqBox"><div class="arqTit">${ic} <b>${esc(nomes.length>1?nomes.length+' arquivos':nomes[0])}</b><small>${kb.toLocaleString('pt-BR')} KB</small></div>
-    <button class="primary" data-arq="salvar">⬇ Salvar</button>
-    ${podeEnviar?'<button class="lima" data-arq="enviar">📤 Compartilhar</button>':''}
-    <button data-arq="x">Cancelar</button></div>`;
+  w.innerHTML=`<div class="arqBox"><div class="arqTit">${ic} <b>${esc(nomes.length>1?nomes.length+' arquivos':nomes[0])}</b><small>${kb.toLocaleString('pt-BR')} KB · pronto</small></div>
+    <button class="primary" data-arq="abrir">📤 Abrir</button><button data-arq="x">Cancelar</button></div>`;
   const fim=()=>{w.remove();res();};
   w.addEventListener('click',async e=>{const b=e.target.closest('[data-arq]');if(!b&&e.target!==w)return;
-    const a=b?b.dataset.arq:'x';
-    if(a==='salvar'){blobs.forEach((bl,i)=>setTimeout(()=>baixar(bl,nomes[i]),i*400));toast(blobs.length>1?`${blobs.length} arquivos salvos (Downloads / Arquivos)`:'Arquivo salvo (Downloads / Arquivos)');fim();return;}
-    if(a==='enviar'){try{await navigator.share({files:fs,title:nomes[0]});}catch(x){if(x.name!=='AbortError'){blobs.forEach((bl,i)=>baixar(bl,nomes[i]));toast('Não deu para compartilhar: arquivo salvo');}}fim();return;}
-    fim();});
+    if(b&&b.dataset.arq==='abrir'){try{await navigator.share({files:fs});}catch(x){if(x.name!=='AbortError')baixarTudo();}}fim();});
   document.body.appendChild(w);});}
 function compartilharArquivo(blob,nome,tipo){return salvarOuEnviar([blob],[nome],tipo);}
 const linhaReg=(nome,prev,rs)=>{const f=rs.reduce((a,r)=>a+r.forn,0),fz=rs.length>0;
@@ -2163,7 +2173,7 @@ function ligarNavDia(box,st,mudou){
 /* coloca o número de cada local nos botões fixos (Previsto, Histórico) */
 function pintarContaLocal(sel,ds,conta){document.querySelectorAll(sel).forEach(b=>{let sm=b.querySelector('small');if(!sm){sm=document.createElement('small');b.appendChild(sm);}const t=' '+conta(b.dataset[ds]);if(sm.textContent!==t)sm.textContent=t;});}
 function tratoNavHTML(t,dois,extra){const a=[...new Set(tratosAtivos().concat(extra||[]).map(Number))].filter(k=>k>0).sort((x,y)=>x-y),tem=t>0,ult=a[a.length-1];
-  const todos=dois?`<div class="tTodos"><button data-tt="-1" class="${t===-1?'sel':''}">Todos (total)</button><button data-tt="0" class="${t===0?'sel':''}">Todos (separado)</button></div>`
+  const todos=dois?`<div class="tTodos"><button data-tt="-1" class="${t===-1?'sel':''}">Total</button><button data-tt="0" class="${t===0?'sel':''}">Todos os tratos</button></div>`
     :`<button data-tt="0" class="${t<=0?'sel':''}">Todos</button>`;
   return `<div class="tNav tNavS${dois?' tNav2':''}" data-lista="${a.join(',')}">${todos}
   <div class="tSeta${tem?' sel':''}"><button type="button" data-tp="-1" aria-label="Trato anterior"${!tem||t<=a[0]?' disabled':''}>◀</button><select class="trato" data-tsel aria-label="Escolher trato">${tem?'':'<option value="" selected disabled>Escolher trato</option>'}${a.map(k=>`<option value="${k}"${k===t?' selected':''}>${esc(nomeTrato(k))}</option>`).join('')}</select><button type="button" data-tp="1" aria-label="Próximo trato"${tem&&t>=ult?' disabled':''}>▶</button></div></div>`;}
