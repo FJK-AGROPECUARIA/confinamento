@@ -1040,7 +1040,7 @@ body.naInicio .topoLinha .voltarIni{display:none}
 <div class="toast" id="toast" hidden></div>
 <script>
 'use strict';
-const APP_VERSAO='57';
+const APP_VERSAO='58';
 const APP_DATA='19/10/2026';
 const KEY='confinamento-completo-v1';
 const $=id=>document.getElementById(id);
@@ -2859,7 +2859,9 @@ let avUlt='',avTimer=null,avUltEnvio=0;
 /* qual tela de trabalho o celular está usando por último: tratar/carregar, manual/automação */
 var avModo='trato';
 function estadoAoVivo(){
-  if((avModo==='carga'||avModo==='autoc')&&window.cEstadoAoVivo){const e=cEstadoAoVivo(avModo==='autoc');if(e)return e;}
+  /* manda o que está ABERTO: batida aberta conta mesmo se a tela agora for outra (menu, fornecer sem fornecimento aberto) */
+  const bat=typeof CG!=='undefined'&&CG&&CG.ativa,emForn=['trato','auto'].includes(window.abaAtual)&&filtroForn();
+  if(window.cEstadoAoVivo&&((avModo==='carga'||avModo==='autoc')||(bat&&!emForn))){const e=cEstadoAoVivo(avModo==='autoc'||(avModo!=='carga'&&bat&&bat.origem==='balanca'));if(e)return e;}
   if(avModo==='auto'&&window.aEstadoAoVivo){const e=aEstadoAoVivo();if(e)return e;}
   const L=lista(),c=L[S.atual],regs=regsAtuais();
   const ff=filtroForn();return {modo:'trato',origem:'manual',local:ff?ff.local:'',rac:ff?ff.rac:'',fimForn:!ff,deAp:ff&&ff.deAp||'',contTs:ff&&ff.contTs||0,dia:diaAtivo(),trato:S.tratoSel,curral:c?c.nome:'',prev:c?c.prev:null,ini:S.ini||'',fim:S.fim||'',feitos:L.filter(x=>feito(x.nome,regs)).length,total:L.length};}
