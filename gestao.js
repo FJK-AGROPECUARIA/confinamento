@@ -1240,6 +1240,11 @@ window.addEventListener('resize',()=>{clearTimeout(encTimer);encTimer=setTimeout
    ===================================================================================== */
 const CK='confinamento-carga-v1';
 let CG={};try{CG=JSON.parse(localStorage.getItem(CK))||{};}catch(e){CG={};}
+/* batida ainda não iniciada: sempre começa limpa (abriu o app, entrou no Carregar, voltou depois de um tempo fora, ou tocou em Cancelar).
+   Batida já iniciada (CG.ativa) continua guardada. */
+function cLimparSetup(){if(CG.ativa)return;const keep={ativa:null,verDia:CG.verDia};CG=Object.assign({},keep,{passo:1,local:null,rac:null,trato:null,tAuto:false,avulso:false,juntos:[],juntoAberto:false,total:0,totalDe:null,ordem:null,ja:{},sobModo:'rac',sobRac:null,sobKg:0,ordAberto:false,jaAberto:false});try{localStorage.setItem(CK,JSON.stringify(CG));}catch(e){}}
+cLimparSetup();
+{let saiu=0;document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='hidden')saiu=Date.now();else if(saiu&&Date.now()-saiu>600000&&!CG.ativa){cLimparSetup();try{cRender();}catch(e){}}});}
 const cSave=()=>{try{localStorage.setItem(CK,JSON.stringify(CG));}catch(e){}if(typeof agendarAoVivo==='function')agendarAoVivo();};
 /* acompanhamento ao vivo do Carregar */
 window.cEstadoAoVivo=auto=>{const B=CG.ativa,base={modo:'carga',origem:auto?'auto':'manual',dia:hojeKey()};
@@ -1316,7 +1321,8 @@ function contaLocalPrev(k,modo){try{const hj=hojeKey(),P=S.prev||{},tot=cochoCur
 function escolhaLocal(attr,sel){const modo=attr==='data-floc'?'forn':'carga';return `<div class="gLocal">${['C','P'].map(l=>`<button type="button" ${attr}="${l}" class="${sel===l?'sel':''}">${l==='C'?ICO_C+' Confinamento':'🌿 Pasto'}</button>`).join('')}</div>`;}
 window.escolhaLocal=escolhaLocal;
 /* tela de início em passos: escolhe o local → abre a ração → abre o trato → abre o total e o botão de iniciar */
-function cTelaNova(){if(!CG.passo){CG.passo=1;CG.local=null;}if(!CG.local)CG.passo=1;
+function cTelaNova(){let h=cTelaNova0();if(CG.local&&!CG.ativa){const i=h.lastIndexOf('</section>');const bt='<button type="button" class="cCancelar" data-ccancel="1">✕ Cancelar batida</button>';h=i>=0?h.slice(0,i)+bt+h.slice(i):h+bt;}return h;}
+function cTelaNova0(){if(!CG.passo){CG.passo=1;CG.local=null;}if(!CG.local)CG.passo=1;
   const ps=CG.passo,cont=n=>`<button type="button" class="lima cCont" data-cpasso="${n}">Continuar ▶</button>`;
   if(ps<=1||!CG.local)return `<section class="panel"><h2>Carregar vagão</h2><label>1. Local</label>${escolhaLocal('data-cloc',null)}<p class="note">Escolha o local para continuar.</p></section>`;
   const todas=racAtivas().sort(porNome);if(!todas.length)return `<section class="panel"><h2>Carregar vagão</h2><p class="note">Cadastre a ração primeiro em Gestão → Rações.</p></section>`;
@@ -1403,6 +1409,7 @@ function cConfirma(){const v=cBuf===''?null:+cBuf,A=cAtiva();
 function cClique(e){
   const lb=e.target.closest('[data-cloc]');if(lb){CG.local=lb.dataset.cloc;CG.juntos=[];CG.rac=null;CG.trato=null;CG.passo=2;cSave();return cRender();}
   const cp=e.target.closest('[data-cpasso]');if(cp){CG.passo=+cp.dataset.cpasso;cSave();return cRender();}
+  if(e.target.closest('[data-ccancel]')){cLimparSetup();cRender();window.scrollTo({top:0});toast('Batida cancelada');return;}
   if(e.target.closest('[data-cjtog]')){CG.juntoAberto=!CG.juntoAberto;cSave();return cRender();}
   if(e.target.closest('[data-cordtog]')){CG.ordAberto=!CG.ordAberto;cSave();return cRender();}
   if(e.target.closest('[data-cjatog]')){CG.jaAberto=!CG.jaAberto;cSave();return cRender();}
@@ -1463,7 +1470,7 @@ function xlsCarga(){const dia=CG.verDia||hojeKey(),L=cargasDia(dia),r=[];
   L.forEach(c=>c.itens.forEach(x=>r.push([xc(dia,'dia'),xc(c.hora),xc(c.trato,'int'),xc(c.racNome),xc(x.nome),xc(x.prev,'int'),xc(ok(+x.real)?+x.real:NaN,'int'),xc(ok(+x.real)?x.real-x.prev:NaN,'int'),xc(ok(+x.ini)?+x.ini:NaN,'int'),xc(ok(+x.fim)?+x.fim:NaN,'int')])));
   gExcel(`Batidas ${dB(dia).replace(/\//g,'-')}`,[['Batidas',['Data','Hora','Trato','Ração','Produto','Previsto (kg)','Carregado (kg)','Diferença (kg)','Balança início','Balança final'],r,[11,7,7,16,22,12,13,13,13,13]]]);}
 $('tabCarga').addEventListener('click',()=>aba('carga'));
-window.cAoAbrir=()=>{cRender();cBuscarRemoto();};window.cFecha=cFecha;
+window.cAoAbrir=()=>{cLimparSetup();cRender();cBuscarRemoto();};window.cLimparSetup=cLimparSetup;window.cFecha=cFecha;
 
 /* confirmação com aviso em vermelho (ex.: cancelar batida) */
 function confirmaVermelho(tit,txt,sim,nao){return new Promise(res=>{
