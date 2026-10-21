@@ -1100,7 +1100,7 @@ body.naInicio .topoTxt h1{font-size:clamp(16px,5vw,28px)!important}
 <div class="toast" id="toast" hidden></div>
 <script>
 'use strict';
-const APP_VERSAO='95';
+const APP_VERSAO='96';
 const APP_DATA='19/10/2026';
 const KEY='confinamento-completo-v1';
 const $=id=>document.getElementById(id);
@@ -2064,9 +2064,9 @@ function desenharTabela(secoes,titulo,totalGeral){window.__tituloImg=titulo||(()
       cols.forEach(([t,w,a],k)=>{c.textAlign=a==='l'?'left':a==='c'?'center':'right';c.font=((l.neg||[0]).includes(k)?'700 ':'500 ')+'21px '+F;
         c.fillStyle=k===(cols.findIndex(x=>x[0]==='Dif.')>=0?cols.findIndex(x=>x[0]==='Dif.'):cols.length-1)?cor(l.dif,l.prev):'#11253d';c.fillText(String(l.v[k]??''),px(k,a),y+RH/2);});
       y+=RH;c.fillStyle='#dde3ea';c.fillRect(M,y-1,W-2*M,1);});
-    c.fillStyle='#11253d';c.fillRect(M,y+6,W-2*M,44);c.font=`700 21px ${F}`;
+    const sub=s.total&&s.total[0]==='SUBTOTAL';c.fillStyle=sub?'#4a7fbf':'#11253d';c.fillRect(M,y+6,W-2*M,44);c.font=`700 21px ${F}`;
     cols.forEach(([t,w,a],k)=>{const v=s.total[k];if(v==null||v==='')return;c.textAlign=a==='l'?'left':a==='c'?'center':'right';
-      c.fillStyle=t==='Realizado'?'#c8dd1e':'#ffffff';if(k===0)c.textAlign='left';c.fillText(String(v),k===0?M+12:px(k,a),y+28);});
+      c.fillStyle=t==='Realizado'?(sub?'#eef7b0':'#c8dd1e'):'#ffffff';if(k===0)c.textAlign='left';c.fillText(String(v),k===0?M+12:px(k,a),y+28);});
     y+=52+20;});
   /* total geral (soma de todos os tratos): linha separada e destacada no fim */
   if(totalGeral){y+=6;c.fillStyle='#11253d';c.fillRect(M,y,W-2*M,56);c.fillStyle='#a7bc09';c.fillRect(M,y,W-2*M,4);c.font=`800 24px ${F}`;
