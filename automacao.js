@@ -59,6 +59,14 @@ const css=`
 :is(#aBox,#acBox,#aoVivo) .aFalta.vermelho{background:#c62828}
 :is(#aBox,#acBox,#aoVivo) .aFalta.continuo{background:#c62828;animation:aPisca .5s steps(2) infinite}
 :is(#aBox,#acBox,#aoVivo) .aFalta.cinza{background:#7c8794}
+#aBox .aPausaBt{padding:8px 12px;font-size:.95rem;width:auto;margin:0 0 0 auto;display:block}
+#aBox .aPausaBt[hidden]{display:none}
+#aBox .aPausaBox{box-sizing:border-box;width:100%;max-width:100%;min-width:0;overflow:hidden;border-radius:18px;padding:34px 16px;text-align:center;background:#1565c0;color:#fff;display:grid;gap:8px;cursor:pointer;min-height:300px;align-content:center;border:4px solid #0d47a1}
+#aBox .aPausaBox[hidden]{display:none}
+#aBox .aPausaBox b{font-family:var(--display);font-stretch:condensed;font-size:clamp(2.6rem,13vw,4.4rem);line-height:1;letter-spacing:.04em}
+#aBox .aPausaBox span{font-size:1.05rem;font-weight:600;opacity:.95}
+#aBox .aPausaBox em{display:block;font-style:normal;font-weight:800;font-size:1.3rem;background:#fff;color:#0d47a1;border-radius:12px;padding:12px;margin-top:8px}
+:is(#aBox,#acBox,#aoVivo) .aEtapa.pausa{background:#e3f0ff;color:#0d47a1}
 #cfgTBox .aCores{margin:10px 0 4px;padding:10px;border:1px solid var(--line);border-radius:10px;display:grid;gap:6px;font-size:.88rem}
 #cfgTBox .aCores i{display:inline-block;width:22px;height:16px;border-radius:4px;margin-right:8px;vertical-align:-3px}
 #cfgTBox .aCores i.pisca{animation:aPisca .5s steps(2) infinite}#cfgTBox .aCores i.pisca2{animation:aPisca2 .4s steps(2) infinite}
@@ -130,6 +138,8 @@ function montar(){
     </div>
     <div class="escolha" id="aEscolha" hidden></div>
     <div class="aEtapa" id="aEtapa">Conecte a balança</div>
+    <button type="button" class="aPausaBt" id="aPausar">⏸ Pausar (trajeto)</button>
+    <div class="aPausaBox" id="aPausaBox" hidden role="button" tabindex="0"><b>⏸ PAUSADO</b><span>No trajeto: a balança não está contando nada.</span><em>▶ Toque aqui para continuar</em></div>
     <div class="aFalta" id="aFaltaBox"><small id="aFaltaTit">Fornecer</small><b class="num" id="aFalta">—</b><em id="aFaltaTxt">&nbsp;</em></div>
     <div class="aMini">
       <div class="caiu"><small>Fornecido</small><b class="num" id="aCaiu">—</b></div>
@@ -187,6 +197,7 @@ function ligar(){
     setAtual(nx);save();novoCurral(true);render();aRender();};
   $('aDesfazer').onclick=()=>{$('btnDesfazer').click();setTimeout(aRender,300);};
   $('aTestarSom').onclick=testarSom;
+  $('aPausar').onclick=()=>{if(!bloqueado())aPausar();};$('aPausaBox').onclick=()=>{if(!bloqueado())aContinuarPausa();};
   $('aCopiarBruto').onclick=()=>copiar(A.bruto.join('\n')+'\n\n'+($('aBtInfo').textContent||''),'Dados copiados');
   document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible'&&A.fonte)pedirTelaLigada();});
 }
@@ -482,6 +493,7 @@ function curralAtual(){try{return (S&&lista()[S.atual])||null;}catch(e){return n
 /* troca de curral: o peso de agora vira o inicial */
 function novoCurral(manterPeso){A.est='aguardando';A.ancV=null;A.ancT=0;A.fpMin=null;A.menor=null;A.base=manterPeso&&A.peso!=null?(A.estavel?A.valEst:A.peso):null;}
 function maquina(){
+  if(A.pausa)return; // pausado no trajeto: o peso que varia nos buracos não conta
   if(naCargaAuto())return; // na tela de carregar o trato fica parado (não perde o que já estava fornecendo)
   const c=cfg(),cur=curralAtual();if(A.peso==null)return;
   if(A.est==='aguardando'){
@@ -505,6 +517,7 @@ let registrando=false;
 async function registrarAuto(){
   if(registrando)return;
   if(bloqueado())return;
+  if(A.pausa){toast('Está pausado: toque em continuar primeiro');return;}
   const L=lista(),cur=L[S.atual];
   if(!cur){toast(L.length?'Trato completo':'Sem previsto neste trato');return;}
   if(A.base==null){toast('Sem peso inicial ainda');return;}
@@ -603,7 +616,7 @@ function testarSom(){liberarSom();
 setInterval(()=>{
   const c=cfg(),naCarga=$('viewAutoC')&&!$('viewAutoC').hidden;
   const z=naCarga?zonaC():zona();
-  const tocando=!!(c.som&&A.fonte&&z&&!modoVer&&(naCarga?z.caindo:(A.est==='descarregando'&&z.caindo)));
+  const tocando=!!(c.som&&A.fonte&&z&&!modoVer&&!(A.pausa&&!naCarga)&&(naCarga?z.caindo:(A.est==='descarregando'&&z.caindo)));
   if(!tocando)return;
   const iv=intervalo(z.fp,c);if(!iv)return;
   if(Date.now()-ultBip>=iv.ms){ultBip=Date.now();tocar(iv.som);}
@@ -625,8 +638,20 @@ window.telaAuto=p=>{const t=id=>{const e=$(p+id);return e?e.textContent.trim():'
   return {peso:t('Peso'),pesoTxt:t('EstTxt'),etapa:t('Etapa'),etCl:c('Etapa'),fCl:c('FaltaBox'),fTit:t('FaltaTit'),fVal:t('Falta'),fTxt:t('FaltaTxt'),
     feito:t(p==='ac'?'Carr':'Caiu'),ini:t('Ini'),alvo:t('Alvo')};};
 window.aEstadoAoVivo=()=>{const L=lista(),c=L[S.atual],regs=regsAtuais();
-  const ff=window.filtroForn?filtroForn():null;return {tela:$('viewAuto')&&!$('viewAuto').hidden&&ff?telaAuto('a'):null,modo:'trato',origem:'auto',local:ff?ff.local:'',rac:ff?ff.rac:'',fimForn:!ff,deAp:ff&&ff.deAp||'',contTs:ff&&ff.contTs||0,fts0:ff&&ff.ts0||0,dia:diaAtivo(),trato:S.tratoSel,curral:c?c.nome:'',prev:c?c.prev:null,ini:A.base!=null?Math.round(A.base):'',fim:A.peso!=null?Math.round(A.peso):'',
+  const ff=window.filtroForn?filtroForn():null;return {pausa:!!A.pausa,tela:$('viewAuto')&&!$('viewAuto').hidden&&ff?telaAuto('a'):null,modo:'trato',origem:'auto',local:ff?ff.local:'',rac:ff?ff.rac:'',fimForn:!ff,deAp:ff&&ff.deAp||'',contTs:ff&&ff.contTs||0,fts0:ff&&ff.ts0||0,dia:diaAtivo(),trato:S.tratoSel,curral:c?c.nome:'',prev:c?c.prev:null,ini:A.base!=null?Math.round(A.base):'',fim:A.peso!=null?Math.round(A.peso):'',
     feitos:L.filter(x=>feito(x.nome,regs)).length,total:L.length};};
+/* ---------- Pausar no trajeto ---------- */
+function pintarPausa(){const p=!!A.pausa;if(!$('aPausaBox'))return;$('aPausaBox').hidden=!p;$('aPausar').hidden=p||!curralAtual();
+  ['aFaltaBox','aReg'].forEach(i=>{const e=$(i);if(e)e.style.display=p?'none':'';});const m=document.querySelector('#aBox .aMini');if(m)m.style.display=p?'none':'';}
+function aPausar(){if(A.pausa)return;A.pausa={est:A.est,base:A.base,ts:Date.now()};pararSom();diagLog('pausou',{est:A.est,base:A.base,peso:A.peso});
+  toast('⏸ Pausado: a balança não conta até você continuar');pintarPeso();if(typeof agendarAoVivo==='function')agendarAoVivo();}
+function aContinuarPausa(){const P=A.pausa;if(!P)return;A.pausa=null;
+  if(P.est==='descarregando'){A.est='descarregando';A.base=P.base;A.ancV=null;A.ancT=Date.now();A.fpMin=null;}  // estava no meio do curral: continua com o mesmo início
+  else{novoCurral(true);A.baseConf=false;}  // ainda não tinha começado: o peso de agora vira o inicial (e acerta quando a balança firmar)
+  diagLog('despausou',{est:A.est,base:A.base,peso:A.peso,seg:Math.round((Date.now()-P.ts)/1000)});
+  toast(P.est==='descarregando'?'▶ Continuando o mesmo curral':'▶ Continuando: deixe o vagão parado para pegar o peso inicial');pintarPeso();aRender();
+  if(typeof agendarAoVivo==='function')agendarAoVivo();}
+window.aPausar=aPausar;window.aContinuarPausa=aContinuarPausa;
 function pintarPeso(){
   if(!$('aPeso')||$('viewAuto').hidden)return;
   const c=cfg(),cur=curralAtual();
@@ -644,6 +669,8 @@ function pintarPeso(){
     if(z.falta<0)$('aFalta').textContent='-'+fmt(-z.falta);}
   else{$('aFalta').textContent=cur?fmt(cur.prev):'—';fb.className='aFalta cinza';$('aFaltaTxt').textContent=A.fonte?'esperando peso inicial':'conecte a balança';}
   const et=$('aEtapa');let txt,cl='';
+  pintarPausa();
+  if(A.pausa){et.textContent='⏸ Pausado no trajeto · a balança não está contando';et.className='aEtapa pausa';$('aFaltaTit').textContent='Pausado';fb.className='aFalta cinza';$('aFaltaTxt').textContent='toque em continuar quando chegar';$('aReg').disabled=true;return;}
   if(!A.fonte)txt='Conecte a balança (ou use o Simulador)';
   else if(A.peso==null)txt='Esperando o peso chegar da balança…';
   else if(!cur)txt=lista().length?'✓ Trato completo':'Sem previsto neste trato (lance na aba Previsto)';

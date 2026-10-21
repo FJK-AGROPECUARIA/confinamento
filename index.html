@@ -108,6 +108,8 @@ body.somenteVer.verCarga #viewTrato>section:not(#painel),body.somenteVer.verCarg
 .contRem{border:3px solid #1565c0}.contRem h2{color:#1565c0}.contIt{display:grid;gap:4px;padding:8px 0;border-top:1px solid #dde3ea}.contIt span{font-size:.9rem;color:var(--muted)}.contIt button{margin-top:4px}
 .avSub{font-weight:800;font-size:1rem;color:var(--fg);padding:2px 4px 0;display:flex;flex-wrap:wrap;gap:2px 8px;align-items:baseline}.avSub em{font-style:normal;font-weight:600;font-size:.85rem;color:var(--muted)}
 .avEspelho{display:grid;grid-template-columns:minmax(0,1fr);gap:8px;margin-top:6px;min-width:0}.avEspelho .curBox2{grid-template-columns:minmax(0,1fr) auto}.avEspelho .cbCur{min-width:0}.avEspelho .cbCur b{white-space:normal;line-height:1.05;font-size:clamp(1.3rem,6vw,2rem)!important}.avBatTot{text-align:center;font-weight:600;color:var(--muted)}.avBatTot b{color:var(--fg)}
+.avGeo{display:flex;align-items:baseline;gap:6px;flex-wrap:wrap;margin:4px 4px 0;font-weight:700;font-size:.9rem;color:#1565c0;text-decoration:none}.avGeo small{font-weight:600;color:var(--muted)}
+body.somenteVer details.gCarga{display:block!important}
 .avVer{font-weight:700;font-size:.85rem;color:#4b5b3f;text-align:right;padding:0 4px}
 .abrirNovo{text-align:center}.abrirNovo .note{margin:0 0 8px}
 .fBar{display:flex;justify-content:space-between;align-items:center;gap:8px;background:#eef4e0;border-radius:10px;padding:8px 10px;margin-bottom:10px;font-weight:700;font-size:.92rem}
@@ -1048,7 +1050,7 @@ body.naInicio .topoTxt h1{white-space:normal!important;font-size:clamp(16px,5.4v
 <div class="toast" id="toast" hidden></div>
 <script>
 'use strict';
-const APP_VERSAO='62';
+const APP_VERSAO='63';
 const APP_DATA='19/10/2026';
 const KEY='confinamento-completo-v1';
 const $=id=>document.getElementById(id);
@@ -2828,13 +2830,14 @@ $('tecSenha').addEventListener('click',e=>{const b=e.target.closest('button[data
 function entrarExec(m){m=m==='gest'?'gest':'trato';modoVer=false;document.body.classList.remove('naInicio','somenteVer','modoTrato','modoGest');document.body.classList.add(m==='gest'?'modoGest':'modoTrato');$('faixaVer').hidden=true;
   menuAberto=null;abrirMenu(m==='gest'?'gest':'trato');
   if(m==='gest'){try{GT={t:'home'};}catch(e){}window.abaAtual='';document.querySelectorAll('#subGest button[data-gt]').forEach(x=>x.setAttribute('aria-selected','false'));telaEscolha('Escolha uma opção no menu acima.');}else{try{if(escolherTratoDoDia()){$('tratoSel').value=String(S.tratoSel);}render();}catch(e){}escolherModo(null);}
+  setTimeout(()=>{try{geoIniciar();}catch(e){}},1500);
   if(window.menuCaminho)menuCaminho();}
 $('btnModoVer').onclick=()=>{verSenha(false);if(typeof fecharTeclado==='function')fecharTeclado();if(balCampo)fecharBal();
   guardarExec();modoVer=true;document.body.classList.remove('naInicio','modoTrato','modoGest');document.body.classList.add('somenteVer');$('faixaVer').hidden=false;menuAberto=null;abrirMenu('trato');
   S.dataManual=null;S.ini='';S.fim='';escolherTratoDoDia();$('tratoSel').value=String(S.tratoSel);$('pvTrato').value=String(S.tratoSel);S.pvTrato=S.tratoSel;
   $('ini').value='';$('fim').value='';render();renderPrev();modoAtual=null;$('subModo').hidden=true;$('tabMan').setAttribute('aria-selected','false');$('tabModoAuto').setAttribute('aria-selected','false');telaEscolha('Escolha uma opção no menu acima.');avDados=null;avErro=false;avAbriu=false;avisarVendo();renderAoVivo();if(navigator.onLine)puxarAoVivo();
   if(navigator.onLine){puxarRegistros(true).catch(()=>{});puxarPrevisto(true).catch(()=>{});}};
-function voltarInicio(){
+function voltarInicio(){try{geoParar();}catch(e){}
   if(typeof fecharTeclado==='function')fecharTeclado();if(typeof balCampo!=='undefined'&&balCampo)fecharBal();
   if(selModo){selModo=false;sel.clear();}
   const eraVer=modoVer;if(!eraVer&&!document.body.classList.contains('naInicio'))sairAoVivo();modoVer=false;document.body.classList.remove('somenteVer','modoTrato','modoGest');document.body.classList.add('naInicio');$('faixaVer').hidden=true;$('cal').hidden=true;window.scrollTo({top:0});
@@ -2866,7 +2869,15 @@ setInterval(()=>{if(modoVer&&navigator.onLine&&document.visibilityState==='visib
 let avUlt='',avTimer=null,avUltEnvio=0;
 /* qual tela de trabalho o celular está usando por último: tratar/carregar, manual/automação */
 var avModo='trato';
-function estadoAoVivo(){
+/* localização do aparelho que está tratando (vai junto no Ao vivo) */
+let geo=null,geoW=null;
+function geoIniciar(){try{if(geoW!=null||!navigator.geolocation)return;
+  geoW=navigator.geolocation.watchPosition(p=>{const c=p.coords;geo={lat:+c.latitude.toFixed(6),lon:+c.longitude.toFixed(6),acc:Math.round(c.accuracy||0),ts:p.timestamp||Date.now()};},
+    e=>{if(e&&e.code===1){try{navigator.geolocation.clearWatch(geoW);}catch(x){}geoW=-1;}},{enableHighAccuracy:true,maximumAge:30000,timeout:60000});}catch(e){}}
+function geoParar(){try{if(geoW!=null&&geoW>=0)navigator.geolocation.clearWatch(geoW);}catch(e){}geoW=null;}
+setInterval(()=>{if(typeof avAtivo==='function'&&avAtivo())geoIniciar();},15000);
+function estadoAoVivo(){const e=estadoAoVivo0();if(geo&&e)e.geo=geo;return e;}
+function estadoAoVivo0(){
   /* manda o que está ABERTO: batida aberta conta mesmo se a tela agora for outra (menu, fornecer sem fornecimento aberto) */
   const bat=typeof CG!=='undefined'&&CG&&CG.ativa,emForn=['trato','auto'].includes(window.abaAtual)&&filtroForn();
   if(window.cEstadoAoVivo&&((avModo==='carga'||avModo==='autoc')||(bat&&!emForn))){const e=cEstadoAoVivo(avModo==='autoc'||(avModo!=='carga'&&bat&&bat.origem==='balanca'));if(e)return e;}
@@ -2990,7 +3001,9 @@ function avTelaHTML(d,carga){const T=d.tela;
     <div class="aMini"><div class="caiu"><small>${carga?'Carregado':'Fornecido'}</small><b class="num">${esc(T.feito||'—')}</b></div><div><small>Peso inicial</small><b class="num">${esc(T.ini||'—')}</b></div><div><small>Parar com</small><b class="num">${esc(T.alvo||'—')}</b></div></div>
     ${carga?`<div class="avBatTot">Batida: <b>${fmt((d.carregado||0)+(parseFloat(String(T.feito||'0').replace(/\./g,'').replace(',','.'))||0))}</b> de ${fmt(d.totalPrev||0)} kg</div>`:''}</div>`;}
 function avTopoHTML(d,t0){const dd=d.dia&&/^\d{4}-/.test(d.dia)?diaBR(d.dia).slice(0,5):'',h=t0?new Date(t0).toTimeString().slice(0,5):'';
-  return `<div class="avTopo"><span><i class="avPonto"></i>Ao vivo${h?` · início ${dd} às ${h}`:dd?' · '+dd:''}</span><span class="avIdade">${idadeTxt(d.idade)}</span></div>`;}
+  const g=d.geo&&d.geo.lat?d.geo:null,gIdade=g?Math.max(0,Date.now()-(+g.ts||0)):0;
+  return `<div class="avTopo"><span><i class="avPonto"></i>Ao vivo${h?` · início ${dd} às ${h}`:dd?' · '+dd:''}</span><span class="avIdade">${idadeTxt(d.idade)}</span></div>`
+    +(g?`<a class="avGeo" href="https://www.google.com/maps?q=${g.lat},${g.lon}" target="_blank" rel="noopener">📍 Localização do aparelho <small>${idadeTxt(gIdade)}${g.acc?' · precisão ±'+g.acc+' m':''}</small></a>`:'');}
 function idadeTxt(ms){const s=Math.max(0,Math.round(ms/1000));return s<60?`há ${s} s`:`há ${Math.round(s/60)} min`;}
 /* Visualizar › Carregar: embaixo, a batida em andamento produto por produto e as batidas feitas hoje */
 function pintarAvCarga(L){const el=$('avCargaBox');if(!el)return;const on=modoVer&&document.body.classList.contains('verCarga');el.hidden=!on;if(!on){el.innerHTML='';return;}
@@ -3005,12 +3018,13 @@ function pintarAvCarga(L){const el=$('avCargaBox');if(!el)return;const on=modoVe
     return `<section class="panel"><div class="curhead"><h2>Batida em andamento · Trato ${esc(d.trato)}</h2><span class="note">${esc(d.rac||'')}</span></div>
       <div class="tablebox"><table class="trat"><thead><tr><th>Produto</th><th>Previsto</th><th>Realiz.</th><th>Dif.</th></tr></thead><tbody>${rows}
       <tr class="grp"><td>Total</td><td>${fmt(tp)}</td><td>${tr?fmt(tr):'—'}</td><td class="${tr?classeDesv(tr-tpr,tpr):''}">${tr?sgn(tr-tpr):''}</td></tr></tbody></table></div></section>`;};
-  let fe='';try{fe=typeof batidasDiaCard==='function'?batidasDiaCard(hojeKey()):'';}catch(e){}
+  let fe='';try{const B=window.batidasLista?batidasLista(hojeKey(),hojeKey(),'T',0):[];if(B.length)fe=`<section class="panel"><div class="curhead"><h2>Batidas do dia</h2><span class="note">${B.length} batida(s)</span></div>${batidasHTML(B,false)}</section>`;}catch(e){}
   el.innerHTML=L.filter(d=>d.modo==='carga'&&!d.semBatida).map(tab).join('')+(fe||'<section class="panel"><h2>Batidas do dia</h2><p class="note">Nenhuma batida concluída hoje ainda.</p></section>');}
 function avCurralAgora(){if(!avDados)return null;const passou=Date.now()-avRecebido;
   const d=Object.values(avDados).filter(d=>d&&d.modo==='trato'&&!d.fimForn&&d.curral&&+d.trato===+S.tratoSel&&d.dia===hojeKey()&&(avAgora-(+d.tsServ||0)+passou)<3*60000)
     .sort((a,b)=>(+b.tsServ||0)-(+a.tsServ||0))[0];return d?d.curral:null;}
-function renderAoVivo(){const box=$('aoVivo');if(!modoVer){box.innerHTML='';return;}
+function renderAoVivo(){const box=$('aoVivo');if(!modoVer){box.innerHTML='';pintarAvCarga([]);return;}
+  if(avDados==null||!navigator.onLine)pintarAvCarga([]);
   if(!navigator.onLine){box.innerHTML='<div class="avVazio">Sem internet: não dá para ver ao vivo agora</div>';return;}
   if(avDados==null){box.innerHTML=`<div class="avVazio">${avErro?'Não consegui buscar quem está tratando':'Buscando quem está tratando…'}</div>`;return;}
   const passou=Date.now()-avRecebido;

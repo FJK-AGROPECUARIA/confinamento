@@ -1165,8 +1165,8 @@ const cAtiva=()=>CG.ativa||null;
 const cAuto=()=>!!($('viewAutoC')&&!$('viewAutoC').hidden);
 const cCaixa=()=>$(cAuto()?'acBox':'cBox');
 function cRender(){const auto=cAuto(),b=$(auto?'acBox':'cBox'),o=$(auto?'cBox':'acBox');if(!b)return;if(o)o.innerHTML='';
-  if(auto&&window.acTela){b.innerHTML=acTela(cAtiva()?null:cRemHTML()+cTelaNova(),cAtiva()?'':NOTA_BAT)+(cAtiva()?C_NOVA:'');if(window.acDepois)acDepois();return;}
-  b.innerHTML=(cAtiva()?cTelaBatida()+C_NOVA:cRemHTML()+cTelaNova())+(cAtiva()?'':NOTA_BAT);}
+  if(auto&&window.acTela){b.innerHTML=acTela(cAtiva()?null:cRemHTML()+cTelaNova(),cAtiva()?'':NOTA_BAT)+(cAtiva()?C_NOVA:'')+cBatidasHoje();if(window.acDepois)acDepois();return;}
+  b.innerHTML=(cAtiva()?cTelaBatida()+C_NOVA:cRemHTML()+cTelaNova())+(cAtiva()?'':NOTA_BAT)+cBatidasHoje();}
 const C_NOVA='<section class="panel abrirNovo"><p class="note">Esta batida está em aberto. Quer começar outra no lugar dela?</p><button data-c="cancelar">＋ Abrir nova batida</button></section>';
 /* ---------- continuar em outro aparelho: batida aberta em outro celular/tablet (acabou bateria, travou) ---------- */
 let cRem=[];
@@ -1201,6 +1201,9 @@ async function cVerTomado(){try{const A=cAtiva();if(!A||modoVer||!navigator.onLi
 setInterval(()=>{if(document.visibilityState==='visible')cVerTomado();},15000);
 document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')setTimeout(cVerTomado,1500);});
 const NOTA_BAT='<p class="note" style="text-align:center">As batidas feitas ficam no Histórico › Batidas.</p>';
+/* embaixo do Carregar: as batidas feitas hoje, produto por produto (igual os currais no Fornecer) */
+function cBatidasHoje(){try{const B=window.batidasLista?batidasLista(hojeKey(),hojeKey(),'T',0):[];
+  return `<section class="panel"><div class="curhead"><h2>Batidas de hoje</h2><span class="note">${B.length?B.length+' batida(s)':''}</span></div>${B.length?batidasHTML(B,false,true):'<p class="note">Nenhuma batida concluída hoje ainda.</p>'}</section>`;}catch(e){return '';}}
 /* ração ativa de cada curral hoje (pelo lote) e rações usadas em cada local (C = confinamento, P = pasto) */
 function racaoDoCurral(c,dia){dia=dia||hojeKey();const l=gTodos('lote').find(l=>curralEm(l,dia)===c&&cabPres(l,dia)>0);const r=l&&racaoEm(l,dia);return r?r.uid:null;}
 window.racaoDoCurral=racaoDoCurral;
@@ -1372,12 +1375,12 @@ document.addEventListener('change',e=>{if(e.target&&e.target.id==='cfgComp'){con
 /* ---------- Histórico › Batidas: o que foi carregado no vagão (previsto e carregado de cada ingrediente, data e hora) ---------- */
 window.batidasLista=(pa,pb,loc,t)=>gTodos('carga').filter(c=>c.dia>=pa&&c.dia<=pb&&(!loc||loc==='T'||c.local===loc||(!c.local&&false))&&(!t||+c.trato===+t||(c.tratos||[]).includes(+t)))
   .sort((a,b)=>(b.dia+b.hora).localeCompare(a.dia+a.hora));
-window.batidasHTML=(L,mostrarDia)=>{if(!L.length)return '<p class="note">Nenhuma batida neste filtro.</p>';
+window.batidasHTML=(L,mostrarDia,semApagar)=>{if(!L.length)return '<p class="note">Nenhuma batida neste filtro.</p>';
   return L.map(c=>{const tp=c.itens.reduce((a,x)=>a+(+x.prev||0),0),tr=c.itens.reduce((a,x)=>a+(+x.real||0),0),d=tr-tp,cls=(dd,p)=>typeof classeDesv==='function'?classeDesv(dd,p):'';
-    return `<details class="gMais gCarga"><summary><b>${mostrarDia?diaBR(c.dia).slice(0,5)+' ':''}${esc(c.hora||'')}</b> · ${c.avulso?'Avulsa':c.tratos&&c.tratos.length>1?'Tratos '+c.tratos.join('+'):'Trato '+c.trato}${c.local?' · '+(c.local==='C'?'Confinamento':'Pasto'):''} · ${esc(c.racNome||'')} <span class="num">${nf(tr)} kg <i class="${cls(d,tp)}">(${d>0?'+':''}${nf(d)})</i></span></summary>
+    return `<details class="gMais gCarga" open><summary><b>${mostrarDia?diaBR(c.dia).slice(0,5)+' ':''}${esc(c.hora||'')}</b> · ${c.avulso?'Avulsa':c.tratos&&c.tratos.length>1?'Tratos '+c.tratos.join('+'):'Trato '+c.trato}${c.local?' · '+(c.local==='C'?'Confinamento':'Pasto'):''} · ${esc(c.racNome||'')} <span class="num">${nf(tr)} kg <i class="${cls(d,tp)}">(${d>0?'+':''}${nf(d)})</i></span></summary>
       <div class="tablebox"><table class="gTab"><thead><tr><th>Ingrediente</th><th>Hora</th><th>Previsto</th><th>Carreg.</th><th>Dif.</th></tr></thead><tbody>${c.itens.map(x=>{const dd=x.real-x.prev;return `<tr><td class="c">${esc(x.nome)}</td><td>${esc(x.hora||'')}</td><td>${nf(x.prev)}</td><td>${ok(+x.real)?nf(+x.real):'—'}</td><td class="${ok(+x.real)?cls(dd,x.prev):''}">${ok(+x.real)?(dd>0?'+':'')+nf(dd):''}</td></tr>`;}).join('')}
       <tr class="grp"><td>Total</td><td></td><td>${nf(tp)}</td><td>${nf(tr)}</td><td>${(d>0?'+':'')+nf(d)}</td></tr></tbody></table></div>
-      <button class="mini danger" data-hbdel="${c.uid}">Apagar esta batida</button></details>`;}).join('');};
+      ${semApagar||(typeof modoVer!=='undefined'&&modoVer)?'':`<button class="mini danger" data-hbdel="${c.uid}">Apagar esta batida</button>`}</details>`;}).join('');};
 window.imgBatidas=(L,rot)=>enviarImg(`Batidas do vagão · ${rot}`,L.map(c=>{const tp=c.itens.reduce((a,x)=>a+x.prev,0),tr=c.itens.reduce((a,x)=>a+(+x.real||0),0);
     return {cab:`${diaBR(c.dia).slice(0,5)} ${c.hora} · Trato ${c.trato}${c.local?' · '+(c.local==='C'?'Confinamento':'Pasto'):''} · ${c.racNome}`,cols:[['Ingrediente',330,'l'],['Previsto',170,'r'],['Carregado',170,'r'],['Diferença',170,'r']],
       linhas:c.itens.map(x=>[x.nome,nf(x.prev),ok(+x.real)?nf(+x.real):'—',ok(+x.real)?((x.real-x.prev)>0?'+':'')+nf(x.real-x.prev):'']),
