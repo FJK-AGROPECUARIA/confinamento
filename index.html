@@ -103,6 +103,7 @@ tr.grp td span{float:right;font-variant-numeric:tabular-nums}
 .emSetup>section:not(.fornSetup){display:none!important}
 #aBox.emSetup>section:first-of-type{display:block!important}
 .fFim{background:#e6f4d7;border:2px solid #6aa121;border-radius:12px;padding:10px 12px;margin-bottom:12px;font-weight:800;color:#2e5a12;text-align:center}.fFim small{display:block;font-weight:600;color:#4b5b3f;margin-top:4px}
+.avVer{font-weight:700;font-size:.85rem;color:#4b5b3f;text-align:right;padding:0 4px}
 .abrirNovo{text-align:center}.abrirNovo .note{margin:0 0 8px}
 .fBar{display:flex;justify-content:space-between;align-items:center;gap:8px;background:#eef4e0;border-radius:10px;padding:8px 10px;margin-bottom:10px;font-weight:700;font-size:.92rem}
 body.somenteVer .fBar{display:none!important}
@@ -1024,7 +1025,7 @@ body.naInicio .topoLinha .voltarIni{display:none}
 <div class="toast" id="toast" hidden></div>
 <script>
 'use strict';
-const APP_VERSAO='50';
+const APP_VERSAO='51';
 const APP_DATA='19/10/2026';
 const KEY='confinamento-completo-v1';
 const $=id=>document.getElementById(id);
@@ -2801,7 +2802,7 @@ function entrarExec(m){m=m==='gest'?'gest':'trato';modoVer=false;document.body.c
 $('btnModoVer').onclick=()=>{verSenha(false);if(typeof fecharTeclado==='function')fecharTeclado();if(balCampo)fecharBal();
   guardarExec();modoVer=true;document.body.classList.remove('naInicio','modoTrato','modoGest');document.body.classList.add('somenteVer');$('faixaVer').hidden=false;menuAberto=null;abrirMenu('trato');
   S.dataManual=null;S.ini='';S.fim='';escolherTratoDoDia();$('tratoSel').value=String(S.tratoSel);$('pvTrato').value=String(S.tratoSel);S.pvTrato=S.tratoSel;
-  $('ini').value='';$('fim').value='';render();renderPrev();modoAtual=null;$('subModo').hidden=true;$('tabMan').setAttribute('aria-selected','false');$('tabModoAuto').setAttribute('aria-selected','false');telaEscolha('Escolha uma opção no menu acima.');avDados=null;avErro=false;avAbriu=false;renderAoVivo();if(navigator.onLine)puxarAoVivo();
+  $('ini').value='';$('fim').value='';render();renderPrev();modoAtual=null;$('subModo').hidden=true;$('tabMan').setAttribute('aria-selected','false');$('tabModoAuto').setAttribute('aria-selected','false');telaEscolha('Escolha uma opção no menu acima.');avDados=null;avErro=false;avAbriu=false;avisarVendo();renderAoVivo();if(navigator.onLine)puxarAoVivo();
   if(navigator.onLine){puxarRegistros(true).catch(()=>{});puxarPrevisto(true).catch(()=>{});}};
 function voltarInicio(){
   if(typeof fecharTeclado==='function')fecharTeclado();if(typeof balCampo!=='undefined'&&balCampo)fecharBal();
@@ -2849,6 +2850,8 @@ async function enviarAoVivo(forcar){avTimer=null;if(!avAtivo())return;const est=
 function sairAoVivo(){avUlt='';if(S&&apiUrl()&&navigator.onLine)postApi({acao:'aovivo',aparelho:S.aparelho,sair:true}).catch(()=>{});}
 setInterval(()=>{if(avAtivo()&&document.visibilityState==='visible')enviarAoVivo(true);},45000);
 
+function avisarVendo(){if(modoVer&&S&&apiUrl()&&navigator.onLine&&document.visibilityState==='visible')postApi({acao:'aovivo',aparelho:S.aparelho,estado:{modo:'ver'}}).catch(()=>{});}
+setInterval(avisarVendo,30000);
 let avFiltro=null,avAbriu=false,avDados=null,avAgora=0,avRecebido=0,avBuscando=false,avErro=false;
 async function puxarAoVivo(){if(avBuscando||!apiUrl())return;avBuscando=true;
   try{const r=await fetch(apiUrl()+'?acao=aovivo',{cache:'no-store'});const j=await r.json();
@@ -2906,14 +2909,20 @@ function renderAoVivo(){const box=$('aoVivo');if(!modoVer){box.innerHTML='';retu
   if(!navigator.onLine){box.innerHTML='<div class="avVazio">Sem internet: não dá para ver ao vivo agora</div>';return;}
   if(avDados==null){box.innerHTML=`<div class="avVazio">${avErro?'Não consegui buscar quem está tratando':'Buscando quem está tratando…'}</div>`;return;}
   const passou=Date.now()-avRecebido;
-  const lst=Object.keys(avDados).map(k=>Object.assign({ap:k},avDados[k])).map(d=>(d.idade=avAgora-d.tsServ+passou,d))
-    .filter(d=>d.idade<3*60000).sort((a,b)=>a.idade-b.idade);
+  const tudo=Object.keys(avDados).map(k=>Object.assign({ap:k},avDados[k])).map(d=>(d.idade=avAgora-d.tsServ+passou,d));
+  const nVer=Math.max(1,tudo.filter(d=>d.modo==='ver'&&d.idade<90000&&d.ap!==S.aparelho).length+1);
+  let lst=tudo.filter(d=>d.modo!=='ver'&&d.idade<3*60000).sort((a,b)=>a.idade-b.idade);
+  /* um quadro só: tira aparelho parado (sem balança) quando outro está trabalhando, e repetidos no mesmo curral */
+  const ativo=d=>d.modo==='carga'?!d.semBatida:(d.ini!==''&&d.ini!=null)||(d.fim!==''&&d.fim!=null);
+  if(lst.some(ativo))lst=lst.filter(ativo);
+  const vis=new Set();lst=lst.filter(d=>{const k=d.modo+'|'+d.trato+'|'+(d.curral||'')+'|'+(d.local||'');if(vis.has(k))return false;vis.add(k);return true;});
   const tr0=lst.find(d=>d.modo==='trato'&&d.local),nf_=tr0?{ativo:true,dia:tr0.dia,local:tr0.local,rac:tr0.rac||'',trato:+tr0.trato}:null;
   if(JSON.stringify(nf_)!==JSON.stringify(avFiltro)){avFiltro=nf_;setTimeout(()=>{try{render();}catch(e){}},0);}
-  if(!lst.length){box.innerHTML='<div class="avVazio">Ninguém executando trato agora</div>';return;}
+  const verTxt=`<div class="avVer">👁 ${nVer} ${nVer>1?'pessoas visualizando':'pessoa visualizando'}</div>`;
+  if(!lst.length){box.innerHTML=verTxt+'<div class="avVazio">Ninguém executando trato agora</div>';return;}
   if(!avAbriu&&window.abaAtual===''&&menuAberto==='trato'){avAbriu=true;const d0=lst[0];
     const au=d0.origem==='auto',cg=d0.modo==='carga';aba(au?(cg?'autoc':'auto'):(cg?'carga':'trato'));return;}
-  box.innerHTML=lst.map(d=>{if(d.modo==='carga')return cardCargaAoVivo(d);const ini=parseFloat(d.ini),fim=parseFloat(d.fim),pv=d.prev,auto=d.origem==='auto';
+  box.innerHTML=verTxt+lst.map(d=>{if(d.modo==='carga')return cardCargaAoVivo(d);const ini=parseFloat(d.ini),fim=parseFloat(d.fim),pv=d.prev,auto=d.origem==='auto';
     const alvo=(pv!=null&&!isNaN(ini))?fmt(ini-pv):'—';
     let real='—',dif='—',cls='';if(!isNaN(ini)&&!isNaN(fim)){const f=ini-fim;real=fmt(f);if(pv!=null){const x=f-pv;dif=auto&&x<0?fmt(-x):sgn(x);cls=auto&&x<0?'':classeDesv(x,pv);}}
     const fora=d.dia!==hojeKey()?` · ${diaBR(d.dia)}`:'';
