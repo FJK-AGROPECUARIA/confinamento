@@ -2018,6 +2018,8 @@ function cJaTratadoHTML(trs){if(typeof fornCurrais!=='function'||typeof fornPend
   const feitos=trs.filter(k=>k>0&&fornCurrais(CG.local,CG.rac,k).length&&!fornPendentes(CG.local,CG.rac,k).length);if(!feitos.length)return '';
   const prox=tratosAtivos().map(Number).find(k=>!trs.includes(k)&&fornPendentes(CG.local,CG.rac,k).length);
   return `<div class="cJaFeito">⚠ ${feitos.length>1?'TRATOS '+feitos.join(' E '):'TRATO '+feitos[0]} (${NOMELOC[CG.local].toUpperCase()}): TODOS JÁ FORAM TRATADOS<small>${prox?`O próximo é o Trato ${prox}. `:''}Se precisar, pode carregar mesmo assim.</small></div>`;}
+/* % IMS do PV de um curral num dia ou período (média dos dias com trato, ponderada pelas cabeças dos lotes) */
+window.pvCurral=(c,ini,fim)=>{try{const X=gCtx();let s=0,w=0;X.L.forEach(l=>{if(!l.ent)return;for(let d=ini,i=0;d<=fim&&i<400;d=somaDias(d,1),i++){const y=diaLote(l,d,X);if(!y||nAt(y.c)!==nAt(c)||!(y.mn>0)||!ok(y.pv))continue;s+=y.pv*y.cab;w+=y.cab;}});return w?s/w:NaN;}catch(e){return NaN;}};
 /* PDF simples: cada página é uma imagem JPEG em folha A4 */
 function fzPdf(cvs){const enc=new TextEncoder(),partes=[],offs=[];let tam=0;const add=d=>{const b=typeof d==='string'?enc.encode(d):d;partes.push(b);tam+=b.length;};
   const obj=(n,txt,bin)=>{offs[n]=tam;add(`${n} 0 obj\n`+txt);if(bin){add(bin);add('\nendstream');}add('\nendobj\n');};

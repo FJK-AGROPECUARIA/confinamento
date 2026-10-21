@@ -1099,7 +1099,7 @@ body.naInicio .topoTxt h1{font-size:clamp(16px,5vw,28px)!important}
 <div class="toast" id="toast" hidden></div>
 <script>
 'use strict';
-const APP_VERSAO='91';
+const APP_VERSAO='92';
 const APP_DATA='19/10/2026';
 const KEY='confinamento-completo-v1';
 const $=id=>document.getElementById(id);
@@ -2026,7 +2026,7 @@ function secoesHist(){
     return {dia:g.dia,trato:g.trato,cab:`${diaBR(g.dia)} · Trato ${g.trato}`,linhas:[...m.entries()].map(([n,rs])=>linhaReg(n,rs[0].prev,rs))};});
 }
 const COLS_TRATO=[['Hora',100,'c'],['Curral',240,'c'],['Dieta',220,'c'],['Previsto',150,'r'],['Realizado',160,'r'],['Dif.',130,'r']];
-const COLS_CURRAL=[['Curral',240,'c'],['Dieta',220,'c'],['Tratos',130,'c'],['Previsto',160,'r'],['Realizado',160,'r'],['Dif.',140,'r']];
+const COLS_CURRAL=[['Curral',220,'c'],['Dieta',200,'c'],['Tratos',100,'c'],['Previsto',150,'r'],['Realizado',150,'r'],['Dif.',120,'r'],['% IMS',120,'c']];
 // secoes: [{cab, cols, linhas:[{v:[...], prev, dif, neg:[índices em negrito]}], total:[...]}]
 function desenharTabela(secoes,titulo){window.__tituloImg=titulo||(()=>{try{const [a,b]=intervaloHist();return `FJK - Tratos - ${diaBR(a)}${a!==b?' a '+diaBR(b):''}`;}catch(e){return 'FJK - Tratos';}})();
   const cols=secoes[0].cols,M=30,W=M*2+cols.reduce((a,c)=>a+c[1],0),RH=46,esc=2;
@@ -2047,7 +2047,7 @@ function desenharTabela(secoes,titulo){window.__tituloImg=titulo||(()=>{try{cons
     y+=40;c.fillStyle='#dde3ea';c.fillRect(M,y-2,W-2*M,2);
     s.linhas.forEach((l,i)=>{if(i%2){c.fillStyle='#f7f9fb';c.fillRect(M,y,W-2*M,RH);}
       cols.forEach(([t,w,a],k)=>{c.textAlign=a==='l'?'left':a==='c'?'center':'right';c.font=((l.neg||[0]).includes(k)?'700 ':'500 ')+'21px '+F;
-        c.fillStyle=k===cols.length-1?cor(l.dif,l.prev):'#11253d';c.fillText(String(l.v[k]??''),px(k,a),y+RH/2);});
+        c.fillStyle=k===(cols.findIndex(x=>x[0]==='Dif.')>=0?cols.findIndex(x=>x[0]==='Dif.'):cols.length-1)?cor(l.dif,l.prev):'#11253d';c.fillText(String(l.v[k]??''),px(k,a),y+RH/2);});
       y+=RH;c.fillStyle='#dde3ea';c.fillRect(M,y-1,W-2*M,1);});
     c.fillStyle='#11253d';c.fillRect(M,y+6,W-2*M,44);c.font=`700 21px ${F}`;
     cols.forEach(([t,w,a],k)=>{const v=s.total[k];if(v==null||v==='')return;c.textAlign=a==='l'?'left':a==='c'?'center':'right';
@@ -2064,13 +2064,14 @@ function secaoTratoImg(cab,linhas){
   return {cab,cols:COLS_TRATO,linhas:L,total:['TOTAL','','',fmt(tp),fmt(tf),tf?sgn(tf-tpf):'']};
 }
 // resumo por curral (soma dos tratos)
-function secaoCurralImg(regs,cab){
+function secaoCurralImg(regs,cab){const [ia,ib]=intervaloHist();
   const m=new Map();regs.forEach(r=>{if(!m.has(r.curral))m.set(r.curral,{p:0,f:0,t:new Set()});const o=m.get(r.curral);o.p+=r.prev;o.f+=r.forn;o.t.add(r.trato);});
   const ordem=n=>{const i=S.cadastro.indexOf(n);return i<0?999:i;};
   let tp=0,tf=0;
   const L=[...m.entries()].sort((a,b)=>ordem(a[0])-ordem(b[0])||a[0].localeCompare(b[0])).map(([n,o])=>{tp+=o.p;tf+=o.f;
-    return {v:[n,dietaDe(n),[...o.t].sort().join(', '),fmt(o.p),fmt(o.f),sgn(o.f-o.p)],prev:o.p,dif:o.f-o.p,neg:[0,4]};});
-  return {cab,cols:COLS_CURRAL,linhas:L,total:['TOTAL','','',fmt(tp),fmt(tf),sgn(tf-tp)]};
+    const pv=window.pvCurral?pvCurral(n,ia,ib):NaN;
+    return {v:[n,dietaDe(n),String(o.t.size),fmt(o.p),fmt(o.f),sgn(o.f-o.p),isFinite(pv)?pv.toFixed(2).replace('.',',')+'%':'—'],prev:o.p,dif:o.f-o.p,neg:[0,4]};});
+  return {cab,cols:COLS_CURRAL,linhas:L,total:['TOTAL','','',fmt(tp),fmt(tf),sgn(tf-tp),'']};
 }
 function compartilharVarios(blobs,nomes){return salvarOuEnviar(blobs,nomes,'image/png');}
 async function enviarImagem(secoes,nome){if(!secoes.length||!secoes.some(s=>s.linhas.length)){toast('Nada para mostrar');return;}
@@ -2087,8 +2088,8 @@ $('escolhaImg').addEventListener('click',async e=>{const b=e.target.closest('but
   const f=filtrados();if(!f.length)return;
   const blobs=[],nomes=[];
   if(tipo==='trato'||tipo==='todos'){for(const g of secoesHist()){blobs.push(await desenharTabela([secaoTratoImg(g.cab,g.linhas)]));nomes.push(`FJK - Tratos - ${dataArq(g.dia)} (Trato ${g.trato}).png`);}}
-  if(tipo==='curral'||tipo==='todos'){const t=HD.per?'':(HD.t||'');
-    const cab=`Por curral · ${rotuloData()} · ${t?'Trato '+t:'todos os tratos'}${localSel==='C'?' · Confinamento':localSel==='P'?' · Pasto':''}`;
+  if(tipo==='curral'||tipo==='todos'){const t=HD.per?'':(HD.t>0?HD.t:'');
+    const cab=`${t?'Trato '+t:'Todos os tratos'} - ${rotuloData()}${localSel==='C'?' · Confinamento':localSel==='P'?' · Pasto':''}`;
     blobs.push(await desenharTabela([secaoCurralImg(f,cab)]));{const [pa,pb]=intervaloHist();nomes.push(`FJK - Tratos - ${dataArq(pa)}${pa!==pb?' a '+dataArq(pb):''} (por curral).png`);}}
   if(expPdfHist){const [pa,pb]=intervaloHist(),nm=`FJK - Tratos - ${dataArq(pa)}${pa!==pb?' a '+dataArq(pb):''}.pdf`;return compartilharArquivo(await pngsParaPdf(blobs),nm,'application/pdf');}
   compartilharVarios(blobs,nomes);
