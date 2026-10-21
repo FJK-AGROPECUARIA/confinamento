@@ -595,6 +595,17 @@ body.comteclado .wrap{padding-bottom:300px!important}
 .gEvLin span{min-width:0}.gEvLin b{display:block;font-size:.95rem;overflow-wrap:anywhere}.gEvLin small{display:block;font-size:.72rem;color:var(--muted)}
 .gEvLin input{width:100%;padding:7px 6px;font-size:.92rem;margin:0}.gEvCab{font-size:.7rem;font-weight:700;text-transform:uppercase;color:var(--muted);padding-top:0}
 .gEvTodos{grid-template-columns:64px minmax(0,1fr) auto!important}.gEvTodos small{white-space:nowrap}
+.gEvTodos2{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:8px 0}.gEvGrp{border-radius:10px;padding:8px;display:flex;flex-direction:column;gap:6px}
+.gEvGrp:first-child{background:#eef4e0}.gEvGrp:last-child{background:#fff6e5}.gEvGrp>b{font-size:.75rem;text-transform:uppercase;letter-spacing:.04em}
+.gEvGrp>div{display:grid;grid-template-columns:1fr 1fr;gap:4px}.gEvGrp input{width:100%;padding:7px 4px;font-size:.85rem;margin:0}.gEvGrp button{margin:0;padding:8px 4px;font-size:.85rem}
+.gEvItem{padding:7px 0;border-bottom:1px solid var(--line)}.gEvNome b{font-size:.95rem}.gEvNome small{font-size:.72rem;color:var(--muted)}
+.gEvLin2{display:grid;grid-template-columns:1.25fr .8fr .8fr 1.25fr;gap:4px;margin-top:4px}.gEvLin2 input{width:100%;padding:7px 4px;font-size:.88rem;margin:0}
+.gEvLin2 input:nth-child(-n+2){background:#f4f8ea}.gEvLock{display:flex;align-items:center;justify-content:center;font-size:.8rem;color:var(--muted);background:#eceff1;border-radius:8px;padding:7px 2px;white-space:nowrap;overflow:hidden}.gEvTrava .gEvLock+input{}.gEvLin2 input:nth-child(n+3){background:#fffaf0}
+.gEvLin2.gEvCab span{font-size:.62rem;line-height:1.15;text-align:center}.gEvCab .gEvC{color:#4a6b14}.gEvCab .gEvV{color:#9a6200}
+.gEstBtns{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin:8px 0}.gEstBtns button{margin:0;padding:10px 4px;font-size:.88rem}
+.gEstIt small{display:block;color:var(--muted);font-size:.78rem;margin-top:2px}.gEstSaldo{font-weight:800;white-space:nowrap}.gEstBaixo{border-color:#c62828!important}.gEstBaixo .gEstSaldo{color:#c62828}
+.gEstTab{table-layout:auto;width:100%}.gEstTab td.c,.gEstTab th:nth-child(2){text-align:left}.gEstTab td,.gEstTab th{padding-left:3px;padding-right:3px}.gEstTab td:last-child{width:34px}.gEstTab td small{white-space:normal}
+.gEstTab td.ok{color:#2e7d32;font-weight:700}.gEstTab td.bad{color:#c62828;font-weight:700}
 .gCus .pos b{color:var(--ok,#2e7d32)}.gCus .neg b{color:var(--bad,#c62828)}
 
 .gLeg{background:var(--chip);border-radius:10px;padding:8px 12px}
@@ -728,10 +739,11 @@ body.menuFechado .menuSeta{background:#2e6b2f;color:#fff;padding:9px 12px;font-s
   <div class="subtabs sub4" id="subGest" hidden>
     <button data-gt="home" id="tabGest">Resumo</button>
     <button data-gt="rels">Relatórios</button>
-    <button data-gt="insumos">Insumos</button>
-    <button data-gt="racoes">Rações</button>
     <button data-gt="currais">Currais</button>
     <button data-gt="lotes">Lotes</button>
+    <button data-gt="insumos">Insumos</button>
+    <button data-gt="racoes">Rações</button>
+    <button data-gt="estoque">Estoque</button>
     <button data-gt="cfg">Config.</button>
   </div>
   </div>
@@ -988,7 +1000,7 @@ body.menuFechado .menuSeta{background:#2e6b2f;color:#fff;padding:9px 12px;font-s
 <div class="toast" id="toast" hidden></div>
 <script>
 'use strict';
-const APP_VERSAO='39';
+const APP_VERSAO='41';
 const APP_DATA='19/10/2026';
 const KEY='confinamento-completo-v1';
 const $=id=>document.getElementById(id);
