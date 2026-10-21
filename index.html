@@ -83,7 +83,7 @@ pre.msg{background:var(--chip);border-radius:10px;padding:12px;margin:0;white-sp
 
 .menu{position:sticky;top:env(safe-area-inset-top,0px);z-index:4;background:var(--bg);padding-block:6px;display:flex;flex-direction:column;gap:6px;box-shadow:0 6px 8px -8px rgba(17,37,61,.25)}
 .tabs{display:flex;gap:6px}
-.subtabs{display:grid;gap:6px}.subtabs.sub3{grid-template-columns:repeat(3,1fr)}.subtabs.sub4{grid-template-columns:repeat(4,1fr)}.subtabs.sub5{grid-template-columns:repeat(5,1fr)}.subtabs.sub5 button{font-size:.8rem;padding:7px 2px}.subtabs.sub6{grid-template-columns:repeat(6,minmax(0,1fr))}.subtabs.sub6 button{grid-column:span 2;font-size:.86rem;padding:7px 2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.subtabs.sub6 #tabMan,.subtabs.sub6 #tabModoAuto{grid-column:span 3}
+.subtabs{display:grid;gap:6px}.subtabs.sub3{grid-template-columns:repeat(3,1fr)}.subtabs.sub4{grid-template-columns:repeat(4,1fr)}.subtabs.sub5{grid-template-columns:repeat(5,1fr)}.subtabs.sub5 button{font-size:.8rem;padding:7px 2px}.subtabs.sub6{grid-template-columns:repeat(6,minmax(0,1fr))}.subtabs.sub6 button{grid-column:span 2;font-size:.86rem;padding:7px 2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.subtabs.sub6 #tabModoAuto{grid-column:span 5}.subtabs.sub6 #tabMan{grid-column:span 1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:0;padding:3px 0;font-size:.95rem;line-height:1;opacity:.85}.subtabs.sub6 #tabMan small{font-size:.58rem;font-weight:600;margin-top:2px}
 .subModo{display:grid;grid-template-columns:auto 1fr 1fr;gap:6px;align-items:center;margin-top:6px;background:#11253d;border-radius:99px;padding:4px 4px 4px 12px}
 .subModo span{color:#fff;font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em}
 .subModo button{border-radius:99px;padding:7px 4px;font-size:.9rem;font-weight:700;background:#2a3f58;border-color:#2a3f58;color:#fff}
@@ -107,8 +107,8 @@ body.somenteVer.verCarga #viewTrato>section:not(#painel),body.somenteVer.verCarg
 #avCargaBox tr.atual td{background:#eef4e0}
 .contRem{border:3px solid #1565c0}.contRem h2{color:#1565c0}.contIt{display:grid;gap:4px;padding:8px 0;border-top:1px solid #dde3ea}.contIt span{font-size:.9rem;color:var(--muted)}.contIt button{margin-top:4px}
 .avSub{font-weight:800;font-size:1rem;color:var(--fg);padding:2px 4px 0;display:flex;flex-wrap:wrap;gap:2px 8px;align-items:baseline}.avSub em{font-style:normal;font-weight:600;font-size:.85rem;color:var(--muted)}
-.avEspelho{display:grid;grid-template-columns:minmax(0,1fr);gap:8px;margin-top:6px;min-width:0}.avEspelho .curBox2{grid-template-columns:minmax(0,1fr) auto}.avEspelho .cbCur{min-width:0}.avEspelho .cbCur b{white-space:normal;line-height:1.05;font-size:clamp(1.3rem,6vw,2rem)!important}.avBatTot{text-align:center;font-weight:600;color:var(--muted)}.avBatTot b{color:var(--fg)}
-.avGeo{display:flex;align-items:baseline;gap:6px;flex-wrap:wrap;margin:4px 4px 0;font-weight:700;font-size:.9rem;color:#1565c0;text-decoration:none}.avGeo small{font-weight:600;color:var(--muted)}
+.avEspelho{display:grid;grid-template-columns:minmax(0,1fr);gap:8px;margin-top:6px;min-width:0}.avEspelho .curBox2{display:grid!important;grid-template-columns:minmax(0,1fr) minmax(0,36%)}.avEspelho .curBox2>div{min-width:0!important;overflow:hidden}.avEspelho .cbPrev b{font-size:clamp(1.5rem,7.5vw,2.3rem)!important}.avEspelho .cbPrev{padding:8px 8px!important}.avEspelho .cbPrev b{width:auto!important;min-width:0!important;max-width:100%}.avEspelho .cbPrev span{font-size:.68rem!important;letter-spacing:.05em!important;white-space:nowrap}.avEspelho .cbCur{min-width:0}.avEspelho .cbCur b{white-space:nowrap;overflow:hidden;line-height:1.1}.avBatTot{text-align:center;font-weight:600;color:var(--muted)}.avBatTot b{color:var(--fg)}
+.avGeo{display:flex;align-items:baseline;gap:6px;flex-wrap:nowrap;white-space:nowrap;overflow:hidden;margin:4px 4px 0;font-weight:700;font-size:.9rem;color:#1565c0;text-decoration:none}.avGeo.semGeo{color:var(--muted);font-weight:600}.avGeo small{overflow:hidden;text-overflow:ellipsis;min-width:0;font-weight:600;color:var(--muted)}
 body.somenteVer details.gCarga{display:block!important}
 .avVer{font-weight:700;font-size:.85rem;color:#4b5b3f;text-align:right;padding:0 4px}
 .abrirNovo{text-align:center}.abrirNovo .note{margin:0 0 8px}
@@ -739,10 +739,11 @@ body.naInicio .topoLinha .voltarIni{display:none}
 .topo img.topoLogo{filter:none!important}
 .topoTxt{position:relative;padding-left:14px}
 .topoTxt::before{content:'';position:absolute;left:0;top:16%;bottom:16%;width:2px;border-radius:2px;background:#a9c41c;opacity:.85}
-body.naInicio .topoLinha{min-height:clamp(96px,30vw,140px)}
-body.naInicio .topo img.topoLogo{height:clamp(80px,26vw,124px)!important}
+body.naInicio .topoLinha{min-height:clamp(80px,24vw,130px)}
+body.naInicio .topo img.topoLogo{height:clamp(56px,16vw,96px)!important}
 body.naInicio .topo{padding-top:14px!important;padding-bottom:14px!important}
-body.naInicio .topoTxt h1{white-space:normal!important;font-size:clamp(16px,5.4vw,26px)!important;line-height:1.15}
+body.naInicio .topoTxt h1{font-size:clamp(16px,5vw,28px)!important}
+.topoTxt .sub{white-space:nowrap;max-width:100%;overflow:hidden}
 .topoTxt h1{color:#fff!important}
 .topoLinha .voltarIni,.topoLinha .atualizarBtn{color:#fff!important}
 .topo #nuvem{font-size:9.5px;line-height:1.5;padding:0 6px;font-weight:700;opacity:.95}
@@ -778,7 +779,7 @@ body.naInicio .topoTxt h1{white-space:normal!important;font-size:clamp(16px,5.4v
     <button id="tabPrev" aria-selected="false">Previsto</button>
     <button id="tabHist" aria-selected="false">Histórico</button>
     <button id="tabModoAuto" aria-selected="false">⚡ Automação</button>
-    <button id="tabMan" aria-selected="false">✋ Manual</button>
+    <button id="tabMan" aria-selected="false" title="Manual (só se a Automação não estiver funcionando)">✋<small>Manual</small></button>
   </div>
   <div class="subModo" id="subModo" hidden>
     <span id="modoTit">Manual</span>
@@ -1050,7 +1051,7 @@ body.naInicio .topoTxt h1{white-space:normal!important;font-size:clamp(16px,5.4v
 <div class="toast" id="toast" hidden></div>
 <script>
 'use strict';
-const APP_VERSAO='63';
+const APP_VERSAO='64';
 const APP_DATA='19/10/2026';
 const KEY='confinamento-completo-v1';
 const $=id=>document.getElementById(id);
@@ -2046,13 +2047,13 @@ function lembrarTela(){try{const ini=document.body.classList.contains('naInicio'
 window.lembrarTela=lembrarTela;
 ['pagehide','beforeunload'].forEach(ev=>window.addEventListener(ev,()=>{try{save();}catch(e){}lembrarTela();}));
 document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='hidden')lembrarTela();});
-let abaTrato='trato';
+let abaTrato='';
 var modoAtual='man';const ultModo={man:'trato',auto:'autoc'};
 /* menu de cima: começa só com Gestão e Tratos; toca para abrir os botões, toca de novo para esconder */
 var menuAberto=null;
 function abrirMenu(g){menuAberto=g;$('subGest').hidden=g!=='gest';$('subTrato').hidden=g!=='trato';$('subModo').hidden=g!=='trato'||!modoAtual;
   $('tabGrpGest').setAttribute('aria-selected',String(g==='gest'));$('tabGrpTrato').setAttribute('aria-selected',String(g==='trato'));}
-function tocarGrupo(g){if(menuAberto===g){abrirMenu(null);return;}abrirMenu(g);aba(g==='gest'?'gest':(abaTrato||'trato'));}
+function tocarGrupo(g){if(menuAberto===g){abrirMenu(null);return;}abrirMenu(g);if(g!=='gest'&&!abaTrato){escolherModo('auto');return;}aba(g==='gest'?'gest':abaTrato);}
 $('tabGrpTrato').onclick=()=>tocarGrupo('trato');
 $('tabPrev').onclick=()=>aba('prev');
 $('tabLeit').onclick=()=>aba('leit');
@@ -2290,11 +2291,13 @@ async function enviarPrevisto(){
 /* Traz o previsto que outro celular mudou (o mais novo vale) */
 async function puxarPrevisto(forcar){
   if(S.prevPend)return;
-  if(!forcar&&Date.now()-ultPuxaPrev<5*60000)return;
+  if(!forcar&&Date.now()-ultPuxaPrev<60000)return;
   ultPuxaPrev=Date.now();
   const r=await fetch(apiUrl()+'?acao=previsto',{cache:'no-store'});const j=await r.json();
   if(j&&j.ok&&j.dados&&Array.isArray(j.dados.cadastro)&&+j.dados.ts>(S.prevTs||0)){
     if(S.prevPend){const snap=S.prevSnap?JSON.parse(S.prevSnap):{};S.prev=juntarPrev(j.dados.prev||{},S.prev,snap);}else S.prev=j.dados.prev||{};
+    /* mudaram o nome de um curral em outro aparelho: o curral atual daqui acompanha */
+    try{const a=S.cadastro||[],n=j.dados.cadastro;if(a.length===n.length&&S.atualNome){const i=a.indexOf(S.atualNome);if(i>=0&&n[i]!==S.atualNome&&!n.includes(S.atualNome))S.atualNome=n[i];}}catch(e){}
     S.cadastro=j.dados.cadastro;S.prevTs=Math.max(+j.dados.ts,S.prevTs||0);S.prevSyncTs=+j.dados.ts;if(!S.prevPend)S.prevSnap=JSON.stringify(S.prev);padronizarNomes();save();render();
   }
 }
@@ -2324,10 +2327,13 @@ async function puxarRegistros(forcar){
 let ultAtualiz=0;try{ultAtualiz=+localStorage.getItem('ultAtualiz')||0;}catch(e){}
 function pintarHoje(){const el=$('hoje');if(!el)return;const d=new Date(),dd=d.toLocaleDateString('pt-BR',{day:'2-digit',month:'2-digit'});
   const u=ultAtualiz?new Date(ultAtualiz):null;const mesmoDia=u&&u.toDateString()===d.toDateString();
-  el.textContent=u?`Atualizado ${u.toLocaleDateString('pt-BR',{day:'2-digit',month:'2-digit'})} às ${u.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'})}`:dd;}
+  el.textContent=u?`Atualizado ${u.toLocaleDateString('pt-BR',{day:'2-digit',month:'2-digit'})} às ${u.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'})}`:dd;try{caberSub();}catch(e){}}
 setInterval(pintarHoje,30000);
+/* linha de baixo do cabeçalho (Atualizado …): também diminui para caber numa linha */
+function caberSub(){const e=document.querySelector('.topoTxt .sub');if(!e)return;e.style.fontSize='';let f=parseFloat(getComputedStyle(e).fontSize),n=0;
+  while(e.scrollWidth>e.clientWidth+1&&f>10&&n<20){f-=.5;e.style.fontSize=f+'px';n++;}}
 /* título do cabeçalho: diminui a letra até caber inteiro */
-function caberTitulo(){const h=document.querySelector('.topoTxt h1');if(!h)return;h.style.fontSize='';let f=parseFloat(getComputedStyle(h).fontSize),n=0;
+function caberTitulo(){caberSub();const h=document.querySelector('.topoTxt h1');if(!h)return;h.style.fontSize='';let f=parseFloat(getComputedStyle(h).fontSize),n=0;
   const lin=()=>h.getBoundingClientRect().height/(f*(parseFloat(getComputedStyle(h).lineHeight)/f||1.2));
   while((h.scrollWidth>h.clientWidth+1||lin()>2.2)&&f>11&&n<40){f-=0.5;h.style.setProperty('font-size',f+'px','important');n++;}}
 window.addEventListener('resize',caberTitulo);window.addEventListener('load',caberTitulo);try{document.querySelector('.topoLogo').addEventListener('load',caberTitulo);}catch(e){}try{new MutationObserver(()=>setTimeout(caberTitulo,0)).observe(document.body,{attributes:true,attributeFilter:['class']});}catch(e){}setTimeout(caberTitulo,0);
@@ -2829,13 +2835,13 @@ $('tecSenha').addEventListener('click',e=>{const b=e.target.closest('button[data
 /* entra só na parte escolhida: 'trato' (padrão) ou 'gest' */
 function entrarExec(m){m=m==='gest'?'gest':'trato';modoVer=false;document.body.classList.remove('naInicio','somenteVer','modoTrato','modoGest');document.body.classList.add(m==='gest'?'modoGest':'modoTrato');$('faixaVer').hidden=true;
   menuAberto=null;abrirMenu(m==='gest'?'gest':'trato');
-  if(m==='gest'){try{GT={t:'home'};}catch(e){}window.abaAtual='';document.querySelectorAll('#subGest button[data-gt]').forEach(x=>x.setAttribute('aria-selected','false'));telaEscolha('Escolha uma opção no menu acima.');}else{try{if(escolherTratoDoDia()){$('tratoSel').value=String(S.tratoSel);}render();}catch(e){}escolherModo(null);}
+  if(m==='gest'){try{GT={t:'home'};}catch(e){}window.abaAtual='';document.querySelectorAll('#subGest button[data-gt]').forEach(x=>x.setAttribute('aria-selected','false'));telaEscolha('Escolha uma opção no menu acima.');}else{try{if(escolherTratoDoDia()){$('tratoSel').value=String(S.tratoSel);}render();}catch(e){}escolherModo('auto');}
   setTimeout(()=>{try{geoIniciar();}catch(e){}},1500);
   if(window.menuCaminho)menuCaminho();}
 $('btnModoVer').onclick=()=>{verSenha(false);if(typeof fecharTeclado==='function')fecharTeclado();if(balCampo)fecharBal();
   guardarExec();modoVer=true;document.body.classList.remove('naInicio','modoTrato','modoGest');document.body.classList.add('somenteVer');$('faixaVer').hidden=false;menuAberto=null;abrirMenu('trato');
   S.dataManual=null;S.ini='';S.fim='';escolherTratoDoDia();$('tratoSel').value=String(S.tratoSel);$('pvTrato').value=String(S.tratoSel);S.pvTrato=S.tratoSel;
-  $('ini').value='';$('fim').value='';render();renderPrev();modoAtual=null;$('subModo').hidden=true;$('tabMan').setAttribute('aria-selected','false');$('tabModoAuto').setAttribute('aria-selected','false');telaEscolha('Escolha uma opção no menu acima.');avDados=null;avErro=false;avAbriu=false;avisarVendo();renderAoVivo();if(navigator.onLine)puxarAoVivo();
+  $('ini').value='';$('fim').value='';render();renderPrev();modoAtual=null;$('subModo').hidden=true;$('tabMan').setAttribute('aria-selected','false');$('tabModoAuto').setAttribute('aria-selected','false');escolherModo('auto');avDados=null;avErro=false;avAbriu=false;avisarVendo();renderAoVivo();if(navigator.onLine)puxarAoVivo();
   if(navigator.onLine){puxarRegistros(true).catch(()=>{});puxarPrevisto(true).catch(()=>{});}};
 function voltarInicio(){try{geoParar();}catch(e){}
   if(typeof fecharTeclado==='function')fecharTeclado();if(typeof balCampo!=='undefined'&&balCampo)fecharBal();
@@ -2870,18 +2876,26 @@ let avUlt='',avTimer=null,avUltEnvio=0;
 /* qual tela de trabalho o celular está usando por último: tratar/carregar, manual/automação */
 var avModo='trato';
 /* localização do aparelho que está tratando (vai junto no Ao vivo) */
-let geo=null,geoW=null;
-function geoIniciar(){try{if(geoW!=null||!navigator.geolocation)return;
-  geoW=navigator.geolocation.watchPosition(p=>{const c=p.coords;geo={lat:+c.latitude.toFixed(6),lon:+c.longitude.toFixed(6),acc:Math.round(c.accuracy||0),ts:p.timestamp||Date.now()};},
-    e=>{if(e&&e.code===1){try{navigator.geolocation.clearWatch(geoW);}catch(x){}geoW=-1;}},{enableHighAccuracy:true,maximumAge:30000,timeout:60000});}catch(e){}}
+let geo=null,geoW=null,geoErro='',geoUltPed=0;
+const geoOk=p=>{const c=p.coords,n={lat:+c.latitude.toFixed(6),lon:+c.longitude.toFixed(6),acc:Math.round(c.accuracy||0),ts:p.timestamp||Date.now()};
+  /* posição de antena/wi-fi (imprecisa) não substitui uma de GPS recente */
+  if(geo&&geo.acc&&n.acc>Math.max(150,geo.acc*3)&&Date.now()-geo.ts<5*60000)return;
+  geo=n;geoErro='';};
+const geoFalha=e=>{geoErro=!e?'sem resposta':e.code===1?'não permitida neste aparelho':e.code===2?'GPS sem sinal ou desligado':e.code===3?'demorou para achar':'erro';
+  if(e&&e.code===1){try{navigator.geolocation.clearWatch(geoW);}catch(x){}geoW=-1;}};
+function geoIniciar(){try{if(!navigator.geolocation){geoErro='aparelho sem GPS';return;}
+  if(geoW==null)geoW=navigator.geolocation.watchPosition(geoOk,geoFalha,{enableHighAccuracy:true,maximumAge:5000,timeout:60000});
+  /* reforço: a cada 1 min pede de novo (alguns tablets param de mandar sozinhos) */
+  if(geoW!==-1&&Date.now()-geoUltPed>60000){geoUltPed=Date.now();navigator.geolocation.getCurrentPosition(geoOk,e=>{if(!geo)geoFalha(e);},{enableHighAccuracy:true,maximumAge:10000,timeout:30000});}}catch(e){geoErro='erro';}}
 function geoParar(){try{if(geoW!=null&&geoW>=0)navigator.geolocation.clearWatch(geoW);}catch(e){}geoW=null;}
 setInterval(()=>{if(typeof avAtivo==='function'&&avAtivo())geoIniciar();},15000);
-function estadoAoVivo(){const e=estadoAoVivo0();if(geo&&e)e.geo=geo;return e;}
+function estadoAoVivo(){const e=estadoAoVivo0();if(e){if(geo)e.geo=geo;else if(geoErro)e.geoErro=geoErro;}return e;}
 function estadoAoVivo0(){
   /* manda o que está ABERTO: batida aberta conta mesmo se a tela agora for outra (menu, fornecer sem fornecimento aberto) */
   const bat=typeof CG!=='undefined'&&CG&&CG.ativa,emForn=['trato','auto'].includes(window.abaAtual)&&filtroForn();
   if(window.cEstadoAoVivo&&((avModo==='carga'||avModo==='autoc')||(bat&&!emForn))){const e=cEstadoAoVivo(avModo==='autoc'||(avModo!=='carga'&&bat&&bat.origem==='balanca'));if(e)return e;}
-  if(avModo==='auto'&&window.aEstadoAoVivo){const e=aEstadoAoVivo();if(e)return e;}
+  /* com a balança conectada o fornecimento é da Automação, mesmo se a última tela usada foi outra */
+  if(window.aEstadoAoVivo&&(avModo==='auto'||(window.AUTO&&AUTO.fonte&&filtroForn()))){const e=aEstadoAoVivo();if(e)return e;}
   const L=lista(),c=L[S.atual],regs=regsAtuais();
   const ff=filtroForn();return {modo:'trato',origem:'manual',local:ff?ff.local:'',rac:ff?ff.rac:'',fimForn:!ff,deAp:ff&&ff.deAp||'',contTs:ff&&ff.contTs||0,fts0:ff&&ff.ts0||0,dia:diaAtivo(),trato:S.tratoSel,curral:c?c.nome:'',prev:c?c.prev:null,ini:S.ini||'',fim:S.fim||'',feitos:L.filter(x=>feito(x.nome,regs)).length,total:L.length};}
 function avAtivo(){return !!(S&&!modoVer&&!document.body.classList.contains('naInicio')&&apiUrl()&&navigator.onLine);}
@@ -3000,10 +3014,19 @@ function avTelaHTML(d,carga){const T=d.tela;
     <div class="${esc(T.fCl||'aFalta')}"><small>${esc(T.fTit||'')}</small><b class="num">${esc(T.fVal||'—')}</b><em>${esc(T.fTxt||'')}</em></div>
     <div class="aMini"><div class="caiu"><small>${carga?'Carregado':'Fornecido'}</small><b class="num">${esc(T.feito||'—')}</b></div><div><small>Peso inicial</small><b class="num">${esc(T.ini||'—')}</b></div><div><small>Parar com</small><b class="num">${esc(T.alvo||'—')}</b></div></div>
     ${carga?`<div class="avBatTot">Batida: <b>${fmt((d.carregado||0)+(parseFloat(String(T.feito||'0').replace(/\./g,'').replace(',','.'))||0))}</b> de ${fmt(d.totalPrev||0)} kg</div>`:''}</div>`;}
+/* abre o mapa fora do sistema: no app do Google Maps se tiver; senão no navegador (o sistema continua aberto) */
+document.addEventListener('click',e=>{const a=e.target.closest('a[data-geo]');if(!a)return;e.preventDefault();const q=a.dataset.geo,web='https://www.google.com/maps/search/?api=1&query='+q;
+  const ua=navigator.userAgent||'',ios=/iPad|iPhone|iPod/.test(ua)||(navigator.platform==='MacIntel'&&navigator.maxTouchPoints>1),and=/Android/i.test(ua);
+  if(and){location.href='intent://maps.google.com/maps?q='+q+'#Intent;scheme=https;package=com.google.android.apps.maps;S.browser_fallback_url='+encodeURIComponent(web)+';end';return;}
+  if(ios){let saiu=false;const f=()=>{if(document.hidden)saiu=true;};document.addEventListener('visibilitychange',f);
+    location.href='comgooglemaps://?q='+q+'&center='+q+'&zoom=17';
+    setTimeout(()=>{document.removeEventListener('visibilitychange',f);if(!saiu&&!document.hidden)window.open(web,'_blank','noopener');},1200);return;}
+  window.open(web,'_blank','noopener');});
 function avTopoHTML(d,t0){const dd=d.dia&&/^\d{4}-/.test(d.dia)?diaBR(d.dia).slice(0,5):'',h=t0?new Date(t0).toTimeString().slice(0,5):'';
   const g=d.geo&&d.geo.lat?d.geo:null,gIdade=g?Math.max(0,Date.now()-(+g.ts||0)):0;
   return `<div class="avTopo"><span><i class="avPonto"></i>Ao vivo${h?` · início ${dd} às ${h}`:dd?' · '+dd:''}</span><span class="avIdade">${idadeTxt(d.idade)}</span></div>`
-    +(g?`<a class="avGeo" href="https://www.google.com/maps?q=${g.lat},${g.lon}" target="_blank" rel="noopener">📍 Localização do aparelho <small>${idadeTxt(gIdade)}${g.acc?' · precisão ±'+g.acc+' m':''}</small></a>`:'');}
+    +(g?`<a class="avGeo" data-geo="${g.lat},${g.lon}" href="https://www.google.com/maps/search/?api=1&query=${g.lat},${g.lon}" target="_blank" rel="noopener">📍 Localização <small>${idadeTxt(gIdade)} · precisão ${g.acc>=1000?'±'+(g.acc/1000).toFixed(1).replace('.',',')+' km':'±'+g.acc+' m'}${g.acc>200?' ⚠ imprecisa':''}</small></a>`
+       :`<div class="avGeo semGeo">📍 Localização <small>${d.geoErro?esc(d.geoErro):'ainda não chegou do aparelho'}</small></div>`);}
 function idadeTxt(ms){const s=Math.max(0,Math.round(ms/1000));return s<60?`há ${s} s`:`há ${Math.round(s/60)} min`;}
 /* Visualizar › Carregar: embaixo, a batida em andamento produto por produto e as batidas feitas hoje */
 function pintarAvCarga(L){const el=$('avCargaBox');if(!el)return;const on=modoVer&&document.body.classList.contains('verCarga');el.hidden=!on;if(!on){el.innerHTML='';return;}
@@ -3044,7 +3067,7 @@ function renderAoVivo(){const box=$('aoVivo');if(!modoVer){box.innerHTML='';pint
   pintarAvCarga(naCarga?lst:[]);
   if(!lst.length){box.innerHTML=verTxt+`<div class="avVazio">${naCarga?'Ninguém carregando agora':'Ninguém fornecendo agora'}</div>`+outTxt;return;}
   if(!avAbriu&&window.abaAtual===''&&menuAberto==='trato'){avAbriu=true;const d0=lst[0];
-    const au=d0.origem==='auto',cg=d0.modo==='carga';aba(au?(cg?'autoc':'auto'):(cg?'carga':'trato'));return;}
+    const au=lst.some(d=>d.origem==='auto'||d.tela||(d.bat&&d.bat.origem==='balanca')),cg=d0.modo==='carga';aba(au?(cg?'autoc':'auto'):(cg?'carga':'trato'));return;}
   box.innerHTML=verTxt+outTxt+lst.map(d=>{if(d.modo==='carga')return cardCargaAoVivo(d);const ini=parseFloat(d.ini),fim=parseFloat(d.fim),pv=d.prev,auto=d.origem==='auto';
     const alvo=(pv!=null&&!isNaN(ini))?fmt(ini-pv):'—';
     let real='—',dif='—',cls='';if(!isNaN(ini)&&!isNaN(fim)){const f=ini-fim;real=fmt(f);if(pv!=null){const x=f-pv;dif=auto&&x<0?fmt(-x):sgn(x);cls=auto&&x<0?'':classeDesv(x,pv);}}
@@ -3062,7 +3085,7 @@ function renderAoVivo(){const box=$('aoVivo');if(!modoVer){box.innerHTML='';pint
         <div><small>${auto?'Fornecido':'Realizado'}</small><b class="num">${real}</b></div>
         <div><small>${auto&&!isNaN(ini)&&!isNaN(fim)&&pv!=null&&(ini-fim)<pv?'Falta':'Diferença'}</small><b class="num ${cls}">${dif}</b></div>
       </div></div>`;}).join('');
-  box.querySelectorAll('.cbCur b').forEach(b=>{let f=parseFloat(getComputedStyle(b).fontSize),n=0;while(b.scrollWidth>b.clientWidth+1&&f>14&&n<30){f--;b.style.fontSize=f+'px';n++;}});
+  box.querySelectorAll('.cbCur b').forEach(b=>{b.style.whiteSpace='nowrap';b.style.overflow='hidden';let f=parseFloat(getComputedStyle(b).fontSize),n=0;while(b.scrollWidth>b.clientWidth+1&&f>12&&n<40){f--;b.style.setProperty('font-size',f+'px','important');n++;}});
 }
 setInterval(()=>{if(modoVer&&navigator.onLine&&document.visibilityState==='visible'&&(!$('viewTrato').hidden||(!avAbriu&&window.abaAtual==='')))puxarAoVivo();},5000);
 Promise.resolve(iniciar()).catch(()=>{}).then(()=>{
