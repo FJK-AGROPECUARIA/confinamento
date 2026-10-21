@@ -654,7 +654,8 @@ body.menuFechado .menuSeta{background:#2e6b2f;color:#fff;padding:9px 12px;font-s
 .dPer input{width:20px;height:20px;margin:0}
 .dPerCampos{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:8px;margin-top:8px}
 .tNav{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,2fr);gap:6px}
-.tNav2{grid-template-columns:1fr}.tTodos{display:grid;grid-template-columns:1fr 1fr;gap:6px}.tTodos button{border-radius:12px;margin:0}.tTodos button.sel{background:var(--accent);color:#fff;border-color:var(--accent)}
+.tNav2{grid-template-columns:1fr}.tNavS{align-items:center}.tNavS .tSeta{margin:0}.tNavS>button{align-self:stretch}.tSeta.sel select{border-color:var(--accent);background:#eef4e0}
+.tSetaFixa{margin:4px 0 10px}.tTodos{display:grid;grid-template-columns:1fr 1fr;gap:6px}.tTodos button{border-radius:12px;margin:0}.tTodos button.sel{background:var(--accent);color:#fff;border-color:var(--accent)}
 .tEsc{flex:1;position:relative;display:flex;align-items:center;justify-content:center;min-width:0;align-self:stretch}
 .tEsc b{flex:1;text-align:center;font-family:var(--display);font-stretch:condensed;font-size:1.15rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .tEsc select{position:absolute;inset:0;width:100%;height:100%;opacity:0;cursor:pointer;margin:0;padding:0;border:0}
@@ -811,12 +812,9 @@ body.menuFechado .menuSeta{background:#2e6b2f;color:#fff;padding:9px 12px;font-s
     <div class="fBar" id="fBarM" hidden></div>
     <div class="dataLinha" id="dataLinha"><button class="dataBox" id="dataEsc" aria-label="Data do trato">—</button><button class="mini lima" id="btnHoje" hidden>Voltar para hoje</button></div>
     <div class="cal" id="cal" hidden></div>
-    <div class="linhaTrato">
-      <label for="tratoSel">Selecionar trato</label>
-      <select class="trato" id="tratoSel">
+    <div class="tSeta tSetaFixa"><button type="button" data-tsd="-1" aria-label="Trato anterior">◀</button><select class="trato" id="tratoSel">
         <option value="1">Trato 1</option><option value="2">Trato 2</option><option value="3">Trato 3</option>
-      </select>
-    </div>
+      </select><button type="button" data-tsd="1" aria-label="Próximo trato">▶</button></div>
     <div class="aoVivo" id="aoVivo"></div>
     <div id="curWrap">
       <div class="curBox2">
@@ -1000,7 +998,7 @@ body.menuFechado .menuSeta{background:#2e6b2f;color:#fff;padding:9px 12px;font-s
 <div class="toast" id="toast" hidden></div>
 <script>
 'use strict';
-const APP_VERSAO='44';
+const APP_VERSAO='45';
 const APP_DATA='19/10/2026';
 const KEY='confinamento-completo-v1';
 const $=id=>document.getElementById(id);
@@ -1140,7 +1138,7 @@ function tratosCad(){const it=tratosCadItem(),r=[];
 function tratosAtivos(){const a=tratosCad().filter(t=>t.ativo).map(t=>t.k);return a.length?a:[1];}
 function nomeTrato(k){const t=tratosCad().find(x=>x.k===+k);return 'Trato '+k+(t&&t.nome?' · '+t.nome:'');}
 function opcoesTrato(v){const a=tratosAtivos();v=+v||0;if(v&&!a.includes(v))a.push(v);a.sort((x,y)=>x-y);return a.map(k=>`<option value="${k}"${v===k?' selected':''}>${esc(nomeTrato(k))}</option>`).join('');}
-function encherSelTrato(){['tratoSel','aTrato','pvTrato'].forEach(id=>{const s=$(id);if(!s)return;const v=+s.value||+S.tratoSel||1;const h=opcoesTrato(v);if(s.dataset.op!==h){s.innerHTML=h;s.dataset.op=h;}s.value=String(v);});}
+function encherSelTrato(){['tratoSel','aTrato','pvTrato'].forEach(id=>{const s=$(id);if(!s)return;const v=+s.value||+S.tratoSel||1;const h=opcoesTrato(v);if(s.dataset.op!==h){s.innerHTML=h;s.dataset.op=h;}s.value=String(v);if(s.parentElement.classList.contains('tSeta'))setasTrato(s.parentElement);});}
 function salvarTratosCad(lista){const v={};lista.forEach(t=>{v[t.k]={nome:t.nome||'',ativo:t.ativo!==false};});gPut({uid:'tratosCad',tipo:'tratosCad',n:lista.length,v});encherSelTrato();try{render();}catch(e){}}
 window.tratosApi={MAXT,cad:tratosCad,ativos:tratosAtivos,nome:nomeTrato,opcoes:opcoesTrato,encher:encherSelTrato,salvar:salvarTratosCad};
 window.opcoesTrato=opcoesTrato;
@@ -1213,9 +1211,15 @@ function compensarCurral(c){try{
 window.compensarCurral=compensarCurral;
 const FS={local:null,rac:null,trato:null,passo:1};
 /* trato com setinhas: ◀ [Trato N ▾] ▶ (toca no meio para escolher, ou nas setas para ir e voltar) */
-function tratoSeta(id,v){v=+v||tratosAtivos()[0];const a=tratosAtivos();return `<div class="tSeta"><button type="button" data-tsd="-1" aria-label="Trato anterior"${v<=a[0]?' disabled':''}>◀</button><select class="trato" id="${id}">${opcoesTrato(v)}</select><button type="button" data-tsd="1" aria-label="Próximo trato"${v>=a[a.length-1]?' disabled':''}>▶</button></div>`;}
+/* trato com setinhas verdes dos lados; sem trato escolhido mostra "Escolher trato" */
+function tratoSeta(id,v,extra){v=+v||0;const a=tratosAtivos();return `<div class="tSeta"><button type="button" data-tsd="-1" aria-label="Trato anterior"${!v||v<=a[0]?' disabled':''}>◀</button><select class="trato" id="${id}"${extra||''}>${v?'':'<option value="" selected disabled>Escolher trato</option>'}${opcoesTrato(v||'')}</select><button type="button" data-tsd="1" aria-label="Próximo trato"${v>=a[a.length-1]?' disabled':''}>▶</button></div>`;}
 window.tratoSeta=tratoSeta;
-document.addEventListener('click',e=>{const b=e.target.closest('.tSeta [data-tsd]');if(!b)return;const sel=b.parentElement.querySelector('select');const op=[...sel.options].map(o=>+o.value),i=op.indexOf(+sel.value),v=op[Math.max(0,Math.min(op.length-1,i+(+b.dataset.tsd)))];if(v==null||v===+sel.value)return;sel.value=String(v);sel.dispatchEvent(new Event('change',{bubbles:true}));});
+function setasTrato(box){if(!box)return;const sel=box.querySelector('select');if(!sel)return;const op=[...sel.options].filter(o=>o.value!==''&&!o.disabled).map(o=>+o.value),v=+sel.value||0,bs=box.querySelectorAll('[data-tsd]');
+  if(bs[0])bs[0].disabled=!v||v<=op[0];if(bs[1])bs[1].disabled=!!v&&v>=op[op.length-1];}
+window.setasTrato=setasTrato;
+document.addEventListener('click',e=>{const b=e.target.closest('.tSeta [data-tsd]');if(!b)return;const sel=b.parentElement.querySelector('select');const op=[...sel.options].filter(o=>o.value!==''&&!o.disabled).map(o=>+o.value),cur=+sel.value||0,i=op.indexOf(cur);
+  const v=!cur?(+b.dataset.tsd>0?op[0]:null):op[Math.max(0,Math.min(op.length-1,i+(+b.dataset.tsd)))];if(v==null||v===cur)return;sel.value=String(v);sel.dispatchEvent(new Event('change',{bubbles:true}));setasTrato(b.parentElement);});
+document.addEventListener('change',e=>{const s_=e.target.closest('.tSeta select');if(s_)setasTrato(s_.parentElement);},true);
 function fornCurrais(loc,rac,k){const m=(S.prev&&S.prev[String(k)])||{};return S.cadastro.filter(n=>curralAtivo(n)&&typeof m[n]==='number'&&m[n]>0&&linhaDe(n)===loc&&(!rac||(window.racaoDoCurral&&racaoDoCurral(n)===rac))).map(n=>({nome:n,prev:m[n]}));}
 function fornPendentes(loc,rac,k){const L=fornCurrais(loc,rac,k),hj=diaAtivo();return L.filter(x=>!HIST.some(r=>r.dia===hj&&+r.trato===k&&r.curral===x.nome));}
 /* em passos: local → ração → trato → resumo e Iniciar */
@@ -1228,7 +1232,8 @@ function fornSetupHTML(){if(!FS.local)FS.passo=1;const cont=n=>`<button type="bu
     <label for="fRac">2. Ração que vai distribuir</label><select id="fRac">${FS.rac==null?'<option value="-" selected>— escolha a ração —</option>':''}${R.map(r=>`<option value="${r.uid}"${r.uid===FS.rac?' selected':''}>${esc(r.nome)}</option>`).join('')}<option value=""${FS.rac===''?' selected':''}>Todas as rações</option></select>
     ${R.length===1?`<p class="note">Única ração ativa no ${FS.local==='C'?'confinamento':'pasto'}: já selecionada.</p>`:''}`;
   if(FS.rac==null)return passoRac;
-  if(!FS.trato||!fornCurrais(FS.local,FS.rac,FS.trato).length||!fornPendentes(FS.local,FS.rac,FS.trato).length){let k0=null;for(const k of tratosAtivos()){if(fornPendentes(FS.local,FS.rac,k).length){k0=k;break;}}FS.trato=k0||FS.trato||1;}
+  if(!FS.trato){const pend=tratosAtivos().map(k=>({k,n:fornPendentes(FS.local,FS.rac,k).length,t:fornCurrais(FS.local,FS.rac,k).length})).filter(x=>x.t);
+    return passoRac+`<label for="fTrato">3. Trato</label>${tratoSeta('fTrato',null)}<p class="note">${pend.length?pend.map(x=>`Trato ${x.k}: ${x.n?`faltam ${x.n} de ${x.t}`:'✓ todos fornecidos'}`).join(' · '):'Ainda não tem previsto para este local e ração.'}</p>`;}
   const L=fornCurrais(FS.local,FS.rac,FS.trato),pend=fornPendentes(FS.local,FS.rac,FS.trato),tot=L.reduce((a,x)=>a+x.prev,0);
   return passoRac+`
     <label for="fTrato">3. Trato</label>${tratoSeta('fTrato',FS.trato)}${`
@@ -1347,8 +1352,9 @@ function render(){
   const tem=regs.length>0;
   ['btnDesfazer','btnWa','btnCopiarMsg','btnExcel','btnShareExcel','btnXls'].forEach(id=>$(id).disabled=!tem);
   $('btnImg').disabled=!(tem||L.length);
-  $('btnProximo').disabled=S.tratoSel>=5;$('btnProximo').textContent=S.tratoSel>=5?'Último trato':`Ir ao Trato ${S.tratoSel+1} ▶`;
-  $('btnAnterior').disabled=S.tratoSel<=1;$('btnAnterior').textContent=S.tratoSel<=1?'◀ Voltar':`◀ Voltar Trato ${S.tratoSel-1}`;
+  {const at=tratosAtivos(),i=at.indexOf(+S.tratoSel),px=at.find(k=>k>S.tratoSel),an=[...at].reverse().find(k=>k<S.tratoSel);
+  $('btnProximo').disabled=!px;$('btnProximo').textContent=px?`Ir ao Trato ${px} ▶`:'Último trato';$('btnProximo').dataset.k=px||'';
+  $('btnAnterior').disabled=!an;$('btnAnterior').textContent=an?`◀ Voltar Trato ${an}`:'◀ Voltar';$('btnAnterior').dataset.k=an||'';}
   if(!$('viewHist').hidden)renderHist();
   if(!$('viewPrev').hidden&&!editandoPrev)renderPrev();
   statusNuvem();
@@ -1381,8 +1387,8 @@ $('tratoSel').addEventListener('change',e=>{
   save();render();toast(`Trato ${S.tratoSel}`);
 });
 function irTrato(k){if(k<1||k>6)return;$('tratoSel').value=String(k);$('tratoSel').dispatchEvent(new Event('change'));window.scrollTo({top:0,behavior:'smooth'});}
-$('btnProximo').onclick=()=>irTrato(S.tratoSel+1);
-$('btnAnterior').onclick=()=>irTrato(S.tratoSel-1);
+$('btnProximo').onclick=()=>{const k=+$('btnProximo').dataset.k;if(k)irTrato(k);};
+$('btnAnterior').onclick=()=>{const k=+$('btnAnterior').dataset.k;if(k)irTrato(k);};
 
 $('btnReg').onclick=async()=>{
   if(bloqueado())return;
@@ -1945,6 +1951,8 @@ $('hXls').onclick=()=>{const f=filtrados();if(f.length)compartilharArquivo(gerar
 
 /* ---------- Abas ---------- */
 function aba(qual){
+  try{if((qual==='carga'||qual==='autoc')&&window.CG&&!CG.ativa&&window.abaAtual!==qual){CG.passo=1;CG.local=null;CG.trato=null;CG.juntos=[];CG.avulso=false;CG.juntoAberto=false;}
+    if((qual==='trato'||qual==='auto')&&window.abaAtual!==qual&&typeof filtroForn==='function'&&!filtroForn()){FS.local=null;FS.rac=null;FS.trato=null;FS.passo=1;}}catch(e){}
   $('viewEscolha').hidden=true;
   if(window.cFecha&&$('tecCarga')&&!$('tecCarga').hidden)cFecha();
   if(typeof modoRemover!=='undefined'&&modoRemover&&qual!=='prev')$('btnRemoverCurral').click();
@@ -2035,8 +2043,8 @@ function pintarContaLocal(sel,ds,conta){document.querySelectorAll(sel).forEach(b
 function tratoNavHTML(t,dois,extra){const a=[...new Set(tratosAtivos().concat(extra||[]).map(Number))].filter(k=>k>0).sort((x,y)=>x-y),tem=t>0,ult=a[a.length-1];
   const todos=dois?`<div class="tTodos"><button data-tt="-1" class="${t===-1?'sel':''}">Todos (total)</button><button data-tt="0" class="${t===0?'sel':''}">Todos (separado)</button></div>`
     :`<button data-tt="0" class="${t<=0?'sel':''}">Todos</button>`;
-  return `<div class="tNav${dois?' tNav2':''}" data-lista="${a.join(',')}">${todos}
-  <div class="tSel ${tem?'sel':''}"><button data-tp="-1" ${!tem||t<=a[0]?'disabled':''} aria-label="Trato anterior">◀</button><span class="tEsc"><b>${tem?esc(nomeTrato(t)):'Escolher trato'}</b><select data-tsel aria-label="Escolher trato"><option value="" disabled${tem?'':' selected'}>Escolher trato</option>${a.map(k=>`<option value="${k}"${k===t?' selected':''}>${esc(nomeTrato(k))}</option>`).join('')}</select></span><button data-tp="1" ${tem&&t>=ult?'disabled':''} aria-label="Próximo trato">▶</button></div></div>`;}
+  return `<div class="tNav tNavS${dois?' tNav2':''}" data-lista="${a.join(',')}">${todos}
+  <div class="tSeta${tem?' sel':''}"><button type="button" data-tp="-1" aria-label="Trato anterior"${!tem||t<=a[0]?' disabled':''}>◀</button><select class="trato" data-tsel aria-label="Escolher trato">${tem?'':'<option value="" selected disabled>Escolher trato</option>'}${a.map(k=>`<option value="${k}"${k===t?' selected':''}>${esc(nomeTrato(k))}</option>`).join('')}</select><button type="button" data-tp="1" aria-label="Próximo trato"${tem&&t>=ult?' disabled':''}>▶</button></div></div>`;}
 function ligarTratoNav(box,st,mudou){box.addEventListener('click',e=>{const b=e.target.closest('[data-tt],[data-tp]');if(!b||b.disabled)return;
   if(b.dataset.tt!=null)st.t=+b.dataset.tt;else{const nv=b.closest('[data-lista]'),a=nv?nv.dataset.lista.split(',').map(Number):tratosAtivos();if(!(st.t>0))st.t=a[0];else{const i=Math.max(0,a.indexOf(st.t));st.t=a[Math.max(0,Math.min(a.length-1,i+(+b.dataset.tp)))];}}mudou();});
   box.addEventListener('change',e=>{const s_=e.target.closest('select[data-tsel]');if(!s_||!s_.value)return;st.t=+s_.value;mudou();});}

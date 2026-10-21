@@ -1169,12 +1169,15 @@ function racoesDoLocal(loc,dia){dia=dia||hojeKey();const s=new Set();gTodos('lot
 window.racoesDoLocal=racoesDoLocal;
 const NOMELOC={C:'Confinamento',P:'Pasto'};
 /* conta os currais com previsto hoje em cada local; modo 'forn' mostra fornecidos/total */
-function contaLocalPrev(k,modo){try{const hj=hojeKey(),P=S.prev||{},cs=new Set();Object.keys(P).forEach(t=>Object.keys(P[t]||{}).forEach(c=>{if(+P[t][c]>0&&linhaDe(c)===k&&(typeof curralAtivo!=='function'||curralAtivo(c)))cs.add(c);}));
-  if(modo!=='forn')return String(cs.size);const H=typeof HIST!=='undefined'?HIST:[];let f=0,t=0;cs.forEach(c=>Object.keys(P).forEach(k=>{if(+((P[k]||{})[c])>0){t++;if(H.some(r=>r.dia===hj&&r.curral===c&&+r.trato===+k))f++;}}));return f+'/'+t;}catch(e){return '';}}  // tratos fornecidos / tratos previstos hoje
+/* número nos botões do local: Carregar = currais com previsto hoje / currais com lote; Fornecer = currais já fornecidos / currais com lote */
+function contaLocalPrev(k,modo){try{const hj=hojeKey(),P=S.prev||{},tot=cochoCurrais(hj).filter(c=>linhaDe(c)===k&&(typeof curralAtivo!=='function'||curralAtivo(c)));
+  const tsDe=c=>Object.keys(P).filter(t=>+((P[t]||{})[c])>0);
+  if(modo!=='forn')return tot.filter(c=>tsDe(c).length).length+'/'+tot.length;
+  const H=typeof HIST!=='undefined'?HIST:[];const f=tot.filter(c=>{const ts=tsDe(c);return ts.length&&ts.every(t=>H.some(r=>r.dia===hj&&r.curral===c&&+r.trato===+t));}).length;return f+'/'+tot.length;}catch(e){return '';}}
 function escolhaLocal(attr,sel){const modo=attr==='data-floc'?'forn':'carga';return `<div class="gLocal">${['C','P'].map(l=>`<button type="button" ${attr}="${l}" class="${sel===l?'sel':''}">${l==='C'?'🏠 Confinamento':'🌾 Pasto'}<small> ${contaLocalPrev(l,modo)}</small></button>`).join('')}</div>`;}
 window.escolhaLocal=escolhaLocal;
 /* tela de início em passos: escolhe o local → abre a ração → abre o trato → abre o total e o botão de iniciar */
-function cTelaNova(){if(!CG.passo){CG.passo=1;CG.local=null;}if(!CG.local)CG.passo=1;if(!CG.trato)CG.trato=S.tratoSel||1;
+function cTelaNova(){if(!CG.passo){CG.passo=1;CG.local=null;}if(!CG.local)CG.passo=1;
   const ps=CG.passo,cont=n=>`<button type="button" class="lima cCont" data-cpasso="${n}">Continuar ▶</button>`;
   if(ps<=1||!CG.local)return `<section class="panel"><h2>Carregar vagão</h2><label>1. Local</label>${escolhaLocal('data-cloc',null)}<p class="note">Escolha o local para continuar.</p></section>`;
   const todas=racAtivas().sort(porNome);if(!todas.length)return `<section class="panel"><h2>Carregar vagão</h2><p class="note">Cadastre a ração primeiro em Gestão → Rações.</p></section>`;
@@ -1195,6 +1198,7 @@ function cTelaNova(){if(!CG.passo){CG.passo=1;CG.local=null;}if(!CG.local)CG.pas
     <div class="cBotoes"><button type="button" class="mini cJtTog${CG.juntoAberto?' sel':''}" data-cjtog="1">＋ Carregar junto${CG.juntos.length?' (T'+CG.juntos.join(', T')+')':''}</button><button type="button" class="mini cAvulso" data-cavulso="1">✳ Trato avulso</button></div>
     <div class="cJuntoLista">${CG.juntoAberto?tratosAtivos().filter(k=>k!==+CG.trato).map(k=>{const t=sugestaoCarga(k,CG.rac,CG.local).tot;return `<button type="button" data-cjunto="${k}" class="${CG.juntos.includes(k)?'sel':''}"${t||CG.juntos.includes(k)?'':' disabled'}>T${k}${t?`<small>${nf(t)}</small>`:''}</button>`;}).join(''):''}</div>`)+
     (CG.avulso?`<button type="button" class="mini cAvulso sel" data-cavulso="1">↩ Voltar para os tratos do previsto</button>`:'');
+  if(!CG.avulso&&!CG.trato)return passoTrato+'</section>';  // escolhe o trato antes de mostrar o total
   return passoTrato+`
     <div><label>4. Total a carregar (kg)${CG.avulso?' · digite':' · pode mudar'}</label><div class="campoX cTotWrap"><input class="big num" id="cTotal" type="text" readonly inputmode="none" value="${CG.total?nf(CG.total):''}" placeholder="${CG.avulso?'digite':''}" data-ct="total"><div class="cSetas"><button type="button" data-ctot="-50" aria-label="Menos 50 kg">▼</button><button type="button" data-ctot="50" aria-label="Mais 50 kg">▲</button></div></div>
 </div>
@@ -1292,7 +1296,7 @@ function cClique(e){
 }
 $('cBox').addEventListener('click',cClique);$('acBox').addEventListener('click',cClique);
 function cMuda(e){const t=e.target;
-  if(t.id==='cTrato'){CG.trato=+t.value;cSave();cRender();}
+  if(t.id==='cTrato'){CG.trato=+t.value||null;cSave();cRender();}
   if(t.id==='cRac'){CG.rac=t.value||null;if(CG.rac)CG.passo=Math.max(CG.passo||1,3);cSave();cRender();}
   if(t.id==='cDia'){CG.verDia=t.value||hojeKey();cSave();cRender();}}
 $('cBox').addEventListener('change',cMuda);$('acBox').addEventListener('change',cMuda);

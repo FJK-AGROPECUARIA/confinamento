@@ -119,12 +119,9 @@ function montar(){
   <section class="panel fornSetup" id="fSetupA" hidden></section>
   <section class="panel">
     <div class="fBar" id="fBarA" hidden></div>
-    <div class="linhaTrato">
-      <label for="aTrato">Trato</label>
-      <select class="trato" id="aTrato">
+    <div class="tSeta tSetaFixa"><button type="button" data-tsd="-1" aria-label="Trato anterior">◀</button><select class="trato" id="aTrato">
         ${window.opcoesTrato?opcoesTrato(S.tratoSel):'<option value="1">Trato 1</option>'}
-      </select>
-    </div>
+      </select><button type="button" data-tsd="1" aria-label="Próximo trato">▶</button></div>
     <div class="curBox2">
       <div class="cbCur" id="aTrocar" role="button" aria-label="Trocar curral"><span>Curral atual <i class="seta">▼</i></span><b id="aCur">—</b></div>
       <div class="cbPrev"><span>Previsto</span><b class="num" id="aPrev">—</b></div>
