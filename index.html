@@ -572,6 +572,7 @@ input[type=date]::-webkit-calendar-picker-indicator{margin-left:2px;padding:0}
 .zCards{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin:10px 0}.zCards div{background:#eef3e4;border-radius:12px;padding:8px 12px}.zCards small{display:block;font-size:.72rem;color:var(--muted);font-weight:600}.zCards b{font-size:1.1rem}
 #zootSec .curhead input{width:auto;max-width:170px;margin:0}.zTab td.c small{display:block;font-size:.7rem;color:var(--muted);font-weight:500}
 .cJaFeito{margin:10px 0;background:#c62828;color:#fff;font-weight:800;text-align:center;border-radius:14px;padding:14px 10px;font-size:1.05rem;letter-spacing:.02em;line-height:1.3}.fTodosOk small,.cJaFeito small{display:block;font-weight:600;font-size:.82rem;letter-spacing:0;margin-top:4px;opacity:.95}
+#viewHist.modoRel>*:not(#hModo):not(#zootSec){display:none!important}.hModo{grid-template-columns:repeat(3,1fr)}.zLoc{margin:8px 0}
 .gMsLinha{display:grid;grid-template-columns:1fr 1.3fr;gap:10px;align-items:end;margin:8px 0}.gMsLinha>div{background:var(--chip);border-radius:12px;padding:8px 12px}.gMsLinha>div span{display:block;font-size:.75rem;color:var(--muted);font-weight:600}.gMsLinha>div b{font-size:1.4rem}.gMsLinha input{font-size:1.2rem}
 .gCustos td,.gCustos th{font-size:.84rem;white-space:nowrap;padding-left:2px;padding-right:2px}.gCustos td:first-child{white-space:normal}.gCustos td small{display:block;font-size:.68rem;color:var(--muted);font-weight:500}.gCustos td,.gCustos th{font-size:.8rem}.gCustos td:first-child{font-weight:600}.gCustos tr.grp td{font-weight:800}
 .stat b small{font-size:.7rem;font-family:var(--body);color:var(--muted)}
@@ -956,7 +957,7 @@ body.naInicio .topoTxt h1{font-size:clamp(16px,5vw,28px)!important}
 </div>
 
 <div id="viewHist" hidden>
-  <div class="linhas hModo" id="hModo"><button data-hm="T" class="sel">🐂 Tratos</button><button data-hm="B">🚜 Batidas</button></div>
+  <div class="linhas hModo" id="hModo"><button data-hm="T" class="sel">🐂 Tratos</button><button data-hm="B">🚜 Batidas</button><button data-hm="R">📋 Relatório</button></div>
   <section class="panel">
     <div class="curhead"><h2>Filtrar</h2><span id="hPerBox"></span></div>
     <div id="hData"></div>
@@ -992,7 +993,7 @@ body.naInicio .topoTxt h1{font-size:clamp(16px,5vw,28px)!important}
     </div>
   </section>
 
-  <section class="panel hSoTratos" id="zootSec"></section>
+  <section class="panel" id="zootSec" hidden></section>
   <!-- Nuvem: o envio e a busca já são automáticos (a cada minuto e ao voltar o sinal) e o ⟳ do topo faz os dois na hora -->
   <section class="panel" id="nuvemSec" hidden>
     <h2>Nuvem</h2>
@@ -1095,7 +1096,7 @@ body.naInicio .topoTxt h1{font-size:clamp(16px,5vw,28px)!important}
 <div class="toast" id="toast" hidden></div>
 <script>
 'use strict';
-const APP_VERSAO='80';
+const APP_VERSAO='81';
 const APP_DATA='19/10/2026';
 const KEY='confinamento-completo-v1';
 const $=id=>document.getElementById(id);
@@ -2210,15 +2211,19 @@ function totaisPorCurral(regs){const m=new Map();regs.forEach(r=>{const x=m.get(
 var hModo='T';
 /* relatório zootécnico do dia (no fim do Histórico de tratos): dia próprio, segue o filtro de local */
 let zDia=null;
-function pintarZoot(){const b=$('zootSec');if(!b||!window.zootSecHTML)return;if(hModo!=='T'){b.hidden=true;return;}b.hidden=false;
-  if(!zDia)zDia=intervaloHist()[1]||hojeKey();try{b.innerHTML=zootSecHTML(zDia,localSel);}catch(e){b.innerHTML='<p class="note">Não consegui montar o relatório do dia.</p>';console.error(e);}}
+let zLoc='T';
+function pintarZoot(){const b=$('zootSec');if(!b||!window.zootSecHTML)return;if(hModo!=='R'){b.hidden=true;return;}b.hidden=false;
+  if(!zDia)zDia=hojeKey();
+  const locs=`<div class="linhas zLoc">${[['T','Todos'],['C','Confinamento'],['P','🌿 Pasto']].map(([k,t])=>`<button data-zloc="${k}" class="${zLoc===k?'sel':''}">${t}</button>`).join('')}</div>`;
+  try{b.innerHTML=zootSecHTML(zDia,zLoc).replace('</div>','</div>'+locs);}catch(e){b.innerHTML='<p class="note">Não consegui montar o relatório do dia.</p>';console.error(e);}}
 $('zootSec').addEventListener('change',e=>{if(e.target.id==='zDia'&&e.target.value){zDia=e.target.value;pintarZoot();}});
-$('zootSec').addEventListener('click',e=>{const b=e.target.closest('[data-z]');if(!b)return;zootExport(b.dataset.z,zDia||hojeKey(),localSel);});
+$('zootSec').addEventListener('click',e=>{const l=e.target.closest('[data-zloc]');if(l){zLoc=l.dataset.zloc;pintarZoot();return;}const b=e.target.closest('[data-z]');if(!b)return;zootExport(b.dataset.z,zDia||hojeKey(),zLoc);});
 /* linha de total do grupo: previsto, realizado e diferença cada um na sua coluna */
 function totHTML(p,f,dif,rot){return `<tr class="tot"><td class="hora"></td><td class="c">${rot||'Total'}</td><td>${fmt(p)}</td><td><b>${f||dif!=null?fmt(f):"—"}</b></td><td class="${dif==null?'':classeDesv(dif,p)}">${dif==null?'':sgn(dif)}</td></tr>`;}
 function renderHist(){try{aplicarRenomesHist();}catch(e){}
   pintarFiltrosHist();
   document.querySelectorAll('#hModo [data-hm]').forEach(b=>b.classList.toggle('sel',b.dataset.hm===hModo));
+  $('viewHist').classList.toggle('modoRel',hModo==='R');if(hModo==='R'){pintarZoot();return;}$('zootSec').hidden=true;
   document.querySelectorAll('#viewHist .hSoTratos').forEach(e=>e.hidden=hModo!=='T');$('hBatSec').hidden=hModo!=='B';
   if(hModo==='B'){document.querySelectorAll('#hLocal button[data-loc]').forEach(b=>b.classList.toggle('sel',b.dataset.loc===localSel));
     const [pa,pb]=intervaloHist(),L=window.batidasLista?batidasLista(pa,pb,localSel,HD.per||HD.t<0?0:HD.t):[];
@@ -2258,7 +2263,6 @@ function renderHist(){try{aplicarRenomesHist();}catch(e){}
     const topo=ks.length>1?`<tr class="grp"><td colspan="5">${diaBR(dia)} · Todos os tratos</td></tr>`+totHTML(TP,TF,TT?TF-TT:null):'';
     $('tbHist').innerHTML=(html&&topo+html)||`<tr><td colspan="5" class="note" style="text-align:left">Nenhum trato nem previsto para esse filtro.</td></tr>`;}
   caberTabela($('tbHist'));
-  pintarZoot();
   ['hWa','hCopiar','hExcel','hShare','hApagar','hImg','hXls'].forEach(id=>$(id).disabled=!regs.length);
   $('hApagar').hidden=selModo||HD.per||HD.t===-1;$('selBar').hidden=!selModo;
   if(selModo){$('selInfo').textContent=sel.size?`${sel.size} registro(s) selecionado(s).`:'Toque nos registros que quer apagar.';$('selApagar').disabled=!sel.size;$('selApagar').textContent=sel.size?`Apagar selecionados (${sel.size})`:'Apagar selecionados';}

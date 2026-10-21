@@ -1761,10 +1761,11 @@ async function fzFotosAnexar(files){if(typeof bloqueado==='function'&&bloqueado(
     finally{FZ_ENV[chave]=Math.max(0,(FZ_ENV[chave]||1)-1);if(GT.t==='fezes'){const y=window.scrollY;gRender();window.scrollTo({top:y});}}}
   if(okN)toast(`${okN} foto(s) anexada(s)`);}
 const FZ_CARR={};
-async function fzFotoCarregar(id){if(!id||FZ_FOTO[id]||FZ_CARR[id])return;FZ_CARR[id]=1;
+function fzFotoCarregar(id){if(!id||FZ_FOTO[id])return Promise.resolve();if(FZ_CARR[id])return FZ_CARR[id];
+  FZ_CARR[id]=(async()=>{
   try{const u=apiUrl()+(apiUrl().includes('?')?'&':'?')+'acao=fotoVer&id='+encodeURIComponent(id);const j=await (await fetch(u)).json();
     if(j&&j.ok&&j.imagem){FZ_FOTO[id]='data:'+(j.tipo||'image/jpeg')+';base64,'+j.imagem;if(GT.t==='fezes'){const y=window.scrollY;gRender();window.scrollTo({top:y});}}}
-  catch(e){}finally{delete FZ_CARR[id];}}
+  catch(e){}finally{delete FZ_CARR[id];}})();return FZ_CARR[id];}
 async function fzFotoVer(n){const f=((fzItem(GT.dia,GT.cur)||{}).fotos||[])[n];if(!f)return;
   const w=document.createElement('div');w.className='fzFotoTela';w.innerHTML=`<img src="${FZ_FOTO[f.id]||FZ_FOTO[f.idMini]||''}" alt=""><span class="fzFotoCarr">${FZ_FOTO[f.id]?'':'carregando…'}</span><button aria-label="Fechar">✕</button>`;
   w.onclick=()=>w.remove();document.body.appendChild(w);
@@ -1776,7 +1777,7 @@ window.fzFotoCarregar=fzFotoCarregar;window.FZ_FOTO=FZ_FOTO;
 
 /* ---------- Escore de fezes: relatório com gráfico de cada curral (PDF e imagem) ---------- */
 const FZ_COR=['#c62828','#f2b705','#2e7d32','#8d6e63','#4e342e'];
-function fzDadosDia(){const t=GT;return gTodos('fezes').filter(x=>x.dia===t.dia&&doLocal(t.loc,x.curral)).map(x=>({c:x.curral,k:fzCalc(x.c),obs:x.obs||''})).filter(o=>o.k.tot)
+function fzDadosDia(){const t=GT;return gTodos('fezes').filter(x=>x.dia===t.dia&&doLocal(t.loc,x.curral)).map(x=>({c:x.curral,k:fzCalc(x.c),obs:x.obs||'',fotos:x.fotos||[]})).filter(o=>o.k.tot)
   .sort((a,b)=>alfa(a.c,b.c));}
 /* um quadro com o gráfico de barras do curral */
 function fzQuadro(x,X,Y,W,H,o,dia){const k=o.k,st=fzStatus(k),L=gTodos('lote').filter(l=>curralEm(l,dia)===o.c&&cabPres(l,dia)>0);
@@ -1797,22 +1798,41 @@ function fzQuadro(x,X,Y,W,H,o,dia){const k=o.k,st=fzStatus(k),L=gTodos('lote').f
   x.strokeStyle='#9aa7b4';x.lineWidth=2;x.beginPath();x.moveTo(X+24,base);x.lineTo(X+W-24,base);x.stroke();
   if(o.obs){x.textAlign='left';x.fillStyle='#5d6b7a';x.font='italic 18px Arial';x.fillText('Obs.: '+o.obs.slice(0,95),X+24,Y+H-12);}}
 /* monta as páginas (A4 em pé, 3 currais por página) */
-function fzPaginas(){const D=fzDadosDia(),dia=GT.dia,W=1240,H=1754,por=3,pags=[];if(!D.length)return pags;
+/* páginas do PDF: curral COM fotos vai sozinho numa página, com as fotos embaixo do gráfico; os SEM fotos vão 3 por página */
+function fzPaginas(imgs){const D=fzDadosDia(),dia=GT.dia,W=1240,H=1754,pags=[];if(!D.length)return pags;imgs=imgs||{};
   const G5=[0,0,0,0,0];D.forEach(o=>o.k.cs.forEach((n,i)=>G5[i]+=n));const KG=fzCalc(G5);
-  const total=Math.ceil(D.length/por);
-  for(let p=0;p<total;p++){const cv=document.createElement('canvas');cv.width=W;cv.height=H;const x=cv.getContext('2d');
+  const comF=o=>o.fotos.some(f=>imgs[f.id]||imgs[f.idMini]);
+  /* primeiro os sem fotos, 3 por página (páginas cheias); depois cada curral com fotos na sua página */
+  const sem=D.filter(o=>!comF(o)),com=D.filter(comF),grupos=[];for(let i=0;i<sem.length;i+=3)grupos.push(sem.slice(i,i+3));com.forEach(o=>grupos.push([o]));
+  const total=grupos.length;
+  grupos.forEach((g,p)=>{const cv=document.createElement('canvas');cv.width=W;cv.height=H;const x=cv.getContext('2d');
     x.fillStyle='#f4f6f2';x.fillRect(0,0,W,H);x.fillStyle='#24502a';x.fillRect(0,0,W,130);
     x.fillStyle='#fff';x.textAlign='left';x.font='bold 40px Arial';x.fillText('Escore de fezes',40,62);
     x.font='24px Arial';x.fillStyle='#d8f06a';x.fillText(`${dB(dia)}${GT.loc==='C'?' · Confinamento':GT.loc==='P'?' · Pasto':''} · FJK Agropecuária`,40,102);
     x.textAlign='right';x.fillStyle='#fff';x.font='bold 24px Arial';x.fillText(`Geral: ${KG.tot} fezes · média ${fz1(KG.media)}`,W-40,62);
     x.font='20px Arial';x.fillText(`${D.length} curral(is) · página ${p+1} de ${total}`,W-40,100);
     const bh=(H-130-90-3*24)/3;
-    D.slice(p*por,p*por+por).forEach((o,j)=>fzQuadro(x,40,154+j*(bh+24),W-80,bh,o,dia));
+    if(g.length===1&&comF(g[0])){const o=g[0];fzQuadro(x,40,154,W-80,bh,o,dia);
+      /* fotos: até 4, em grade 2×2 abaixo do gráfico */
+      const fs=o.fotos.map(f=>imgs[f.id]||imgs[f.idMini]).filter(Boolean).slice(0,4),y0=154+bh+30,areaH=H-y0-100,cols=fs.length===1?1:2,rows=Math.ceil(fs.length/cols),gap=20;
+      const cw=(W-80-(cols-1)*gap)/cols,ch=(areaH-(rows-1)*gap)/rows;
+      x.fillStyle='#24502a';x.textAlign='left';x.font='bold 24px Arial';x.fillText(`📷 Fotos · ${o.c}`,40,y0-6);
+      fs.forEach((im,i)=>{const cx=40+(i%cols)*(cw+gap),cy=y0+14+Math.floor(i/cols)*(ch+gap),bw=cw,bh2=ch-14;
+        x.fillStyle='#fff';x.fillRect(cx,cy,bw,bh2);const k=Math.min(bw/im.width,bh2/im.height),w=im.width*k,h=im.height*k;
+        x.drawImage(im,cx+(bw-w)/2,cy+(bh2-h)/2,w,h);x.strokeStyle='#d5dccd';x.lineWidth=2;x.strokeRect(cx,cy,bw,bh2);});}
+    else g.forEach((o,j)=>fzQuadro(x,40,154+j*(bh+24),W-80,bh,o,dia));
     x.textAlign='left';x.fillStyle='#5d6b7a';x.font='18px Arial';
     x.fillText('Escala: 1 líquida · 2 mole · 3 ideal (pastosa) · 4 firme · 5 seca. Ideal: maioria no escore 3, média entre 2,5 e 3,5.',40,H-48);
     x.fillText('Mais de 20% em 1+2 = fezes moles (risco de acidose) · mais de 20% em 4+5 = fezes firmes.',40,H-22);
-    pags.push(cv);}
+    pags.push(cv);});
   return pags;}
+/* busca as fotos (tamanho grande) dos currais do dia para o PDF */
+async function fzFotosParaPdf(){const D=fzDadosDia(),imgs={},ids=[];D.forEach(o=>o.fotos.forEach(f=>ids.push(f)));if(!ids.length)return imgs;
+  if(ids.some(f=>!FZ_FOTO[f.id])&&!navigator.onLine)toast('Sem internet: o PDF vai sem as fotos que não estão no aparelho');
+  else if(ids.some(f=>!FZ_FOTO[f.id]))toast('Buscando as fotos…');
+  await Promise.all(ids.map(async f=>{try{if(!FZ_FOTO[f.id])await fzFotoCarregar(f.id);const src=FZ_FOTO[f.id]||FZ_FOTO[f.idMini];if(!src)return;
+    imgs[f.id]=await new Promise((ok_,er)=>{const im=new Image();im.onload=()=>ok_(im);im.onerror=er;im.src=src;});}catch(e){}}));
+  return imgs;}
 /* histórico do escore (7/15/30 dias, um curral ou todos): gráfico + tabela, em PDF ou imagem */
 function fzHistCanvas(){const t=GT,dia=t.dia,hN=[7,15,30].includes(+t.hN)?+t.hN:30,ini=somaDias(dia,-(hN-1)),cH=t.hCur||'';
   const porDia={};gTodos('fezes').filter(x=>x.dia>=ini&&x.dia<=dia&&(cH?x.curral===cH:doLocal(t.loc,x.curral))).forEach(x=>{const k=fzCalc(x.c);if(!k.tot)return;const d=porDia[x.dia]||(porDia[x.dia]=[0,0,0,0,0]);k.cs.forEach((n,i)=>d[i]+=n);});
@@ -1867,12 +1887,13 @@ function zootDados(dia,loc){const X=gCtx(),L=gTodos('lote').filter(l=>l.ent&&cab
   return {dia,loc:loc||'T',rows,T};}
 const ZCOLS=[ // [chave, título, grupo, casas, largura no PDF]
   ['c','Curral','id',null,140],['ent','Entrada','id','dia',120],['sexo','Sexo','id',null,60],['cab','Cab.','id',0,70],
+  ['dias','Dias','id2',0,60],['rac','Dieta','id2',null,80],['msRac','MS dieta','id2',1,95],
   ['pE','Entrada','pes',0,90],['pP','Projetado','pes',0,105],['gmd','GMD','pes',2,70],
-  ['dias','Dias','id2',0,60],['rac','Dieta','id2',null,80],['nota','Nota','id2',0,60],['msRac','MS dieta','id2',1,95],
+  ['nota','','nt',0,70],
   ['mnG','Geral','mn',2,85],['mnD','Dia','mn',2,85],
   ['msG','Geral','ms',2,80],['msD','Dia','ms',2,80],['ms1','D-1','ms',2,80],['ms5','5 dias','ms',2,80],
   ['pvG','Geral','pv',2,75],['pvD','Dia','pv',2,75],['pv1','D-1','pv',2,75],['pv5','5 dias','pv',2,75]];
-const ZGRP={id:'Identificação',id2:'Trato',pes:'Peso (kg)',mn:'MN kg/cab/dia',ms:'MS kg/cab/dia',pv:'% IMS do PV'};
+const ZGRP={id:'Identificação',id2:'Trato',nt:'Nota',pes:'Peso (kg)',mn:'MN kg/cab/dia',ms:'MS kg/cab/dia',pv:'% IMS do PV'};
 const zVal=(r,k,d)=>{const v=r[k];if(d==='dia')return v?dB(v):'';if(d==null)return v==null?'':String(v);return ok(+v)&&v!==null&&v!==''?nf(+v,d):'—';};
 function zootCards(T){return [['Cabeças',nf(T.cab)],['Peso entrada',nf(T.pE,1)+' kg'],['Peso projetado',nf(T.pP,1)+' kg'],['GMD',nf(T.gmd,2)],['Dias (média)',nf(T.dias)],['MN dia',nf(T.mnD,2)+' kg/cab'],['MS dia',nf(T.msD,2)+' kg/cab'],['% PV dia',pc(T.pvD,2)]];}
 window.zootSecHTML=(dia,loc)=>{const D=zootDados(dia,loc);
@@ -1897,7 +1918,7 @@ function zootCanvas(D){const W=1754,top=130,rowH=38,hd=72,porPag=Math.max(5,Math
     /* cabeçalho da tabela: grupos e colunas */
     let cx=30;const pos=ZCOLS.map(c=>{const w=c[4]*esc_,o={x:cx,w};cx+=w;return o;});
     let g0=0;for(let i=1;i<=ZCOLS.length;i++){if(i===ZCOLS.length||ZCOLS[i][2]!==ZCOLS[g0][2]){const gx=pos[g0].x,gw=pos[i-1].x+pos[i-1].w-gx;
-      x.fillStyle=/^id/.test(ZCOLS[g0][2])?'#24502a':'#3b6b2f';x.fillRect(gx+2,y,gw-4,32);x.fillStyle='#fff';x.font='bold 18px Arial';x.textAlign='center';x.fillText(ZGRP[ZCOLS[g0][2]],gx+gw/2,y+22);g0=i;}}
+      x.fillStyle=/^id/.test(ZCOLS[g0][2])?'#24502a':ZCOLS[g0][2]==='nt'?'#8a6d1f':'#3b6b2f';x.fillRect(gx+2,y,gw-4,32);x.fillStyle='#fff';x.font='bold 18px Arial';x.textAlign='center';x.fillText(ZGRP[ZCOLS[g0][2]],gx+gw/2,y+22);g0=i;}}
     x.fillStyle='#5d6b7a';x.font='bold 17px Arial';ZCOLS.forEach((c,i)=>{x.textAlign='center';x.fillText(c[1],pos[i].x+pos[i].w/2,y+60);});
     y+=hd;
     R.forEach((r,j)=>{const tot=!!r.__tot,v=tot?Object.assign({c:'MÉDIA',lote:'',sexo:'',ent:'',rac:'',nota:null},D.T):r;
@@ -1915,7 +1936,7 @@ function zootCanvas(D){const W=1754,top=130,rowH=38,hd=72,porPag=Math.max(5,Math
 async function zootExport(tipo,dia,loc){const D=zootDados(dia,loc);if(!D.rows.length)return toast('Nenhum lote com animais neste dia');
   const nome=`fjk-indices-${dB(dia).replace(/\//g,'-')}${D.loc==='C'?'-confinamento':D.loc==='P'?'-pasto':''}`;
   try{if(tipo==='xls'){const lin=r=>ZCOLS.map(c=>{const v=r[c[0]];return c[3]==='dia'?xc(v||null,'dia'):c[3]==null?xc(v==null?'':v):xc(ok(+v)&&v!==null?+v:'',c[3]===0?'int':'dec');});
-      return gExcel(nome,[['Zootécnico',ZCOLS.map(c=>(c[0]==='gmd'?'GMD':/^id/.test(c[2])?(c[0]==='msRac'?'MS dieta %':c[0]==='ent'?'Data entrada':c[1]):ZGRP[c[2]].replace(' kg/cab/dia','').replace('% IMS do PV','%PV').replace(' (kg)','')+' '+c[1])),D.rows.map(lin).concat([lin(Object.assign({c:'MÉDIA',lote:'',sexo:'',ent:'',rac:'',nota:''},D.T))]),ZCOLS.map(c=>Math.max(8,Math.round(c[4]/9)))]]);}
+      return gExcel(nome,[['Zootécnico',ZCOLS.map(c=>(c[0]==='gmd'?'GMD':c[0]==='nota'?'Nota':/^id/.test(c[2])?(c[0]==='msRac'?'MS dieta %':c[0]==='ent'?'Data entrada':c[1]):ZGRP[c[2]].replace(' kg/cab/dia','').replace('% IMS do PV','%PV').replace(' (kg)','')+' '+c[1])),D.rows.map(lin).concat([lin(Object.assign({c:'MÉDIA',lote:'',sexo:'',ent:'',rac:'',nota:''},D.T))]),ZCOLS.map(c=>Math.max(8,Math.round(c[4]/9)))]]);}
     const P=zootCanvas(D);
     if(tipo==='pdf')return await compartilharArquivo(fzPdf(P),nome+'.pdf','application/pdf');
     if(P.length===1)return P[0].toBlob(b=>compartilharArquivo(b,nome+'.png','image/png'),'image/png');
@@ -1944,7 +1965,7 @@ function fzPdf(cvs){const enc=new TextEncoder(),partes=[],offs=[];let tam=0;cons
   const tot=3+n*3,xref=tam;let s=`xref\n0 ${tot}\n0000000000 65535 f \n`;for(let i=1;i<tot;i++)s+=String(offs[i]).padStart(10,'0')+' 00000 n \n';
   add(s+`trailer\n<< /Size ${tot} /Root 1 0 R >>\nstartxref\n${xref}\n%%EOF`);
   return new Blob(partes,{type:'application/pdf'});}
-async function fzRelPdf(){const P=fzPaginas();if(!P.length)return toast('Nenhuma avaliação neste dia');
+async function fzRelPdf(){if(!fzDadosDia().length)return toast('Nenhuma avaliação neste dia');const P=fzPaginas(await fzFotosParaPdf());if(!P.length)return toast('Nenhuma avaliação neste dia');
   try{await compartilharArquivo(fzPdf(P),`Escore de fezes ${dB(GT.dia).replace(/\//g,'-')}.pdf`,'application/pdf');}catch(e){toast('Não consegui gerar o PDF');}}
 async function fzRelImg(){const P=fzPaginas();if(!P.length)return toast('Nenhuma avaliação neste dia');
   const cv=document.createElement('canvas');cv.width=P[0].width;cv.height=P.reduce((a,c)=>a+c.height,0);const x=cv.getContext('2d');let y=0;P.forEach(c=>{x.drawImage(c,0,y);y+=c.height;});
