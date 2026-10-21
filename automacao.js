@@ -619,7 +619,7 @@ let leveT=null;
 function aRenderLeve(){if(leveT)return;leveT=setTimeout(()=>{leveT=null;pintarPeso();pintarCarga();if(typeof agendarAoVivo==='function')agendarAoVivo();},120);}
 /* acompanhamento ao vivo do Tratar pela balança */
 window.aEstadoAoVivo=()=>{const L=lista(),c=L[S.atual],regs=regsAtuais();
-  const ff=window.filtroForn?filtroForn():null;return {modo:'trato',origem:'auto',local:ff?ff.local:'',rac:ff?ff.rac:'',fimForn:!ff,dia:diaAtivo(),trato:S.tratoSel,curral:c?c.nome:'',prev:c?c.prev:null,ini:A.base!=null?Math.round(A.base):'',fim:A.peso!=null?Math.round(A.peso):'',
+  const ff=window.filtroForn?filtroForn():null;return {modo:'trato',origem:'auto',local:ff?ff.local:'',rac:ff?ff.rac:'',fimForn:!ff,deAp:ff&&ff.deAp||'',contTs:ff&&ff.contTs||0,dia:diaAtivo(),trato:S.tratoSel,curral:c?c.nome:'',prev:c?c.prev:null,ini:A.base!=null?Math.round(A.base):'',fim:A.peso!=null?Math.round(A.peso):'',
     feitos:L.filter(x=>feito(x.nome,regs)).length,total:L.length};};
 function pintarPeso(){
   if(!$('aPeso')||$('viewAuto').hidden)return;
@@ -816,7 +816,7 @@ $('acBox').addEventListener('click',e=>{const b=e.target.closest('[data-ac]');if
   if(a==='simZera'){if(A.sim){A.sim.modo='parado';A.sim.peso=0;}return;}
   if(a==='pegar'){if(bloqueado())return;const it=acItem();if(!it)return;if(A.peso==null){toast('Sem leitura da balança');return;}
     it.ini=A.estavel?A.valEst:A.peso;it.fim=null;it.real=null;acNovoProduto();cSave();cRender();toast('Peso inicial: '+fmt(it.ini)+' kg');}});
-window.acAoAbrir=()=>{montar();cRender();window.scrollTo({top:0});try{if(typeof gSync==='function')gSync(true).catch(()=>{});}catch(e){}};
+window.acAoAbrir=()=>{montar();cRender();window.scrollTo({top:0});if(window.cBuscarRemoto)cBuscarRemoto();try{if(typeof gSync==='function')gSync(true).catch(()=>{});}catch(e){}};
 $('tabAutoC').addEventListener('click',()=>aba('autoc'));
 
 /* ---------------- Gestão › Config. (ajustes da balança, iguais em todos os aparelhos) ---------------- */

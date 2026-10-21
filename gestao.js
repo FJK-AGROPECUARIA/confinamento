@@ -1152,7 +1152,7 @@ window.cEstadoAoVivo=auto=>{const B=CG.ativa,base={modo:'carga',origem:auto?'aut
   const fim=ok(it.real)?it.fim:(auto?pesoAgora:it.fim);
   return Object.assign(base,{dia:B.dia,trato:B.trato,rac:B.racNome,prod:it.nome||'',iProd:B.atual+1,nProd:B.itens.length,prev:ok(it.prev)?it.prev:null,
     ini:ok(it.ini)?it.ini:'',fim:ok(fim)?fim:'',feitos:B.itens.filter(x=>ok(x.real)).length,
-    carregado:B.itens.reduce((a,x)=>a+(ok(x.real)?x.real:0),0),totalPrev:B.itens.reduce((a,x)=>a+(+x.prev||0),0)});};
+    its:B.itens.map(x=>[x.nome,+x.prev||0,ok(x.real)?Math.round(x.real):null]),bat:JSON.parse(JSON.stringify(Object.assign({},B,{escolha:false}))),deAp:B.deAp||'',contTs:B.contTs||0,carregado:B.itens.reduce((a,x)=>a+(ok(x.real)?x.real:0),0),totalPrev:B.itens.reduce((a,x)=>a+(+x.prev||0),0)});};
 let cTec=null,cBuf='';
 /* currais do trato que usam a ração (pelo lote) e o total previsto deles */
 function sugestaoCarga(trato,racId,loc){const hj=hojeKey(),m=(S.prev||{})[String(trato)]||{},cs=[];let tot=0;
@@ -1165,9 +1165,41 @@ const cAtiva=()=>CG.ativa||null;
 const cAuto=()=>!!($('viewAutoC')&&!$('viewAutoC').hidden);
 const cCaixa=()=>$(cAuto()?'acBox':'cBox');
 function cRender(){const auto=cAuto(),b=$(auto?'acBox':'cBox'),o=$(auto?'cBox':'acBox');if(!b)return;if(o)o.innerHTML='';
-  if(auto&&window.acTela){b.innerHTML=acTela(cAtiva()?null:cTelaNova(),cAtiva()?'':NOTA_BAT)+(cAtiva()?C_NOVA:'');if(window.acDepois)acDepois();return;}
-  b.innerHTML=(cAtiva()?cTelaBatida()+C_NOVA:cTelaNova())+(cAtiva()?'':NOTA_BAT);}
+  if(auto&&window.acTela){b.innerHTML=acTela(cAtiva()?null:cRemHTML()+cTelaNova(),cAtiva()?'':NOTA_BAT)+(cAtiva()?C_NOVA:'');if(window.acDepois)acDepois();return;}
+  b.innerHTML=(cAtiva()?cTelaBatida()+C_NOVA:cRemHTML()+cTelaNova())+(cAtiva()?'':NOTA_BAT);}
 const C_NOVA='<section class="panel abrirNovo"><p class="note">Esta batida está em aberto. Quer começar outra no lugar dela?</p><button data-c="cancelar">＋ Abrir nova batida</button></section>';
+/* ---------- continuar em outro aparelho: batida aberta em outro celular/tablet (acabou bateria, travou) ---------- */
+let cRem=[];
+const cRemOk=(d,todos)=>d&&d.modo==='carga'&&d.bat&&d.bat.itens&&d.ap!==S.aparelho&&d.bat.dia===hojeKey()&&d.idade<4*3600e3
+  &&!todos.some(e=>e.ap!==d.ap&&e.deAp===d.ap&&e.bat&&e.bat.ts0===d.bat.ts0);
+async function cBuscarRemoto(){try{if(modoVer||!navigator.onLine||!apiUrl()||cAtiva())return;
+  const j=await (await fetch(apiUrl()+'?acao=aovivo',{cache:'no-store'})).json();if(!j||!j.ok)return;
+  const agora=+j.agora||Date.now(),L=Object.entries(j.dados||{}).map(([ap,d])=>Object.assign({ap},d,{idade:agora-(+d.tsServ||0)}));
+  const novo=L.filter(d=>cRemOk(d,L)).sort((a,b)=>a.idade-b.idade),mud=JSON.stringify(novo.map(d=>[d.ap,d.bat.ts0,Math.round(d.idade/10000)]))!==JSON.stringify(cRem.map(d=>[d.ap,d.bat.ts0,Math.round(d.idade/10000)]));
+  cRem=novo;if(mud&&!cAtiva()&&['carga','autoc'].includes(window.abaAtual))cRender();}catch(e){}}
+window.cBuscarRemoto=cBuscarRemoto;
+setInterval(()=>{if(!modoVer&&['carga','autoc'].includes(window.abaAtual)&&!cAtiva()&&document.visibilityState==='visible')cBuscarRemoto();},8000);
+function cRemHTML(){if(!cRem.length)return '';
+  return `<section class="panel contRem"><h2>🔄 Batida em aberto em outro aparelho</h2>${cRem.map(d=>{const B=d.bat,f=B.itens.filter(x=>ok(x.real)).length,kg=B.itens.reduce((a,x)=>a+(ok(x.real)?x.real:0),0),s=Math.round(d.idade/1000);
+    return `<div class="contIt"><b>${B.avulso?'Avulsa':'Trato '+esc((B.tratos||[B.trato]).join('+'))} · ${esc(B.racNome||'')}${B.local?' · '+(B.local==='C'?'Confinamento':'Pasto'):''}</b>
+      <span>${f} de ${B.itens.length} produtos · ${nf(kg)} de ${nf(B.total)} kg · ${s<20?'🟢 aparelho ativo agora':'parou há '+(s<60?s+' s':Math.round(s/60)+' min')}</span>
+      <button class="primary" data-c="contRem" data-ap="${esc(d.ap)}">▶ Continuar esta batida daqui</button></div>`;}).join('')}
+    <p class="note">Continua do produto em que parou, com o peso inicial que já estava marcado. O outro aparelho fecha a batida dele.</p></section>`;}
+function cContinuarRem(ap){const d=cRem.find(x=>x.ap===ap);if(!d)return;
+  const go=()=>{const B=JSON.parse(JSON.stringify(d.bat));B.deAp=d.ap;B.contTs=Date.now();B.escolha=false;CG.ativa=B;CG.local=B.local||null;CG.trato=B.trato;CG.rac=B.rac;CG.total=B.total;cRem=[];
+    try{window.diagLog&&diagLog('batida_continuada',{de:d.ap,trato:B.trato,feitos:B.itens.filter(x=>ok(x.real)).length});}catch(e){}
+    cSave();if(typeof enviarAoVivo==='function')enviarAoVivo(true);cRender();window.scrollTo({top:0});
+    const it=B.itens[B.atual];toast(`Continuando a batida · ${it?it.nome:''}${it&&ok(it.ini)?' · início '+nf(it.ini)+' kg':''}`);};
+  if(d.idade<20000&&!confirm('O outro aparelho ainda parece ativo (mandou sinal há menos de 20 s). Continuar a batida aqui mesmo assim?'))return;go();}
+/* o aparelho original: se outro continuou a batida dele, fecha a dele */
+async function cVerTomado(){try{const A=cAtiva();if(!A||modoVer||!navigator.onLine||!apiUrl())return;
+  const j=await (await fetch(apiUrl()+'?acao=aovivo',{cache:'no-store'})).json();if(!j||!j.ok)return;
+  const t=Object.entries(j.dados||{}).find(([ap,d])=>ap!==S.aparelho&&d&&d.deAp===S.aparelho&&d.bat&&d.bat.ts0===A.ts0&&(+d.contTs||0)>(A.contTs||0));
+  if(!t||cAtiva()!==A)return;CG.ativa=null;CG.passo=1;CG.local=null;cSave();cRender();
+  try{window.diagLog&&diagLog('batida_tomada',{por:t[0],trato:A.trato});}catch(e){}
+  toast('Esta batida foi continuada em outro aparelho. Ela foi fechada aqui.');}catch(e){}}
+setInterval(()=>{if(document.visibilityState==='visible')cVerTomado();},15000);
+document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')setTimeout(cVerTomado,1500);});
 const NOTA_BAT='<p class="note" style="text-align:center">As batidas feitas ficam no Histórico › Batidas.</p>';
 /* ração ativa de cada curral hoje (pelo lote) e rações usadas em cada local (C = confinamento, P = pasto) */
 function racaoDoCurral(c,dia){dia=dia||hojeKey();const l=gTodos('lote').find(l=>curralEm(l,dia)===c&&cabPres(l,dia)>0);const r=l&&racaoEm(l,dia);return r?r.uid:null;}
@@ -1281,6 +1313,7 @@ function cClique(e){
   if(bloqueado())return;
   if(a==='iniciar'){const r=G.it[CG.rac],its=itensCarga(CG.rac,CG.total);if(!its.length)return toast('Ração sem fórmula');
     CG.ativa={dia:hojeKey(),local:CG.local||'',avulso:!!CG.avulso,trato:CG.avulso?0:+CG.trato,tratos:CG.avulso?[]:[+CG.trato].concat(CG.juntos||[]).sort((a,b)=>a-b),rac:CG.rac,racNome:r.nome,total:CG.total,itens:its,atual:0,ts0:Date.now(),origem:cAuto()?'balanca':'manual'};cSave();cRender();window.scrollTo({top:0});if(cAuto()){if(window.acIniciou)acIniciou();return;}return cTeclado('ini');}
+  if(a==='contRem')return cContinuarRem(b.dataset.ap);
   if(!A&&a!=='apagaCarga')return;
   if(a==='escolher'){A.escolha=!A.escolha;cSave();return cRender();}
   if(a==='ir'){A.atual=+b.dataset.i;A.escolha=false;cSave();return cRender();}
@@ -1319,7 +1352,7 @@ function xlsCarga(){const dia=CG.verDia||hojeKey(),L=cargasDia(dia),r=[];
   L.forEach(c=>c.itens.forEach(x=>r.push([xc(dia,'dia'),xc(c.hora),xc(c.trato,'int'),xc(c.racNome),xc(x.nome),xc(x.prev,'int'),xc(ok(+x.real)?+x.real:NaN,'int'),xc(ok(+x.real)?x.real-x.prev:NaN,'int'),xc(ok(+x.ini)?+x.ini:NaN,'int'),xc(ok(+x.fim)?+x.fim:NaN,'int')])));
   gExcel(`Batidas ${dB(dia).replace(/\//g,'-')}`,[['Batidas',['Data','Hora','Trato','Ração','Produto','Previsto (kg)','Carregado (kg)','Diferença (kg)','Balança início','Balança final'],r,[11,7,7,16,22,12,13,13,13,13]]]);}
 $('tabCarga').addEventListener('click',()=>aba('carga'));
-window.cAoAbrir=()=>{cRender();};window.cFecha=cFecha;
+window.cAoAbrir=()=>{cRender();cBuscarRemoto();};window.cFecha=cFecha;
 
 /* confirmação com aviso em vermelho (ex.: cancelar batida) */
 function confirmaVermelho(tit,txt,sim,nao){return new Promise(res=>{
