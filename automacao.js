@@ -13,7 +13,7 @@ const A={fonte:null,status:'Desconectado',peso:null,amostras:[],estavel:false,va
   est:'aguardando',base:null,menor:null,avisou1:false,avisou2:false,bruto:[],buf:'',
   bt:null,btChars:[],ws:null,sim:null,wake:null,ultDado:0};
 window.AUTO=A;
-const CFG_PADRAO={bleUuid:'',bleCmd:'',tol:10,tempo:4,minDesc:30,amarelo:100,vermelho:50,continuo:20,antecipa:1,ws:'ws://10.10.100.254:6432',som:true,filtro:3};
+const CFG_PADRAO={bleUuid:'',bleCmd:'',tol:10,tempo:4,minDesc:30,amarelo:100,vermelho:50,continuo:20,antecipa:1,ws:'ws://10.10.100.254:6432',som:true,filtro:3,enq:1,prever:1};
 /* Ajustes da balança: ficam na nuvem (item 'cfgBalanca' da Gestão), então mudar num aparelho muda em todos */
 function cfgNuvem(){try{return (typeof G!=='undefined'&&G.it&&G.it.cfgBalanca)||null;}catch(e){return null;}}
 function cfg(){if(!S.auto)S.auto={};
@@ -308,8 +308,8 @@ async function btAbrir(dev){
   clearInterval(A.dsPoll);A.digiStar=false;
   const dsEsc=A.btEsc.find(c=>c.service&&/^f0165585-/i.test(c.service.uuid));
   if(dsEsc){A.digiStar=true;A.dsEsc=dsEsc;A.dsSeq=0;const enq=new Uint8Array([5]);
-    const manda=async()=>{if(A.bt!==dev)return clearInterval(A.dsPoll);try{await dsEsc.writeValue(enq);}catch(e){bruto('erro ao pedir peso: '+(e.message||e));}};
-    await manda();A.dsPoll=setInterval(manda,3000);info.push('Digi-Star EZ: pedindo o peso (05) a cada 3 s');$('aBtInfo').textContent=info.join('\n');A.btInfo=info.join('\n');marcarFonte();}
+    const manda=async()=>{if(A.bt!==dev)return clearInterval(A.dsPoll);if(A.dsMandando)return;A.dsMandando=true;try{if(dsEsc.properties&&dsEsc.properties.writeWithoutResponse&&dsEsc.writeValueWithoutResponse)await dsEsc.writeValueWithoutResponse(enq);else await dsEsc.writeValue(enq);}catch(e){bruto('erro ao pedir peso: '+(e.message||e));}finally{A.dsMandando=false;}};
+    await manda();const iv=Math.max(0.5,Math.min(5,+cfg().enq||1));A.dsPoll=setInterval(manda,iv*1000);info.push(`Digi-Star EZ: pedindo o peso (05) a cada ${String(iv).replace('.',',')} s`);$('aBtInfo').textContent=info.join('\n');A.btInfo=info.join('\n');marcarFonte();}
   /* balança que não manda sozinha: lê os canais de leitura de tempos em tempos */
   /* balança que não manda sozinha: lê os canais de leitura e/ou manda o "comando para pedir o peso" (Config › Balança) */
   clearInterval(A.btPoll);if(!A.digiStar&&(A.btLer.length||A.btEsc.length)){n+=A.btLer.length;A.btPoll=setInterval(async()=>{if(A.bt!==dev||A.btLendo)return;if(A.btNotif&&Date.now()-A.btNotif<1500)return;A.btLendo=true;
@@ -456,7 +456,7 @@ function refProvisoria(sinal){const c=cfg(),agora=Date.now(),ss=(A.suaves||[]).f
   return null;}
 /* mostra se a leitura está chegando em dia: "ao vivo" ou "sem leitura há X s" (em vermelho) */
 const atrasada=()=>!!(A.fonte&&A.ultDado&&Date.now()-A.ultDado>2000);
-function idadeLeitura(){if(!A.fonte||!A.ultDado)return '';const s=(Date.now()-A.ultDado)/1000;return s<=2?' · ao vivo':` · ⚠ sem leitura há ${Math.round(s)} s`;}
+function idadeLeitura(){if(!A.fonte||!A.ultDado)return '';const s=(Date.now()-A.ultDado)/1000;return s<=2?` · ao vivo${A.dtMed?' · '+(1000/A.dtMed).toFixed(1).replace('.',',')+' leit./s':''}`:` · ⚠ sem leitura há ${Math.round(s)} s`;}
 setInterval(()=>{if(!atrasada())return;[['aEstTxt','aPeso'],['acEstTxt','acPeso']].forEach(([i,p])=>{const e=$(i);if(!e)return;
   e.textContent=(A.estavel?'● parado (estável)':'○ mexendo…')+idadeLeitura();e.className='atraso';const b=$(p);if(b)b.style.opacity='.45';});},1000);
 function novoPeso(n){
@@ -464,7 +464,9 @@ function novoPeso(n){
   /* ajuste fino: mediana das últimas leituras (1 = sem filtro, 3 normal, 5 forte) — tira o "pula pra cima e pra baixo"
      de uma leitura isolada sem atrasar muito (a Digi-Star manda ~1,6 leitura por segundo) */
   A.brutos=(A.brutos||[]).concat(n).slice(-9);const kf=Math.max(1,Math.min(9,Math.round(+c.filtro||1)));
-  if(kf>1&&A.brutos.length>1){const u=A.brutos.slice(-kf).slice().sort((x,y)=>x-y);n=u[Math.floor((u.length-1)/2)];}
+  /* mexendo (carregando ou fornecendo): usa a leitura crua, sem atraso; parado: mediana, que tira o pulo isolado */
+  const mexendo=(typeof caindoAgora==='function'&&caindoAgora())||(typeof subindoAgora==='function'&&subindoAgora());
+  if(kf>1&&A.brutos.length>1&&!mexendo){const u=A.brutos.slice(-kf).slice().sort((x,y)=>x-y);n=u[Math.floor((u.length-1)/2)];}
   ['aPeso','acPeso'].forEach(i=>{const b=$(i);if(b&&b.style.opacity)b.style.opacity='';});
   if(A.tUlt){const dt=agora-A.tUlt;if(dt>0&&dt<3000)A.dtMed=A.dtMed?A.dtMed*0.8+dt*0.2:dt;}A.tUlt=agora;
   A.peso=n;A.amostras.push({t:agora,v:n});
@@ -654,7 +656,15 @@ function aContinuarPausa(){const P=A.pausa;if(!P)return;A.pausa=null;
   toast(P.est==='descarregando'?'▶ Continuando o mesmo curral':'▶ Continuando: deixe o vagão parado para pegar o peso inicial');pintarPeso();aRender();
   if(typeof agendarAoVivo==='function')agendarAoVivo();}
 window.aPausar=aPausar;window.aContinuarPausa=aContinuarPausa;
-function pintarPeso(){
+/* peso na tela entre uma leitura e outra: enquanto está carregando/fornecendo, segue a velocidade (kg/s) por até "prever" segundos,
+   para o número andar junto com o vagão em vez de pular. Só na tela: registro, apito e peso firme usam a leitura real. */
+function pesoTela(){if(A.peso==null||A.pausa)return A.peso;const lim=Math.max(0,Math.min(2,+cfg().prever||0))*1000;if(!lim||!A.tUlt)return A.peso;
+  let dir=0,tx=0;if(caindoAgora()){dir=-1;tx=taxaQueda();}else if(typeof subindoAgora==='function'&&subindoAgora()){dir=1;tx=taxaQueda(-1);}
+  if(!dir||!(tx>0))return A.peso;const dt=Math.min(Date.now()-A.tUlt,lim,(A.dtMed||700)*1.5);return A.peso+dir*tx*dt/1000;}
+function comPesoTela(f){const r=A.peso;try{A.peso=pesoTela();f();}finally{A.peso=r;}}
+setInterval(()=>{if(document.visibilityState!=='visible'||A.peso==null)return;if(caindoAgora())comPesoTela(pintarPeso0);else if(typeof subindoAgora==='function'&&subindoAgora())comPesoTela(pintarCarga0);},150);
+function pintarPeso(){comPesoTela(pintarPeso0);}
+function pintarPeso0(){
   if(!$('aPeso')||$('viewAuto').hidden)return;
   const c=cfg(),cur=curralAtual();
   $('aPeso').textContent=A.peso==null?'—':fmt(A.peso);
@@ -819,7 +829,8 @@ function acSyncTopo(){if(!$('acStatus'))return;
   $('acStatusTxt').textContent=A.status;$('acStatus').className='aStatus '+(A.statusTipo||'');
   ['ser','bt','ws','sim'].forEach(f=>$({ser:'acBtSer',bt:'acBtBt',ws:'acBtWs',sim:'acBtSim'}[f]).classList.toggle('on',A.fonte===f));
   $('acDesc').disabled=!A.fonte;$('acSimBox').hidden=A.fonte!=='sim';const tk=$('acTeclas');if(tk)tk.hidden=!(A.fonte==='bt'&&A.digiStar);}
-function pintarCarga(){
+function pintarCarga(){comPesoTela(pintarCarga0);}
+function pintarCarga0(){
   if(!naCargaAuto()||!$('acPeso'))return;
   $('acPeso').textContent=A.peso==null?'—':fmt(A.peso);
   const e=$('acEstTxt');e.textContent=(A.peso==null?'sem leitura':A.estavel?'● parado (estável)':'○ mexendo…')+idadeLeitura();e.className=atrasada()?'atraso':A.estavel?'est':'';
@@ -858,7 +869,7 @@ $('tabAutoC').addEventListener('click',()=>aba('autoc'));
 /* ---------------- Gestão › Config. (ajustes da balança, iguais em todos os aparelhos) ---------------- */
 const CAMPOS=[['amarelo','🟡 Apito lento','kg faltando · fica amarelo'],['vermelho','🔴 Apito rápido','kg faltando · fica vermelho'],['continuo','🚨 Apito direto (bem rápido)','kg faltando · pisca'],
   ['antecipa','⏩ Antecipar cor e apito','segundos · compensa o atraso da balança'],
-  ['filtro','🎚 Suavizar leituras','nº de leituras · 1 = sem filtro, 3 normal, 5 forte'],['tol','Variação aceita parado','kg'],['tempo','Tempo parado para firmar','segundos'],['minDesc','Mínimo que conta como descarga','kg']];
+  ['filtro','🎚 Suavizar leituras (parado)','nº de leituras · 1 = sem filtro, 3 normal, 5 forte'],['enq','📡 Pedir peso à balança a cada','segundos (Digi-Star) · menor = mais leituras'],['prever','〰 Peso contínuo na tela','segundos entre leituras · 0 = desliga'],['tol','Variação aceita parado','kg'],['tempo','Tempo parado para firmar','segundos'],['minDesc','Mínimo que conta como descarga','kg']];
 function montarCfgT(){const box=$('cfgTBox');if(!box||box.dataset.ok)return;box.dataset.ok='1';
   const st=document.createElement('style');st.textContent=`
 #cfgTBox .aCfg{display:grid;gap:6px}

@@ -156,6 +156,8 @@ body.somenteVer .fBar{display:none!important}
 :is(#cBox,#acBox,.fornSetup) label{margin:12px 0 4px}
 :is(#cBox,#acBox,.fornSetup) h2+label{margin-top:4px}
 :is(#cBox,#acBox) section.panel>label+*,.fornSetup>label+*{margin-top:-14px!important}
+.cBotoes.c4{display:flex;gap:5px}.cBotoes.c4>button{flex:1 1 auto;width:auto!important;font-size:.74rem;padding:9px 6px;white-space:nowrap;line-height:1.15}.cSobra{margin:10px 0;padding:10px;border:1px dashed #b9c7a5;border-radius:12px}.cSobra .linhas button{margin:0;padding:6px 14px;min-height:0;border-radius:99px}.cSobra .linhas button.sel{background:var(--accent);border-color:var(--accent);color:#fff}.cSobLin{display:grid;grid-template-columns:1fr 110px;gap:8px;margin-top:8px}.cSobLin select,.cSobLin input{margin:0}.cAviso{color:#b3261e;font-weight:700;font-size:.85rem;margin:6px 0}
+.cOrdem{margin:10px 0;padding:8px;border:1px dashed #b9c7a5;border-radius:12px}.cOrdLin{display:grid;grid-template-columns:28px 1fr 44px 44px;gap:6px;align-items:center;padding:4px 0}.cOrdLin button{margin:0;padding:6px 0;min-height:0}.cJaIn{width:80px;margin:0;padding:6px 8px;text-align:right}
 .cBotoes{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:6px}.cBotoes>button{margin:0!important;width:100%;font-size:.82rem;padding:8px 6px}
 .cJuntoLista{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}
 :is(#cBox,#acBox,.fornSetup) .gLocal{margin:0}
@@ -1096,7 +1098,7 @@ body.naInicio .topoTxt h1{font-size:clamp(16px,5vw,28px)!important}
 <div class="toast" id="toast" hidden></div>
 <script>
 'use strict';
-const APP_VERSAO='82';
+const APP_VERSAO='83';
 const APP_DATA='19/10/2026';
 const KEY='confinamento-completo-v1';
 const $=id=>document.getElementById(id);
@@ -3045,11 +3047,15 @@ function estadoAoVivo0(){
   const L=lista(),c=L[S.atual],regs=regsAtuais();
   const ff=filtroForn();return {modo:'trato',origem:'manual',local:ff?ff.local:'',rac:ff?ff.rac:'',fimForn:!ff,deAp:ff&&ff.deAp||'',contTs:ff&&ff.contTs||0,fts0:ff&&ff.ts0||0,dia:diaAtivo(),trato:S.tratoSel,curral:c?c.nome:'',prev:c?c.prev:null,ini:S.ini||'',fim:S.fim||'',...contaLocalTrato(L,regs)};}
 function avAtivo(){return !!(S&&!modoVer&&!document.body.classList.contains('naInicio')&&apiUrl()&&navigator.onLine);}
-function agendarAoVivo(){if(avTimer||!avAtivo())return;if(JSON.stringify(estadoAoVivo())===avUlt)return;
-  avTimer=setTimeout(enviarAoVivo,Math.max(300,2500-(Date.now()-avUltEnvio)));}
-async function enviarAoVivo(forcar){avTimer=null;if(!avAtivo())return;const est=estadoAoVivo(),e=JSON.stringify(est);
-  if(forcar!==true&&e===avUlt)return;avUlt=e;avUltEnvio=Date.now();
-  try{await postApi({acao:'aovivo',aparelho:S.aparelho,estado:est});}catch(x){avUlt='';}}
+/* ao vivo: um envio de cada vez (nunca dois juntos, senão um envio velho que chega depois apaga o novo e o número "volta" e depois "pula");
+   assim que um termina, se mudou algo, já manda o mais recente */
+let avEnviando=false,avPend=false;
+function agendarAoVivo(){if(avTimer||!avAtivo())return;if(avEnviando){avPend=true;return;}if(JSON.stringify(estadoAoVivo())===avUlt)return;
+  avTimer=setTimeout(enviarAoVivo,Math.max(200,1200-(Date.now()-avUltEnvio)));}
+async function enviarAoVivo(forcar){avTimer=null;if(!avAtivo())return;if(avEnviando){avPend=true;return;}const est=estadoAoVivo(),e=JSON.stringify(est);
+  if(forcar!==true&&e===avUlt)return;avUlt=e;avUltEnvio=Date.now();avEnviando=true;avPend=false;
+  try{await postApi({acao:'aovivo',aparelho:S.aparelho,estado:Object.assign({},est,{tsAp:Date.now()})});}catch(x){avUlt='';}
+  finally{avEnviando=false;if(avPend){avPend=false;agendarAoVivo();}}}
 function sairAoVivo(){avUlt='';if(S&&apiUrl()&&navigator.onLine)postApi({acao:'aovivo',aparelho:S.aparelho,sair:true}).catch(()=>{});}
 setInterval(()=>{if(avAtivo()&&document.visibilityState==='visible')enviarAoVivo(true);},12000);
 
@@ -3058,7 +3064,10 @@ setInterval(avisarVendo,30000);
 let avFiltro=null,avAbriu=false,avDados=null,avAgora=0,avRecebido=0,avBuscando=false,avErro=false;
 async function puxarAoVivo(){if(avBuscando||!apiUrl())return;avBuscando=true;
   try{const r=await fetch(apiUrl()+'?acao=aovivo',{cache:'no-store'});const j=await r.json();
-    if(j&&j.ok){avDados=j.dados||{};avAgora=+j.agora||Date.now();avRecebido=Date.now();avErro=false;}else avErro=true;}
+    if(j&&j.ok){const nv=j.dados||{};
+      /* nunca volta para um estado mais velho do mesmo aparelho (resposta atrasada) */
+      if(avDados)Object.keys(nv).forEach(k=>{const a=avDados[k],b=nv[k];if(a&&b&&+a.tsAp&&+b.tsAp&&+b.tsAp<+a.tsAp)nv[k]=a;});
+      avDados=nv;avAgora=+j.agora||Date.now();avRecebido=Date.now();avErro=false;}else avErro=true;}
   catch(x){avErro=true;}
   avBuscando=false;renderAoVivo();if(modoVer){try{render();}catch(e){}}}
 /* Outro aparelho parou no meio de um curral (bateria, travou)? Ao abrir o Tratar aqui, oferece continuar de onde parou */
@@ -3241,7 +3250,10 @@ function renderAoVivo(){const box=$('aoVivo');if(!modoVer){box.innerHTML='';pint
       </div></div>`;}).join('');
   box.querySelectorAll('.cbCur b').forEach(b=>{b.style.whiteSpace='nowrap';b.style.overflow='hidden';let f=parseFloat(getComputedStyle(b).fontSize),n=0;while(b.scrollWidth>b.clientWidth+1&&f>12&&n<40){f--;b.style.setProperty('font-size',f+'px','important');n++;}});
 }
-setInterval(()=>{if(modoVer&&navigator.onLine&&document.visibilityState==='visible'&&(!$('viewTrato').hidden||(!avAbriu&&window.abaAtual==='')))puxarAoVivo();},5000);
+/* busca mais rápido (a cada 2 s) enquanto alguém está carregando ou fornecendo; parado, a cada 5 s */
+let avUltBusca=0;const avAlguemTrabalhando=()=>{if(!avDados)return false;const passou=Date.now()-avRecebido;return Object.values(avDados).some(d=>d&&(d.modo==='carga'&&!d.semBatida||d.modo==='trato'&&!d.fimForn)&&(avAgora-(+d.tsServ||0)+passou)<60000);};
+setInterval(()=>{if(!(modoVer&&navigator.onLine&&document.visibilityState==='visible'&&(!$('viewTrato').hidden||(!avAbriu&&window.abaAtual===''))))return;
+  const iv=avAlguemTrabalhando()?2000:5000;if(Date.now()-avUltBusca>=iv-200){avUltBusca=Date.now();puxarAoVivo();}},1000);
 Promise.resolve(iniciar()).catch(()=>{}).then(()=>{
   // voltou de uma atualização: abre de novo onde estava
   try{const vp=sessionStorage.getItem('voltarPara');sessionStorage.removeItem('voltarPara');
