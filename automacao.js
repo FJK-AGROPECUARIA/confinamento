@@ -39,6 +39,9 @@ const css=`
 :is(#aBox,#acBox,#aoVivo) .aConn{display:grid;grid-template-columns:3fr 2fr;gap:6px}
 :is(#aBox,#acBox,#aoVivo) .aConn .aDescBt{border-color:var(--bad);color:var(--bad)}
 :is(#aBox,#acBox,#aoVivo) .aConn .aDescBt:disabled{opacity:.35}
+:is(#aBox,#acBox) .aConn button.btVerm{background:#d32f2f!important;border-color:#d32f2f!important;color:#fff!important;font-weight:800;font-size:1.08rem}
+:is(#aBox,#acBox) .aConn button.btVerde{background:#2e7d32!important;border-color:#2e7d32!important;color:#fff!important;font-weight:800}
+:is(#aBox,#acBox) .aConn .aDescBt.btDescOn{background:#d32f2f!important;border-color:#d32f2f!important;color:#fff!important;font-weight:700}
 :is(#aBox,#acBox,#aoVivo) .aSinal{margin-top:6px;border-radius:10px;padding:8px 10px;font-weight:700;font-size:.95rem;text-align:center;background:#e9ecef;color:#495057}
 :is(#aBox,#acBox,#aoVivo) .aSinal.ok{background:#e3f5e1;color:#1b5e20}
 :is(#aBox,#acBox,#aoVivo) .aSinal.ok i{display:inline-block;width:10px;height:10px;border-radius:50%;background:#2e7d32;margin-right:6px;animation:aPulsa 1.2s infinite}
@@ -87,7 +90,8 @@ const css=`
 :is(#aBox,#acBox,#aoVivo) .aBarra{height:18px;border-radius:99px;background:var(--chip);overflow:hidden;border:1px solid var(--line)}
 :is(#aBox,#acBox,#aoVivo) .aBarra div{height:100%;width:0;background:var(--lima);transition:width .3s}
 :is(#aBox,#acBox,#aoVivo) .aBarra div.passou{background:var(--bad)}
-:is(#aBox,#acBox,#aoVivo) .aEtapa{text-align:center;font-weight:700;padding:6px;border-radius:10px;background:var(--chip);font-size:.92rem}
+:is(#aBox,#acBox,#aoVivo) .aConecte{margin-top:10px;text-align:center;font-weight:800;font-size:1.25rem;letter-spacing:.02em;padding:14px 10px;border-radius:12px;background:#d32f2f;color:#fff}.aConecte[hidden]{display:none!important}
+.aEtapa{text-align:center;font-weight:700;padding:6px;border-radius:10px;background:var(--chip);font-size:.92rem}
 :is(#aBox,#acBox,#aoVivo) .aEtapa.desc{background:#fff4d6;color:var(--warn)}
 :is(#aBox,#acBox,#aoVivo) .aEtapa.pronto{background:#e5f4e3;color:var(--ok)}
 :is(#aBox,#acBox,#cfgTBox) .aBruto{font-family:ui-monospace,Menlo,monospace;font-size:.75rem;background:#0f1d2e;color:#cfe;padding:8px;border-radius:8px;max-height:150px;overflow:auto;white-space:pre-wrap;word-break:break-all}
@@ -112,7 +116,7 @@ function montar(){
     <div class="aStatus" id="aStatus"><i></i><span id="aStatusTxt">Desconectado</span></div>
     <div class="aConn">
       <button id="aBtSer" hidden>🔵 Bluetooth</button>
-      <button id="aBtBt">🔷 Conectar balança (Bluetooth)</button>
+      <button id="aBtBt">Conectar a balança</button>
       <button id="aBtWs" hidden>📶 Caixinha Wi-Fi</button>
       <button id="aBtSim" hidden>🧪 Simulador</button>
       <button id="aDesc" class="aDescBt" disabled>Desconectar</button>
@@ -148,9 +152,10 @@ function montar(){
       <div><small>Parar com</small><b class="num" id="aAlvo">—</b></div>
     </div>
     <button class="primary" id="aReg" disabled>Registrar trato</button>
-    <button id="aTestarSom">🔊 Testar apito (amarelo, vermelho e direto)</button>
+    <button id="aTestarSom" hidden>🔊 Testar apito (amarelo, vermelho e direto)</button>
     <button id="aRecomecar" hidden>↺ Pegar peso inicial</button><button id="aPular">Pular curral ▶</button>
     <button class="naoForn" id="aNaoForn" type="button">🚫 Não fornecer neste curral</button>
+    <button class="danger fCancForn" data-fcancforn="1" type="button">✕ Cancelar fornecimento</button>
   </section>
 
   <section class="panel">
@@ -160,12 +165,10 @@ function montar(){
       <tbody id="aTb"></tbody>
     </table></div>
     <button id="aDesfazer">Desfazer último</button>
-    <p class="note">Os tratos registrados aqui aparecem também na aba Tratar, no Histórico, nos relatórios e na nuvem.</p>
   </section>
   <section class="panel abrirNovo" id="fNovoA" hidden></section>
 
-  <section class="panel">
-    <p class="note">Ajustes da balança e dos apitos: Gestão › Config. › Balança.</p>
+  <section class="panel" hidden>
     <details hidden>
       <summary>🔧 Dados recebidos (para teste)</summary>
       <p class="note" id="aBtInfo"></p>
@@ -194,9 +197,9 @@ function ligar(){
   $('aReg').onclick=()=>registrarAuto();
   $('aNaoForn').onclick=()=>{if(A.est==='descarregando'){toast('Está fornecendo neste curral: registre o trato.');return;}if(window.naoFornecer)naoFornecer();};
   $('aRecomecar').onclick=()=>{if(A.peso==null){toast('Sem leitura da balança');return;}novoCurral(true);aRender();toast('Peso inicial: '+fmt(A.base)+' kg');};
-  $('aPular').onclick=()=>{const L=lista(),regs=regsAtuais();let nx=L.findIndex((x,i)=>i>S.atual&&!feito(x.nome,regs));if(nx<0)nx=Math.min(S.atual+1,L.length);
+  $('aPular').onclick=async()=>{const L0=lista(),c0=L0[S.atual];if(c0&&window.perg&&!await perg(`Deseja realmente pular o ${c0.nome}?`,'Ele fica para depois (continua sem fornecer) e passa para o próximo curral.','Sim, pular','Não, voltar'))return;const L=lista(),regs=regsAtuais();let nx=L.findIndex((x,i)=>i>S.atual&&!feito(x.nome,regs));if(nx<0)nx=Math.min(S.atual+1,L.length);
     setAtual(nx);save();novoCurral(true);render();aRender();};
-  $('aDesfazer').onclick=()=>{$('btnDesfazer').click();setTimeout(aRender,300);};
+  $('aDesfazer').onclick=async()=>{try{await $('btnDesfazer').onclick();}catch(e){}aRender();};
   $('aTestarSom').onclick=testarSom;
   $('aPausar').onclick=()=>{if(!bloqueado())aPausar();};$('aPausaBox').onclick=()=>{if(!bloqueado())aContinuarPausa();};
   $('aCopiarBruto').onclick=()=>copiar(A.bruto.join('\n')+'\n\n'+($('aBtInfo').textContent||''),'Dados copiados');
@@ -204,13 +207,16 @@ function ligar(){
 }
 
 /* ---------------- Conexões ---------------- */
-function setStatus(t,tipo){A.status=t;A.statusTipo=tipo||'';const el=$('aStatus');if(el){$('aStatusTxt').textContent=t;el.className='aStatus '+(tipo||'');}acSyncTopo();}
+/* botão da balança: vermelho "Conectar a balança" enquanto desconectada; verde "✓ Balança conectada" quando conecta (e o Desconectar fica vermelho) */
+function pintarBtBal(){[['aBtBt','aDesc'],['acBtBt','acDesc']].forEach(([b,d])=>{const bt=$(b),ds=$(d);if(!bt)return;const on=!!A.fonte;
+  bt.classList.toggle('btVerm',!on);bt.classList.toggle('btVerde',on);bt.textContent=on?'✓ Balança conectada':'Conectar a balança';if(ds)ds.classList.toggle('btDescOn',on);});}
+function setStatus(t,tipo){A.status=t;A.statusTipo=tipo||'';pintarBtBal();const el=$('aStatus');if(el){$('aStatusTxt').textContent=t;el.className='aStatus '+(tipo||'');}acSyncTopo();}
 function marcarFonte(){['aBtSer','aBtBt','aBtWs','aBtSim'].forEach(id=>$(id).classList.remove('on'));
   const m={ser:'aBtSer',bt:'aBtBt',ws:'aBtWs',sim:'aBtSim'}[A.fonte];if(m)$(m).classList.add('on');
-  $('aDesc').disabled=!A.fonte;$('aSimBox').hidden=A.fonte!=='sim';$('aTeclas').hidden=!(A.fonte==='bt'&&A.digiStar);acSyncTopo();}
+  pintarBtBal();$('aDesc').disabled=!A.fonte;$('aSimBox').hidden=A.fonte!=='sim';$('aTeclas').hidden=!(A.fonte==='bt'&&A.digiStar);acSyncTopo();}
 /* Desconectar pede confirmação (para não desligar a balança no meio do trato sem querer) */
 async function perguntarDesconectar(){if(!A.fonte)return false;
-  const ok=window.confirmaVermelho?await confirmaVermelho('Desconectar a balança?',`O app para de receber o peso.${A.est==='descarregando'?' Você está FORNECENDO agora: o curral não será acompanhado.':''} Para voltar, toque em Conectar balança.`,'Sim, desconectar','Não, manter conectada'):confirm('Desconectar a balança?');
+  const ok=window.confirmaVermelho?await confirmaVermelho('Desconectar a balança?',`O app para de receber o peso.${A.est==='descarregando'?' Você está FORNECENDO agora: o curral não será acompanhado.':''} Para voltar, toque em Conectar a balança.`,'Sim, desconectar','Não, manter conectada'):confirm('Desconectar a balança?');
   if(!ok)return false;desconectar(true);return true;}
 /* sinal da balança ao lado dos botões: recebendo peso, conectada mas sem peso (perigo), ou desconectada */
 function pintarSinal(){const segs=A.ultDado?(Date.now()-A.ultDado)/1000:null;let t,cl='';
@@ -324,7 +330,7 @@ async function btAbrir(dev){
    Zero "43", Tara "40", Líquido/Bruto "10", Imprimir "23" (descobertos no registro HCI do tablet). */
 const TECLAS={'43':'Zero','40':'Tara','10':'Líquido/Bruto','23':'Imprimir'};
 async function teclaBalanca(cod){
-  if(!(A.fonte==='bt'&&A.digiStar&&A.dsEsc)){toast('Conecte a balança pelo 🔷 Conectar balança (Bluetooth)');return;}
+  if(!(A.fonte==='bt'&&A.digiStar&&A.dsEsc)){toast('Conecte a balança pelo 🔷 Balança Bluetooth');return;}
   if((cod==='43'||cod==='40')&&!confirm(TECLAS[cod]+' na balança: o peso do visor vai para 0. Confirmar?'))return;
   A.dsSeq=(A.dsSeq%99)+1;const sq=String(A.dsSeq).padStart(2,'0'),txt=cod+sq;
   const b=new Uint8Array([0x1a,...Array.from(txt).map(c=>c.charCodeAt(0))]);
@@ -684,13 +690,13 @@ function pintarPeso0(){
   pintarPausa();
   if(A.pausa){/* pausado: os números ficam parados no valor de quando pausou */$('aFalta').textContent=A.pausa.falta==null?'—':fmt(A.pausa.falta);$('aCaiu').textContent=fmt(A.pausa.caiu||0);
     et.textContent='⏸ Pausado no trajeto · a balança não está contando';et.className='aEtapa pausa';$('aFaltaTit').textContent='Pausado';fb.className='aFalta cinza';$('aFaltaTxt').textContent='toque em continuar quando chegar';$('aReg').disabled=true;return;}
-  if(!A.fonte)txt='Conecte a balança (ou use o Simulador)';
+  if(!A.fonte)txt='';
   else if(A.peso==null)txt='Esperando o peso chegar da balança…';
   else if(!cur)txt=lista().length?'✓ Trato completo':'Sem previsto neste trato (lance na aba Previsto)';
   else if(A.est==='descarregando'){const zz=zona()||{};txt=A.estavel?'Parou de cair · confira e toque em Registrar':zz.caindo?`▼ Fornecendo no ${cur.nome} · ${fmt(zz.taxa)} kg/s`:'■ Parou de cair · esperando o peso firmar';cl='desc';}
   else if(A.base==null)txt='Deixe o vagão parado para pegar o peso inicial';
   else{txt='Pronto: pode fornecer no '+cur.nome;cl='pronto';}
-  et.textContent=txt;et.className='aEtapa '+cl;
+  et.textContent=txt;et.className='aEtapa '+cl;et.hidden=!txt;
   $('aReg').disabled=!(cur&&A.base!=null&&A.peso!=null&&A.peso<A.base)||modoVer;
 }
 function aRender(){
@@ -778,7 +784,7 @@ window.acTela=(nova,dia)=>{
   const topo=`<section class="panel">
     <div class="curhead balHead"><button type="button" class="mini balTog" data-baltog="1" aria-label="Mostrar ou esconder a conexão">▲</button><h2>Balança</h2><span class="balMini" id="acBalMini"></span></div>
     <div class="aStatus" id="acStatus"><i></i><span id="acStatusTxt">Desconectado</span></div>
-    <div class="aConn"><button data-ac="ser" id="acBtSer" hidden>🔵 Bluetooth</button><button data-ac="bt" id="acBtBt">🔷 Conectar balança (Bluetooth)</button><button data-ac="ws" id="acBtWs" hidden>📶 Caixinha Wi-Fi</button><button data-ac="sim" id="acBtSim" hidden>🧪 Simulador</button><button data-ac="desc" id="acDesc" class="aDescBt" disabled>Desconectar</button></div>
+    <div class="aConn"><button data-ac="ser" id="acBtSer" hidden>🔵 Bluetooth</button><button data-ac="bt" id="acBtBt">Conectar a balança</button><button data-ac="ws" id="acBtWs" hidden>📶 Caixinha Wi-Fi</button><button data-ac="sim" id="acBtSim" hidden>🧪 Simulador</button><button data-ac="desc" id="acDesc" class="aDescBt" disabled>Desconectar</button></div>
     <div class="aSinal" id="acSinal">⚪ Balança desconectada</div>
     <div class="aTeclas" id="acTeclas" hidden><button data-tecla="43">▸0◂<br>Zero</button><button data-tecla="40">▸T◂<br>Tara</button><button data-tecla="10">Líquido/<br>Bruto</button><button data-tecla="23">🖨<br>Imprimir</button></div>
     <div class="aSim" id="acSimBox" hidden><button class="lima" data-ac="simSobe">▲ Carregar</button><button data-ac="simPara">■ Parar</button><button data-ac="simZera">Esvaziar</button></div>
@@ -828,7 +834,7 @@ window.acProximo=()=>{const B=acB(),it=acItem();if(!B||!it)return;const c=cfg();
 function acSyncTopo(){if(!$('acStatus'))return;
   $('acStatusTxt').textContent=A.status;$('acStatus').className='aStatus '+(A.statusTipo||'');
   ['ser','bt','ws','sim'].forEach(f=>$({ser:'acBtSer',bt:'acBtBt',ws:'acBtWs',sim:'acBtSim'}[f]).classList.toggle('on',A.fonte===f));
-  $('acDesc').disabled=!A.fonte;$('acSimBox').hidden=A.fonte!=='sim';const tk=$('acTeclas');if(tk)tk.hidden=!(A.fonte==='bt'&&A.digiStar);}
+  pintarBtBal();$('acDesc').disabled=!A.fonte;$('acSimBox').hidden=A.fonte!=='sim';const tk=$('acTeclas');if(tk)tk.hidden=!(A.fonte==='bt'&&A.digiStar);}
 function pintarCarga(){comPesoTela(pintarCarga0);}
 function pintarCarga0(){
   if(!naCargaAuto()||!$('acPeso'))return;
@@ -845,14 +851,14 @@ function pintarCarga0(){
   else{$('acFalta').textContent=it?fmt(ok(it.real)?it.real:it.prev):'—';fb.className='aFalta cinza';
     $('acFaltaTxt').textContent=it&&ok(it.real)?'já carregado':A.fonte?'esperando peso inicial':'conecte a balança';}
   let txt,cl='';
-  if(!A.fonte)txt='Conecte a balança (ou use o Simulador)';
+  if(!A.fonte)txt='';
   else if(A.peso==null)txt='Esperando o peso chegar da balança…';
   else if(!it)txt='—';
   else if(ok(it.real))txt='✓ Já carregado · vá para o próximo produto';
   else if(!ok(it.ini))txt='Deixe o vagão parado para pegar o peso inicial';
   else if(AC.est==='carregando'){txt=A.estavel?'Parou de subir · confira e toque em Registrar':z&&z.caindo?`▲ Carregando ${it.nome} · ${fmt(z.taxa)} kg/s`:'■ Parou de subir · esperando o peso firmar';cl='desc';}
   else{txt='Pronto: pode carregar '+it.nome;cl='pronto';}
-  $('acEtapa').textContent=txt;$('acEtapa').className='aEtapa '+cl;
+  $('acEtapa').textContent=txt;$('acEtapa').className='aEtapa '+cl;$('acEtapa').hidden=!txt;
   if($('acReg'))$('acReg').disabled=!(it&&!ok(it.real)&&ok(it.ini)&&A.peso!=null&&A.peso>it.ini)||modoVer;
 }
 $('acBox').addEventListener('click',e=>{const b=e.target.closest('[data-ac]');if(!b)return;const a=b.dataset.ac;
@@ -903,7 +909,7 @@ function montarCfgT(){const box=$('cfgTBox');if(!box||box.dataset.ok)return;box.
     <div class="curhead"><h2>📖 Como conectar a balança</h2></div>
     <ol class="note" style="padding-left:18px;margin:6px 0">
       <li>Feche o app <b>TAP Feed</b> (a balança aceita um aparelho por vez).</li>
-      <li>Use o <b>Chrome</b>. Na Automação, toque em <b>🔷 Conectar balança (Bluetooth)</b> e escolha <b>NEW EZ</b>.</li>
+      <li>Use o <b>Chrome</b>. Na Automação, toque em <b>🔷 Balança Bluetooth</b> e escolha <b>NEW EZ</b>.</li>
       <li>Se o peso parar de chegar, o app reconecta sozinho. Se não voltar, toque em Desconectar e conecte de novo.</li></ol>
     <p class="note" style="margin-top:8px"><b>Outras formas de conectar</b> (se um dia precisar):</p>
     <details><summary>🔵 Bluetooth (indicador com Bluetooth)</summary><ol class="note" style="padding-left:18px;margin:6px 0">

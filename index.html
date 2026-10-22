@@ -161,6 +161,11 @@ body.somenteVer .fBar{display:none!important}
 .cOrdem{margin:10px 0;padding:8px;border:1px dashed #b9c7a5;border-radius:12px}.cOrdLin{display:grid;grid-template-columns:28px 1fr 44px 44px;gap:6px;align-items:center;padding:4px 0}.cOrdLin button{margin:0;padding:6px 0;min-height:0}.cJaIn{width:80px;margin:0;padding:6px 8px;text-align:right}
 .cBotoes{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:6px}.cBotoes>button{margin:0!important;width:100%;font-size:.82rem;padding:8px 6px}
 .cJuntoLista{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}
+.gTres{display:grid;grid-template-columns:.9fr 1.35fr .95fr;gap:6px;width:100%;grid-column:1/-1}.gTresNota{grid-column:1/-1}.gForm .gTres .gCampo{min-width:0;grid-column:auto!important}.gTres{align-items:end}.gTres label{font-size:.74rem}.gTres input{min-width:0;width:100%;font-size:.86rem!important;padding:9px 5px!important}.gTresNota{margin:4px 0 8px}
+.gLotesTopo{display:flex!important;flex-wrap:nowrap!important;align-items:center;gap:6px}.gLotesTopo h2{margin:0;white-space:nowrap;flex:0 1 auto!important;min-width:0}.gLotesBts{margin-left:auto;display:flex;gap:6px}.gLotesBts .mini{padding:6px 8px;font-size:.76rem;white-space:nowrap;margin:0}.gLotesTopo h2{letter-spacing:.04em}.lotesExp{margin:8px 0 12px}
+.cBotoes .mini.mud{border-color:#2e6b2f!important;color:#2e6b2f!important;background:#eef5e4!important;font-weight:800}
+.cJuntoLista button{display:flex;flex-direction:column;align-items:center;justify-content:center;min-width:92px;line-height:1.15;gap:2px}.cJuntoLista button small{display:block;font-size:.78rem;font-weight:600;opacity:.8}
+.cJuntoLista button.sel{background:#2e6b2f!important;border-color:#2e6b2f!important;color:#fff!important}.cJuntoLista button.sel small{opacity:1}
 :is(#cBox,#acBox,.fornSetup) .gLocal{margin:0}
 :is(#cBox,#acBox,.fornSetup) .tSeta{margin:0}
 :is(#cBox,#acBox,.fornSetup) select{margin:0}
@@ -936,6 +941,7 @@ body.naInicio .topoTxt h1{font-size:clamp(16px,5vw,28px)!important}
     </div>
     <button class="primary" id="btnReg" disabled>Registrar trato</button>
     <button class="naoForn" id="btnNaoForn" type="button">🚫 Não fornecer neste curral</button>
+    <button class="danger fCancForn" data-fcancforn="1" type="button">✕ Cancelar fornecimento</button>
     <div class="row navtrato"><button id="btnAnterior">◀ Trato anterior</button><button class="lima" id="btnProximo">Ir para o Trato 2 ▶</button></div>
     <p class="note">Recarregou o vagão? É só corrigir o peso de início antes de começar o curral.</p>
   </section>
@@ -949,7 +955,7 @@ body.naInicio .topoTxt h1{font-size:clamp(16px,5vw,28px)!important}
       <tbody id="tbCur"></tbody>
     </table></div>
     <button id="btnDesfazer">Desfazer último</button>
-    <div class="row compart"><button class="verde" id="btnImg">🖼 Foto</button><button class="verde" id="btnXls">📊 Excel</button></div>
+    <div class="row compart" hidden><button class="verde" id="btnImg">🖼 Foto</button><button class="verde" id="btnXls">📊 Excel</button></div>
     <div hidden>
       <button class="wa" id="btnWa">Enviar no WhatsApp</button><button id="btnCopiarMsg">Copiar mensagem</button>
       <button id="btnExcel">Baixar planilha Excel</button><button id="btnShareExcel" class="shareX" hidden>Compartilhar planilha</button>
@@ -1100,7 +1106,7 @@ body.naInicio .topoTxt h1{font-size:clamp(16px,5vw,28px)!important}
 <div class="toast" id="toast" hidden></div>
 <script>
 'use strict';
-const APP_VERSAO='99';
+const APP_VERSAO='100';
 const APP_DATA='19/10/2026';
 const KEY='confinamento-completo-v1';
 const $=id=>document.getElementById(id);
@@ -1380,6 +1386,12 @@ function iniciarFornecimento(){FS.fim='';S.forn={ativo:true,ts0:Date.now(),dia:h
 document.addEventListener('click',e=>{const lb=e.target.closest('[data-floc]');if(lb){FS.local=lb.dataset.floc;FS.rac=null;FS.trato=null;FS.passo=2;mostrarFornecimento();return;}
   const fp=e.target.closest('[data-fpasso]');if(fp){FS.passo=+fp.dataset.fpasso;mostrarFornecimento();return;}
   if(e.target.closest('#fIniciar'))return iniciarFornecimentoChecado();
+  if(e.target.closest('[data-fcancforn]')){(async()=>{if(window.autoDescarregando&&autoDescarregando()){toast('Está fornecendo num curral: registre antes de cancelar.');return;}const f=filtroForn();if(!f)return;
+    const L=lista(),regs=regsAtuais(),falta=L.filter(x=>!feito(x.nome,regs)).length;
+    if(!await perg('Deseja realmente cancelar o fornecimento?',`Trato ${S.tratoSel}: ${falta} curral(is) ainda sem fornecer. Os currais já registrados continuam salvos.`,'Sim, cancelar','Não, continuar fornecendo'))return;
+    if(!await perg('Tem certeza?','O fornecimento será encerrado agora e volta para a tela de escolher local, ração e trato.','Sim, cancelar o fornecimento','Não, voltar'))return;
+    if(!filtroForn())return;try{window.diagLog&&diagLog('forn_cancelado',{local:f.local,trato:S.tratoSel,falta});}catch(e){}
+    FS.local=null;FS.rac=null;FS.trato=null;FS.passo=1;FS.fim='';S.forn=Object.assign({},S.forn||{},{ativo:false});save();render();mostrarFornecimento();if(window.aRenderFora)aRenderFora();window.scrollTo({top:0});toast('Fornecimento cancelado');})();return;}
   if(e.target.closest('[data-ftrocar]')){if(window.autoDescarregando&&autoDescarregando()){toast('Está fornecendo num curral: registre antes de trocar.');return;}const f=S.forn||{};FS.local=null;FS.rac=null;FS.trato=null;FS.passo=1;FS.fim='';S.forn=Object.assign({},f,{ativo:false});save();mostrarFornecimento();window.scrollTo({top:0});}});
 document.addEventListener('change',e=>{if(e.target.id==='fRac'){FS.rac=e.target.value==='-'?null:e.target.value;FS.trato=null;if(FS.rac!=null)FS.passo=Math.max(FS.passo,3);mostrarFornecimento();}if(e.target.id==='fTrato'){FS.trato=+e.target.value;FS.tAuto=false;mostrarFornecimento();}});
 /* terminou todos os currais do trato (fornecidos ou "não fornecer"): já passa para o próximo trato */
@@ -1392,9 +1404,12 @@ function proximoTratoSeCompleto(){try{const f=filtroForn();
   if($('aTrato'))$('aTrato').value=String(alvo);toast(`✓ Trato ${antes} completo · agora Trato ${alvo}`);return true;}catch(e){return false;}}
 window.proximoTratoSeCompleto=proximoTratoSeCompleto;
 /* "Não fornecer neste curral": lança 0 kg, conta como passado no curral */
+/* pergunta antes de ações que não dá para voltar (caixa vermelha) */
+async function perg(tit,txt,sim,nao){return window.confirmaVermelho?await confirmaVermelho(tit,txt,sim,nao):confirm(tit+'\n\n'+txt);}
+window.perg=perg;
 async function naoFornecer(){if(bloqueado())return;const L=lista(),c=L[S.atual];if(!c)return;
   if(regsAtuais().some(x=>x.curral===c.nome)){toast(c.nome+' já tem registro neste trato');return;}
-  if(!confirm(`Não fornecer no ${c.nome} neste Trato ${S.tratoSel}?\n\nFica registrado 0 kg e passa para o próximo curral.`))return;
+  if(!await perg(`Deseja realmente não fornecer no ${c.nome}?`,`Trato ${S.tratoSel}: fica registrado 0 kg neste curral e passa para o próximo.`,'Sim, não fornecer','Não, voltar'))return;
   const now=new Date();const r={ts:now.getTime(),dia:diaAtivo(),trato:S.tratoSel,hora:now.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'}),
     curral:c.nome,prev:c.prev,ini:0,fim:0,forn:0,uid:`${S.aparelho}-${now.getTime()}`,enviado:false,origem:'nao_forneceu'};
   try{r.id=await dbAdd(r);}catch(e){toast('Erro ao salvar');return;}
@@ -1593,6 +1608,7 @@ $('tbCur').addEventListener('click',e=>{if(modoVer)return;const td=e.target.clos
 $('btnNaoForn').onclick=()=>naoFornecer();
 $('btnDesfazer').onclick=async()=>{
   const regs=regsAtuais();const r=regs[regs.length-1];if(!r)return;
+  if(!await perg('Deseja realmente desfazer o último registro?',`Apaga o trato do ${r.curral} (${fmt(r.forn)} kg, ${r.hora}). O curral volta a ficar para fornecer.`,'Sim, desfazer','Não, manter'))return;
   try{await dbDel(r.id);}catch(e){toast('Erro ao apagar');return;}
   HIST=HIST.filter(x=>x!==r);
   if(r.enviado){S.apagarNuvem=(S.apagarNuvem||[]).concat(r.uid);sincronizar();}
@@ -1953,7 +1969,15 @@ function gerarXlsx(regsIn){
   cs.forEach((o,i)=>{const n=i+2;r3.push([{v:diaSerial(o.dia),s:2},{v:o.curral},{v:localDe(o.curral)},{v:o.p,s:4},{v:o.f,s:4},{f:`E${n}-D${n}`,v:o.f-o.p,s:5},{f:`IF(D${n}=0,0,F${n}/D${n})`,v:o.p?(o.f-o.p)/o.p:0,s:6},{v:[...o.t].sort().join(', ')}]);});
   const L3=cs.length+1,T3=L3+1;
   r3.push([{v:'TOTAL',s:9},{v:'',s:9},{v:'',s:9},{f:`SUM(D2:D${L3})`,v:sp,s:7},{f:`SUM(E2:E${L3})`,v:sf,s:7},{f:`E${T3}-D${T3}`,v:sf-sp,s:8},{f:`IF(D${T3}=0,0,F${T3}/D${T3})`,v:sp?(sf-sp)/sp:0,s:10},{v:'',s:9}]);
-  const ws=[['Registros',r1,[9,12,7,14,14,13,14,14,13,14,13]],['Resumo por trato',r2,[12,7,9,13,14,14,13]],['Por curral',r3,[12,14,14,13,14,14,13,10]]];
+  /* uma aba para cada trato (igual ao relatório "Por trato separado") */
+  const porT=[],nomesT=new Set();
+  gs.forEach(g=>{const rs=g.rs.slice().sort((a,b)=>a.ts-b.ts);const linhas=[[H('Hora'),H('Curral'),H('Dieta'),H('Previsto (kg)'),H('Realizado (kg)'),H('Diferença (kg)'),H('Diferença (%)')]];
+    rs.forEach((r,i)=>{const n=i+2,d=new Date(r.ts),dia=new Date(d.getFullYear(),d.getMonth(),d.getDate());let dt='';try{dt=typeof dietaDe==='function'?dietaDe(r.curral):'';}catch(e){}
+      linhas.push([{v:excelSerial(d)-excelSerial(dia),s:3},{v:r.curral},{v:dt},{v:r.prev,s:4},{v:r.forn,s:4},{f:`E${n}-D${n}`,v:r.forn-r.prev,s:5},{f:`IF(D${n}=0,0,F${n}/D${n})`,v:r.prev?(r.forn-r.prev)/r.prev:0,s:6}]);});
+    const Lt=rs.length+1,Tt=Lt+1,p=rs.reduce((a,r)=>a+r.prev,0),f=rs.reduce((a,r)=>a+r.forn,0);
+    linhas.push([{v:'TOTAL',s:9},{v:'',s:9},{v:'',s:9},{f:`SUM(D2:D${Lt})`,v:p,s:7},{f:`SUM(E2:E${Lt})`,v:f,s:7},{f:`E${Tt}-D${Tt}`,v:f-p,s:8},{f:`IF(D${Tt}=0,0,F${Tt}/D${Tt})`,v:p?(f-p)/p:0,s:10}]);
+    let nm=`Trato ${g.trato} ${g.dia.slice(8,10)}-${g.dia.slice(5,7)}`;while(nomesT.has(nm))nm+='+';nomesT.add(nm);porT.push([nm,linhas,[9,16,18,13,14,14,13]]);});
+  const ws=[['Registros',r1,[9,12,7,14,14,13,14,14,13,14,13]],['Resumo por trato',r2,[12,7,9,13,14,14,13]],['Por curral',r3,[12,14,14,13,14,14,13,10]]].concat(porT.length<=60?porT:[]);
   return montarXlsx(ws);
 }
 /* monta o arquivo Excel a partir das abas [nome, linhas, larguras] (estilos: 1 título, 2 data, 4 inteiro, 7 total, 9 total texto, 11 decimal, 12 R$, 13 total R$, 14 %) */
