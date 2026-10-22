@@ -161,6 +161,9 @@ body.somenteVer .fBar{display:none!important}
 .cOrdem{margin:10px 0;padding:8px;border:1px dashed #b9c7a5;border-radius:12px}.cOrdLin{display:grid;grid-template-columns:28px 1fr 44px 44px;gap:6px;align-items:center;padding:4px 0}.cOrdLin button{margin:0;padding:6px 0;min-height:0}.cJaIn{width:80px;margin:0;padding:6px 8px;text-align:right}
 .cBotoes{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:6px}.cBotoes>button{margin:0!important;width:100%;font-size:.82rem;padding:8px 6px}
 .cJuntoLista{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}
+.cvFundo{position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:9999;display:flex;align-items:center;justify-content:center;padding:16px}.cvCaixa{background:var(--card,#fff);border-radius:16px;max-width:420px;width:100%;padding:20px;border:3px solid #d32f2f;max-height:90vh;overflow:auto}.cvCaixa .cvBt{display:grid;gap:10px;margin-top:12px}.gBatEd label{display:block;font-size:.85rem;font-weight:700;margin:8px 0 0}.gBatEd input{width:100%;margin-top:4px}
+#tbHist .hAcoes{display:inline-flex;gap:4px;margin-left:6px;vertical-align:middle}#tbHist .hAcoes .mini{padding:3px 7px;font-size:.78rem;min-height:0;margin:0}.gBatAc{display:flex;gap:8px;margin-top:8px}.gBatAc .mini{flex:1}
+.gEst4{display:grid!important;grid-template-columns:1fr 1fr!important;gap:8px}.gNfArq{display:flex;align-items:center;justify-content:center;padding:18px;border:2px dashed #8fb43a;border-radius:14px;font-weight:800;font-size:1.1rem;color:#2e6b2f;background:#f3f7dc;cursor:pointer;margin-top:8px}.gNfImg{display:block;max-width:160px;border-radius:10px;border:1px solid #dde3ea;margin:6px 0}.gNfItem{border-top:1px solid #dde3ea;padding-top:8px;margin-top:8px}
 .gTres{display:grid;grid-template-columns:.9fr 1.35fr .95fr;gap:6px;width:100%;grid-column:1/-1}.gTresNota{grid-column:1/-1}.gForm .gTres .gCampo{min-width:0;grid-column:auto!important}.gTres{align-items:end}.gTres label{font-size:.74rem}.gTres input{min-width:0;width:100%;font-size:.86rem!important;padding:9px 5px!important}.gTresNota{margin:4px 0 8px}
 .gLotesTopo{display:flex!important;flex-wrap:nowrap!important;align-items:center;gap:6px}.gLotesTopo h2{margin:0;white-space:nowrap;flex:0 1 auto!important;min-width:0}.gLotesBts{margin-left:auto;display:flex;gap:6px}.gLotesBts .mini{padding:6px 8px;font-size:.76rem;white-space:nowrap;margin:0}.gLotesTopo h2{letter-spacing:.04em}.lotesExp{margin:8px 0 12px}
 .cBotoes .mini.mud{border-color:#2e6b2f!important;color:#2e6b2f!important;background:#eef5e4!important;font-weight:800}
@@ -1025,7 +1028,7 @@ body.naInicio .topoTxt h1{font-size:clamp(16px,5vw,28px)!important}
     <button id="btnRestaurar">Restaurar cópia</button>
     <label class="filebtn lima" id="lblRestaurar" for="restaurar" hidden data-antigo="1" style="margin:0;text-transform:none;letter-spacing:0;color:var(--fg);font-size:1rem">Escolher o arquivo da cópia<input id="restaurar" type="file" accept=".json,application/json"></label>
   </section>
-  <section class="panel fimHist"><button class="danger" id="hApagar">Apagar registros…</button></section>
+  <section class="panel fimHist" hidden><button class="danger" id="hApagar">Apagar registros…</button></section>
   <p class="note" id="versao" style="text-align:center"></p>
 </div>
   <div id="viewCarga" hidden><div class="gTela" id="cBox"></div></div>
@@ -1106,7 +1109,7 @@ body.naInicio .topoTxt h1{font-size:clamp(16px,5vw,28px)!important}
 <div class="toast" id="toast" hidden></div>
 <script>
 'use strict';
-const APP_VERSAO='100';
+const APP_VERSAO='101';
 const APP_DATA='19/10/2026';
 const KEY='confinamento-completo-v1';
 const $=id=>document.getElementById(id);
@@ -2310,7 +2313,7 @@ function renderHist(){try{aplicarRenomesHist();}catch(e){}
   else
   { /* um dia: todos os currais da lista (na ordem do cadastro), com ou sem trato — o que não foi tratado aparece com o previsto e "—" */
     const dia=intervaloHist()[0],P=(typeof prevDoDia==='function'&&prevDoDia(dia))||{};
-    const linhaR=r=>`<tr class="${selModo?'selrow':''} ${selModo&&sel.has(r.uid)?'marcado':''}" ${selModo?`data-sel="${esc(r.uid)}"`:''}><td class="hora">${selModo?`<span class="chk">${sel.has(r.uid)?'☑':'☐'}</span> `:''}${horaDe(r)}</td><td class="c">${esc(r.curral)}</td><td>${fmt(r.prev)}</td><td><button class="editq" data-uid="${esc(r.uid)}" aria-label="Editar quantidade do ${esc(r.curral)}"><b>${fmt(r.forn)}</b> ✎</button></td><td class="${classeDesv(r.forn-r.prev,r.prev)}">${sgn(r.forn-r.prev)}</td></tr>`;
+    const linhaR=r=>`<tr class="${selModo?'selrow':''} ${selModo&&sel.has(r.uid)?'marcado':''}" ${selModo?`data-sel="${esc(r.uid)}"`:''}><td class="hora">${selModo?`<span class="chk">${sel.has(r.uid)?'☑':'☐'}</span> `:''}${horaDe(r)}</td><td class="c">${esc(r.curral)}</td><td>${fmt(r.prev)}</td><td><b>${fmt(r.forn)}</b><span class="hAcoes"><button class="mini" data-hed="${esc(r.uid)}" aria-label="Editar o ${esc(r.curral)}">✎</button><button class="mini danger" data-hdel="${esc(r.uid)}" aria-label="Apagar o ${esc(r.curral)}">✕</button></span></td><td class="${classeDesv(r.forn-r.prev,r.prev)}">${sgn(r.forn-r.prev)}</td></tr>`;
     const temPrev=k=>Object.values(P[k]||P[String(k)]||{}).some(v=>+v>0);
     const ks=(HD.t>0?[HD.t]:[...new Set(tratosAtivos().map(Number).concat(regs.map(r=>+r.trato)))].filter(k=>regs.some(r=>+r.trato===k)||temPrev(k))).sort((a,b)=>a-b);
     const doLoc=c=>localSel==='T'||linhaDe(c)===localSel;
@@ -2349,6 +2352,14 @@ $('hApagar').onclick=()=>{if(bloqueado())return;selModo=true;sel.clear();renderH
 $('selCanc').onclick=()=>{selModo=false;sel.clear();renderHist();};
 $('selTodos').onclick=()=>{const f=filtrados();const todos=f.every(r=>sel.has(r.uid));f.forEach(r=>todos?sel.delete(r.uid):sel.add(r.uid));renderHist();};
 $('tbHist').addEventListener('click',e=>{if(!selModo)return;const tr=e.target.closest('tr[data-sel]');if(!tr)return;e.preventDefault();e.stopPropagation();const u=tr.dataset.sel;sel.has(u)?sel.delete(u):sel.add(u);renderHist();},true);
+/* Histórico: ✎ editar e ✕ apagar cada registro, com a senha 1010 */
+document.addEventListener('click',async e=>{const be=e.target.closest('#tbHist [data-hed]'),bd=e.target.closest('#tbHist [data-hdel]');if(!be&&!bd)return;if(bloqueado())return;
+  const r=HIST.find(x=>x.uid===(be||bd).dataset[be?'hed':'hdel']);if(!r)return;
+  if(!await pedirSenhaAcao(be?'Senha para editar':'Senha para apagar'))return;
+  if(be)return editarQtd(r.uid);
+  if(!(window.perg?await perg(`Apagar o trato do ${r.curral}?`,`${diaBR(r.dia)} · Trato ${r.trato} · ${fmt(r.forn)} kg. Apaga aqui e na planilha.`,'Sim, apagar','Não'):confirm('Apagar?')))return;
+  try{await dbDelMany([r.id]);}catch(err){toast('Erro ao apagar');return;}
+  if(r.enviado){S.apagarNuvem=(S.apagarNuvem||[]).concat(r.uid);save();}HIST=HIST.filter(x=>x!==r);toast('Registro apagado');render();renderHist();sincronizar();});
 $('selApagar').onclick=async()=>{
   if(!sel.size)return;
   const senha=prompt(`Apagar ${sel.size} registro(s), aqui e na planilha. Digite a senha:`);if(senha==null)return;
@@ -3005,26 +3016,34 @@ document.addEventListener('touchmove',e=>{if(e.scale!==undefined&&e.scale!==1)e.
 /* ---------- Tela inicial: Executar trato ou só Visualizar ---------- */
 document.body.classList.add('naInicio');
 /* Senha para entrar em Executar tratos */
-const SENHAS={trato:'0000',gest:'1010'};let senhaDig='',senhaModo='trato';const SENHA_EXEC=SENHAS.trato;
+const SENHAS={trato:'0000',gest:'1010',acao:'1010'};let senhaRes=null;let senhaDig='',senhaModo='trato';const SENHA_EXEC=SENHAS.trato;
 const senhaAtual=()=>SENHAS[senhaModo];
 function mostrarSenha(){$('senhaValor').textContent='●'.repeat(senhaDig.length)+'○'.repeat(Math.max(0,senhaAtual().length-senhaDig.length));}
 function verSenha(v){$('tecSenha').hidden=!v;$('senhaFundo').hidden=!v;}
-function pedirSenha(m){senhaModo=m;senhaDig='';$('senhaTit').textContent=m==='gest'?'Senha da Gestão':'Senha dos Tratos';mostrarSenha();verSenha(true);}
+/* senha 1010 antes de editar/apagar registros e batidas */
+function pedirSenhaAcao(tit){return new Promise(r=>{if(senhaRes)senhaRes(false);senhaRes=r;senhaModo='acao';senhaDig='';$('senhaTit').textContent=tit||'Digite a senha';mostrarSenha();verSenha(true);});}
+window.pedirSenhaAcao=pedirSenhaAcao;
+const fimSenhaAcao=v=>{const r=senhaRes;senhaRes=null;if(r)r(v);};
+/* senha por turno (Config. › Senha): neste aparelho pede 1 vez de manhã (até 11:59) e 1 vez à tarde (do meio-dia em diante) */
+const turnoAtual=()=>hojeKey()+(new Date().getHours()<12?'M':'T');
+const senhaPorTurno=()=>{try{return typeof gCfg==='function'&&gCfg().senhaTurno===true;}catch(e){return false;}};
+function pedirSenha(m){if((m==='trato'||m==='gest')&&senhaPorTurno()){let ok=false;try{ok=localStorage.getItem('senhaOk_'+m)===turnoAtual();}catch(e){}if(ok){entrarExec(m);return;}}
+  senhaModo=m;senhaDig='';$('senhaTit').textContent=m==='gest'?'Senha da Gestão':'Senha dos Tratos';mostrarSenha();verSenha(true);}
 $('btnModoExec').onclick=()=>pedirSenha('trato');
 $('btnModoGest').onclick=()=>pedirSenha('gest');
-$('senhaFundo').onclick=()=>{verSenha(false);senhaDig='';};
+$('senhaFundo').onclick=()=>{verSenha(false);senhaDig='';fimSenhaAcao(false);};
 $('tecSenha').addEventListener('pointerdown',e=>e.preventDefault());
 /* no computador: dá para digitar a senha no teclado (números, ⌫, Enter, Esc) além do teclado da tela */
 document.addEventListener('keydown',e=>{if($('tecSenha').hidden||e.ctrlKey||e.metaKey||e.altKey)return;
   const k=/^[0-9]$/.test(e.key)?e.key:e.key==='Backspace'||e.key==='Delete'?'del':e.key==='Enter'?'ok':e.key==='Escape'?'cancelar':null;if(!k)return;
   e.preventDefault();const b=$('tecSenha').querySelector(`button[data-s="${k}"]`);if(b)b.click();});
 $('tecSenha').addEventListener('click',e=>{const b=e.target.closest('button[data-s]');if(!b)return;const k=b.dataset.s,sn=senhaAtual();
-  if(k==='cancelar'){verSenha(false);senhaDig='';return;}
+  if(k==='cancelar'){verSenha(false);senhaDig='';fimSenhaAcao(false);return;}
   if(k==='del')senhaDig=senhaDig.slice(0,-1);
   else if(k!=='ok'&&senhaDig.length<sn.length)senhaDig+=k;
   mostrarSenha();
   if(k==='ok'||senhaDig.length===sn.length){
-    if(senhaDig===sn){verSenha(false);senhaDig='';entrarExec(senhaModo);}
+    if(senhaDig===sn){verSenha(false);senhaDig='';if(senhaModo==='acao'){fimSenhaAcao(true);return;}try{localStorage.setItem('senhaOk_'+senhaModo,turnoAtual());}catch(e){}entrarExec(senhaModo);}
     else if(k==='ok'||senhaDig.length>=sn.length){toast('Senha errada');senhaDig='';mostrarSenha();}
   }});
 /* entra só na parte escolhida: 'trato' (padrão) ou 'gest' */
