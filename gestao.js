@@ -1613,12 +1613,19 @@ document.addEventListener('change',e=>{if(e.target&&e.target.id==='cfgComp'){con
 /* ---------- Histórico › Batidas: o que foi carregado no vagão (previsto e carregado de cada ingrediente, data e hora) ---------- */
 window.batidasLista=(pa,pb,loc,t)=>gTodos('carga').filter(c=>c.dia>=pa&&c.dia<=pb&&(!loc||loc==='T'||c.local===loc||(!c.local&&false))&&(!t||+c.trato===+t||(c.tratos||[]).includes(+t)))
   .sort((a,b)=>(a.dia+(a.hora||'')).localeCompare(b.dia+(b.hora||'')));  // da primeira batida para a última
+/* Editar/Apagar batida: dois botões pequenos no fim da lista; tocou → escolhe a batida (window.HBSEL = 'ed' ou 'del') */
+window.HBSEL=null;
 window.batidasHTML=(L,mostrarDia,semApagar)=>{if(!L.length)return '<p class="note">Nenhuma batida neste filtro.</p>';
-  return L.map(c=>{const tp=c.itens.reduce((a,x)=>a+(+x.prev||0),0),tr=c.itens.reduce((a,x)=>a+(+x.real||0),0),d=tr-tp,cls=(dd,p)=>typeof classeDesv==='function'?classeDesv(dd,p):'';
+  const podeMexer=!semApagar&&!(typeof modoVer!=='undefined'&&modoVer),sel=podeMexer?window.HBSEL:null;
+  const fim=podeMexer?(sel?`<div class="gBatFim gbSel"><span>${sel==='ed'?'✎ Toque em <b>Editar esta</b> na batida que quer editar':'✕ Toque em <b>Apagar esta</b> na batida que quer apagar'}</span><button class="mini" data-hbmodo="">Cancelar</button></div>`
+    :`<div class="gBatFim"><button class="mini" data-hbmodo="ed">✎ Editar</button><button class="mini" data-hbmodo="del">✕ Apagar</button></div>`):'';
+  return (sel?`<div class="gBatFim gbSel gbTopo"><span>${sel==='ed'?'Escolha a batida para editar':'Escolha a batida para apagar'}</span><button class="mini" data-hbmodo="">Cancelar</button></div>`:'')+L.map(c=>{const tp=c.itens.reduce((a,x)=>a+(+x.prev||0),0),tr=c.itens.reduce((a,x)=>a+(+x.real||0),0),d=tr-tp,cls=(dd,p)=>typeof classeDesv==='function'?classeDesv(dd,p):'';
     return `<details class="gMais gCarga" open><summary><b>${mostrarDia?diaBR(c.dia).slice(0,5)+' ':''}${esc(c.hora||'')}</b> · ${c.avulso?'Avulsa':c.tratos&&c.tratos.length>1?'Tratos '+c.tratos.join('+'):'Trato '+c.trato}${c.local?' · '+(c.local==='C'?'Confinamento':'Pasto'):''} · ${esc(c.racNome||'')} <span class="num">${nf(tr)} kg <i class="${cls(d,tp)}">(${d>0?'+':''}${nf(d)})</i></span></summary>
       <div class="tablebox"><table class="gTab"><thead><tr><th>Hora</th><th>Insumos</th><th>Previsto</th><th>Carreg.</th><th>Dif.</th></tr></thead><tbody>${c.itens.map(x=>{const dd=x.real-x.prev;return `<tr><td>${esc(x.hora||'')}</td><td class="c">${nomeMan(x)}</td><td>${nf(x.prev)}</td><td>${ok(+x.real)?nf(+x.real):'—'}</td><td class="${ok(+x.real)?cls(dd,x.prev):''}">${ok(+x.real)?(dd>0?'+':'')+nf(dd):''}</td></tr>`;}).join('')}
       <tr class="grp"><td></td><td>Total</td><td>${nf(tp)}</td><td>${nf(tr)}</td><td>${(d>0?'+':'')+nf(d)}</td></tr></tbody></table></div>
-      ${semApagar||(typeof modoVer!=='undefined'&&modoVer)?'':`<div class="gBatAc"><button class="mini" data-hbed="${c.uid}">✎ Editar</button><button class="mini danger" data-hbdel="${c.uid}">✕ Apagar</button></div>`}</details>`;}).join('');};
+      ${sel==='ed'?`<button class="gBatPick" data-hbed="${c.uid}">✎ Editar esta batida</button>`:sel==='del'?`<button class="gBatPick del" data-hbdel="${c.uid}">✕ Apagar esta batida</button>`:''}</details>`;}).join('')+fim;};
+document.addEventListener('click',e=>{const b=e.target.closest('[data-hbmodo]');if(!b)return;window.HBSEL=b.dataset.hbmodo||null;if(typeof renderHist==='function')renderHist();
+  if(window.HBSEL){const t=document.querySelector('#hBat .gBatFim.gbTopo');if(t)t.scrollIntoView({behavior:'smooth',block:'start'});}});
 /* relatório de batidas — tipo: 'sep' (uma imagem por batida), 'juntas' (todas numa imagem, subtotal azul claro + total geral), 'insumo' (total de cada insumo), 'todos' */
 const COLB=[['Hora',110,'l'],['Insumos',330,'c'],['Previsto',170,'r'],['Carregado',170,'r'],['Diferença',170,'r']];
 const sgnB=d=>(d>0?'+':'')+nf(d),corB=(r,p)=>!ok(+r)||!p?null:Math.abs(r-p)/p<=.03?'#5f7a00':Math.abs(r-p)/p<=.08?'#b26a00':'#b3261e';
@@ -1654,7 +1661,7 @@ window.xlsBatidas=(L,rot)=>{const r=[];L.forEach(c=>c.itens.forEach(x=>r.push([x
     ['Utilização de insumos',['Insumo','Previsto (kg)','Carregado (kg)','Diferença (kg)'],ri,[24,13,14,14]]]);};
 /* Histórico › Batidas: ✎ editar (kg de cada insumo) e ✕ apagar, com a senha 1010 */
 document.addEventListener('click',async e=>{const b=e.target.closest('[data-hbdel]');if(!b)return;if(typeof bloqueado==='function'&&bloqueado())return;
-  if(!await pedirSenhaAcao('Senha para apagar'))return;if(!await confirmaVermelho('Apagar esta batida?','Some do histórico, dos relatórios e do estoque.','Sim, apagar','Não'))return;gDel(b.dataset.hbdel);toast('Batida apagada');if(typeof renderHist==='function')renderHist();});
+  if(!await pedirSenhaAcao('Senha para apagar'))return;if(!await confirmaVermelho('Apagar esta batida?','Some do histórico, dos relatórios e do estoque.','Sim, apagar','Não'))return;gDel(b.dataset.hbdel);window.HBSEL=null;toast('Batida apagada');if(typeof renderHist==='function')renderHist();});
 document.addEventListener('click',async e=>{const b=e.target.closest('[data-hbed]');if(!b)return;if(typeof bloqueado==='function'&&bloqueado())return;const c=G.it[b.dataset.hbed];if(!c||c.del)return;
   if(!await pedirSenhaAcao('Senha para editar'))return;
   const f=document.createElement('div');f.className='cvFundo';
@@ -1664,7 +1671,7 @@ document.addEventListener('click',async e=>{const b=e.target.closest('[data-hbed
     <div class="cvBt"><button class="cvSim" style="background:#2e6b2f;border-color:#2e6b2f">Salvar</button><button class="cvNao">Cancelar</button></div></div>`;
   document.body.appendChild(f);f.querySelector('.cvNao').onclick=()=>f.remove();
   f.querySelector('.cvSim').onclick=()=>{const x=JSON.parse(JSON.stringify(c));f.querySelectorAll('[data-bed]').forEach(inp=>{const v=gNum(inp.value);x.itens[+inp.dataset.bed].real=ok(v)?v:null;});
-    const d=f.querySelector('#bedDia').value,h=f.querySelector('#bedHora').value;if(d)x.dia=d;if(h)x.hora=h;gPut(x);f.remove();toast('Batida alterada');if(typeof renderHist==='function')renderHist();};});
+    const d=f.querySelector('#bedDia').value,h=f.querySelector('#bedHora').value;if(d)x.dia=d;if(h)x.hora=h;gPut(x);f.remove();window.HBSEL=null;toast('Batida alterada');if(typeof renderHist==='function')renderHist();};});
 
 /* ---------- Gestão › Currais: nome, tipo (confinamento/pasto) e ativo/inativo ---------- */
 function tCurrais(){const A=window.curraisApi;if(!A)return '';const L=A.lista().map(n=>({n,i:A.info(n)}));

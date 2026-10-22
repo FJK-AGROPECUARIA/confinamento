@@ -236,7 +236,7 @@ function aplicarBalRec(){[['aBox',$('aBox')&&$('aBox').querySelector(':scope>sec
   sec.classList.toggle('balRec',!!A.balRec);const b=sec.querySelector('.balTog');if(b)b.textContent=A.balRec?'▼':'▲';});}
 document.addEventListener('click',e=>{if(!e.target.closest('[data-baltog]'))return;A.balRec=!A.balRec;aplicarBalRec();});
 setInterval(pintarSinal,700);
-function desconectar(manual){
+function desconectar(manual){if(manual){A.btGen=(A.btGen||0)+1;A.btReconectando=false;}
   try{if(A.bt&&A.bt.gatt&&A.bt.gatt.connected){A.bt._manual=true;A.bt.gatt.disconnect();}}catch(e){}
   try{if(A.ws){A.ws._manual=true;A.ws.close();}}catch(e){}
   if(A.sim){clearInterval(A.sim.t);A.sim=null;}
@@ -262,7 +262,7 @@ function cmdBle(){const t=String(cfg().bleCmd||'');if(!t)return null;const out=[
 function servicosBle(){const l=SERVICOS.slice();String(cfg().bleUuid||'').split(/[\s,;]+/).map(x=>x.trim().toLowerCase()).filter(x=>/^[0-9a-f]{4}$|^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/.test(x)).forEach(x=>{const u=x.length===4?`0000${x}-0000-1000-8000-00805f9b34fb`:x;if(!l.includes(u))l.push(u);});return l;}
 async function conectarBt(){
   if(!navigator.bluetooth){toast('Este celular/navegador não tem Bluetooth BLE para apps. Use o Chrome no Android.');setStatus('Bluetooth indisponível neste navegador','err');return;}
-  desconectar(false);
+  desconectar(false);A.btGen=(A.btGen||0)+1;A.btReconectando=false;   // conexão nova: tentativa antiga que ficou pendurada não mexe mais
   try{
     setStatus('Escolha a balança na lista…','wait');
     const dev=await navigator.bluetooth.requestDevice({acceptAllDevices:true,optionalServices:servicosBle()});
@@ -278,12 +278,12 @@ async function conectarBt(){
 /* Bluetooth caiu: tenta reconectar sozinho, de novo e de novo, até voltar (ou até tocar em Desconectar) */
 function ligarQueda(dev){if(dev._queda)return;dev._queda=true;
   dev.addEventListener('gattserverdisconnected',()=>{if(dev._manual||A.bt!==dev||A.btReconectando)return;reconectarBt('Bluetooth caiu');});}
-async function reconectarBt(motivo){const dev=A.bt;if(!dev||A.btReconectando)return;A.btReconectando=true;let n=0;
-  try{while(A.bt===dev&&A.fonte==='bt'){n++;setStatus(`${motivo} · reconectando${n>1?' (tentativa '+n+')':''}…`,'wait');bruto(motivo+': reconectando (tentativa '+n+')');if(n===1)diagLog('reconectando',{motivo});
+async function reconectarBt(motivo){const dev=A.bt;if(!dev||A.btReconectando)return;A.btReconectando=true;let n=0;const gen=A.btGen||0;
+  try{while(A.bt===dev&&A.fonte==='bt'&&(A.btGen||0)===gen){n++;setStatus(`${motivo} · reconectando${n>1?' (tentativa '+n+')':''}…`,'wait');bruto(motivo+': reconectando (tentativa '+n+')');if(n===1)diagLog('reconectando',{motivo});
       try{dev._manual=true;if(dev.gatt.connected)dev.gatt.disconnect();}catch(e){}dev._manual=false;
-      await new Promise(r=>setTimeout(r,n===1?700:3000));if(A.bt!==dev)break;
+      await new Promise(r=>setTimeout(r,n===1?700:3000));if(A.bt!==dev||(A.btGen||0)!==gen)break;
       try{await btAbrir(dev);A.ultDado=Date.now();A.btCutucou=0;toast('Balança reconectada');diagLog('reconectou',{tentativas:n});break;}catch(e){bruto('não reconectou: '+(e.message||e));}}}
-  finally{A.btReconectando=false;}}
+  finally{if((A.btGen||0)===gen)A.btReconectando=false;}}
 /* vigia: a balança Digi-Star manda o peso o tempo todo (umas 2 vezes por segundo). Se parar 2,5 s,
    chama de novo (05); se chegar a 5 s sem peso, reconecta sozinho — mesmo que pareça "conectado". */
 setInterval(()=>{if(A.fonte!=='bt'||!A.bt||!A.digiStar||A.btReconectando)return;
@@ -296,17 +296,13 @@ setInterval(()=>{if(A.fonte!=='bt'||!A.bt||!A.digiStar||A.btReconectando)return;
 window.btAutoVoltar=async()=>{if(A.fonte||A.autoTent||!navigator.bluetooth||!navigator.bluetooth.getDevices)return;A.autoTent=true;
   try{const id=localStorage.getItem('btUltimo'),devs=await navigator.bluetooth.getDevices();
     const dev=devs.find(d=>id&&d.id===id)||devs.find(d=>/NEW\s*EZ|DIGI|EZ\d/i.test(d.name||''));if(!dev||A.fonte)return;
-    A.bt=dev;A.fonte='bt';marcarFonte();ligarQueda(dev);setStatus('Conectando sozinho na balança…','wait');
-    /* Android: espera a balança aparecer (anúncio) antes de conectar, por até 6 s */
-    if(dev.watchAdvertisements){try{const ac=new AbortController();await Promise.race([new Promise(r=>{dev.addEventListener('advertisementreceived',r,{once:true});dev.watchAdvertisements({signal:ac.signal}).catch(r);}),new Promise(r=>setTimeout(r,6000))]);ac.abort();}catch(e){}}
-    if(A.bt!==dev)return;
-    let ok=false;for(let n=0;n<2&&!ok&&A.bt===dev;n++){try{await btAbrir(dev);ok=true;}catch(e){await new Promise(r=>setTimeout(r,1500));}}
-    if(ok){try{localStorage.setItem('btUltimo',dev.id||'');}catch(e){}toast('Balança conectada');}
-    else if(A.bt===dev){dev._manual=true;try{dev.gatt.disconnect();}catch(e){}desconectar(false);dev._manual=false;setStatus('Não conectou sozinho · toque em Conectar a balança','err');}}
+    A.bt=dev;A.fonte='bt';marcarFonte();ligarQueda(dev);setStatus('Voltando a conectar na balança…','wait');
+    /* igual era antes: se não conectar de primeira, fica tentando sozinho até a balança aparecer (ou até tocar em Desconectar) */
+    try{await btAbrir(dev);try{localStorage.setItem('btUltimo',dev.id||'');}catch(e){}}catch(e){reconectarBt('Conectando na balança');}}
   catch(e){}finally{A.autoTent=false;aRender();}};
 async function btAbrir(dev){
   setStatus('Conectando em '+(dev.name||'aparelho')+'…','wait');
-  const srv=await dev.gatt.connect();
+  const srv=await Promise.race([dev.gatt.connect(),new Promise((_,rej)=>setTimeout(()=>rej(new Error('a balança não respondeu')),12000))]);  // não fica preso para sempre
   let servs=[];try{servs=await srv.getPrimaryServices();}catch(e){}
   const info=['Aparelho: '+(dev.name||'(sem nome)')];let n=0;A.btChars=[];A.btLer=[];A.btEsc=[];
   const PADRAO=/^0000(180a|1800|1801|180f)-/;  // informações do aparelho (modelo, fabricante): não é peso
