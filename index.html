@@ -163,7 +163,7 @@ body.somenteVer .fBar{display:none!important}
 .cBotoes{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:6px}.cBotoes>button{margin:0!important;width:100%;font-size:.82rem;padding:8px 6px}
 .cJuntoLista{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}
 .cvFundo{position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:9999;display:flex;align-items:center;justify-content:center;padding:16px}.cvCaixa{background:var(--card,#fff);border-radius:16px;max-width:420px;width:100%;padding:20px;border:3px solid #d32f2f;max-height:90vh;overflow:auto}.cvCaixa .cvBt{display:grid;gap:10px;margin-top:12px}.gBatEd label{display:block;font-size:.85rem;font-weight:700;margin:8px 0 0}.gBatEd input{width:100%;margin-top:4px}
-#tbHist .hAcoes{display:inline-flex;gap:4px;margin-left:6px;vertical-align:middle}#tbHist .hAcoes .mini{padding:3px 7px;font-size:.78rem;min-height:0;margin:0}.gBatAc{display:flex;gap:8px;margin-top:8px}.gBatFim{display:flex;justify-content:flex-end;gap:6px;margin:14px 0 4px}.gBatFim .mini{padding:3px 9px!important;font-size:.72rem!important;min-height:0;width:auto!important;margin:0!important;opacity:.8}.gBatFim.gbSel{justify-content:space-between;align-items:center;background:#fff4d6;border:1px solid #f2b705;border-radius:10px;padding:6px 8px;font-size:.82rem}.gBatFim.gbSel .mini{opacity:1}.gBatFim.gbTopo{margin:0 0 8px}.gBatPick{margin-top:8px!important;background:#eef5e4!important;border:2px solid #2e6b2f!important;color:#2e6b2f!important;font-weight:800}.gBatPick.del{background:#fdecea!important;border-color:#c62828!important;color:#c62828!important}.gBatAc .mini{flex:1}
+#tbHist .hAcoes{display:inline-flex;gap:4px;margin-left:6px;vertical-align:middle}#tbHist .hAcoes .mini{padding:3px 7px;font-size:.78rem;min-height:0;margin:0}.gBatAc{display:flex;gap:8px;margin-top:8px}.bedLin{display:flex;gap:6px;align-items:flex-end}.bedLin label{flex:1}.bedLin .mini{width:auto!important;padding:8px 12px;margin:0 0 6px!important}.bedLin.bedRm label{opacity:.4;text-decoration:line-through}.gBatFim{display:flex;justify-content:flex-end;gap:6px;margin:14px 0 4px}.gBatFim .mini{padding:3px 9px!important;font-size:.72rem!important;min-height:0;width:auto!important;margin:0!important;opacity:.8}.gBatFim.gbSel{justify-content:space-between;align-items:center;background:#fff4d6;border:1px solid #f2b705;border-radius:10px;padding:6px 8px;font-size:.82rem}.gBatFim.gbSel .mini{opacity:1}.gBatFim.gbTopo{margin:0 0 8px}.gBatPick{margin-top:8px!important;background:#eef5e4!important;border:2px solid #2e6b2f!important;color:#2e6b2f!important;font-weight:800}.gBatPick.del{background:#fdecea!important;border-color:#c62828!important;color:#c62828!important}.gBatAc .mini{flex:1}
 .gEst4{display:grid!important;grid-template-columns:1fr 1fr!important;gap:8px}.gNfArq{display:flex;align-items:center;justify-content:center;padding:18px;border:2px dashed #8fb43a;border-radius:14px;font-weight:800;font-size:1.1rem;color:#2e6b2f;background:#f3f7dc;cursor:pointer;margin-top:8px}.gNfImg{display:block;max-width:160px;border-radius:10px;border:1px solid #dde3ea;margin:6px 0}.gNfItem{border-top:1px solid #dde3ea;padding-top:8px;margin-top:8px}
 body.somenteVer .fCancForn,body.somenteVer .fFinal{display:none!important}
 button.fFinal{margin-top:34px!important;background:#f2b705!important;border-color:#d9a300!important;color:#3a2a00!important;font-weight:800}
@@ -1009,6 +1009,7 @@ body.naInicio .topoTxt h1{font-size:clamp(16px,5vw,28px)!important}
       <thead><tr><th class="hora">Hora</th><th>Curral</th><th>Previsto</th><th>Realiz.</th><th>Dif.</th></tr></thead>
       <tbody id="tbHist"></tbody>
     </table></div>
+    <div id="hEdFim"></div>
     <div class="selBar" id="selBar" hidden>
       <div class="note" id="selInfo">Toque nos registros que quer apagar.</div>
       <div class="row"><button id="selTodos">Selecionar todos</button><button id="selCanc">Cancelar</button></div>
@@ -1124,7 +1125,7 @@ body.naInicio .topoTxt h1{font-size:clamp(16px,5vw,28px)!important}
 <div class="toast" id="toast" hidden></div>
 <script>
 'use strict';
-const APP_VERSAO='106';
+const APP_VERSAO='107';
 const APP_DATA='19/10/2026';
 const KEY='confinamento-completo-v1';
 const $=id=>document.getElementById(id);
@@ -2359,11 +2360,11 @@ function renderHist(){try{aplicarRenomesHist();}catch(e){}
   $('hN').textContent=regs.length?`${regs.length} registro(s)`:'';
   if(HD.per||HD.t===-1){selModo=false;const L=totaisPorCurral(regs),[pa,pb]=intervaloHist();
     $('tbHist').innerHTML=regs.length?`<tr class="grp"><td colspan="5">${HD.per?`Total do período · ${diaBR(pa)} a ${diaBR(pb)}`:`${diaBR(pa)} · Todos os tratos`}</td></tr>`+totHTML(p,f,f-p)+
-      L.map(x=>`<tr><td class="hora">${x.n}×</td><td class="c">${esc(x.curral)}</td><td>${fmt(x.prev)}</td><td><b>${fmt(x.forn)}</b></td><td class="${classeDesv(x.forn-x.prev,x.prev)}">${sgn(x.forn-x.prev)}</td></tr>`).join(''):`<tr><td colspan="5" class="note" style="text-align:left">Nenhum registro nesse período.</td></tr>`;}
+      L.map(x=>`<tr><td class="hora">${x.n}×</td><td class="c">${esc(x.curral)}</td><td>${fmt(x.prev)}</td><td><b>${fmt(x.forn)}</b></td><td class="${classeDesv(x.forn-x.prev,x.prev)}">${sgn(x.forn-x.prev)}</td></tr>`).join(''):`<tr><td colspan="5" class="note" style="text-align:left">Nenhum registro nesse período.</td></tr>`;if($('hEdFim'))$('hEdFim').innerHTML='';}
   else
   { /* um dia: todos os currais da lista (na ordem do cadastro), com ou sem trato — o que não foi tratado aparece com o previsto e "—" */
     const dia=intervaloHist()[0],P=(typeof prevDoDia==='function'&&prevDoDia(dia))||{};
-    const linhaR=r=>`<tr class="${selModo?'selrow':''} ${selModo&&sel.has(r.uid)?'marcado':''}" ${selModo?`data-sel="${esc(r.uid)}"`:''}><td class="hora">${selModo?`<span class="chk">${sel.has(r.uid)?'☑':'☐'}</span> `:''}${horaDe(r)}</td><td class="c">${esc(r.curral)}</td><td>${fmt(r.prev)}</td><td><b>${fmt(r.forn)}</b><span class="hAcoes"><button class="mini" data-hed="${esc(r.uid)}" aria-label="Editar o ${esc(r.curral)}">✎</button><button class="mini danger" data-hdel="${esc(r.uid)}" aria-label="Apagar o ${esc(r.curral)}">✕</button></span></td><td class="${classeDesv(r.forn-r.prev,r.prev)}">${sgn(r.forn-r.prev)}</td></tr>`;
+    const linhaR=r=>`<tr class="${selModo?'selrow':''} ${selModo&&sel.has(r.uid)?'marcado':''}" ${selModo?`data-sel="${esc(r.uid)}"`:''}><td class="hora">${selModo?`<span class="chk">${sel.has(r.uid)?'☑':'☐'}</span> `:''}${horaDe(r)}</td><td class="c">${esc(r.curral)}</td><td>${fmt(r.prev)}</td><td><b>${fmt(r.forn)}</b>${window.hEdModo&&!modoVer?`<span class="hAcoes"><button class="mini" data-hed="${esc(r.uid)}" aria-label="Editar o ${esc(r.curral)}">✎</button><button class="mini danger" data-hdel="${esc(r.uid)}" aria-label="Apagar o ${esc(r.curral)}">✕</button></span>`:''}</td><td class="${classeDesv(r.forn-r.prev,r.prev)}">${sgn(r.forn-r.prev)}</td></tr>`;
     const temPrev=k=>Object.values(P[k]||P[String(k)]||{}).some(v=>+v>0);
     const ks=(HD.t>0?[HD.t]:[...new Set(tratosAtivos().map(Number).concat(regs.map(r=>+r.trato)))].filter(k=>regs.some(r=>+r.trato===k)||temPrev(k))).sort((a,b)=>a-b);
     const doLoc=c=>localSel==='T'||linhaDe(c)===localSel;
@@ -2382,7 +2383,7 @@ function renderHist(){try{aplicarRenomesHist();}catch(e){}
       TP+=gp;TF+=gf;TT+=gt;
       return `<tr class="grp"><td colspan="5">${diaBR(dia)} · Trato ${k}</td></tr>`+totHTML(gp,gf,gt?gf-gt:null)+linhas;}).join('');
     const topo=ks.length>1?`<tr class="grp"><td colspan="5">${diaBR(dia)} · Todos os tratos</td></tr>`+totHTML(TP,TF,TT?TF-TT:null):'';
-    $('tbHist').innerHTML=(html&&topo+html)||`<tr><td colspan="5" class="note" style="text-align:left">Nenhum trato nem previsto para esse filtro.</td></tr>`;}
+    $('tbHist').innerHTML=(html&&topo+html)||`<tr><td colspan="5" class="note" style="text-align:left">Nenhum trato nem previsto para esse filtro.</td></tr>`;pintarHEd();}
   caberTabela($('tbHist'));
   ['hWa','hCopiar','hExcel','hShare','hApagar','hImg','hXls'].forEach(id=>$(id).disabled=!regs.length);
   $('hApagar').hidden=selModo||HD.per||HD.t===-1;$('selBar').hidden=!selModo;
@@ -2403,13 +2404,19 @@ $('selCanc').onclick=()=>{selModo=false;sel.clear();renderHist();};
 $('selTodos').onclick=()=>{const f=filtrados();const todos=f.every(r=>sel.has(r.uid));f.forEach(r=>todos?sel.delete(r.uid):sel.add(r.uid));renderHist();};
 $('tbHist').addEventListener('click',e=>{if(!selModo)return;const tr=e.target.closest('tr[data-sel]');if(!tr)return;e.preventDefault();e.stopPropagation();const u=tr.dataset.sel;sel.has(u)?sel.delete(u):sel.add(u);renderHist();},true);
 /* Histórico: ✎ editar e ✕ apagar cada registro, com a senha 1010 */
+/* Histórico › Tratos: ✎/✕ só aparecem depois de tocar no botão pequeno "Editar / excluir" no fim da lista */
+window.hEdModo=false;
+function pintarHEd(){const el=$('hEdFim');if(!el)return;if(modoVer||!HIST.length){el.innerHTML='';return;}
+  el.innerHTML=window.hEdModo?`<div class="gBatFim gbSel"><span>Toque em <b>✎</b> para editar ou <b>✕</b> para excluir o registro</span><button class="mini" data-hedmodo="0">Concluir</button></div>`
+    :`<div class="gBatFim"><button class="mini" data-hedmodo="1">✎ Editar / excluir</button></div>`;}
+document.addEventListener('click',e=>{const b=e.target.closest('[data-hedmodo]');if(!b)return;window.hEdModo=b.dataset.hedmodo==='1';renderHist();});
 document.addEventListener('click',async e=>{const be=e.target.closest('#tbHist [data-hed]'),bd=e.target.closest('#tbHist [data-hdel]');if(!be&&!bd)return;if(bloqueado())return;
   const r=HIST.find(x=>x.uid===(be||bd).dataset[be?'hed':'hdel']);if(!r)return;
   if(!await pedirSenhaAcao(be?'Senha para editar':'Senha para apagar'))return;
   if(be)return editarQtd(r.uid);
   if(!(window.perg?await perg(`Apagar o trato do ${r.curral}?`,`${diaBR(r.dia)} · Trato ${r.trato} · ${fmt(r.forn)} kg. Apaga aqui e na planilha.`,'Sim, apagar','Não'):confirm('Apagar?')))return;
   try{await dbDelMany([r.id]);}catch(err){toast('Erro ao apagar');return;}
-  if(r.enviado){S.apagarNuvem=(S.apagarNuvem||[]).concat(r.uid);save();}HIST=HIST.filter(x=>x!==r);toast('Registro apagado');render();renderHist();sincronizar();});
+  if(r.enviado){S.apagarNuvem=(S.apagarNuvem||[]).concat(r.uid);save();}HIST=HIST.filter(x=>x!==r);window.hEdModo=false;toast('Registro apagado');render();renderHist();sincronizar();});
 $('selApagar').onclick=async()=>{
   if(!sel.size)return;
   const senha=prompt(`Apagar ${sel.size} registro(s), aqui e na planilha. Digite a senha:`);if(senha==null)return;
@@ -3216,7 +3223,8 @@ let contOferecido={};
 /* continua o fornecimento de outro aparelho: mesmo local/ração/trato; se parou no meio de um curral, segue com o peso inicial de lá
    (o que já caiu = início − balança agora; o que falta = balança agora − parar em) */
 async function continuarForn(d,tela){tela=tela||window.abaAtual;
-  try{await puxarRegistros(true);}catch(e){}
+  /* busca os registros da nuvem, mas no máximo 4 s: internet lenta não pode travar o botão (o resto chega sozinho depois) */
+  try{await Promise.race([puxarRegistros(true),new Promise(r=>setTimeout(r,4000))]);}catch(e){}
   const loc=d.local||linhaDe(d.curral||''),rac=d.local?(d.rac||''):((window.racaoDoCurral&&d.curral&&racaoDoCurral(d.curral))||'');
   S.forn={ativo:true,ts0:+d.fts0||Date.now(),dia:hojeKey(),local:loc,rac,trato:+d.trato,deAp:d.ap,contTs:Date.now()};FS.fim='';
   if(+S.tratoSel!==+d.trato){S.tratoSel=+d.trato;$('tratoSel').value=String(d.trato);if($('aTrato'))$('aTrato').value=String(d.trato);}
@@ -3235,7 +3243,8 @@ async function fBuscarRemoto(){try{if(modoVer||!navigator.onLine||!apiUrl()||fil
   const novo=T.filter(d=>d.ap!==S.aparelho&&d.modo==='trato'&&d.local&&!d.fimForn&&d.dia===hojeKey()&&d.idade<4*3600e3
       &&!T.some(e=>e.ap!==d.ap&&e.deAp===d.ap&&e.local===d.local&&+e.trato===+d.trato)
       &&fornPendentes(d.local,d.rac||null,+d.trato).length>0).sort((a,b)=>a.idade-b.idade);
-  const k=x=>JSON.stringify(x.map(d=>[d.ap,d.local,d.trato,d.curral,Math.round(d.idade/10000)]));
+  const k=x=>JSON.stringify(x.map(d=>[d.ap,d.local,d.trato,d.curral,d.feitos,Math.round(d.idade/60000)]));
+  if(window.fContAndando)return;   // tocou em Continuar: não redesenha o botão no meio
   const mud=k(novo)!==k(fRem);fRem=novo;if(mud)mostrarFornecimento();}catch(e){}}
 setInterval(()=>{if(!modoVer&&['trato','auto'].includes(window.abaAtual)&&!filtroForn()&&document.visibilityState==='visible')fBuscarRemoto();},8000);
 function fRemHTML(){if(!fRem.length)return '';
@@ -3245,7 +3254,11 @@ function fRemHTML(){if(!fRem.length)return '';
       <button class="primary" data-fcont="${esc(d.ap)}">▶ Continuar este fornecimento daqui</button></div>`;}).join('')}
     <p class="note">Segue do curral em que parou: o fornecido e o que falta são calculados pelo peso de início de lá e pela balança daqui. O outro aparelho fecha o fornecimento dele.</p></section>`;}
 document.addEventListener('click',e=>{const b=e.target.closest('[data-fcont]');if(!b||modoVer)return;const d=fRem.find(x=>x.ap===b.dataset.fcont);if(!d)return;
-  if(d.idade<20000&&!confirm('O outro aparelho ainda parece ativo (mandou sinal há menos de 20 s). Continuar aqui mesmo assim?'))return;continuarForn(d);});
+  if(window.fContAndando)return;
+  if(d.idade<20000&&!confirm('O outro aparelho ainda parece ativo (mandou sinal há menos de 20 s). Continuar aqui mesmo assim?'))return;
+  /* resposta na hora: trava os botões e mostra que está abrindo (antes parecia que não tinha pegado e tinha que tocar várias vezes) */
+  window.fContAndando=true;document.querySelectorAll('[data-fcont]').forEach(x=>{if(x!==b)x.disabled=true;});b.style.pointerEvents='none';b.textContent='⏳ Abrindo o fornecimento…';
+  continuarForn(d).catch(()=>{}).finally(()=>{window.fContAndando=false;try{mostrarFornecimento();}catch(e){}});});
 /* o aparelho original: se outro continuou o fornecimento dele, fecha o dele */
 async function fVerTomado(){try{const f=filtroForn();if(!f||modoVer||!navigator.onLine||!apiUrl())return;
   const j=await (await fetch(apiUrl()+'?acao=aovivo',{cache:'no-store'})).json();if(!j||!j.ok)return;

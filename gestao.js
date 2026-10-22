@@ -1618,7 +1618,7 @@ window.HBSEL=null;
 window.batidasHTML=(L,mostrarDia,semApagar)=>{if(!L.length)return '<p class="note">Nenhuma batida neste filtro.</p>';
   const podeMexer=!semApagar&&!(typeof modoVer!=='undefined'&&modoVer),sel=podeMexer?window.HBSEL:null;
   const fim=podeMexer?(sel?`<div class="gBatFim gbSel"><span>${sel==='ed'?'✎ Toque em <b>Editar esta</b> na batida que quer editar':'✕ Toque em <b>Apagar esta</b> na batida que quer apagar'}</span><button class="mini" data-hbmodo="">Cancelar</button></div>`
-    :`<div class="gBatFim"><button class="mini" data-hbmodo="ed">✎ Editar</button><button class="mini" data-hbmodo="del">✕ Apagar</button></div>`):'';
+    :`<div class="gBatFim"><button class="mini" data-hbmodo="ed">✎ Editar / excluir</button></div>`):'';
   return (sel?`<div class="gBatFim gbSel gbTopo"><span>${sel==='ed'?'Escolha a batida para editar':'Escolha a batida para apagar'}</span><button class="mini" data-hbmodo="">Cancelar</button></div>`:'')+L.map(c=>{const tp=c.itens.reduce((a,x)=>a+(+x.prev||0),0),tr=c.itens.reduce((a,x)=>a+(+x.real||0),0),d=tr-tp,cls=(dd,p)=>typeof classeDesv==='function'?classeDesv(dd,p):'';
     return `<details class="gMais gCarga" open><summary><b>${mostrarDia?diaBR(c.dia).slice(0,5)+' ':''}${esc(c.hora||'')}</b> · ${c.avulso?'Avulsa':c.tratos&&c.tratos.length>1?'Tratos '+c.tratos.join('+'):'Trato '+c.trato}${c.local?' · '+(c.local==='C'?'Confinamento':'Pasto'):''} · ${esc(c.racNome||'')} <span class="num">${nf(tr)} kg <i class="${cls(d,tp)}">(${d>0?'+':''}${nf(d)})</i></span></summary>
       <div class="tablebox"><table class="gTab"><thead><tr><th>Hora</th><th>Insumos</th><th>Previsto</th><th>Carreg.</th><th>Dif.</th></tr></thead><tbody>${c.itens.map(x=>{const dd=x.real-x.prev;return `<tr><td>${esc(x.hora||'')}</td><td class="c">${nomeMan(x)}</td><td>${nf(x.prev)}</td><td>${ok(+x.real)?nf(+x.real):'—'}</td><td class="${ok(+x.real)?cls(dd,x.prev):''}">${ok(+x.real)?(dd>0?'+':'')+nf(dd):''}</td></tr>`;}).join('')}
@@ -1665,12 +1665,20 @@ document.addEventListener('click',async e=>{const b=e.target.closest('[data-hbde
 document.addEventListener('click',async e=>{const b=e.target.closest('[data-hbed]');if(!b)return;if(typeof bloqueado==='function'&&bloqueado())return;const c=G.it[b.dataset.hbed];if(!c||c.del)return;
   if(!await pedirSenhaAcao('Senha para editar'))return;
   const f=document.createElement('div');f.className='cvFundo';
+  /* editar a batida: muda o kg de cada produto, exclui um produto (✕) ou exclui a batida inteira */
   f.innerHTML=`<div class="cvCaixa gBatEd" style="border-color:#2e6b2f"><h3 style="color:#2e6b2f">✎ Editar batida · ${esc(diaBR(c.dia).slice(0,5))} ${esc(c.hora||'')}</h3>
     <label>Data<input type="date" id="bedDia" value="${esc(c.dia)}"></label><label>Hora<input type="time" id="bedHora" value="${esc(c.hora||'')}"></label>
-    ${c.itens.map((x,i)=>`<label>${esc(x.nome)} · previsto ${nf(x.prev)} kg<input class="num" inputmode="decimal" data-bed="${i}" value="${ok(+x.real)?+x.real:''}" placeholder="kg carregado"></label>`).join('')}
-    <div class="cvBt"><button class="cvSim" style="background:#2e6b2f;border-color:#2e6b2f">Salvar</button><button class="cvNao">Cancelar</button></div></div>`;
-  document.body.appendChild(f);f.querySelector('.cvNao').onclick=()=>f.remove();
-  f.querySelector('.cvSim').onclick=()=>{const x=JSON.parse(JSON.stringify(c));f.querySelectorAll('[data-bed]').forEach(inp=>{const v=gNum(inp.value);x.itens[+inp.dataset.bed].real=ok(v)?v:null;});
+    ${c.itens.map((x,i)=>`<div class="bedLin" data-bedlin="${i}"><label>${esc(x.nome)} · previsto ${nf(x.prev)} kg<input class="num" inputmode="decimal" data-bed="${i}" value="${ok(+x.real)?+x.real:''}" placeholder="kg carregado"></label><button type="button" class="mini danger" data-bedrm="${i}" title="Excluir este produto da batida">✕</button></div>`).join('')}
+    <p class="note" id="bedAviso"></p>
+    <div class="cvBt"><button class="cvSim" style="background:#2e6b2f;border-color:#2e6b2f">Salvar</button><button class="cvNao">Cancelar</button><button class="cvExc" style="background:#fdecea;border-color:#c62828;color:#c62828">🗑 Excluir a batida inteira</button></div></div>`;
+  document.body.appendChild(f);f.querySelector('.cvNao').onclick=()=>f.remove();const rm=new Set();
+  f.querySelectorAll('[data-bedrm]').forEach(bt=>bt.onclick=()=>{const i=+bt.dataset.bedrm,lin=f.querySelector(`[data-bedlin="${i}"]`);if(rm.has(i)){rm.delete(i);lin.classList.remove('bedRm');bt.textContent='✕';}else{rm.add(i);lin.classList.add('bedRm');bt.textContent='↩';}
+    f.querySelector('#bedAviso').textContent=rm.size?`${rm.size} produto(s) serão excluídos ao salvar (↩ desfaz).`:'';});
+  f.querySelector('.cvExc').onclick=async()=>{if(!await confirmaVermelho('Excluir a batida inteira?','Some do histórico, dos relatórios e do estoque.','Sim, excluir','Não'))return;gDel(c.uid);f.remove();window.HBSEL=null;toast('Batida excluída');if(typeof renderHist==='function')renderHist();};
+  f.querySelector('.cvSim').onclick=async()=>{const x=JSON.parse(JSON.stringify(c));f.querySelectorAll('[data-bed]').forEach(inp=>{const v=gNum(inp.value);x.itens[+inp.dataset.bed].real=ok(v)?v:null;});
+    if(rm.size){const nomes=[...rm].map(i=>x.itens[i].nome).join(', ');if(!await confirmaVermelho(`Excluir ${rm.size} produto(s) da batida?`,nomes+'. Some do histórico, dos relatórios e do estoque.','Sim, excluir','Não'))return;
+      x.itens=x.itens.filter((_,i)=>!rm.has(i));if(!x.itens.length){gDel(c.uid);f.remove();window.HBSEL=null;toast('Batida excluída');if(typeof renderHist==='function')renderHist();return;}
+      x.total=x.itens.reduce((a,y)=>a+(+y.prev||0),0);}
     const d=f.querySelector('#bedDia').value,h=f.querySelector('#bedHora').value;if(d)x.dia=d;if(h)x.hora=h;gPut(x);f.remove();window.HBSEL=null;toast('Batida alterada');if(typeof renderHist==='function')renderHist();};});
 
 /* ---------- Gestão › Currais: nome, tipo (confinamento/pasto) e ativo/inativo ---------- */

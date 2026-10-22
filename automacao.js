@@ -35,7 +35,12 @@ const css=`
 :is(#aBox,#acBox,#aoVivo) .aSinal.desc{display:none!important}
 :is(#aBox,#acBox,#aoVivo) .curhead .balMini{margin-left:auto;font-size:.82rem;font-weight:700;white-space:nowrap}
 :is(#aBox,#acBox,#aoVivo) .curhead .balMini.ruim{color:#c62828}
-:is(#aBox,#acBox,#aoVivo) section.balRec :is(.aStatus,.aConn,.aSinal,.aTeclas,.aSim){display:none!important}
+:is(#aBox,#acBox,#aoVivo) section.balRec :is(.aStatus,.aConn,.aSinal,.aTeclas,.aSim,.btAutoLin){display:none!important}
+:is(#aBox,#acBox,#aoVivo) .aTeclas{display:none!important}
+:is(#aBox,#acBox,#aoVivo) .aConn.comTag{grid-template-columns:3fr 2fr 1.3fr}
+:is(#aBox,#acBox,#aoVivo) .aConn .aTagBt{font-weight:700}
+:is(#aBox,#acBox,#aoVivo) .aConn .aTagBt.tgOk{background:#2e7d32!important;border-color:#2e7d32!important;color:#fff!important}
+:is(#aBox,#acBox,#aoVivo) .aConn .aTagBt.tgErr{background:#fff4d6!important;border-color:#f2b705!important;color:#7a5a00!important}
 :is(#aBox,#acBox,#aoVivo) .aConn{display:grid;grid-template-columns:3fr 2fr;gap:6px}
 :is(#aBox,#acBox,#aoVivo) .aConn .aDescBt{border-color:var(--bad);color:var(--bad)}
 :is(#aBox,#acBox,#aoVivo) .aConn .aDescBt:disabled{opacity:.35}
@@ -120,7 +125,9 @@ function montar(){
       <button id="aBtWs" hidden>📶 Caixinha Wi-Fi</button>
       <button id="aBtSim" hidden>🧪 Simulador</button>
       <button id="aDesc" class="aDescBt" disabled>Desconectar</button>
+      <button type="button" class="aTagBt" data-tagbt hidden title="Leitor de tag">🏷 Tag</button>
     </div>
+    <label class="aChk btAutoLin"><input type="checkbox" data-btauto> Conectar a balança sozinho</label>
     <div class="aSinal" id="aSinal">⚪ Balança desconectada</div>
     <div class="aTeclas" id="aTeclas" hidden><button data-tecla="43">▸0◂<br>Zero</button><button data-tecla="40">▸T◂<br>Tara</button><button data-tecla="10">Líquido/<br>Bruto</button><button data-tecla="23">🖨<br>Imprimir</button></div>
     <div class="aSim" id="aSimBox" hidden>
@@ -210,7 +217,7 @@ function ligar(){
 
 /* ---------------- Conexões ---------------- */
 /* botão da balança: vermelho "Conectar a balança" enquanto desconectada; verde "✓ Balança conectada" quando conecta (e o Desconectar fica vermelho) */
-function pintarBtBal(){[['aBtBt','aDesc'],['acBtBt','acDesc']].forEach(([b,d])=>{const bt=$(b),ds=$(d);if(!bt)return;const on=!!A.fonte;
+function pintarBtBal(){try{pintarBtAuto();}catch(e){}[['aBtBt','aDesc'],['acBtBt','acDesc']].forEach(([b,d])=>{const bt=$(b),ds=$(d);if(!bt)return;const on=!!A.fonte;
   bt.classList.toggle('btVerm',!on);bt.classList.toggle('btVerde',on);bt.textContent=on?'✓ Balança conectada':'Conectar a balança';if(ds)ds.classList.toggle('btDescOn',on);});}
 function setStatus(t,tipo){A.status=t;A.statusTipo=tipo||'';pintarBtBal();const el=$('aStatus');if(el){$('aStatusTxt').textContent=t;el.className='aStatus '+(tipo||'');}acSyncTopo();}
 function marcarFonte(){['aBtSer','aBtBt','aBtWs','aBtSim'].forEach(id=>$(id).classList.remove('on'));
@@ -260,12 +267,13 @@ const SERVICOS=['6e400001-b5a3-f393-e0a9-e50e24dcca9e','0000ffe0-0000-1000-8000-
 function cmdBle(){const t=String(cfg().bleCmd||'');if(!t)return null;const out=[];t.replace(/\\r/g,'\r').replace(/\\n/g,'\n').replace(/<([0-9a-fA-F]{2})>|([\s\S])/g,(m,h,ch)=>{if(h)out.push(parseInt(h,16));else out.push(ch.charCodeAt(0)&255);return '';});return new Uint8Array(out);}
 /* UUID do serviço digitado em Gestão › Config. › Balança (descoberto com o app nRF Connect) */
 function servicosBle(){const l=SERVICOS.slice();String(cfg().bleUuid||'').split(/[\s,;]+/).map(x=>x.trim().toLowerCase()).filter(x=>/^[0-9a-f]{4}$|^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/.test(x)).forEach(x=>{const u=x.length===4?`0000${x}-0000-1000-8000-00805f9b34fb`:x;if(!l.includes(u))l.push(u);});return l;}
-async function conectarBt(){
+async function conectarBt(soBalanca){
   if(!navigator.bluetooth){toast('Este celular/navegador não tem Bluetooth BLE para apps. Use o Chrome no Android.');setStatus('Bluetooth indisponível neste navegador','err');return;}
   desconectar(false);A.btGen=(A.btGen||0)+1;A.btReconectando=false;   // conexão nova: tentativa antiga que ficou pendurada não mexe mais
   try{
     setStatus('Escolha a balança na lista…','wait');
-    const dev=await navigator.bluetooth.requestDevice({acceptAllDevices:true,optionalServices:servicosBle()});
+    let dev;if(soBalanca){try{dev=await navigator.bluetooth.requestDevice({filters:[{namePrefix:'NEW EZ'},{namePrefix:'NEW'},{namePrefix:'EZ'},{namePrefix:'DIGI'}],optionalServices:servicosBle()});}catch(x){if(x&&x.name==='NotFoundError')throw x;dev=null;}}
+    if(!dev)dev=await navigator.bluetooth.requestDevice({acceptAllDevices:true,optionalServices:servicosBle()});
     A.bt=dev;A.fonte='bt';marcarFonte();
     try{localStorage.setItem('btUltimo',dev.id||'');}catch(e){}
     ligarQueda(dev);
@@ -293,9 +301,24 @@ setInterval(()=>{if(A.fonte!=='bt'||!A.bt||!A.digiStar||A.btReconectando)return;
 /* ao abrir o app de novo (ou depois de atualizar), tenta voltar sozinho para a última balança, se o Chrome deixar */
 /* ao entrar na Automação (Carregar ou Fornecer): tenta conectar sozinho na balança já usada neste aparelho (NEW EZ),
    sem abrir a lista do Bluetooth. Se não der, fica como está: botão Conectar a balança. */
-window.btAutoVoltar=async()=>{if(A.fonte||A.autoTent||!navigator.bluetooth||!navigator.bluetooth.getDevices)return;A.autoTent=true;
+/* "Conectar a balança sozinho" (ligado de fábrica, por aparelho):
+   1) se o Chrome deixa (getDevices), conecta sem perguntar;
+   2) se não deixa, o primeiro toque em qualquer lugar da tela já abre a lista só com a balança (NEW EZ) — é só tocar nela;
+   3) caiu: fica reconectando sozinho. */
+const btAutoOn=()=>{try{return localStorage.getItem('btAuto')!=='0';}catch(e){return true;}};
+function pintarBtAuto(){document.querySelectorAll('[data-btauto]').forEach(i=>{i.checked=btAutoOn();});}
+function armarToque(){if(!btAutoOn()||A.fonte||A.toqueArmado||!navigator.bluetooth)return;A.toqueArmado=true;
+  setStatus('Toque em qualquer lugar da tela para conectar a balança','wait');
+  const h=ev=>{if(ev.target.closest&&ev.target.closest('#aBtBt,#acBtBt,[data-btauto],.btAutoLin,#aDesc,#acDesc,[data-tagbt]'))return;   // botão de conectar/desconectar: deixa ele mesmo resolver
+    document.removeEventListener('click',h,true);A.toqueArmado=false;if(A.fonte||!btAutoOn())return;
+    const tela=(!$('viewAuto').hidden)||naCargaAuto();if(tela)conectarBt(true);};
+  document.addEventListener('click',h,true);}
+document.addEventListener('change',e=>{const c=e.target.closest('[data-btauto]');if(!c)return;try{localStorage.setItem('btAuto',c.checked?'1':'0');}catch(x){}pintarBtAuto();
+  if(c.checked){toast('Vai conectar a balança sozinho');if(!A.fonte)btAutoVoltar();}else toast('Conexão automática desligada');});
+window.btAutoVoltar=async()=>{pintarBtAuto();if(A.fonte||A.autoTent||!navigator.bluetooth||!btAutoOn())return;
+  if(!navigator.bluetooth.getDevices){armarToque();return;}A.autoTent=true;
   try{const id=localStorage.getItem('btUltimo'),devs=await navigator.bluetooth.getDevices();
-    const dev=devs.find(d=>id&&d.id===id)||devs.find(d=>/NEW\s*EZ|DIGI|EZ\d/i.test(d.name||''));if(!dev||A.fonte)return;
+    const dev=devs.find(d=>id&&d.id===id)||devs.find(d=>/NEW\s*EZ|DIGI|EZ\d/i.test(d.name||''));if(!dev){A.autoTent=false;armarToque();return;}if(A.fonte)return;
     A.bt=dev;A.fonte='bt';marcarFonte();ligarQueda(dev);setStatus('Voltando a conectar na balança…','wait');
     /* igual era antes: se não conectar de primeira, fica tentando sozinho até a balança aparecer (ou até tocar em Desconectar) */
     try{await btAbrir(dev);try{localStorage.setItem('btUltimo',dev.id||'');}catch(e){}}catch(e){reconectarBt('Conectando na balança');}}
@@ -505,17 +528,22 @@ function novoPeso(n){
     const deriva=Math.abs(med(vs.slice(-k))-med(vs.slice(0,k)));
     // parado: ou varia menos que o aceito, ou (com balança tremendo) não sobe/desce e a média fica firme
     A.estavel=(mx-mn)<=c.tol||(deriva<=c.tol&&(Math.max(...ss)-Math.min(...ss))<=c.tol*2);
+    A.estrito=A.estavel;   // parado de verdade (sem a regra da tomada de força): é o único que pode mexer no peso inicial
     A.valEst=A.estavel?Math.round(med(vs)):null;
     /* tomada de força girando: a balança nunca fica parada (oscila 50–150 kg), mas a MÉDIA não sobe nem desce.
        Firme pela tendência: reta das leituras cruas da janela quase sem inclinação (menos de ~10 kg na janela toda)
        → Estável, e o peso firme é a média sem os picos (tira 20% de cima e 20% de baixo). */
     if(!A.estavel){const j6=agora-Math.max(c.tempo*1000,5000),cr=A.crus.filter(q=>q.t>=j6);
       if(cr.length>=8&&cr[0].t<=j6+800&&Math.abs(tendencia(cr).b)*1000<=12){   // menos de 12 kg/s: não está carregando nem descarregando
-        if(!A.firmeTdp)A.firmeT0=agora-3000;A.estavel=true;A.firmeTdp=true;
+        if(!A.firmeTdp)A.firmeT0=agora-3000;
+        /* o peso mudou de patamar (ex.: colocou núcleo devagar): recomeça a média só com as leituras de agora */
+        {const r2=A.crus.filter(q=>q.t>=agora-2000).map(q=>q.v).sort((x,y)=>x-y);if(A.firmeTdp&&A.vePrev!=null&&r2.length&&Math.abs(r2[Math.floor((r2.length-1)/2)]-A.vePrev)>Math.max(+c.tol||0,15))A.firmeT0=agora-2000;}
+        A.estavel=true;A.firmeTdp=true;
         A.valEst=mediaSemPicos(A.crus.filter(q=>q.t>=Math.max(A.firmeT0,agora-10000)).map(q=>q.v));}   // quanto mais tempo firme, mais leituras na média (até 10 s)
       else A.firmeTdp=false;}
-    else A.firmeTdp=false;}
-  else{A.estavel=false;A.valEst=null;A.firmeTdp=false;}
+    else A.firmeTdp=false;
+    A.vePrev=A.valEst;}
+  else{A.estavel=false;A.valEst=null;A.firmeTdp=false;A.estrito=false;A.vePrev=null;}
   /* fornecendo: o "Fornecer" segue a RETA das leituras dos últimos 4 s (não cada leitura), então o balanço do vagão
      (pula 100 kg pra cima e pra baixo) não aparece e o número desce liso entre uma leitura e outra.
      Leitura muito fora da reta é descartada. Não trava: se a balança mostrar que caiu menos, o número volta (só ignora sobe de menos de 40 kg).
@@ -550,7 +578,7 @@ function maquina(){
     const lim=cur&&cur.prev>0?Math.min(c.minDesc,Math.max(c.tol,cur.prev/2)):c.minDesc; // curral pequeno: começa com menos
     if(A.base!=null&&cur&&A.suave<A.base-lim){A.est='descarregando';A.menor=A.peso;A.avisou1=false;A.avisou2=false;A.ancV=A.suave;A.ancT=Date.now();A.fpMin=null;return;}
     /* parado: o peso inicial é sempre o peso real da balança agora (não o final do curral anterior, que pode variar) */
-    if(A.estavel&&(A.base==null||A.valEst!==A.base)){if(A.base!=null&&A.baseConf===false&&Math.abs(A.valEst-A.base)>=5)diagLog('ini_ajustado',{curral:cur?cur.nome:'',de:A.base,para:A.valEst});A.base=A.valEst;A.baseConf=true;}
+    if(A.estavel&&(A.base==null||(A.valEst!==A.base&&(A.valEst>A.base||(A.estrito&&A.base-A.valEst<=Math.max(+c.tol||0,10)))))){if(A.base!=null&&A.baseConf===false&&Math.abs(A.valEst-A.base)>=5)diagLog('ini_ajustado',{curral:cur?cur.nome:'',de:A.base,para:A.valEst});A.base=A.valEst;A.baseConf=true;}
     if(A.base==null){const r=refProvisoria(-1);if(r)A.base=r.v;}  // balança tremendo ou já começou a descer: não fica esperando
     return;
   }
@@ -721,7 +749,8 @@ function aContinuarPausa(){const P=A.pausa;if(!P)return;A.pausa=null;
 window.aPausar=aPausar;window.aContinuarPausa=aContinuarPausa;
 /* peso na tela entre uma leitura e outra: enquanto está carregando/fornecendo, segue a velocidade (kg/s) por até "prever" segundos,
    para o número andar junto com o vagão em vez de pular. Só na tela: registro, apito e peso firme usam a leitura real. */
-function pesoTela(){if(A.peso!=null&&!A.pausa&&A.estavel&&A.valEst!=null)return A.valEst;  // firme: o número para (média sem os picos)
+function pesoTela(){if(A.peso!=null&&naCargaAuto())return A.peso;   // carregar: sempre a balança de verdade (varia, sobe e desce)
+  if(A.peso!=null&&!A.pausa&&A.estavel&&A.valEst!=null)return A.valEst;  // firme: o número para (média sem os picos)
   if(A.peso==null||A.pausa||naCargaAuto())return A.peso;  // carregar: mostra a leitura da balança direto (a pazada aparece na hora; pico sobe e volta), sem prever
   if(A.descFit&&!naCargaAuto()&&A.est==='descarregando'&&!A.estavel)return pesoDescRef();const p0=A.peso,lim=Math.max(0,Math.min(2,+cfg().prever||0))*1000;if(!lim||!A.tUlt)return p0;
   let dir=0,tx=0;if(caindoAgora()){dir=-1;tx=taxaQueda();}else if(typeof subindoAgora==='function'&&subindoAgora()){dir=1;tx=taxaQueda(-1);}
@@ -836,7 +865,7 @@ function maquinaCarga(){
   if(AC.est==='aguardando'){
     const lim=Math.min(c.minDesc,Math.max(c.tol,it.prev/2)); // produto pequeno (núcleo): começa com menos
     if(ok(it.ini)&&A.suave>it.ini+lim){AC.est='carregando';AC.ancV=A.suave;AC.ancT=Date.now();AC.fpMin=null;return;}
-    if(A.estavel&&(!ok(it.ini)||A.valEst!==it.ini)){if(ok(it.ini)&&Math.abs(A.valEst-it.ini)>=5)diagLog('ini_ajustado_carga',{produto:it.nome,de:it.ini,para:A.valEst});it.ini=A.valEst;it.fim=null;cSave();}  // parado: o peso inicial é sempre o peso real da balança agora
+    if(A.estavel&&(!ok(it.ini)||(A.valEst!==it.ini&&(A.valEst<it.ini||(A.estrito&&A.valEst-it.ini<=Math.max(+c.tol||0,10)))))){if(ok(it.ini)&&Math.abs(A.valEst-it.ini)>=5)diagLog('ini_ajustado_carga',{produto:it.nome,de:it.ini,para:A.valEst});it.ini=A.valEst;it.fim=null;cSave();}  // parado: o peso inicial é sempre o peso real da balança agora
     if(!ok(it.ini)){const r=refProvisoria(1);if(r){it.ini=r.v;it.fim=null;cSave();}}  // balança tremendo ou já começou a carregar: não fica esperando
   }else{
     const passo=Math.max(4,(+c.tol||0)/2);
@@ -855,6 +884,7 @@ window.acTela=(nova,dia)=>{
     <div class="curhead balHead"><button type="button" class="mini balTog" data-baltog="1" aria-label="Mostrar ou esconder a conexão">▲</button><h2>Balança</h2><span class="balMini" id="acBalMini"></span></div>
     <div class="aStatus" id="acStatus"><i></i><span id="acStatusTxt">Desconectado</span></div>
     <div class="aConn"><button data-ac="ser" id="acBtSer" hidden>🔵 Bluetooth</button><button data-ac="bt" id="acBtBt">Conectar a balança</button><button data-ac="ws" id="acBtWs" hidden>📶 Caixinha Wi-Fi</button><button data-ac="sim" id="acBtSim" hidden>🧪 Simulador</button><button data-ac="desc" id="acDesc" class="aDescBt" disabled>Desconectar</button></div>
+    <label class="aChk btAutoLin"><input type="checkbox" data-btauto> Conectar a balança sozinho</label>
     <div class="aSinal" id="acSinal">⚪ Balança desconectada</div>
     <div class="aTeclas" id="acTeclas" hidden><button data-tecla="43">▸0◂<br>Zero</button><button data-tecla="40">▸T◂<br>Tara</button><button data-tecla="10">Líquido/<br>Bruto</button><button data-tecla="23">🖨<br>Imprimir</button></div>
     <div class="aSim" id="acSimBox" hidden><button class="lima" data-ac="simSobe">▲ Carregar</button><button data-ac="simPara">■ Parar</button><button data-ac="simZera">Esvaziar</button></div>
@@ -913,7 +943,7 @@ function acSyncTopo(){if(!$('acStatus'))return;
 function pintarCarga(){comPesoTela(pintarCarga0);}
 function pintarCarga0(){
   if(!naCargaAuto()||!$('acPeso'))return;
-  const prC=A.estavel&&A.valEst!=null?A.valEst:A._tela&&A._pesoReal!=null?A._pesoReal:A.peso;$('acPeso').textContent=prC==null?'—':fmt(prC);  // Balança: igual ao visor do indicador
+  const prC=A._tela&&A._pesoReal!=null?A._pesoReal:A.peso;$('acPeso').textContent=prC==null?'—':fmt(prC);  // Balança: igual ao visor do indicador
   const e=$('acEstTxt');e.textContent=(A.peso==null?'sem leitura':A.estavel?'● Estável':'○ Oscilando')+idadeLeitura();e.className=atrasada()?'atraso':A.estavel?'est':'';
   if(!$('acFaltaBox'))return;
   const it=acItem(),z=zonaC(),fb=$('acFaltaBox');
@@ -1145,7 +1175,11 @@ function pintarTag(){if(typeof S==='undefined'||!S)return;const on=!!cfg().tagOn
   const ult=TG.ult?`<small>Última: ${esc(TG.ultCur||'')}${TG.ultCur?' · ':''}${esc(TG.ult.slice(-8))} às ${new Date(TG.ultT).toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit',second:'2-digit'})}</small>`:'';
   const opts=()=>{let h='';try{const v=(G.it.currais&&G.it.currais.v)||{};h=S.cadastro.map(n=>`<option value="${esc(n)}">${esc(n)}${v[n]&&v[n].tag?' 🏷':''}</option>`).join('');}catch(e){}return h+'<option value="__nenhum">Tag sem curral (fim de linha)</option>';};
   const sig=[on,t,ult,!!TG.dev,TG.sim,(S.cadastro||[]).length].join('|');
-  document.querySelectorAll('[data-tagbar]').forEach(el=>{el.hidden=!on||(typeof modoVer!=='undefined'&&modoVer);if(el.hidden)return;if(el.dataset.sig===sig)return;el.dataset.sig=sig;
+  document.querySelectorAll('[data-tagbt]').forEach(b=>{const h=!on||(typeof modoVer!=='undefined'&&modoVer);b.hidden=h;if(b.parentNode)b.parentNode.classList.toggle('comTag',!h);
+    b.className='aTagBt'+(st==='ok'?' tgOk':st==='err'?' tgErr':'');b.textContent=TG.ok?'🏷 Tag ✓':TG.dev?'🏷 Tag …':'🏷 Tag';
+    b.title=t.replace(/^\S+\s/,'');});
+  /* a barrinha do leitor saiu da tela: agora é o botão 🏷 Tag dentro da setinha da balança */
+  document.querySelectorAll('[data-tagbar]').forEach(el=>{el.hidden=true;if(el.hidden)return;if(el.dataset.sig===sig)return;el.dataset.sig=sig;
     el.className='tagBar'+(st==='ok'?' tgOk':st==='err'?' tgErr':'');
     const simAb=el.querySelector('.tgSim'),selV=simAb&&simAb.querySelector('select')?simAb.querySelector('select').value:null;
     el.innerHTML=`<span class="tgTxt">${t}${ult}</span>${TG.dev?'<button type="button" data-tagdesc>Desconectar</button>':'<button type="button" class="lima" data-tagcon>Conectar leitor</button>'}<button type="button" data-tagsimtog title="Simular leitura de tag">🧪</button>${TG.sim?`<div class="tgSim"><select>${opts()}</select><button type="button" data-tagsim>Ler tag</button></div>`:''}`;
@@ -1153,6 +1187,7 @@ function pintarTag(){if(typeof S==='undefined'||!S)return;const on=!!cfg().tagOn
 window.pintarTag=pintarTag;
 document.addEventListener('click',e=>{
   if(e.target.closest('[data-tagcon]'))return conectarTag();
+  if(e.target.closest('[data-tagbt]')){if(TG.dev){if(confirm('Leitor de tag conectado. Desconectar? O trato segue no manual.'))tagDesconectar();}else conectarTag();return;}
   if(e.target.closest('[data-tagdesc]')){if(confirm('Desconectar o leitor de tag? O trato segue no manual.'))tagDesconectar();return;}
   if(e.target.closest('[data-tagsimtog]')){TG.sim=!TG.sim;pintarTag();return;}
   const b=e.target.closest('[data-tagsim]');if(b){const v=b.parentNode.querySelector('select').value;let epc='SIM'+Date.now();
