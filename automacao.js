@@ -13,7 +13,7 @@ const A={fonte:null,status:'Desconectado',peso:null,amostras:[],estavel:false,va
   est:'aguardando',base:null,menor:null,avisou1:false,avisou2:false,bruto:[],buf:'',
   bt:null,btChars:[],ws:null,sim:null,wake:null,ultDado:0};
 window.AUTO=A;
-const CFG_PADRAO={bleUuid:'',bleCmd:'',tol:10,tempo:4,minDesc:30,amarelo:100,vermelho:50,continuo:20,antecipa:1,ws:'ws://10.10.100.254:6432',som:true,tagOn:1,filtro:3,enq:1,prever:1};
+const CFG_PADRAO={bleUuid:'',bleCmd:'',tol:10,tempo:4,minDesc:30,amarelo:100,vermelho:50,continuo:20,antecipa:1,ws:'ws://10.10.100.254:6432',som:true,tagOn:1,filtro:3,enq:1,prever:1,fornInst:1};
 /* Ajustes da balança: ficam na nuvem (item 'cfgBalanca' da Gestão), então mudar num aparelho muda em todos */
 function cfgNuvem(){try{return (typeof G!=='undefined'&&G.it&&G.it.cfgBalanca)||null;}catch(e){return null;}}
 function cfg(){if(!S.auto)S.auto={};
@@ -694,7 +694,9 @@ function taxaQueda(sinal){sinal=sinal||1;const agora=Date.now();if(!A.amostras.l
    Parou o vagão → em menos de 1 s o apito para. */
 function caindoAgora(){return A.est==='descarregando'&&A.ancT>0&&Date.now()-A.ancT<jCaindo()&&Date.now()-A.ultDado<jVivo();}
 /* peso usado no "Fornecer": no meio da descarga, o que só desce (pesoDesc); parado e firme, o peso real */
-function pesoDescRef(){if(naCargaAuto()||A.est!=='descarregando'||A.estavel||!A.descFit)return A.peso;
+/* "Fornecer instantâneo" (padrão): mostra a leitura da balança na hora, igual ao visor dela. Desligado: segue a reta (mais liso, pode atrasar um pouco) */
+const fornInst=()=>+cfg().fornInst!==0;
+function pesoDescRef(){if(fornInst()||naCargaAuto()||A.est!=='descarregando'||A.estavel||!A.descFit)return A.peso;
   const f=A.descFit;return f.v+f.b*Math.min(Date.now()-f.t,(A.dtMed||500)*1.0);}
 /* reta pelos pontos, à prova de leitura doida (Theil-Sen: mediana das inclinações entre pares de leituras e mediana do nível).
    Uma ou duas leituras muito fora (buraco, balanço) não puxam a reta. Devolve o valor da reta agora e a inclinação (kg/ms, nunca subindo). */
@@ -775,6 +777,7 @@ window.aPausar=aPausar;window.aContinuarPausa=aContinuarPausa;
 function pesoTela(){if(A.peso!=null&&naCargaAuto())return A.peso;   // carregar: sempre a balança de verdade (varia, sobe e desce)
   if(A.peso!=null&&!A.pausa&&A.estavel&&A.valEst!=null)return A.valEst;  // firme: o número para (média sem os picos)
   if(A.peso==null||A.pausa||naCargaAuto())return A.peso;  // carregar: mostra a leitura da balança direto (a pazada aparece na hora; pico sobe e volta), sem prever
+  if(fornInst()&&A.est==='descarregando')return A.peso;   // instantâneo: igual ao visor da balança, sem prever nem filtrar
   if(A.descFit&&!naCargaAuto()&&A.est==='descarregando'&&!A.estavel)return pesoDescRef();const p0=A.peso,lim=Math.max(0,Math.min(2,+cfg().prever||0))*1000;if(!lim||!A.tUlt)return p0;
   let dir=0,tx=0;if(caindoAgora()){dir=-1;tx=taxaQueda();}else if(typeof subindoAgora==='function'&&subindoAgora()){dir=1;tx=taxaQueda(-1);}
   if(!dir||!(tx>0))return p0;const dt=Math.min(Date.now()-A.tUlt,lim,(A.dtMed||700)*1.5);return p0+dir*tx*dt/1000;}
@@ -1064,6 +1067,7 @@ function montarCfgT(){const box=$('cfgTBox');if(!box||box.dataset.ok)return;box.
   <section class="panel">
     <div class="curhead"><h2>🏷 Leitor de tag</h2></div>
     <label class="aChk"><input type="checkbox" id="cfgT_tag"> Usar Tag</label>
+    <label class="aChk"><input type="checkbox" id="cfgT_inst"> Fornecer instantâneo (igual ao visor da balança)</label>
     <p class="note">Cada curral tem a sua tag (Gestão › Currais). Ao ler a tag de outro curral, o app registra o curral que estava fornecendo e passa para o curral da tag. Curral sem previsto: pergunta se quer fornecer mesmo assim. Tag sem curral (fim de linha) só registra o curral que estava fornecendo. Só funciona no Fornecer da Automação. Leituras repetidas da mesma tag são ignoradas. Se o leitor cair, continue no manual (trocar curral e Registrar).</p>
     <p class="note">Leitor aceito: Bluetooth BLE (serial) ou leitor tipo teclado (HID), que digita o código e dá Enter.</p>
   </section>
@@ -1107,6 +1111,7 @@ function montarCfgT(){const box=$('cfgTBox');if(!box||box.dataset.ok)return;box.
   $('cfgT_ws').onchange=e=>{const c=cfg();c.ws=e.target.value.trim()||CFG_PADRAO.ws;e.target.value=c.ws;salvarCfg();avisoCfg();};
   $('cfgT_som').onchange=e=>{const c=cfg();c.som=e.target.checked;salvarCfg();avisoCfg();if(c.som){liberarSom();tocar('lento');}};
   $('cfgT_teste').onclick=testarSom;
+  if($('cfgT_inst'))$('cfgT_inst').onchange=e=>{const c=cfg();c.fornInst=e.target.checked?1:0;salvarCfg();avisoCfg();};
   $('cfgT_tag').onchange=e=>{const c=cfg();c.tagOn=e.target.checked?1:0;salvarCfg();avisoCfg();pintarTag();};
   $('cfgT_padrao').onclick=()=>{if(!confirm('Voltar todos os ajustes da balança ao padrão (em todos os aparelhos)?'))return;
     const c=cfg();for(const k in CFG_PADRAO)c[k]=CFG_PADRAO[k];salvarCfg();preencherCfgT();avisoCfg();};
@@ -1123,7 +1128,7 @@ function pintarCores(){const el=$('cfgT_cores');if(!el)return;const c=cfg();
   <div><i class="pisca2" style="background:#6a1b9a"></i>Roxo piscando · passou do previsto (negativo), apito bem rápido</div>`;}
 function preencherCfgT(){if(!$('cfgT_tol'))return;const c=cfg();pintarCores();
   CAMPOS.forEach(([k])=>{const el=$('cfgT_'+k);if(document.activeElement!==el)el.value=c[k];});
-  if(document.activeElement!==$('cfgT_ws'))$('cfgT_ws').value=c.ws;if(document.activeElement!==$('cfgT_ble'))$('cfgT_ble').value=c.bleUuid||'';if(document.activeElement!==$('cfgT_cmd'))$('cfgT_cmd').value=c.bleCmd||'';$('cfgT_som').checked=!!c.som;if($('cfgT_tag'))$('cfgT_tag').checked=!!c.tagOn;}
+  if(document.activeElement!==$('cfgT_ws'))$('cfgT_ws').value=c.ws;if(document.activeElement!==$('cfgT_ble'))$('cfgT_ble').value=c.bleUuid||'';if(document.activeElement!==$('cfgT_cmd'))$('cfgT_cmd').value=c.bleCmd||'';$('cfgT_som').checked=!!c.som;if($('cfgT_tag'))$('cfgT_tag').checked=!!c.tagOn;if($('cfgT_inst'))$('cfgT_inst').checked=+c.fornInst!==0;}
 window.cfgTAoAbrir=()=>{montarCfgT();preencherCfgT();avisoCfg();
   try{if(typeof gSync==='function')gSync(true).then(()=>{if(!cfgNuvem())salvarCfg();preencherCfgT();avisoCfg();}).catch(()=>{});}catch(e){}};
 /* puxa da nuvem ao abrir a Automação também, para pegar ajustes feitos em outro aparelho */
