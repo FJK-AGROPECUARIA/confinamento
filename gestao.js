@@ -586,7 +586,7 @@ const idLeit=(dia,c)=>'lc-'+dia+'-'+chave(c);
 function cochoCurrais(dia){const set=new Set();const A=gTodos('lote').filter(l=>cabPres(l,dia)>0);A.forEach(l=>set.add(curralEm(l,dia)));
   return [...set].filter(Boolean).sort(alfa);}
 const prevTotal=c=>Object.values(S.prev||{}).reduce((a,m)=>a+(typeof m[c]==='number'?m[c]:0),0);
-const notaTxt=n=>(n>0?'+':'')+nf(n,0);
+const notaTxt=n=>n==null||n===''?'IMS':(n>0?'+':'')+nf(n,0);   // leitura só por % IMS (sem nota)
 /* notas em duas linhas: em cima 0, +1, +2… ; embaixo −1, −2… (cada uma debaixo da sua positiva) */
 function gradeNotas(notas,nota,c){const cima=notas.filter(x=>x.n>=0).sort((a,b)=>a.n-b.n),baixo=notas.filter(x=>x.n<0).sort((a,b)=>b.n-a.n);
   const tem0=cima.length&&cima[0].n===0,cols=Math.max(cima.length,baixo.length+(tem0?1:0),1);
@@ -618,7 +618,7 @@ function tCocho(t){
     const opB=(m,txt)=>`<button type="button" class="gBaseBt${bm===m?' sel':''}" data-g="baseM" data-c="${esc(c)}" data-m="${m}">${txt}</button>`;
     if(!base&&!bs&&pt){base=pt;orig='previsto atual';}
     if(!base&&!bs){const ms=L.reduce((a,l)=>{const r=racaoEm(l,dia),cp=r&&compRacao(r,dia);return a+(cp?cabPres(l,dia)*pesoEm(l,dia)*cfg.pvIni/100/(cp.ms/100):0);},0);base=Math.round(ms);orig=`sugestão ${nf(cfg.pvIni,1)}% PV`;}
-    const lt=G.it[idLeit(dia,c)],sel=GT.sel[c]||(lt&&!lt.del?{n:lt.nota,kg:lt.novo}:null);
+    const lt=G.it[idLeit(dia,c)],sel=GT.sel[c]||(lt&&!lt.del?{n:lt.nota,kg:lt.novo,ims:lt.ims}:null);
     const nota=sel&&sel.n!=null?sel.n:null,cn=notas.find(x=>x.n===nota);
     const sug=cn?arred(base*(1+cn.p/100),cfg.arred):null,kg=sel&&ok(sel.kg)?sel.kg:sug;
     const ant=[3,2,1].map(i=>{const x=G.it[idLeit(somaDias(dia,-i),c)];return x&&!x.del?notaTxt(x.nota):'·';}).join('  ');
@@ -627,11 +627,12 @@ function tCocho(t){
     const baseOp=`<details class="gBaseOp"${bs?' open':''}><summary>✎ Base: <b>${nf(base)} kg</b> <small>(${orig})</small> · mudar</summary><div class="gBaseF">
       ${opB('ontem','Realizado do dia anterior')}${opB('prev','Previsto do dia anterior')}${opB('dia','Igual ao trato de uma data')}
       ${bm==='dia'?`<div class="gBaseChips">${chips}</div>`:''}</div></details>`;
-    if(lt&&!lt.del&&!GT.sel[c]&&!(GT.coAberto||{})[c])return `<button class="gCochoMin" data-g="coAbre" data-c="${esc(c)}">${seloCurral(c)}<span><b>Nota ${notaTxt(lt.nota)}</b>${ok(+lt.novo)?nf(+lt.novo)+' kg':'—'}<small>✓ feita · toque para alterar</small></span><em class="gMinBase">base<br><b>${ok(+lt.base)?nf(+lt.base)+' kg':'—'}</b><br>${lt.baseM==='prev'?'previsto dia ant.':lt.baseM==='dia'?'trato de '+(lt.baseDia?diaBR(lt.baseDia).slice(0,5):'outra data'):lt.baseM==='kg'?'digitada':'realizado dia ant.'}</em></button>`;  // feita: fica recolhida
+    if(lt&&!lt.del&&!GT.sel[c]&&!(GT.coAberto||{})[c])return `<button class="gCochoMin" data-g="coAbre" data-c="${esc(c)}">${seloCurral(c)}<span><b>${lt.nota!=null?'Nota '+notaTxt(lt.nota):''}${lt.ims>0?(lt.nota!=null?' · ':'')+'IMS '+pc(+lt.ims,2):''}</b>${ok(+lt.novo)?nf(+lt.novo)+' kg':'—'}<small>✓ feita · toque para alterar</small></span><em class="gMinBase">base<br><b>${ok(+lt.base)?nf(+lt.base)+' kg':'—'}</b><br>${lt.baseM==='prev'?'previsto dia ant.':lt.baseM==='dia'?'trato de '+(lt.baseDia?diaBR(lt.baseDia).slice(0,5):'outra data'):lt.baseM==='kg'?'digitada':'realizado dia ant.'}</em></button>`;  // feita: fica recolhida
     return `<div class="gCocho${lt&&!lt.del?' feito':''}" data-c="${esc(c)}" data-base="${base}" data-msf="${msFator}">
       <div class="gCoTopo">${seloCurral(c)}<div><span><b>${esc(L.map(l=>l.nome).join(', '))}</b> · ${nf(cab)} cab</span><span>Ontem: <b>${ontem?nf(ontem)+' kg':'—'}</b>${ok(imsOnt)?` · ${pc(imsOnt,2)} IMS`:''}</span></div>${lt&&!lt.del&&(GT.coAberto||{})[c]?`<button type="button" class="mini gCoFecha" data-g="coFecha" data-c="${esc(c)}" aria-label="Recolher">▲</button>`:''}</div>
       ${gradeNotas(notas,nota,c)}
       <div class="gCoNovo"><span>${cn?esc(cn.t)+'<small> · toque de novo para desmarcar</small>':'Toque na nota'}</span><input class="cell num" inputmode="numeric" data-kg="${esc(c)}" value="${kg!=null?kg:''}" placeholder="kg"><small>kg/dia</small></div>
+      <div class="gCoIms"><span>ou pelo <b>% de IMS</b> <small>(calcula o trato do dia)</small></span><input class="cell num" inputmode="decimal" data-ims="${esc(c)}" value="${sel&&sel.ims>0?String(sel.ims).replace('.',','):''}" placeholder="% IMS"><small data-imsinfo="${esc(c)}">${sel&&sel.ims>0&&ok(kg)?'→ '+nf(kg)+' kg':''}</small></div>
       ${baseOp}</div>`;}).join('');
   return `<section class="panel"><h2>Leitura de cocho</h2>
     ${navData('gCoDia',dia,'Data da leitura')}
@@ -666,15 +667,15 @@ function salvaCocho(){
   const pode=leitPode(dia);if(!pode.ok)return toast(pode.msg);
   const amanha=dia===somaDias(hojeKey(),1),obj=hoje?S.prev:JSON.parse(JSON.stringify(prevApi.prevGuardado(dia)||S.prev||{}));
   document.querySelectorAll('#gBox .gCocho').forEach(el=>{const c=el.dataset.c,s=GT.sel[c];const inp=el.querySelector('input[data-kg]');const kg=gNum(inp.value);
-    const lt=G.it[idLeit(dia,c)];if(s&&s.n==null){if(lt&&!lt.del){gDel(lt.uid);rm++;
+    const lt=G.it[idLeit(dia,c)];if(s&&s.n==null&&!(s.ims>0)){if(lt&&!lt.del){gDel(lt.uid);rm++;
       /* apaga também o previsto que a leitura gerou (só dos tratos que ainda não foram fornecidos) */
       const feitos=new Set((typeof HIST!=='undefined'?HIST:[]).filter(r=>r.dia===dia&&r.curral===c).map(r=>+r.trato));
-      for(let k=1;k<=(prevApi.MAXT||8);k++){if(feitos.has(k))continue;const m=obj[String(k)];if(m&&c in m){delete m[c];ap++;}}}return;}const nota=s?s.n:(lt&&!lt.del?lt.nota:null);if(nota==null)return;
+      for(let k=1;k<=(prevApi.MAXT||8);k++){if(feitos.has(k))continue;const m=obj[String(k)];if(m&&c in m){delete m[c];ap++;}}}return;}const nota=s?s.n:(lt&&!lt.del?lt.nota:null),ims=s?(s.ims>0?+s.ims:null):(lt&&!lt.del&&lt.ims>0?+lt.ims:null);if(nota==null&&!ims)return;
     const cn=cfg.notas.find(x=>x.n===nota);
     const bs=(GT.base||{})[c]||(lt&&!lt.del&&lt.baseM?{m:lt.baseM,d:lt.baseDia}:null)||{m:'ontem'};
-    gPut({uid:idLeit(dia,c),tipo:'leitura',dia,curral:c,nota,pct:cn?cn.p:0,base:+el.dataset.base||0,baseM:bs.m,baseDia:bs.m==='dia'?bs.d:null,novo:ok(kg)?kg:null,msF:+el.dataset.msf||1});n++;
+    gPut({uid:idLeit(dia,c),tipo:'leitura',dia,curral:c,nota,ims,pct:cn?cn.p:0,base:+el.dataset.base||0,baseM:bs.m,baseDia:bs.m==='dia'?bs.d:null,novo:ok(kg)?kg:null,msF:+el.dataset.msf||1});n++;
     if(ok(kg)&&kg>0&&aplicaPrev(c,kg,obj))ap++;});
-  if(!n&&!rm)return toast('Marque a nota de pelo menos um curral');if(!n){if(ap){if(hoje){marcarPrev();if(typeof render==='function')render();}else prevApi.guardarPrevDia(dia,obj);}GT.sel={};GT.base={};GT.coAberto={};window.scrollTo({top:0,behavior:'smooth'});toast(`${rm} leitura(s) apagada(s) junto com o previsto que tinham gerado`);return gRender();}
+  if(!n&&!rm)return toast('Marque a nota ou o % de IMS de pelo menos um curral');if(!n){if(ap){if(hoje){marcarPrev();if(typeof render==='function')render();}else prevApi.guardarPrevDia(dia,obj);}GT.sel={};GT.base={};GT.coAberto={};window.scrollTo({top:0,behavior:'smooth'});toast(`${rm} leitura(s) apagada(s) junto com o previsto que tinham gerado`);return gRender();}
   if(ap){if(hoje){marcarPrev();if(typeof render==='function')render();}else prevApi.guardarPrevDia(dia,obj);}
   GT.sel={};GT.base={};GT.coAberto={};window.scrollTo({top:0,behavior:'smooth'});toast(`${n} leitura(s) salva(s) · previsto ${hoje?'de hoje':'de amanhã'} ${ap?`mudou em ${ap} curral(is)`:'já estava com esses valores'}${rm?` · ${rm} apagada(s)`:''}`);gRender();
 }
@@ -1301,6 +1302,13 @@ $('gBox').addEventListener('input',e=>{
   if(GT.t==='rel'&&/^gf_s/.test(t.id))calcSimul();
   if(GT.t==='pesForm'&&(t.id==='gf_peso'||t.id==='gf_dia'))calcPes();
 });
+/* leitura de cocho: % IMS digitado → calcula na hora o trato do dia (kg de matéria natural) e põe no campo kg */
+$('gBox').addEventListener('input',e=>{const t=e.target;if(!t.matches||!t.matches('input[data-ims]'))return;const c=t.dataset.ims,p=gNum(t.value),dia=GT.dia||hojeKey();
+  const card=t.closest('.gCocho'),kgI=card&&card.querySelector('input[data-kg]'),info=card&&card.querySelector('[data-imsinfo]');GT.sel=GT.sel||{};
+  const lt=G.it[idLeit(dia,c)],n0=GT.sel[c]?GT.sel[c].n:(lt&&!lt.del?lt.nota:null);
+  if(!(p>0)){GT.sel[c]={n:n0,ims:null};if(info)info.textContent='';return;}
+  const kg=window.gMnIms?gMnIms(c,p,dia):null;if(kg==null){if(info)info.textContent='sem lote/ração';return;}
+  const v=arred(kg,gCfg().arred);if(kgI)kgI.value=v;if(info)info.textContent='→ '+nf(v)+' kg';GT.sel[c]={n:n0,ims:p,kg:v};});
 $('gBox').addEventListener('change',e=>{
   const t=e.target;
   if(GT.t==='racForm'&&t.matches('[data-ri]'))calcRacao();
@@ -1315,7 +1323,7 @@ $('gBox').addEventListener('change',e=>{
   if(t.matches('input[data-bd]')){const c=t.dataset.bd;novaBase(c,{m:'dia',d:t.value||null});return;}
   if(t.matches('input[data-bk]')){const c=t.dataset.bk;novaBase(c,{m:'kg',kg:gNum(t.value)});return;}
   if(t.matches('input[data-kg]')){const c=t.dataset.kg;GT.sel=GT.sel||{};const lt=G.it[idLeit(GT.dia,c)];
-    const n=GT.sel[c]?GT.sel[c].n:(lt&&!lt.del?lt.nota:null);if(n==null){toast('Marque a nota primeiro');t.value='';return;}GT.sel[c]={n,kg:gNum(t.value)};}
+    const n=GT.sel[c]?GT.sel[c].n:(lt&&!lt.del?lt.nota:null),im=GT.sel[c]?GT.sel[c].ims:(lt&&!lt.del?lt.ims:null);if(n==null&&!(im>0)){toast('Marque a nota (ou o % de IMS) primeiro');t.value='';return;}GT.sel[c]={n,ims:im,kg:gNum(t.value)};}
 });
 function gRenderCom(o){Object.assign(GT,o);gRender();}
 

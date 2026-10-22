@@ -166,6 +166,7 @@ body.somenteVer .fBar{display:none!important}
 #tbHist .hAcoes{display:inline-flex;gap:4px;margin-left:6px;vertical-align:middle}#tbHist .hAcoes .mini{padding:3px 7px;font-size:.78rem;min-height:0;margin:0}.gBatAc{display:flex;gap:8px;margin-top:8px}.bedLin{display:flex;gap:6px;align-items:flex-end}.bedLin label{flex:1}.bedLin .mini{width:auto!important;padding:8px 12px;margin:0 0 6px!important}.bedLin.bedRm label{opacity:.4;text-decoration:line-through}.gBatFim{display:flex;justify-content:flex-end;gap:6px;margin:14px 0 4px}.gBatFim .mini{padding:3px 9px!important;font-size:.72rem!important;min-height:0;width:auto!important;margin:0!important;opacity:.8}.gBatFim.gbSel{justify-content:space-between;align-items:center;background:#fff4d6;border:1px solid #f2b705;border-radius:10px;padding:6px 8px;font-size:.82rem}.gBatFim.gbSel .mini{opacity:1}.gBatFim.gbTopo{margin:0 0 8px}.gBatPick{margin-top:8px!important;background:#eef5e4!important;border:2px solid #2e6b2f!important;color:#2e6b2f!important;font-weight:800}.gBatPick.del{background:#fdecea!important;border-color:#c62828!important;color:#c62828!important}.gBatAc .mini{flex:1}
 .gEst4{display:grid!important;grid-template-columns:1fr 1fr!important;gap:8px}.gNfArq{display:flex;align-items:center;justify-content:center;padding:18px;border:2px dashed #8fb43a;border-radius:14px;font-weight:800;font-size:1.1rem;color:#2e6b2f;background:#f3f7dc;cursor:pointer;margin-top:8px}.gNfImg{display:block;max-width:160px;border-radius:10px;border:1px solid #dde3ea;margin:6px 0}.gNfItem{border-top:1px solid #dde3ea;padding-top:8px;margin-top:8px}
 body.somenteVer .fCancForn,body.somenteVer .fFinal{display:none!important}
+button.fCancForn{display:block;width:auto!important;margin:22px auto 4px!important;padding:6px 14px!important;font-size:.8rem!important;min-height:0!important;font-weight:600;opacity:.85}
 button.fFinal{margin-top:34px!important;background:#f2b705!important;border-color:#d9a300!important;color:#3a2a00!important;font-weight:800}
 .gTagLin{display:flex;gap:6px;align-items:center}.gTagLin input{flex:1;min-width:0;font-family:monospace;font-size:.85rem!important}.gTagLin button{white-space:nowrap;flex:none}
 .tagBar{display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin:6px 0 2px;padding:6px 8px;border-radius:10px;background:var(--soft,#eef3ee);font-size:.82rem;line-height:1.25}
@@ -505,7 +506,7 @@ table:has(#tbHist) td.c{text-align:left}
 .gNotas{display:flex;gap:6px}.gNotas button{flex:1;padding:6px 2px;font-size:1.25rem;line-height:1.1;display:flex;flex-direction:column;align-items:center}
 .gNotas button small{font-size:.68rem;font-weight:600;color:var(--muted)}
 .gNotas button.sel{background:var(--accent);border-color:var(--accent);color:#fff}.gNotas button.sel small{color:#c9d3df}
-.gCoNovo{display:flex;align-items:center;gap:8px;font-size:.85rem}.gCoNovo span{flex:1;color:var(--muted)}.gCoNovo input{width:6.5em;font-size:1.1rem;font-weight:700}
+.gCoNovo{display:flex;align-items:center;gap:8px;font-size:.85rem}.gCoIms{display:flex;align-items:center;gap:8px;font-size:.85rem;margin-top:6px;padding-top:6px;border-top:1px dashed var(--line)}.gCoIms span{flex:1;color:var(--muted)}.gCoIms input{width:6.5em;font-size:1.1rem;font-weight:700}.gCoIms small[data-imsinfo]{min-width:5.5em;font-weight:700;color:var(--ok)}.gCoNovo span{flex:1;color:var(--muted)}.gCoNovo input{width:6.5em;font-size:1.1rem;font-weight:700}
 .gRacLin{display:flex;gap:6px;align-items:center}.gRacLin select{flex:1;min-width:0}.gRacLin input{width:5.5em}
 .gTab td small,.gTab td.c small{display:block;font-size:.72rem;color:var(--muted);font-weight:500;font-family:var(--body)}
 .gTab td.c{font-size:1rem;cursor:default}
@@ -1136,7 +1137,7 @@ body.naInicio .topoTxt h1{font-size:clamp(16px,5vw,28px)!important}
 <div class="toast" id="toast" hidden></div>
 <script>
 'use strict';
-const APP_VERSAO='109';
+const APP_VERSAO='110';
 const APP_DATA='19/10/2026';
 const KEY='confinamento-completo-v1';
 const $=id=>document.getElementById(id);
@@ -1446,19 +1447,22 @@ document.addEventListener('click',e=>{const lb=e.target.closest('[data-floc]');i
   const fp=e.target.closest('[data-fpasso]');if(fp){FS.passo=+fp.dataset.fpasso;mostrarFornecimento();return;}
   if(e.target.closest('#fIniciar'))return iniciarFornecimentoChecado();
   if(e.target.closest('[data-ffinal]')){(async()=>{if(window.autoDescarregando&&autoDescarregando()){toast('Está fornecendo num curral: registre antes de finalizar.');return;}const f=filtroForn();if(!f)return;
-    const L=lista(),regs=regsAtuais(),falta=L.filter(x=>!feito(x.nome,regs)),feitos=L.length-falta.length;
-    if(!await perg(falta.length?`Deseja finalizar este fornecimento? Faltam ${falta.length} curral(is)`:'Deseja finalizar este fornecimento?',falta.length?`Trato ${S.tratoSel}: ${feitos} de ${L.length} currais feitos. Faltam: ${falta.map(x=>x.nome).join(', ')}. Eles ficam sem registro; depois dá para abrir o Trato ${S.tratoSel} de novo e continuar.`:`Trato ${S.tratoSel}: todos os ${L.length} currais feitos.`,'Sim, finalizar','Não, continuar fornecendo',!falta.length))return;
+    const pz=window.aPausadoKg?aPausadoKg():null;   // curral pausado no meio: o que já caiu entra no registro ao finalizar
+    const L=lista(),regs=regsAtuais(),falta=L.filter(x=>!feito(x.nome,regs)&&!(pz&&pz.curral===x.nome)),feitos=L.length-falta.length;
+    if(!await perg(falta.length?`Deseja finalizar este fornecimento? Faltam ${falta.length} curral(is)`:'Deseja finalizar este fornecimento?',(falta.length?`Trato ${S.tratoSel}: ${feitos} de ${L.length} currais feitos. Faltam: ${falta.map(x=>x.nome).join(', ')}. Eles ficam sem registro; depois dá para abrir o Trato ${S.tratoSel} de novo e continuar.`:`Trato ${S.tratoSel}: todos os ${L.length} currais feitos.`)+(pz?`\n${pz.curral} está pausado com ${fmt(pz.kg)} kg fornecidos: esse valor vai ser registrado.`:''),'Sim, finalizar','Não, continuar fornecendo',!falta.length))return;
+    if(pz&&window.aRegistrarPausado)await aRegistrarPausado();
     if(!filtroForn())return;const tk=L.reduce((a,x)=>a+x.prev,0);
     FS.fim=`✓ Fornecimento finalizado · ${f.local==='C'?'Confinamento':'Pasto'} · Trato ${S.tratoSel} · ${feitos} de ${L.length} curral(is)`;toast(FS.fim);
     try{window.diagLog&&diagLog('forn_finalizado',{local:f.local,trato:S.tratoSel,n:feitos,de:L.length,prev:tk});}catch(e){}
     /* fecha tudo: volta para o começo (escolher local), balança recolhida; pronto para outro trato se quiser */
     FS.local=null;FS.rac=null;FS.trato=null;FS.passo=1;S.forn=Object.assign({},f,{ativo:false});save();render();mostrarFornecimento();try{window.recolherBal&&recolherBal();}catch(e){}if(window.aRenderFora)aRenderFora();window.scrollTo({top:0});})();return;}
-  if(e.target.closest('[data-fcancforn]')){(async()=>{if(fornTemRegistro()){toast('Já tem curral tratado neste fornecimento: não dá para cancelar. Use Finalizar fornecimento.');pintarCancForn();return;}if(window.autoDescarregando&&autoDescarregando()){toast('Está fornecendo num curral: registre antes de cancelar.');return;}const f=filtroForn();if(!f)return;
-    const L=lista(),regs=regsAtuais(),falta=L.filter(x=>!feito(x.nome,regs)).length;
-    if(!await perg('Deseja realmente cancelar o fornecimento?',`Trato ${S.tratoSel}: ${falta} curral(is) ainda sem fornecer. Os currais já registrados continuam salvos.`,'Sim, cancelar','Não, continuar fornecendo'))return;
+  if(e.target.closest('[data-fcancforn]')){(async()=>{const f=filtroForn();if(!f)return;
+    const L=lista(),regs=regsAtuais(),falta=L.filter(x=>!feito(x.nome,regs)).length,feitos=L.length-falta,meio=!!(window.AUTO&&(AUTO.est==='descarregando'||(AUTO.pausa&&!AUTO.pausa.trava)));
+    if(!await perg('Deseja realmente cancelar o fornecimento?',`Trato ${S.tratoSel}: ${feitos} de ${L.length} currais feitos, ${falta} ainda sem fornecer.${feitos?' Os currais já registrados continuam salvos.':''}${meio?' O curral que está em andamento NÃO é registrado.':''}`,'Sim, cancelar','Não, continuar fornecendo'))return;
     if(!await perg('Tem certeza?','O fornecimento será encerrado agora e volta para a tela de escolher local, ração e trato.','Sim, cancelar o fornecimento','Não, voltar'))return;
     if(!filtroForn())return;try{window.diagLog&&diagLog('forn_cancelado',{local:f.local,trato:S.tratoSel,falta});}catch(e){}
-    FS.local=null;FS.rac=null;FS.trato=null;FS.passo=1;FS.fim='';S.forn=Object.assign({},S.forn||{},{ativo:false});save();render();mostrarFornecimento();if(window.aRenderFora)aRenderFora();window.scrollTo({top:0});toast('Fornecimento cancelado');})();return;}
+    if(window.AUTO)AUTO.pausa=null;
+    FS.local=null;FS.rac=null;FS.trato=null;FS.passo=1;FS.fim='';S.forn=Object.assign({},S.forn||{},{ativo:false});save();render();mostrarFornecimento();if(window.aRenderFora)aRenderFora();try{window.recolherBal&&recolherBal();}catch(e){}window.scrollTo({top:0});toast('Fornecimento cancelado');})();return;}
   if(e.target.closest('[data-ftrocar]')){if(window.autoDescarregando&&autoDescarregando()){toast('Está fornecendo num curral: registre antes de trocar.');return;}const f=S.forn||{};FS.local=null;FS.rac=null;FS.trato=null;FS.passo=1;FS.fim='';S.forn=Object.assign({},f,{ativo:false});save();mostrarFornecimento();window.scrollTo({top:0});}});
 document.addEventListener('change',e=>{if(e.target.id==='fRac'){FS.rac=e.target.value==='-'?null:e.target.value;FS.trato=null;if(FS.rac!=null)FS.passo=Math.max(FS.passo,3);mostrarFornecimento();}if(e.target.id==='fTrato'){FS.trato=+e.target.value;FS.tAuto=false;mostrarFornecimento();}});
 /* terminou todos os currais do trato (fornecidos ou "não fornecer"): já passa para o próximo trato */
@@ -1532,7 +1536,7 @@ window.ordemTabela=ordemTabela;
 function fornTemRegistro(){try{const f=filtroForn();if(!f)return false;const L=lista(),t0=+f.ts0||0;
   return HIST.some(r=>r.dia===diaAtivo()&&+r.trato===+S.tratoSel&&(+r.ts||0)>=t0&&L.some(x=>x.nome===r.curral));}catch(e){return false;}}
 window.fornTemRegistro=fornTemRegistro;
-function pintarCancForn(){const tem=fornTemRegistro();document.querySelectorAll('[data-fcancforn]').forEach(b=>{b.style.display=tem?'none':'';});}
+function pintarCancForn(){document.querySelectorAll('[data-fcancforn]').forEach(b=>{b.style.display='';});}   // fornecimento aberto: Cancelar sempre disponível (pergunta antes)
 window.pintarCancForn=pintarCancForn;
 function render(){try{aplicarRenomesHist();limparPrevRenomes();}catch(e){}
   try{pintarCancForn();}catch(e){}

@@ -24,7 +24,7 @@ function salvarCfg(){const c=cfg(),v={};for(const k in CFG_PADRAO)v[k]=c[k];
   save();}
 
 /* não atualiza o app sozinho enquanto a balança está conectada ou descarregando */
-window.autoOcupado=()=>!!A.fonte||A.est==='descarregando';window.autoDescarregando=()=>A.est==='descarregando';
+window.autoOcupado=()=>!!A.fonte||A.est==='descarregando';window.autoDescarregando=()=>A.est==='descarregando'&&!A.pausa;
 
 /* ---------------- Tela ---------------- */
 const css=`
@@ -92,6 +92,7 @@ const css=`
 #aBox .aPausaBox[hidden]{display:none}
 #aBox .aPausaBox b{font-family:var(--display);font-stretch:condensed;font-size:clamp(2.6rem,13vw,4.4rem);line-height:1;letter-spacing:.04em}
 #aBox .aPausaBox span{font-size:1.05rem;font-weight:600;opacity:.95}
+#aBox .aPausaBox .pzCur{font-family:var(--display);font-stretch:condensed;font-size:clamp(3.4rem,18vw,6.2rem);line-height:1;font-weight:800}
 #aBox .aPausaBox em{display:block;font-style:normal;font-weight:800;font-size:1.3rem;background:#fff;color:#0d47a1;border-radius:12px;padding:12px;margin-top:8px}
 :is(#aBox,#acBox,#aoVivo) .aEtapa.pausa{background:#e3f0ff;color:#0d47a1}
 #cfgTBox .aCores{margin:10px 0 4px;padding:10px;border:1px solid var(--line);border-radius:10px;display:grid;gap:6px;font-size:.88rem}
@@ -224,7 +225,7 @@ function ligar(){
     setAtual(+b.dataset.i);save();$('aEscolha').hidden=true;novoCurral(true);render();aRender();});
   $('aReg').onclick=()=>registrarAuto();
   $('aNaoForn').onclick=()=>{if(A.est==='descarregando'){toast('Está fornecendo neste curral: registre o trato.');return;}if(window.naoFornecer)naoFornecer();};
-  $('aRecomecar').onclick=()=>{if(A.peso==null){toast('Sem leitura da balança');return;}novoCurral(true);aRender();toast('Peso inicial: '+fmt(A.base)+' kg');};
+  $('aRecomecar').onclick=()=>{if(A.peso==null){toast('Sem leitura da balança');return;}novoCurral(true,true);A.pausa=null;aRender();toast('Peso inicial: '+fmt(A.base)+' kg');};
   $('aPular').onclick=async()=>{const L0=lista(),c0=L0[S.atual];if(c0&&window.perg&&!await perg(`Deseja realmente pular o ${c0.nome}?`,'Ele fica para depois (continua sem fornecer) e passa para o próximo curral.','Sim, pular','Não, voltar'))return;const L=lista(),regs=regsAtuais();let nx=L.findIndex((x,i)=>i>S.atual&&!feito(x.nome,regs));if(nx<0)nx=Math.min(S.atual+1,L.length);
     setAtual(nx);save();novoCurral(true);render();aRender();};
   $('aDesfazer').onclick=async()=>{try{await $('btnDesfazer').onclick();}catch(e){}aRender();};
@@ -590,7 +591,14 @@ function novoPeso(n){
    parou de cair → registra (inicial − final) e passa para o próximo curral */
 function curralAtual(){try{return (S&&lista()[S.atual])||null;}catch(e){return null;}}
 /* troca de curral: o peso de agora vira o inicial */
-function novoCurral(manterPeso){A.posPausa=false;A.est='aguardando';A.ancV=null;A.ancT=0;A.fpMin=null;A.menor=null;A.base=manterPeso&&A.peso!=null?(A.estavel?A.valEst:A.peso):null;}
+function novoCurral(manterPeso,semTravar){A.posPausa=false;A.est='aguardando';A.ancV=null;A.ancT=0;A.fpMin=null;A.menor=null;A.base=manterPeso&&A.peso!=null?(A.estavel?A.valEst:A.peso):null;
+  if(!semTravar)travarCurral();}
+/* todo curral começa TRAVADO: quadro azul "▶ FORNECER C-x"; a balança só conta depois de tocar nele (no trajeto nada conta) */
+/* peso da balança AGORA (mediana do último 1,5 s de leituras: tira um pico solto, sem o atraso da média do "Estável") */
+function pesoAgora(){const t=Date.now(),v=(A.crus||[]).filter(q=>q.t>=t-1500).map(q=>q.v).sort((x,y)=>x-y);return v.length?v[Math.floor((v.length-1)/2)]:A.peso;}
+function travarCurral(){try{if(!window.filtroForn||!filtroForn()||naCargaAuto()){if(A.pausa&&A.pausa.trava)A.pausa=null;return;}const cur=curralAtual();if(!cur){A.pausa=null;return;}
+  A.pausa={est:'aguardando',base:null,ts:Date.now(),falta:cur.prev,caiu:0,trava:true};}catch(e){}}
+window.travarCurral=travarCurral;
 function maquina(){
   if(A.pausa)return; // pausado no trajeto: o peso que varia nos buracos não conta
   if(naCargaAuto())return; // na tela de carregar o trato fica parado (não perde o que já estava fornecendo)
@@ -615,6 +623,15 @@ function maquina(){
 }
 
 let registrando=false;
+/* Finalizar fornecimento com o curral PAUSADO no meio: registra o que já foi fornecido nele. Travado (não liberado): não registra nada. */
+window.aPausadoKg=()=>{const P=A.pausa,cur=curralAtual();return P&&!P.trava&&P.est==='descarregando'&&cur&&(+P.caiu||0)>0?{curral:cur.nome,kg:Math.round(+P.caiu)}:null;};
+window.aRegistrarPausado=async()=>{const x=window.aPausadoKg(),P=A.pausa,cur=curralAtual();if(!x||!cur)return false;
+  const now=new Date(),ini=+P.base,fim=ini-x.kg;
+  const r={ts:now.getTime(),dia:diaAtivo(),trato:S.tratoSel,hora:now.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'}),
+    curral:cur.nome,prev:cur.prev,ini,fim,forn:x.kg,uid:`${S.aparelho}-${now.getTime()}`,enviado:false,origem:'balanca'};
+  try{r.id=await dbAdd(r);}catch(e){toast('Erro ao salvar no banco.');return false;}
+  HIST.push(r);A.pausa=null;diagLog('trato_pausado_finalizado',{curral:cur.nome,forn:x.kg});novoCurral(false,true);
+  try{if(window.compensarCurral)compensarCurral(cur.nome);}catch(e){}save();sincronizar();toast(`${cur.nome}: ${fmt(x.kg)} kg salvo (estava pausado)`);return true;};
 async function registrarAuto(){
   if(registrando)return;
   if(bloqueado())return;
@@ -761,15 +778,20 @@ window.aEstadoAoVivo=()=>{const L=lista(),c=L[S.atual],regs=regsAtuais();
     ...contaLocalTrato(L,regs)};};
 /* ---------- Pausar no trajeto ---------- */
 function pintarPausa(){const p=!!A.pausa;if(!$('aPausaBox'))return;$('aPausaBox').hidden=!p;$('aPausar').hidden=p||!curralAtual();
+  /* travado depois de registrar: o quadro azul vira o botão "▶ FORNECER C-7" (o nome do próximo curral, grandão) */
+  const cur=curralAtual(),h=p&&A.pausa.trava?`<b>▶ FORNECER</b><strong class="pzCur">${esc(cur?cur.nome:'')}</strong><span>${cur&&cur.prev?'Previsto '+fmt(cur.prev)+' kg · ':''}a balança só começa a contar quando você tocar aqui</span><em>Toque para fornecer</em>`
+    :`<b>⏸ PAUSADO</b><span>No trajeto: a balança não está contando nada.</span><em>▶ Toque aqui para continuar</em>`;
+  const bx=$('aPausaBox');if(bx.dataset.h!==h){bx.dataset.h=h;bx.innerHTML=h;}bx.classList.toggle('pzTrava',!!(p&&A.pausa.trava));
   ['aFaltaBox','aReg'].forEach(i=>{const e=$(i);if(e)e.style.display=p?'none':'';});const m=document.querySelector('#aBox .aMini');if(m)m.style.display=p?'none':'';}
 function aPausar(){if(A.pausa)return;const z0=zona(),cur0=curralAtual();A.pausa={est:A.est,base:A.base,ts:Date.now(),
     falta:A.est==='descarregando'&&z0?Math.max(0,z0.falta):(cur0?cur0.prev:null),caiu:A.est==='descarregando'&&A.base!=null&&A.peso!=null?Math.max(0,A.base-A.peso):0};pararSom();diagLog('pausou',{est:A.est,base:A.base,peso:A.peso});
   toast('⏸ Pausado: a balança não conta até você continuar');pintarPeso();if(typeof agendarAoVivo==='function')agendarAoVivo();}
 function aContinuarPausa(){const P=A.pausa;if(!P)return;A.pausa=null;
-  if(P.est==='descarregando'){A.est='descarregando';A.base=P.base;A.ancV=null;A.ancT=Date.now();A.fpMin=null;}  // estava no meio do curral: continua com o mesmo início
-  else{novoCurral(true);A.baseConf=false;A.posPausa=true;}  // ainda não tinha começado: o peso de agora vira o inicial (e acerta quando a balança firmar)
+  /* estava no meio do curral: o que já caiu fica guardado; a conta recomeça pela balança de AGORA (o que mudou no trajeto não conta) */
+  if(P.est==='descarregando'){const atual=pesoAgora();A.est='descarregando';A.base=(atual!=null?atual:P.base)+(+P.caiu||0);A.baseConf=true;A.ancV=null;A.ancT=Date.now();A.fpMin=null;A.menor=A.peso;}
+  else{novoCurral(true,true);const pa=pesoAgora();if(pa!=null)A.base=pa;A.baseConf=false;A.posPausa=true;}  // liberou o curral: o peso de agora vira o inicial  // ainda não tinha começado: o peso de agora vira o inicial (e acerta quando a balança firmar)
   diagLog('despausou',{est:A.est,base:A.base,peso:A.peso,seg:Math.round((Date.now()-P.ts)/1000)});
-  toast(P.est==='descarregando'?'▶ Continuando o mesmo curral':'▶ Continuando: deixe o vagão parado para pegar o peso inicial');pintarPeso();aRender();
+  const cN=curralAtual();toast(P.trava?`▶ Fornecendo no ${cN?cN.nome:''}`:P.est==='descarregando'?'▶ Continuando o mesmo curral':'▶ Continuando: deixe o vagão parado para pegar o peso inicial');pintarPeso();aRender();
   if(typeof agendarAoVivo==='function')agendarAoVivo();}
 window.aPausar=aPausar;window.aContinuarPausa=aContinuarPausa;
 /* peso na tela entre uma leitura e outra: enquanto está carregando/fornecendo, segue a velocidade (kg/s) por até "prever" segundos,
@@ -866,7 +888,7 @@ window.diagLog=function(tipo,d){try{if(typeof gPut!=='function'||typeof G==='und
 const resumoBal=()=>{const vs=(A.amostras||[]).map(a=>a.v);return {estavel:!!A.estavel,varia:vs.length?Math.max(...vs)-Math.min(...vs):null,leit_s:A.dtMed?+(1000/A.dtMed).toFixed(2):null};};
 window.pesoBalanca=()=>A.fonte&&A.peso!=null&&A.ultDado&&Date.now()-A.ultDado<3000?Math.round(A.peso):null;
 window.aRenderFora=()=>{try{if($('viewAuto')&&!$('viewAuto').hidden){novoCurral(true);$('aTrato').value=String(S.tratoSel);aRender();}}catch(e){}};
-window.aContinuar=v=>{diagLog('continuou_outro_aparelho',{ini:+v,peso:A.peso});A.est='aguardando';A.ancV=null;A.ancT=0;A.fpMin=null;A.menor=null;A.base=+v;
+window.aContinuar=v=>{A.pausa=null;diagLog('continuou_outro_aparelho',{ini:+v,peso:A.peso});A.est='aguardando';A.ancV=null;A.ancT=0;A.fpMin=null;A.menor=null;A.base=+v;
   if(A.peso!=null&&A.peso<A.base-cfg().minDesc){A.est='descarregando';A.menor=A.peso;A.ancV=A.suave;A.ancT=0;}aRender();};
 /* ---- segurança: o app saiu da tela no meio de um curral (Android fechou a aba / recarregou) ----
    guarda a cada segundo o curral em andamento (peso inicial); ao voltar, se for o mesmo curral e ainda não registrado,
@@ -877,7 +899,7 @@ setInterval(()=>{try{if(!A.restChk||A.pausa||naCargaAuto())return;const f=window
   if(A.est!=='descarregando'){const v=JSON.parse(localStorage.getItem(CUR_KEY)||'null');if(v&&v.curral===cur.nome&&v.est==='descarregando'&&+v.trato===+S.tratoSel)localStorage.removeItem(CUR_KEY);return;}
   localStorage.setItem(CUR_KEY,JSON.stringify({dia:diaAtivo(),trato:S.tratoSel,curral:cur.nome,base:A.base,est:A.est,ts:Date.now()}));}catch(e){}},1000);
 /* curral atual já tratado (ex.: o app voltou sozinho no C-10, que já está ✓): vai para o próximo que falta */
-function pularParaFalta(avisar){try{const f=window.filtroForn&&filtroForn(),cur=curralAtual();if(!f||!cur||A.est==='descarregando'||A.pausa)return false;
+function pularParaFalta(avisar){try{const f=window.filtroForn&&filtroForn(),cur=curralAtual();if(!f||!cur||A.est==='descarregando'||(A.pausa&&!A.pausa.trava))return false;
   const L=lista(),regs=regsAtuais();if(!feito(cur.nome,regs))return false;
   let j=L.findIndex((x,k)=>k>S.atual&&!feito(x.nome,regs));if(j<0)j=L.findIndex(x=>!feito(x.nome,regs));if(j<0)return false;
   setAtual(j);save();novoCurral(true);try{render();}catch(e){}aRender();if(avisar)toast(`${cur.nome} já foi tratado: indo para o ${L[j].nome}`);return true;}catch(e){return false;}}
@@ -901,7 +923,7 @@ setInterval(()=>{try{if(A.restChk||A.peso==null)return;A.restChk=true;
   if(A.peso>v.base+cfg().minDesc)return;   // peso maior que o inicial guardado: recarregou, não continua
   diagLog('curral_restaurado',{curral:v.curral,ini:v.base,peso:A.peso,seg:Math.round((Date.now()-v.ts)/1000)});
   window.aContinuar(v.base);toast(`↩ Voltou para o ${v.curral}: continuando com o peso inicial ${fmt(v.base)} kg (o que já caiu não se perdeu)`);}catch(e){}},500);
-window.aAoAbrir=()=>{montar();aRender();try{pularParaFalta(true);}catch(e){}if(!modoVer&&window.btAutoVoltar)btAutoVoltar();try{pintarTag();}catch(e){}try{if(typeof gSync==='function')gSync(true).catch(()=>{});}catch(e){}};
+window.aAoAbrir=()=>{montar();try{if(!A.pausa&&A.est!=='descarregando')travarCurral();}catch(e){}aRender();try{pularParaFalta(true);}catch(e){}if(!modoVer&&window.btAutoVoltar)btAutoVoltar();try{pintarTag();}catch(e){}try{if(typeof gSync==='function')gSync(true).catch(()=>{});}catch(e){}};
 /* quando a aba Tratar ou a nuvem mudam algo, a tela da Automação acompanha */
 const renderOriginal=window.render;
 if(typeof renderOriginal==='function'){window.render=function(){const r=renderOriginal.apply(this,arguments);try{if(!$('viewAuto').hidden)aRender();}catch(e){}return r;};}
@@ -1185,7 +1207,8 @@ async function tagProcessar(epc,forcar){
     const ok=window.confirmaVermelho?await confirmaVermelho(`${c} já foi tratado`,`O ${c} já tem trato no Trato ${S.tratoSel}. Tratar de novo? O que fornecer agora soma no trato deste curral.`,'Sim, tratar de novo','Não'):confirm(`${c} já foi tratado. Tratar de novo?`);
     if(!ok)return;A.tagRepetir=c;}
   const j=lista().findIndex(x=>x.nome===c);if(j<0)return;
-  setAtual(j);$('aEscolha')&&($('aEscolha').hidden=true);novoCurral(true);save();render();aRender();
+  setAtual(j);$('aEscolha')&&($('aEscolha').hidden=true);novoCurral(true,true);A.pausa=null;save();   /* leu a tag do curral: chegou nele, já libera */
+  render();aRender();
   toast(`🏷 ${c}`);}
 /* ---- leitor tipo teclado (HID): digita o código bem rápido e dá Enter ---- */
 {let kb='',kbT=0,kbIni=0,alvo=null;
