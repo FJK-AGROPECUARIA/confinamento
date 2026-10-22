@@ -108,7 +108,7 @@ body.somenteVer #dataLinha,body.somenteVer #cal,body.somenteVer #painel>.tSetaFi
 body.somenteVer.verCarga #viewTrato>section:not(#painel),body.somenteVer.verCarga #dataLinha,body.somenteVer.verCarga #painel>.tSetaFixa,body.somenteVer.verCarga .navtrato,body.somenteVer.verCarga #cal{display:none!important}
 #avCargaBox tr.atual td{background:#eef4e0}
 .contRem{border:3px solid #1565c0}.contRem h2{color:#1565c0}.contIt{display:grid;gap:4px;padding:8px 0;border-top:1px solid #dde3ea}.contIt span{font-size:.9rem;color:var(--muted)}.contIt button{margin-top:4px}
-.avSub{font-weight:800;font-size:1rem;color:var(--fg);padding:2px 4px 0;display:flex;flex-wrap:wrap;gap:2px 8px;align-items:baseline}.avSub em{font-style:normal;font-weight:600;font-size:.85rem;color:var(--muted)}
+.avSub{font-weight:800;font-size:1rem;color:var(--fg);padding:2px 4px 0;display:flex;flex-wrap:wrap;gap:2px 8px;align-items:baseline}.avSub em{white-space:nowrap;font-style:normal;font-weight:600;font-size:.85rem;color:var(--muted)}
 .avEspelho{display:grid;grid-template-columns:minmax(0,1fr);gap:8px;margin-top:6px;min-width:0}.avEspelho .curBox2{display:grid!important;grid-template-columns:minmax(0,1fr) minmax(0,36%)}.avEspelho .curBox2>div{min-width:0!important;overflow:hidden}.avEspelho .cbPrev b{font-size:clamp(1.5rem,7.5vw,2.3rem)!important}.avEspelho .cbPrev{padding:8px 8px!important}.avEspelho .cbPrev b{width:auto!important;min-width:0!important;max-width:100%}.avEspelho .cbPrev span{font-size:.68rem!important;letter-spacing:.05em!important;white-space:nowrap}.avEspelho .cbCur{min-width:0}.avEspelho .cbCur b{white-space:nowrap;overflow:hidden;line-height:1.1}.avBatTot{text-align:center;font-weight:600;color:var(--muted)}.avBatTot b{color:var(--fg)}
 .avGeo{display:flex;align-items:baseline;gap:6px;flex-wrap:nowrap;white-space:nowrap;overflow:hidden;margin:4px 4px 0;font-weight:700;font-size:.9rem;color:#1565c0;text-decoration:none}.avGeo.semGeo{color:var(--muted);font-weight:600}.avGeo small{overflow:hidden;text-overflow:ellipsis;min-width:0;font-weight:600;color:var(--muted)}
 body.somenteVer details.gCarga{display:block!important}
@@ -164,6 +164,15 @@ body.somenteVer .fBar{display:none!important}
 .cvFundo{position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:9999;display:flex;align-items:center;justify-content:center;padding:16px}.cvCaixa{background:var(--card,#fff);border-radius:16px;max-width:420px;width:100%;padding:20px;border:3px solid #d32f2f;max-height:90vh;overflow:auto}.cvCaixa .cvBt{display:grid;gap:10px;margin-top:12px}.gBatEd label{display:block;font-size:.85rem;font-weight:700;margin:8px 0 0}.gBatEd input{width:100%;margin-top:4px}
 #tbHist .hAcoes{display:inline-flex;gap:4px;margin-left:6px;vertical-align:middle}#tbHist .hAcoes .mini{padding:3px 7px;font-size:.78rem;min-height:0;margin:0}.gBatAc{display:flex;gap:8px;margin-top:8px}.gBatAc .mini{flex:1}
 .gEst4{display:grid!important;grid-template-columns:1fr 1fr!important;gap:8px}.gNfArq{display:flex;align-items:center;justify-content:center;padding:18px;border:2px dashed #8fb43a;border-radius:14px;font-weight:800;font-size:1.1rem;color:#2e6b2f;background:#f3f7dc;cursor:pointer;margin-top:8px}.gNfImg{display:block;max-width:160px;border-radius:10px;border:1px solid #dde3ea;margin:6px 0}.gNfItem{border-top:1px solid #dde3ea;padding-top:8px;margin-top:8px}
+body.somenteVer .fCancForn{display:none!important}
+.gTagLin{display:flex;gap:6px;align-items:center}.gTagLin input{flex:1;min-width:0;font-family:monospace;font-size:.85rem!important}.gTagLin button{white-space:nowrap;flex:none}
+.tagBar{display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin:6px 0 2px;padding:6px 8px;border-radius:10px;background:var(--soft,#eef3ee);font-size:.82rem;line-height:1.25}
+.tagBar .tgTxt{flex:1;min-width:0}.tagBar .tgTxt small{display:block;color:var(--muted);font-size:.74rem}
+.tagBar button{padding:5px 9px;font-size:.78rem;border-radius:8px;width:auto;flex:none;margin:0}
+.tagBar.tgOk{background:#e3f2e1}.tagBar.tgErr{background:#fdecea;color:#b71c1c}
+.tagBar .tgSim{flex-basis:100%;display:flex;gap:6px}.tagBar .tgSim select{flex:1;min-width:0;padding:5px;font-size:.82rem}
+.tagAviso{margin:6px 0;padding:10px 12px;border-radius:10px;background:#d32f2f;color:#fff;font-weight:700;font-size:1rem;text-align:center;animation:tgPisca 1s 3}
+@keyframes tgPisca{50%{opacity:.55}}
 .gTres{display:grid;grid-template-columns:.9fr 1.35fr .95fr;gap:6px;width:100%;grid-column:1/-1}.gTresNota{grid-column:1/-1}.gForm .gTres .gCampo{min-width:0;grid-column:auto!important}.gTres{align-items:end}.gTres label{font-size:.74rem}.gTres input{min-width:0;width:100%;font-size:.86rem!important;padding:9px 5px!important}.gTresNota{margin:4px 0 8px}
 .gLotesTopo{display:flex!important;flex-wrap:nowrap!important;align-items:center;gap:6px}.gLotesTopo h2{margin:0;white-space:nowrap;flex:0 1 auto!important;min-width:0}.gLotesBts{margin-left:auto;display:flex;gap:6px}.gLotesBts .mini{padding:6px 8px;font-size:.76rem;white-space:nowrap;margin:0}.gLotesTopo h2{letter-spacing:.04em}.lotesExp{margin:8px 0 12px}
 .cBotoes .mini.mud{border-color:#2e6b2f!important;color:#2e6b2f!important;background:#eef5e4!important;font-weight:800}
@@ -1109,7 +1118,7 @@ body.naInicio .topoTxt h1{font-size:clamp(16px,5vw,28px)!important}
 <div class="toast" id="toast" hidden></div>
 <script>
 'use strict';
-const APP_VERSAO='102';
+const APP_VERSAO='103';
 const APP_DATA='19/10/2026';
 const KEY='confinamento-completo-v1';
 const $=id=>document.getElementById(id);
@@ -1232,7 +1241,8 @@ function toast(t){const el=$('toast');el.textContent=t;el.hidden=false;clearTime
 /* Lista do trato = currais do cadastro (na ordem) que têm previsto maior que zero nesse trato */
 function mapaPrev(k){k=String(k);if(!S.prev[k])S.prev[k]={};return S.prev[k];}
 function lista(k){const m=(S.prev&&S.prev[String(k||S.tratoSel)])||{};const f=k?null:filtroForn();if(!k&&!f&&!(typeof modoVer!=='undefined'&&modoVer))return [];
-  return S.cadastro.filter(n=>curralAtivo(n)&&typeof m[n]==='number'&&m[n]>0&&(!f||(linhaDe(n)===f.local&&(!f.rac||(window.racaoDoCurral&&racaoDoCurral(n)===f.rac))))).map(n=>({nome:n,prev:m[n]}));}
+  const ex=(!k&&f&&f.extra&&f.extra[String(S.tratoSel)])||{};  // curral sem previsto liberado pela tag ("fornecer mesmo assim")
+  return S.cadastro.filter(n=>curralAtivo(n)&&((typeof m[n]==='number'&&m[n]>0&&(!f||(linhaDe(n)===f.local&&(!f.rac||(window.racaoDoCurral&&racaoDoCurral(n)===f.rac)))))||ex[n])).map(n=>typeof m[n]==='number'&&m[n]>0?{nome:n,prev:m[n]}:{nome:n,prev:0,semPrev:true});}
 /* Fornecer: antes de abrir, escolhe Local (confinamento/pasto), Ração e Trato; a lista mostra só esses currais */
 function filtroForn(){if(typeof modoVer!=='undefined'&&modoVer)return (typeof avFiltro!=='undefined'&&avFiltro)||null;const f=S&&S.forn;return f&&f.ativo?f:null;} // aberto continua (até no dia seguinte) até finalizar ou abrir outro
 /* ================= Previsto por dia · nº de tratos por curral · divisão em % =================
@@ -3250,7 +3260,7 @@ function cardCargaAoVivo(d){const ini=parseFloat(d.ini),fim=parseFloat(d.fim),pv
 function avTelaSint(d,carga){const ini=parseFloat(d.ini),fim=parseFloat(d.fim),pv=+d.prev;if(isNaN(ini)||!(pv>0))return null;
   const feito=isNaN(fim)?0:(carga?fim-ini:ini-fim),falta=pv-feito,alvo=carga?ini+pv:ini-pv;
   const cor=falta<0?'passou':falta<=Math.max(15,pv*.03)?'vermelho':falta<=Math.max(60,pv*.12)?'amarelo':'verde';
-  return {peso:isNaN(fim)?'—':fmt(fim),pesoTxt:'ao vivo',etapa:feito>0?(carga?`▲ Carregando ${d.prod||''}`:`▼ Fornecendo no ${d.curral||''}`):(carga?`Pronto: pode carregar ${d.prod||''}`:`Pronto: pode fornecer no ${d.curral||''}`),
+  return {peso:isNaN(fim)?'—':fmt(fim),pesoTxt:'',etapa:feito>0?(carga?`▲ Carregando ${d.prod||''}`:`▼ Fornecendo no ${d.curral||''}`):(carga?`Pronto: pode carregar ${d.prod||''}`:`Pronto pra fornecer no ${d.curral||''}`),
     etCl:'aEtapa '+(feito>0?'desc':'pronto'),fCl:'aFalta '+cor,fTit:falta<0?'PASSOU':(carga?'Carregar':'Fornecer'),fVal:fmt(Math.abs(falta)),
     fTxt:falta<0?'DO PREVISTO':'\u00a0',feito:fmt(Math.max(0,feito)),ini:fmt(ini),alvo:fmt(alvo)};}
 function avTelaHTML(d,carga){const T=d.tela;
@@ -3327,10 +3337,10 @@ function renderAoVivo(){const box=$('aoVivo');if(!modoVer){box.innerHTML='';pint
     let real='—',dif='—',cls='';if(!isNaN(ini)&&!isNaN(fim)){const f=ini-fim;real=fmt(f);if(pv!=null){const x=f-pv;dif=auto&&x<0?fmt(-x):sgn(x);cls=auto&&x<0?'':classeDesv(x,pv);}}
     const fora=d.dia!==hojeKey()?` · ${diaBR(d.dia)}`:'';
     if(!(d.tela&&d.tela.fCl)&&auto&&!d.fimForn&&d.curral){const t=avTelaSint(d,false);if(t)d=Object.assign({},d,{tela:t});}
-    if(d.tela&&d.tela.fCl&&!d.fimForn)return `<div class="avCard${d.idade>70000?' parado':''}">${avTopoHTML(d,+d.fts0||0)}<div class="avSub">⚡ Fornecer · Trato ${esc(d.trato)}${d.local?' · '+(d.local==='C'?'Confinamento':'Pasto'):''} <em>${d.feitos||0} de ${d.total||0} currais</em></div>${avTelaHTML(d,false)}</div>`;
+    if(d.tela&&d.tela.fCl&&!d.fimForn)return `<div class="avCard${d.idade>70000?' parado':''}">${avTopoHTML(d,+d.fts0||0)}<div class="avSub">⚡ Fornecer · Trato ${esc(d.trato)}${d.local?' · '+(d.local==='C'?'Confinamento':'Pasto'):''} <em>${d.feitos||0}/${d.total||0}</em></div>${avTelaHTML(d,false)}</div>`;
     const nomeCur=d.fimForn?'✓ Fornecimento finalizado':d.curral||(d.total?'Trato completo':'—');
     return `<div class="avCard${d.idade>70000?' parado':''}">
-      ${avTopoHTML(d,+d.fts0||0)}<div class="avSub">${auto?'⚡':'✋'} Fornecer · Trato ${esc(d.trato)}${d.local?' · '+(d.local==='C'?'Confinamento':'Pasto'):''} <em>${d.feitos||0} de ${d.total||0} currais</em></div>
+      ${avTopoHTML(d,+d.fts0||0)}<div class="avSub">${auto?'⚡':'✋'} Fornecer · Trato ${esc(d.trato)}${d.local?' · '+(d.local==='C'?'Confinamento':'Pasto'):''} <em>${d.feitos||0}/${d.total||0}</em></div>
       <div class="curBox2"><div class="cbCur"><span>Curral atual</span><b>${esc(nomeCur)}</b></div><div class="cbPrev"><span>Previsto</span><b class="num">${pv!=null&&d.curral?fmt(pv):'—'}</b></div></div>
       <div class="avGrade">
         <div><small>Bal. início</small><b class="num">${!isNaN(ini)?fmt(ini):'—'}</b></div>

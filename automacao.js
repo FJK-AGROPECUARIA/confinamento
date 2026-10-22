@@ -13,7 +13,7 @@ const A={fonte:null,status:'Desconectado',peso:null,amostras:[],estavel:false,va
   est:'aguardando',base:null,menor:null,avisou1:false,avisou2:false,bruto:[],buf:'',
   bt:null,btChars:[],ws:null,sim:null,wake:null,ultDado:0};
 window.AUTO=A;
-const CFG_PADRAO={bleUuid:'',bleCmd:'',tol:10,tempo:4,minDesc:30,amarelo:100,vermelho:50,continuo:20,antecipa:1,ws:'ws://10.10.100.254:6432',som:true,filtro:3,enq:1,prever:1};
+const CFG_PADRAO={bleUuid:'',bleCmd:'',tol:10,tempo:4,minDesc:30,amarelo:100,vermelho:50,continuo:20,antecipa:1,ws:'ws://10.10.100.254:6432',som:true,tagOn:1,filtro:3,enq:1,prever:1};
 /* Ajustes da balança: ficam na nuvem (item 'cfgBalanca' da Gestão), então mudar num aparelho muda em todos */
 function cfgNuvem(){try{return (typeof G!=='undefined'&&G.it&&G.it.cfgBalanca)||null;}catch(e){return null;}}
 function cfg(){if(!S.auto)S.auto={};
@@ -142,6 +142,7 @@ function montar(){
       <div class="cbPrev"><span>Previsto</span><b class="num" id="aPrev">—</b></div>
     </div>
     <div class="escolha" id="aEscolha" hidden></div>
+    <div class="tagAviso" data-tagaviso hidden></div><div class="tagBar" data-tagbar hidden></div>
     <div class="aEtapa" id="aEtapa">Conecte a balança</div>
     <button type="button" class="aPausaBt" id="aPausar">⏸ Pausar (trajeto)</button>
     <div class="aPausaBox" id="aPausaBox" hidden role="button" tabindex="0"><b>⏸ PAUSADO</b><span>No trajeto: a balança não está contando nada.</span><em>▶ Toque aqui para continuar</em></div>
@@ -289,10 +290,19 @@ setInterval(()=>{if(A.fonte!=='bt'||!A.bt||!A.digiStar||A.btReconectando)return;
   if(parado>2500&&!A.btCutucou&&A.dsEsc){A.btCutucou=Date.now();bruto('sem peso há 2,5 s: chamando a balança de novo');diagLog('sem_peso',{});A.dsEsc.writeValue(new Uint8Array([5])).catch(()=>{});}
   if(parado>5000)reconectarBt('Balança parou de mandar o peso');},1000);
 /* ao abrir o app de novo (ou depois de atualizar), tenta voltar sozinho para a última balança, se o Chrome deixar */
-window.btAutoVoltar=async()=>{try{if(A.fonte||!navigator.bluetooth||!navigator.bluetooth.getDevices)return;const id=localStorage.getItem('btUltimo');if(!id)return;
-  const dev=(await navigator.bluetooth.getDevices()).find(d=>d.id===id);if(!dev)return;
-  A.bt=dev;A.fonte='bt';marcarFonte();ligarQueda(dev);setStatus('Voltando a conectar na balança…','wait');
-  try{await btAbrir(dev);}catch(e){reconectarBt('Conectando na balança');}}catch(e){}};
+/* ao entrar na Automação (Carregar ou Fornecer): tenta conectar sozinho na balança já usada neste aparelho (NEW EZ),
+   sem abrir a lista do Bluetooth. Se não der, fica como está: botão Conectar a balança. */
+window.btAutoVoltar=async()=>{if(A.fonte||A.autoTent||!navigator.bluetooth||!navigator.bluetooth.getDevices)return;A.autoTent=true;
+  try{const id=localStorage.getItem('btUltimo'),devs=await navigator.bluetooth.getDevices();
+    const dev=devs.find(d=>id&&d.id===id)||devs.find(d=>/NEW\s*EZ|DIGI|EZ\d/i.test(d.name||''));if(!dev||A.fonte)return;
+    A.bt=dev;A.fonte='bt';marcarFonte();ligarQueda(dev);setStatus('Conectando sozinho na balança…','wait');
+    /* Android: espera a balança aparecer (anúncio) antes de conectar, por até 6 s */
+    if(dev.watchAdvertisements){try{const ac=new AbortController();await Promise.race([new Promise(r=>{dev.addEventListener('advertisementreceived',r,{once:true});dev.watchAdvertisements({signal:ac.signal}).catch(r);}),new Promise(r=>setTimeout(r,6000))]);ac.abort();}catch(e){}}
+    if(A.bt!==dev)return;
+    let ok=false;for(let n=0;n<2&&!ok&&A.bt===dev;n++){try{await btAbrir(dev);ok=true;}catch(e){await new Promise(r=>setTimeout(r,1500));}}
+    if(ok){try{localStorage.setItem('btUltimo',dev.id||'');}catch(e){}toast('Balança conectada');}
+    else if(A.bt===dev){dev._manual=true;try{dev.gatt.disconnect();}catch(e){}desconectar(false);dev._manual=false;setStatus('Não conectou sozinho · toque em Conectar a balança','err');}}
+  catch(e){}finally{A.autoTent=false;aRender();}};
 async function btAbrir(dev){
   setStatus('Conectando em '+(dev.name||'aparelho')+'…','wait');
   const srv=await dev.gatt.connect();
@@ -462,11 +472,11 @@ function refProvisoria(sinal){const c=cfg(),agora=Date.now(),ss=(A.suaves||[]).f
   return null;}
 /* mostra se a leitura está chegando em dia: "ao vivo" ou "sem leitura há X s" (em vermelho) */
 const atrasada=()=>!!(A.fonte&&A.ultDado&&Date.now()-A.ultDado>2000);
-function idadeLeitura(){if(!A.fonte||!A.ultDado)return '';const s=(Date.now()-A.ultDado)/1000;return s<=2?` · ao vivo${A.dtMed?' · '+(1000/A.dtMed).toFixed(1).replace('.',',')+' leit./s':''}`:` · ⚠ sem leitura há ${Math.round(s)} s`;}
+function idadeLeitura(){if(!A.fonte||!A.ultDado)return '';const s=(Date.now()-A.ultDado)/1000;return s<=2?'':` · ⚠ sem leitura há ${Math.round(s)} s`;}
 setInterval(()=>{if(!atrasada())return;[['aEstTxt','aPeso'],['acEstTxt','acPeso']].forEach(([i,p])=>{const e=$(i);if(!e)return;
-  e.textContent=(A.estavel?'● parado (estável)':'○ mexendo…')+idadeLeitura();e.className='atraso';const b=$(p);if(b)b.style.opacity='.45';});},1000);
+  e.textContent=(A.estavel?'● Estável':'○ Oscilando')+idadeLeitura();e.className='atraso';const b=$(p);if(b)b.style.opacity='.45';});},1000);
 function novoPeso(n){
-  const c=cfg(),agora=Date.now();
+  const c=cfg(),agora=Date.now(),nCru=n;
   /* ajuste fino: mediana das últimas leituras (1 = sem filtro, 3 normal, 5 forte) — tira o "pula pra cima e pra baixo"
      de uma leitura isolada sem atrasar muito (a Digi-Star manda ~1,6 leitura por segundo) */
   A.brutos=(A.brutos||[]).concat(n).slice(-9);const kf=Math.max(1,Math.min(9,Math.round(+c.filtro||1)));
@@ -489,6 +499,20 @@ function novoPeso(n){
     A.estavel=(mx-mn)<=c.tol||(deriva<=c.tol&&(Math.max(...ss)-Math.min(...ss))<=c.tol*2);
     A.valEst=A.estavel?Math.round(med(vs)):null;}
   else{A.estavel=false;A.valEst=null;}
+  /* fornecendo: o "Fornecer" segue a RETA das leituras dos últimos 4 s (não cada leitura), então o balanço do vagão
+     (pula 100 kg pra cima e pra baixo) não aparece e o número desce liso entre uma leitura e outra.
+     Leitura muito fora da reta é descartada. Não trava: se a balança mostrar que caiu menos, o número volta (só ignora sobe de menos de 40 kg).
+     Quando a balança firma, usa o peso firme de verdade (é ele que vai para o registro). */
+  if(A.est==='descarregando'&&!naCargaAuto()){
+    A.descPts=(A.descPts||[]).concat({t:agora,v:nCru}).filter(q=>q.t>=agora-4200);
+    if(A.estavel&&A.valEst!=null){A.pesoDesc=A.valEst;A.descFit={v:A.valEst,b:0,t:agora};}
+    else{const f=ajusteReta(A.descPts,agora);let v=f.v;
+      if(A.descFit){const dt=Math.min(agora-A.descFit.t,3000),antes=A.descFit.v+A.descFit.b*Math.min(dt,(A.dtMed||500)*1.0);
+        /* o vagão não descarrega mais rápido que ~2x a velocidade de agora (mín. 60 kg/s): queda maior que isso é balanço, não ração */
+        const maxCai=Math.max(60,1.8*Math.abs(A.descFit.b)*1000)*dt/1000+10;
+        if(v<antes-maxCai)v=antes-maxCai;else if(v>antes&&v-antes<40)v=antes;}
+      A.pesoDesc=v;A.descFit={v,b:f.b,t:agora};}}
+  else{A.pesoDesc=null;A.descFit=null;A.descPts=[];}
   if(A.status.includes('aguardando peso'))setStatus(A.status.replace(' · aguardando peso…',' · recebendo peso'),'ok');
   maquina();maquinaCarga();
   aRenderLeve();
@@ -506,7 +530,7 @@ function maquina(){
   if(naCargaAuto())return; // na tela de carregar o trato fica parado (não perde o que já estava fornecendo)
   const c=cfg(),cur=curralAtual();if(A.peso==null)return;
   if(A.est==='aguardando'){
-    const lim=cur?Math.min(c.minDesc,Math.max(c.tol,cur.prev/2)):c.minDesc; // curral pequeno: começa com menos
+    const lim=cur&&cur.prev>0?Math.min(c.minDesc,Math.max(c.tol,cur.prev/2)):c.minDesc; // curral pequeno: começa com menos
     if(A.base!=null&&cur&&A.suave<A.base-lim){A.est='descarregando';A.menor=A.peso;A.avisou1=false;A.avisou2=false;A.ancV=A.suave;A.ancT=Date.now();A.fpMin=null;return;}
     /* parado: o peso inicial é sempre o peso real da balança agora (não o final do curral anterior, que pode variar) */
     if(A.estavel&&(A.base==null||A.valEst!==A.base)){if(A.base!=null&&A.baseConf===false&&Math.abs(A.valEst-A.base)>=5)diagLog('ini_ajustado',{curral:cur?cur.nome:'',de:A.base,para:A.valEst});A.base=A.valEst;A.baseConf=true;}
@@ -534,7 +558,8 @@ async function registrarAuto(){
   const ini=A.base;
   if(!(fim<ini)){toast('O peso não caiu desde o início');return;}
   const ja=regsAtuais().filter(x=>x.curral===cur.nome);
-  if(ja.length&&!confirm(`${cur.nome} já tem trato no Trato ${S.tratoSel}. Lançar mais um (soma no realizado)?`))return;
+  if(ja.length&&A.tagRepetir!==cur.nome&&!confirm(`${cur.nome} já tem trato no Trato ${S.tratoSel}. Lançar mais um (soma no realizado)?`))return;
+  if(A.tagRepetir===cur.nome)A.tagRepetir=null;
   registrando=true;
   const now=new Date();
   const r={ts:now.getTime(),dia:diaAtivo(),trato:S.tratoSel,hora:now.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'}),
@@ -599,8 +624,22 @@ function taxaQueda(sinal){sinal=sinal||1;const agora=Date.now();if(!A.amostras.l
 /* "está caindo": o peso fez um novo mínimo (pelo menos metade da variação aceita) há menos de 0,9 s.
    Parou o vagão → em menos de 1 s o apito para. */
 function caindoAgora(){return A.est==='descarregando'&&A.ancT>0&&Date.now()-A.ancT<jCaindo()&&Date.now()-A.ultDado<jVivo();}
+/* peso usado no "Fornecer": no meio da descarga, o que só desce (pesoDesc); parado e firme, o peso real */
+function pesoDescRef(){if(naCargaAuto()||A.est!=='descarregando'||A.estavel||!A.descFit)return A.peso;
+  const f=A.descFit;return f.v+f.b*Math.min(Date.now()-f.t,(A.dtMed||500)*1.0);}
+/* reta pelos pontos, à prova de leitura doida (Theil-Sen: mediana das inclinações entre pares de leituras e mediana do nível).
+   Uma ou duas leituras muito fora (buraco, balanço) não puxam a reta. Devolve o valor da reta agora e a inclinação (kg/ms, nunca subindo). */
+function ajusteReta(pts,agora){const mdn=a=>{const v=a.slice().sort((x,y)=>x-y),n=v.length;return n?(n%2?v[(n-1)/2]:(v[n/2-1]+v[n/2])/2):NaN;};
+  if(pts.length<3)return {v:mdn(pts.map(q=>q.v)),b:0};
+  const ts=P=>{const sl=[];for(let i=0;i<P.length;i++)for(let k=i+1;k<P.length;k++){const dt=P[k].t-P[i].t;if(dt>200)sl.push((P[k].v-P[i].v)/dt);}
+    const b=sl.length?mdn(sl):0;return {b,n:mdn(P.map(q=>q.v-b*(q.t-agora)))};};
+  let f=ts(pts);const res=pts.map(q=>Math.abs(q.v-(f.n+f.b*(q.t-agora)))),lim=Math.max(80,3*mdn(res)),bons=pts.filter((q,i)=>res[i]<=lim);
+  if(bons.length>=3&&bons.length<pts.length)f=ts(bons);
+  const b=Math.min(0,f.b);return {v:b===f.b?f.n:mdn((bons.length>=3?bons:pts).map(q=>q.v)),b};}
 function zona(){const cur=curralAtual();if(!cur||A.base==null||A.peso==null)return null;
-  const c=cfg(),falta=cur.prev-Math.max(0,A.base-A.peso),caindo=caindoAgora();
+  const pz=A._tela?A.peso:pesoDescRef();
+  if(cur.semPrev){const caindo=caindoAgora();return {falta:null,fp:null,taxa:caindo?taxaQueda():0,caindo,z:'cinza',semPrev:true};}  // sem previsto (liberado pela tag): sem meta nem apito
+  const c=cfg(),falta=cur.prev-Math.max(0,A.base-pz),caindo=caindoAgora();
   const taxa=caindo?taxaQueda():0;
   let fp=falta;
   if(caindo){fp=falta-taxa*(+c.antecipa||0); // onde vai estar daqui a "antecipa" segundos
@@ -625,7 +664,7 @@ function testarSom(){liberarSom();
 setInterval(()=>{
   const c=cfg(),naCarga=$('viewAutoC')&&!$('viewAutoC').hidden;
   const z=naCarga?zonaC():zona();
-  const tocando=!!(c.som&&A.fonte&&z&&!modoVer&&!(A.pausa&&!naCarga)&&(naCarga?z.caindo:(A.est==='descarregando'&&z.caindo)));
+  const tocando=!!(c.som&&A.fonte&&z&&!z.semPrev&&!modoVer&&!(A.pausa&&!naCarga)&&(naCarga?z.caindo:(A.est==='descarregando'&&z.caindo)));
   if(!tocando)return;
   const iv=intervalo(z.fp,c);if(!iv)return;
   if(Date.now()-ultBip>=iv.ms){ultBip=Date.now();tocar(iv.som);}
@@ -664,38 +703,39 @@ function aContinuarPausa(){const P=A.pausa;if(!P)return;A.pausa=null;
 window.aPausar=aPausar;window.aContinuarPausa=aContinuarPausa;
 /* peso na tela entre uma leitura e outra: enquanto está carregando/fornecendo, segue a velocidade (kg/s) por até "prever" segundos,
    para o número andar junto com o vagão em vez de pular. Só na tela: registro, apito e peso firme usam a leitura real. */
-function pesoTela(){if(A.peso==null||A.pausa)return A.peso;const lim=Math.max(0,Math.min(2,+cfg().prever||0))*1000;if(!lim||!A.tUlt)return A.peso;
+function pesoTela(){if(A.peso==null||A.pausa)return A.peso;if(A.descFit&&!naCargaAuto()&&A.est==='descarregando'&&!A.estavel)return pesoDescRef();const p0=A.peso,lim=Math.max(0,Math.min(2,+cfg().prever||0))*1000;if(!lim||!A.tUlt)return p0;
   let dir=0,tx=0;if(caindoAgora()){dir=-1;tx=taxaQueda();}else if(typeof subindoAgora==='function'&&subindoAgora()){dir=1;tx=taxaQueda(-1);}
-  if(!dir||!(tx>0))return A.peso;const dt=Math.min(Date.now()-A.tUlt,lim,(A.dtMed||700)*1.5);return A.peso+dir*tx*dt/1000;}
-function comPesoTela(f){const r=A.peso;try{A.peso=pesoTela();f();}finally{A.peso=r;}}
-setInterval(()=>{if(document.visibilityState!=='visible'||A.peso==null)return;if(caindoAgora())comPesoTela(pintarPeso0);else if(typeof subindoAgora==='function'&&subindoAgora())comPesoTela(pintarCarga0);},150);
+  if(!dir||!(tx>0))return p0;const dt=Math.min(Date.now()-A.tUlt,lim,(A.dtMed||700)*1.5);return p0+dir*tx*dt/1000;}
+function comPesoTela(f){const r=A.peso;try{A._pesoReal=r;A.peso=pesoTela();A._tela=true;f();}finally{A.peso=r;A._tela=false;}}
+setInterval(()=>{if(document.visibilityState!=='visible'||A.peso==null)return;if(caindoAgora()||(A.est==='descarregando'&&A.descFit&&A.descFit.b<0&&!naCargaAuto()))comPesoTela(pintarPeso0);else if(typeof subindoAgora==='function'&&subindoAgora())comPesoTela(pintarCarga0);},150);
 function pintarPeso(){comPesoTela(pintarPeso0);}
 function pintarPeso0(){
   if(!$('aPeso')||$('viewAuto').hidden)return;
   const c=cfg(),cur=curralAtual();
-  $('aPeso').textContent=A.peso==null?'—':fmt(A.peso);
-  const e=$('aEstTxt');e.textContent=(A.peso==null?'sem leitura':A.estavel?'● parado (estável)':'○ mexendo…')+idadeLeitura();e.className=atrasada()?'atraso':A.estavel?'est':'';
+  const pr=A._tela&&A._pesoReal!=null?A._pesoReal:A.peso;$('aPeso').textContent=pr==null?'—':fmt(pr);  // Balança: igual ao visor do indicador
+  const e=$('aEstTxt');e.textContent=(A.peso==null?'sem leitura':A.estavel?'● Estável':'○ Oscilando')+idadeLeitura();e.className=atrasada()?'atraso':A.estavel?'est':'';
   $('aIni').textContent=A.base==null?'—':fmt(A.base);
-  const alvo=(cur&&A.base!=null)?A.base-cur.prev:null;
+  const alvo=(cur&&!cur.semPrev&&A.base!=null)?A.base-cur.prev:null;
   $('aAlvo').textContent=alvo==null?'—':fmt(alvo);
   const caiu=(A.base!=null&&A.peso!=null)?Math.max(0,A.base-A.peso):null;
   $('aCaiu').textContent=caiu==null?'—':fmt(caiu);
   const z=zona(),fb=$('aFaltaBox');
   $('aFaltaTit').textContent=(z&&z.falta<0)?'PASSOU':'Fornecer';
-  if(z){$('aFalta').textContent=fmt(z.falta);fb.className='aFalta '+z.z;
+  if(z&&z.semPrev){$('aFaltaTit').textContent='Sem previsto';$('aFalta').textContent=caiu==null?'—':fmt(caiu);fb.className='aFalta cinza';$('aFaltaTxt').textContent='fornecido até agora';}
+  else if(z){$('aFalta').textContent=fmt(z.falta);fb.className='aFalta '+z.z;
     $('aFaltaTxt').textContent=z.falta<0?'DO PREVISTO':z.falta===0?'NO PONTO!':'\u00a0';
     if(z.falta<0)$('aFalta').textContent=fmt(-z.falta);}
   else{$('aFalta').textContent=cur?fmt(cur.prev):'—';fb.className='aFalta cinza';$('aFaltaTxt').textContent=A.fonte?'esperando peso inicial':'conecte a balança';}
   const et=$('aEtapa');let txt,cl='';
   pintarPausa();
   if(A.pausa){/* pausado: os números ficam parados no valor de quando pausou */$('aFalta').textContent=A.pausa.falta==null?'—':fmt(A.pausa.falta);$('aCaiu').textContent=fmt(A.pausa.caiu||0);
-    et.textContent='⏸ Pausado no trajeto · a balança não está contando';et.className='aEtapa pausa';$('aFaltaTit').textContent='Pausado';fb.className='aFalta cinza';$('aFaltaTxt').textContent='toque em continuar quando chegar';$('aReg').disabled=true;return;}
+    et.textContent='⏸ Balança pausada - em trajeto';et.className='aEtapa pausa';$('aFaltaTit').textContent='Pausado';fb.className='aFalta cinza';$('aFaltaTxt').textContent='toque em continuar quando chegar';$('aReg').disabled=true;return;}
   if(!A.fonte)txt='';
   else if(A.peso==null)txt='Esperando o peso chegar da balança…';
   else if(!cur)txt=lista().length?'✓ Trato completo':'Sem previsto neste trato (lance na aba Previsto)';
   else if(A.est==='descarregando'){const zz=zona()||{};txt=A.estavel?'Parou de cair · confira e toque em Registrar':zz.caindo?`▼ Fornecendo no ${cur.nome} · ${fmt(zz.taxa)} kg/s`:'■ Parou de cair · esperando o peso firmar';cl='desc';}
   else if(A.base==null)txt='Deixe o vagão parado para pegar o peso inicial';
-  else{txt='Pronto: pode fornecer no '+cur.nome;cl='pronto';}
+  else{txt='Pronto pra fornecer no '+cur.nome;cl='pronto';}
   et.textContent=txt;et.className='aEtapa '+cl;et.hidden=!txt;
   $('aReg').disabled=!(cur&&A.base!=null&&A.peso!=null&&A.peso<A.base)||modoVer;
 }
@@ -706,7 +746,7 @@ function aRender(){
   $('aData').textContent=(S.dataManual?'⚠ ':'')+diaBR(diaAtivo());
   $('aTrato').value=String(S.tratoSel);
   $('aCur').textContent=cur?cur.nome:(L.length?'Completo':'—');
-  $('aPrev').textContent=cur?fmt(cur.prev):'—';
+  $('aPrev').textContent=cur&&!cur.semPrev?fmt(cur.prev):'—';
   if(!$('aEscolha').hidden)mostrarAEscolha();
   let tp=0,tf=0;
   const linha=(nome,prev,i)=>{const rs=regs.filter(r=>r.curral===nome),fz=rs.length>0,f=rs.reduce((a,r)=>a+r.forn,0);
@@ -743,7 +783,7 @@ window.pesoBalanca=()=>A.fonte&&A.peso!=null&&A.ultDado&&Date.now()-A.ultDado<30
 window.aRenderFora=()=>{try{if($('viewAuto')&&!$('viewAuto').hidden){novoCurral(true);$('aTrato').value=String(S.tratoSel);aRender();}}catch(e){}};
 window.aContinuar=v=>{diagLog('continuou_outro_aparelho',{ini:+v,peso:A.peso});A.est='aguardando';A.ancV=null;A.ancT=0;A.fpMin=null;A.menor=null;A.base=+v;
   if(A.peso!=null&&A.peso<A.base-cfg().minDesc){A.est='descarregando';A.menor=A.peso;A.ancV=A.suave;A.ancT=0;}aRender();};
-window.aAoAbrir=()=>{montar();aRender();try{if(typeof gSync==='function')gSync(true).catch(()=>{});}catch(e){}};
+window.aAoAbrir=()=>{montar();aRender();if(!modoVer&&window.btAutoVoltar)btAutoVoltar();try{pintarTag();}catch(e){}try{if(typeof gSync==='function')gSync(true).catch(()=>{});}catch(e){}};
 /* quando a aba Tratar ou a nuvem mudam algo, a tela da Automação acompanha */
 const renderOriginal=window.render;
 if(typeof renderOriginal==='function'){window.render=function(){const r=renderOriginal.apply(this,arguments);try{if(!$('viewAuto').hidden)aRender();}catch(e){}return r;};}
@@ -839,7 +879,7 @@ function pintarCarga(){comPesoTela(pintarCarga0);}
 function pintarCarga0(){
   if(!naCargaAuto()||!$('acPeso'))return;
   $('acPeso').textContent=A.peso==null?'—':fmt(A.peso);
-  const e=$('acEstTxt');e.textContent=(A.peso==null?'sem leitura':A.estavel?'● parado (estável)':'○ mexendo…')+idadeLeitura();e.className=atrasada()?'atraso':A.estavel?'est':'';
+  const e=$('acEstTxt');e.textContent=(A.peso==null?'sem leitura':A.estavel?'● Estável':'○ Oscilando')+idadeLeitura();e.className=atrasada()?'atraso':A.estavel?'est':'';
   if(!$('acFaltaBox'))return;
   const it=acItem(),z=zonaC(),fb=$('acFaltaBox');
   $('acIni').textContent=it&&ok(it.ini)?fmt(it.ini):'—';
@@ -869,7 +909,7 @@ $('acBox').addEventListener('click',e=>{const b=e.target.closest('[data-ac]');if
   if(a==='simZera'){if(A.sim){A.sim.modo='parado';A.sim.peso=0;}return;}
   if(a==='pegar'){if(bloqueado())return;const it=acItem();if(!it)return;if(A.peso==null){toast('Sem leitura da balança');return;}
     it.ini=A.estavel?A.valEst:A.peso;it.fim=null;it.real=null;acNovoProduto();cSave();cRender();toast('Peso inicial: '+fmt(it.ini)+' kg');}});
-window.acAoAbrir=()=>{montar();if(window.cLimparSetup)cLimparSetup();cRender();window.scrollTo({top:0});if(window.cBuscarRemoto)cBuscarRemoto();try{if(typeof gSync==='function')gSync(true).catch(()=>{});}catch(e){}};
+window.acAoAbrir=()=>{montar();if(!modoVer&&window.btAutoVoltar)btAutoVoltar();if(window.cLimparSetup)cLimparSetup();cRender();window.scrollTo({top:0});if(window.cBuscarRemoto)cBuscarRemoto();try{if(typeof gSync==='function')gSync(true).catch(()=>{});}catch(e){}};
 $('tabAutoC').addEventListener('click',()=>aba('autoc'));
 
 /* ---------------- Gestão › Config. (ajustes da balança, iguais em todos os aparelhos) ---------------- */
@@ -897,6 +937,12 @@ function montarCfgT(){const box=$('cfgTBox');if(!box||box.dataset.ok)return;box.
     <input id="cfgT_cmd" type="text" autocapitalize="off" autocorrect="off" spellcheck="false" placeholder="deixe vazio se a balança manda sozinha">
     <label for="cfgT_ws" style="margin-top:8px">Endereço da caixinha Wi-Fi</label>
     <input id="cfgT_ws" type="text" autocapitalize="off" autocorrect="off" spellcheck="false">
+  </section>
+  <section class="panel">
+    <div class="curhead"><h2>🏷 Leitor de tag</h2></div>
+    <label class="aChk"><input type="checkbox" id="cfgT_tag"> Usar Tag</label>
+    <p class="note">Cada curral tem a sua tag (Gestão › Currais). Ao ler a tag de outro curral, o app registra o curral que estava fornecendo e passa para o curral da tag. Curral sem previsto: pergunta se quer fornecer mesmo assim. Tag sem curral (fim de linha) só registra o curral que estava fornecendo. Só funciona no Fornecer da Automação. Leituras repetidas da mesma tag são ignoradas. Se o leitor cair, continue no manual (trocar curral e Registrar).</p>
+    <p class="note">Leitor aceito: Bluetooth BLE (serial) ou leitor tipo teclado (HID), que digita o código e dá Enter.</p>
   </section>
   <section class="panel">
     <div class="curhead"><h2>🔊 Apito</h2></div>
@@ -938,6 +984,7 @@ function montarCfgT(){const box=$('cfgTBox');if(!box||box.dataset.ok)return;box.
   $('cfgT_ws').onchange=e=>{const c=cfg();c.ws=e.target.value.trim()||CFG_PADRAO.ws;e.target.value=c.ws;salvarCfg();avisoCfg();};
   $('cfgT_som').onchange=e=>{const c=cfg();c.som=e.target.checked;salvarCfg();avisoCfg();if(c.som){liberarSom();tocar('lento');}};
   $('cfgT_teste').onclick=testarSom;
+  $('cfgT_tag').onchange=e=>{const c=cfg();c.tagOn=e.target.checked?1:0;salvarCfg();avisoCfg();pintarTag();};
   $('cfgT_padrao').onclick=()=>{if(!confirm('Voltar todos os ajustes da balança ao padrão (em todos os aparelhos)?'))return;
     const c=cfg();for(const k in CFG_PADRAO)c[k]=CFG_PADRAO[k];salvarCfg();preencherCfgT();avisoCfg();};
 }
@@ -953,9 +1000,129 @@ function pintarCores(){const el=$('cfgT_cores');if(!el)return;const c=cfg();
   <div><i class="pisca2" style="background:#6a1b9a"></i>Roxo piscando · passou do previsto (negativo), apito bem rápido</div>`;}
 function preencherCfgT(){if(!$('cfgT_tol'))return;const c=cfg();pintarCores();
   CAMPOS.forEach(([k])=>{const el=$('cfgT_'+k);if(document.activeElement!==el)el.value=c[k];});
-  if(document.activeElement!==$('cfgT_ws'))$('cfgT_ws').value=c.ws;if(document.activeElement!==$('cfgT_ble'))$('cfgT_ble').value=c.bleUuid||'';if(document.activeElement!==$('cfgT_cmd'))$('cfgT_cmd').value=c.bleCmd||'';$('cfgT_som').checked=!!c.som;}
+  if(document.activeElement!==$('cfgT_ws'))$('cfgT_ws').value=c.ws;if(document.activeElement!==$('cfgT_ble'))$('cfgT_ble').value=c.bleUuid||'';if(document.activeElement!==$('cfgT_cmd'))$('cfgT_cmd').value=c.bleCmd||'';$('cfgT_som').checked=!!c.som;if($('cfgT_tag'))$('cfgT_tag').checked=!!c.tagOn;}
 window.cfgTAoAbrir=()=>{montarCfgT();preencherCfgT();avisoCfg();
   try{if(typeof gSync==='function')gSync(true).then(()=>{if(!cfgNuvem())salvarCfg();preencherCfgT();avisoCfg();}).catch(()=>{});}catch(e){}};
 /* puxa da nuvem ao abrir a Automação também, para pegar ajustes feitos em outro aparelho */
 setInterval(()=>{const b=$('cfgTBox');if(b&&b.offsetParent)preencherCfgT();},3000);
+
+/* ================= LEITOR DE TAG (RFID) =================
+   Cada curral tem uma tag (Gestão › Currais). No Fornecer da automação (no manual a tag não faz nada):
+   · tag de outro curral → registra o curral que estava fornecendo (automação) e passa para o curral da tag
+   · curral sem previsto → aviso vermelho perguntando se fornece mesmo assim (sim: libera, sem meta)
+   · curral já tratado → aviso vermelho perguntando se trata de novo (soma no trato)
+   · tag sem curral (fim de linha) → só registra o curral que estava fornecendo
+   · a mesma tag lida várias vezes seguidas → ignora até ler outra
+   Leitor: Bluetooth BLE (serial) ou tipo teclado (HID). Se cair, segue tudo no manual. */
+const TG={dev:null,ok:false,recon:false,mesma:null,ult:null,ultCur:'',ultT:0,hidT:0,captura:null,capMsg:null,fila:Promise.resolve(),buf:'',sim:false};
+window.TAG=TG;
+const normTag=t=>String(t||'').toUpperCase().replace(/[^0-9A-F]/g,'');
+function curralDaTag(epc){try{const v=(G.it.currais&&!G.it.currais.del&&G.it.currais.v)||{};
+  for(const n of S.cadastro){const t=normTag((v[n]||{}).tag);if(t&&t===epc)return n;}
+  for(const n of S.cadastro){const t=normTag((v[n]||{}).tag);if(t&&t.length>=8&&epc.length>=8&&(epc.endsWith(t)||t.endsWith(epc)))return n;}}catch(e){}return null;}
+function tagAviso(txt){document.querySelectorAll('[data-tagaviso]').forEach(el=>{el.textContent='⚠️ '+txt;el.hidden=false;});
+  clearTimeout(tagAviso.t);tagAviso.t=setTimeout(()=>document.querySelectorAll('[data-tagaviso]').forEach(el=>el.hidden=true),9000);
+  try{if(typeof tocar==='function'&&cfg().som){liberarSom();tocar('rapido');setTimeout(()=>{try{pararSom();}catch(e){}},900);}}catch(e){}}
+/* Gestão › Currais › Ler tag: a próxima tag lida vai para o campo */
+window.tagCaptura=(id,msg)=>{TG.captura=id;TG.capMsg=msg||null;if(!id)return;
+  const el=$(id);if(el){el.focus();el.select&&el.select();}
+  if(msg)msg.textContent=TG.ok?'Passe o leitor na tag deste curral…':'Passe o leitor na tag (leitor tipo teclado) ou toque em Conectar leitor no Fornecer. Também pode digitar o código.';
+  if(!TG.ok&&!TG.dev&&navigator.bluetooth&&confirm('Conectar o leitor de tag Bluetooth agora?'))conectarTag();};
+function tagLida(raw,forcar){const epc=normTag(raw);if(epc.length<8&&!forcar)return;
+  TG.ult=epc;TG.ultT=Date.now();
+  if(TG.captura){const el=$(TG.captura);if(el&&el.isConnected){el.value=epc;el.dispatchEvent(new Event('input',{bubbles:true}));const ja=curralDaTag(epc);
+      if(TG.capMsg)TG.capMsg.textContent=ja?`Tag lida: ${epc} (esta tag está no ${ja})`:'Tag lida: '+epc+'. Toque em Salvar curral.';toast('Tag lida');}
+    TG.captura=null;TG.mesma=epc;pintarTag();return;}
+  if(!cfg().tagOn)return;
+  const chave=forcar?'F:'+forcar:epc;
+  if(chave===TG.mesma)return;   // a mesma tag repetida: ignora até ler outra
+  TG.mesma=chave;
+  TG.fila=TG.fila.then(()=>tagProcessar(epc,forcar)).catch(e=>console.warn('tag',e));}
+window.tagLida=tagLida;
+async function tagProcessar(epc,forcar){
+  if(typeof modoVer!=='undefined'&&modoVer)return;
+  const c=forcar==='__nenhum'?null:(forcar||curralDaTag(epc));TG.ultCur=c||'sem curral';pintarTag();
+  const ff=filtroForn();if(window.abaAtual!=='auto'||!ff)return;   // só no Fornecer da automação (no manual a tag não faz nada)
+  const L=lista(),cur=L[S.atual];
+  if(cur&&c===cur.nome)return;   // já está neste curral
+  if(A.est==='descarregando'&&cur){await registrarAuto();}   // passou para outro curral: fecha o que estava fornecendo
+  if(!c){pintarTag();return;}   // tag sem curral (fim de linha): só finaliza
+  let i=lista().findIndex(x=>x.nome===c);
+  if(i<0){tagAviso(`${c}: sem previsto no Trato ${S.tratoSel}`);
+    const ok=window.confirmaVermelho?await confirmaVermelho(`${c} sem previsto`,`O ${c} não tem previsto no Trato ${S.tratoSel}. Fornecer mesmo assim? O que cair fica registrado neste curral.`,'Sim, fornecer','Não'):confirm(`${c} sem previsto. Fornecer mesmo assim?`);
+    if(!ok)return;
+    const f=filtroForn();if(!f)return;f.extra=f.extra||{};const k=String(S.tratoSel);f.extra[k]=Object.assign({},f.extra[k],{[c]:1});save();
+    i=lista().findIndex(x=>x.nome===c);if(i<0){toast(`${c} está inativo`);return;}}
+  else if(feito(c,regsAtuais())){
+    const ok=window.confirmaVermelho?await confirmaVermelho(`${c} já foi tratado`,`O ${c} já tem trato no Trato ${S.tratoSel}. Tratar de novo? O que fornecer agora soma no trato deste curral.`,'Sim, tratar de novo','Não'):confirm(`${c} já foi tratado. Tratar de novo?`);
+    if(!ok)return;A.tagRepetir=c;}
+  const j=lista().findIndex(x=>x.nome===c);if(j<0)return;
+  setAtual(j);$('aEscolha')&&($('aEscolha').hidden=true);novoCurral(true);save();render();aRender();
+  toast(`🏷 ${c}`);}
+/* ---- leitor tipo teclado (HID): digita o código bem rápido e dá Enter ---- */
+{let kb='',kbT=0,kbIni=0,alvo=null;
+  document.addEventListener('keydown',e=>{const t=Date.now();if(t-kbT>60){kb='';kbIni=t;alvo=e.target;}kbT=t;
+    if(e.key==='Enter'){const cod=normTag(kb),rapido=kb.length>=8&&(t-kbIni)<kb.length*60;kb='';
+      if(!rapido||cod.length<8)return;
+      const ed=alvo&&(alvo.tagName==='INPUT'||alvo.tagName==='TEXTAREA')&&!alvo.readOnly;
+      if(ed&&!(TG.captura&&alvo.id===TG.captura))return;   // digitando num campo: deixa
+      if(TG.captura&&alvo&&alvo.id===TG.captura)e.preventDefault();
+      TG.hidT=t;tagLida(cod);return;}
+    if(e.key&&e.key.length===1)kb+=e.key;},true);}
+/* ---- leitor Bluetooth BLE (serial) ---- */
+function tagDados(v){const txt=txtDe(v);TG.ultDado=Date.now();
+  TG.buf=(TG.buf+txt).slice(-600);let achou=false;
+  const re=/EPC\s*[:=]?\s*([0-9A-F]{8,})/gi;let m,ultFim=0;while((m=re.exec(TG.buf))){if(/[;\r\n,\s]/.test(TG.buf[re.lastIndex]||'')||re.lastIndex<TG.buf.length){tagLida(m[1]);achou=true;ultFim=re.lastIndex;}}
+  if(achou){TG.buf=TG.buf.slice(ultFim);return;}
+  const partes=TG.buf.split(/[;\r\n]+/);TG.buf=partes.pop();
+  for(const p of partes){const h=p.trim();if(/^[0-9A-F\s]{8,}$/i.test(h)&&normTag(h).length>=8){tagLida(h);achou=true;}}
+  if(!achou&&/·/.test(txt)){const hx=normTag(hexDe(v)),m2=hx.match(/(E2[0-9A-F]{22}|30[0-9A-F]{22})/);if(m2)tagLida(m2[1]);}}  // leitor que manda bytes
+async function conectarTag(){
+  if(!navigator.bluetooth){toast('Este aparelho/navegador não tem Bluetooth BLE para apps. Use o Chrome no Android.');return;}
+  try{const dev=await navigator.bluetooth.requestDevice({acceptAllDevices:true,optionalServices:servicosBle()});
+    if(TG.dev&&TG.dev!==dev)tagDesconectar(true);TG.dev=dev;try{localStorage.setItem('tagUltimo',dev.id||'');}catch(e){}
+    if(!dev._tagQueda){dev._tagQueda=true;dev.addEventListener('gattserverdisconnected',()=>{if(TG.dev!==dev||dev._tagManual)return;TG.ok=false;pintarTag();toast('⚠️ Leitor de tag desconectou: siga no manual');tagReconectar();});}
+    await tagAbrir(dev);}
+  catch(e){if(!(e&&e.name==='NotFoundError'))toast('Leitor de tag: '+(e.message||e));pintarTag();}}
+window.conectarTag=conectarTag;
+async function tagAbrir(dev){TG.estado='conectando';pintarTag();
+  const srv=await dev.gatt.connect();let servs=[];try{servs=await srv.getPrimaryServices();}catch(e){}let n=0;
+  for(const sv of servs){if(/^0000(180a|1800|1801|180f)-/.test(sv.uuid))continue;let cs=[];try{cs=await sv.getCharacteristics();}catch(e){}
+    for(const c of cs){const p=c.properties;if(p.notify||p.indicate){try{await c.startNotifications();c.addEventListener('characteristicvaluechanged',ev=>tagDados(ev.target.value));n++;}catch(e){}}}}
+  TG.ok=n>0;TG.estado=n?'ok':'semCanal';pintarTag();
+  if(n)toast('Leitor de tag conectado');else toast('Conectou, mas o leitor não manda dados por este canal');}
+async function tagReconectar(){const dev=TG.dev;if(!dev||TG.recon)return;TG.recon=true;let n=0;
+  try{while(TG.dev===dev&&!TG.ok&&n<200){n++;TG.estado='reconectando';pintarTag();await new Promise(r=>setTimeout(r,n===1?800:4000));if(TG.dev!==dev)break;
+      try{await tagAbrir(dev);}catch(e){}}}finally{TG.recon=false;pintarTag();}}
+function tagDesconectar(quieto){const dev=TG.dev;TG.dev=null;TG.ok=false;TG.estado='';if(dev){dev._tagManual=true;try{dev.gatt.disconnect();}catch(e){}}
+  try{localStorage.removeItem('tagUltimo');}catch(e){}if(!quieto)toast('Leitor de tag desconectado');pintarTag();}
+window.tagAutoVoltar=async()=>{try{if(TG.dev||!cfg().tagOn||!navigator.bluetooth||!navigator.bluetooth.getDevices)return;const id=localStorage.getItem('tagUltimo');if(!id)return;
+  const dev=(await navigator.bluetooth.getDevices()).find(d=>d.id===id);if(!dev)return;TG.dev=dev;
+  if(!dev._tagQueda){dev._tagQueda=true;dev.addEventListener('gattserverdisconnected',()=>{if(TG.dev!==dev||dev._tagManual)return;TG.ok=false;pintarTag();tagReconectar();});}
+  try{await tagAbrir(dev);}catch(e){tagReconectar();}}catch(e){}};
+setTimeout(()=>{try{tagAutoVoltar();}catch(e){}},3000);
+/* ---- barrinha do leitor no Fornecer da automação ---- */
+function pintarTag(){if(typeof S==='undefined'||!S)return;const on=!!cfg().tagOn,hid=TG.hidT&&Date.now()-TG.hidT<15*60000;
+  const st=TG.ok?'ok':TG.dev?'err':'';
+  const t=TG.ok?`🏷 Leitor de tag conectado${TG.dev&&TG.dev.name?' ('+esc(TG.dev.name)+')':''}`:
+    TG.dev?(TG.estado==='semCanal'?'🏷 Leitor conectou, mas não manda dados':'⚠️ Leitor de tag caiu · reconectando… siga no manual'):
+    hid?'🏷 Leitor de tag (teclado) ativo':'🏷 Leitor de tag desconectado · trato manual';
+  const ult=TG.ult?`<small>Última: ${esc(TG.ultCur||'')}${TG.ultCur?' · ':''}${esc(TG.ult.slice(-8))} às ${new Date(TG.ultT).toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit',second:'2-digit'})}</small>`:'';
+  const opts=()=>{let h='';try{const v=(G.it.currais&&G.it.currais.v)||{};h=S.cadastro.map(n=>`<option value="${esc(n)}">${esc(n)}${v[n]&&v[n].tag?' 🏷':''}</option>`).join('');}catch(e){}return h+'<option value="__nenhum">Tag sem curral (fim de linha)</option>';};
+  const sig=[on,t,ult,!!TG.dev,TG.sim,(S.cadastro||[]).length].join('|');
+  document.querySelectorAll('[data-tagbar]').forEach(el=>{el.hidden=!on||(typeof modoVer!=='undefined'&&modoVer);if(el.hidden)return;if(el.dataset.sig===sig)return;el.dataset.sig=sig;
+    el.className='tagBar'+(st==='ok'?' tgOk':st==='err'?' tgErr':'');
+    const simAb=el.querySelector('.tgSim'),selV=simAb&&simAb.querySelector('select')?simAb.querySelector('select').value:null;
+    el.innerHTML=`<span class="tgTxt">${t}${ult}</span>${TG.dev?'<button type="button" data-tagdesc>Desconectar</button>':'<button type="button" class="lima" data-tagcon>Conectar leitor</button>'}<button type="button" data-tagsimtog title="Simular leitura de tag">🧪</button>${TG.sim?`<div class="tgSim"><select>${opts()}</select><button type="button" data-tagsim>Ler tag</button></div>`:''}`;
+    if(selV&&el.querySelector('.tgSim select'))el.querySelector('.tgSim select').value=selV;});}
+window.pintarTag=pintarTag;
+document.addEventListener('click',e=>{
+  if(e.target.closest('[data-tagcon]'))return conectarTag();
+  if(e.target.closest('[data-tagdesc]')){if(confirm('Desconectar o leitor de tag? O trato segue no manual.'))tagDesconectar();return;}
+  if(e.target.closest('[data-tagsimtog]')){TG.sim=!TG.sim;pintarTag();return;}
+  const b=e.target.closest('[data-tagsim]');if(b){const v=b.parentNode.querySelector('select').value;let epc='SIM'+Date.now();
+    if(v!=='__nenhum'){try{const t=normTag(((G.it.currais&&G.it.currais.v)||{})[v]&&G.it.currais.v[v].tag);if(t)epc=t;}catch(e){}}
+    tagLida(epc,v==='__nenhum'?'__nenhum':(curralDaTag(normTag(epc))?null:v));}});
+setInterval(()=>{try{pintarTag();}catch(e){}},3000);
+setTimeout(()=>{try{pintarTag();}catch(e){}},800);
 })();

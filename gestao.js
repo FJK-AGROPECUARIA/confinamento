@@ -1643,7 +1643,7 @@ document.addEventListener('click',async e=>{const b=e.target.closest('[data-hbed
 /* ---------- Gestão › Currais: nome, tipo (confinamento/pasto) e ativo/inativo ---------- */
 function tCurrais(){const A=window.curraisApi;if(!A)return '';const L=A.lista().map(n=>({n,i:A.info(n)}));
   const lotesEm=n=>gTodos('lote').filter(l=>cabPres(l,hojeKey())>0&&curralEm(l,hojeKey())===n).length;
-  const item=x=>`<button class="gItem${x.i.inativo?' gInativa':''}" data-g="ir" data-t="curForm" data-id="${esc(x.n)}"><div class="gItemTopo"><b>${esc(x.n)}</b><span class="pill${lotesEm(x.n)?' done':''}">${x.i.inativo?'inativo':lotesEm(x.n)?lotesEm(x.n)+' lote(s)':'sem lote'}</span></div></button>`;
+  const item=x=>`<button class="gItem${x.i.inativo?' gInativa':''}" data-g="ir" data-t="curForm" data-id="${esc(x.n)}"><div class="gItemTopo"><b>${esc(x.n)}${x.i.tag?' <small title="Tem tag">🏷</small>':''}</b><span class="pill${lotesEm(x.n)?' done':''}">${x.i.inativo?'inativo':lotesEm(x.n)?lotesEm(x.n)+' lote(s)':'sem lote'}</span></div></button>`;
   const grupo=(tit,arr)=>arr.length?`<h3 class="gSub">${tit} · ${arr.length}</h3>${arr.map(item).join('')}`:'';
   const at=L.filter(x=>!x.i.inativo),ina=L.filter(x=>x.i.inativo);
   return `<section class="panel"><h2>Currais</h2><p class="note">O tipo diz se o curral é do confinamento ou do pasto; vale para os filtros, o Carregar e o Fornecer. Inativo não aparece no Previsto, no Fornecer nem nos lotes (os registros continuam).</p>
@@ -1654,12 +1654,19 @@ function tCurForm(t){const A=window.curraisApi,n=t.id||'',i=n?A.info(n):{tipo:'C
   return `${voltar()}<section class="panel"><h2>${n?'Curral '+esc(n):'Novo curral'}</h2>
     <div class="gForm">${campo({k:'cnome',l:'Nome do curral',v:n,ph:'Ex.: C-11 ou P-REPRESA-2'})}
     ${campo({k:'ctipo',l:'Tipo',t:'sel',op:[['C','🏠 Confinamento'],['P','🌿 Pasto']],v:i.tipo==='P'?'P':'C'})}
-    ${campo({k:'catv',l:'Situação',t:'sel',op:[['1','Ativo'],['0','Inativo (não usa mais)']],v:i.inativo?'0':'1'})}</div>
+    ${campo({k:'catv',l:'Situação',t:'sel',op:[['1','Ativo'],['0','Inativo (não usa mais)']],v:i.inativo?'0':'1'})}
+    <div class="gCampo"><label for="gf_ctag">Tag do curral (leitor de tag)</label><div class="gTagLin"><input type="text" id="gf_ctag" value="${esc(i.tag||'')}" placeholder="Ex.: E28011C1200001D461D50375" autocomplete="off" autocapitalize="characters"><button type="button" class="mini lima" data-g="lerTag">🏷 Ler tag</button></div><p class="note" id="gTagMsg">Toque em Ler tag e passe o leitor na tag deste curral. Pode também digitar o código.</p></div></div>
     <button class="primary" data-g="salvaCur" data-id="${esc(n)}">Salvar curral</button></section>`;}
 document.addEventListener('click',e=>{const b=e.target.closest('#gBox [data-g="salvaCur"]');if(!b)return;if(typeof bloqueado==='function'&&bloqueado())return;
-  const A=window.curraisApi,n=b.dataset.id,nome=fv('cnome'),info={tipo:fv('ctipo')==='P'?'P':'C',inativo:fv('catv')==='0'};
+  const A=window.curraisApi,n=b.dataset.id,nome=fv('cnome'),tag=String(fv('ctag')).toUpperCase().replace(/[^0-9A-F]/g,''),info={tipo:fv('ctipo')==='P'?'P':'C',inativo:fv('catv')==='0',tag};
+  if(tag&&tag.length<8)return toast('Tag muito curta: confira o código');
+  if(tag){const outro=A.lista().find(x=>x!==n&&String(A.info(x).tag||'').toUpperCase()===tag);if(outro)return toast(`Esta tag já está no ${outro}`);}
+  if(window.tagCaptura)tagCaptura(null);
   const erro=n?A.salvar(n,nome,info):A.novo(nome,info);if(erro)return toast(erro);toast('Curral salvo');gVoltar();},true);
 
+document.addEventListener('click',e=>{const b=e.target.closest('#gBox [data-g="lerTag"]');if(!b)return;const inp=$('gf_ctag'),m=$('gTagMsg');if(!inp)return;
+  if(!window.tagCaptura){toast('Leitor de tag indisponível');return;}
+  tagCaptura('gf_ctag',m);},true);
 /* novo lote: escolheu Confinamento ou Pasto → a lista mostra só os currais desse tipo */
 document.addEventListener('change',e=>{if(e.target.id!=='gf_sistema'||GT.t!=='loteForm')return;const c=$('gf_curral');if(!c)return;
   const ops=opCurraisTipo(tipoDoSistema(e.target.value));c.innerHTML=ops.map(([v,t])=>`<option value="${esc(v)}">${esc(t)}</option>`).join('');});
