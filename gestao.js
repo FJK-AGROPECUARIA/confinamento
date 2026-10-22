@@ -1794,13 +1794,27 @@ function nfDoXml(txt){const d=new DOMParser().parseFromString(txt,'text/xml'),g=
   const itens=[...d.getElementsByTagName('det')].map(det=>{const p=det.getElementsByTagName('prod')[0];return {desc:g(p,'xProd'),un:g(p,'uCom').toUpperCase(),qtd:numNF(g(p,'qCom')),vTot:numNF(g(p,'vProd'))};});
   return {dia:dh?dh.slice(0,10):'',forn:g(emit,'xFant')||g(emit,'xNome'),num:g(ide,'nNF'),vNF:numNF(g(d.documentElement,'vNF')),itens};}
 function nfDoTexto(t){const T=String(t||'').replace(/\s+/g,' '),U=semAc(T);
-  const dt=(U.match(/EMISS[^0-9]{0,40}(\d{2}\/\d{2}\/\d{4})/)||U.match(/(\d{2}\/\d{2}\/\d{4})/)||[])[1];
-  const num=((U.match(/N[O0º°]?\s*[.:]?\s*(\d{3}\.\d{3}\.\d{3})/)||U.match(/NF-?E\s*N[O0º°]?\.?\s*:?\s*(\d{3,9})/)||[])[1]||'').replace(/\./g,'');
-  const vNF=numNF((U.match(/VALOR\s+TOTAL\s+DA\s+NOTA[^0-9]{0,40}([\d.]+,\d{2})/)||[])[1]);
-  const forn=((T.match(/RECEBEMOS\s+DE\s+(.+?)\s+OS\s+PRODUTOS/i)||[])[1]||'').trim();
-  const itens=[],re=/(\S[^]{0,70}?)\s(\d{8})\s+\d{3,4}\s+(\d{4})\s+([A-Za-z]{1,6})\s+([\d.]+,\d{1,4})\s+([\d.]+,\d{2,10})\s+([\d.]+,\d{2})/g;let m;
-  while((m=re.exec(T)))itens.push({desc:m[1].replace(/^.*V\.?\s*TOTAL\s*/i,'').replace(/^\d+\s+/,'').trim(),un:semAc(m[4]),qtd:numNF(m[5]),vTot:numNF(m[7])});
-  return {dia:dt?dt.split('/').reverse().join('-'):'',forn,num:num?String(+num):'',vNF,itens};}
+  const dt=(U.match(/EMISS[^0-9]{0,60}(\d{2}\/\d{2}\/\d{4})/)||U.match(/(\d{2}\/\d{2}\/\d{4})/)||[])[1];
+  /* número da nota: pela chave de acesso (44 dígitos) ou pelo "Nº" */
+  const ch=((U.match(/((?:\d{4}\s?){10}\d{4})/)||[])[1]||'').replace(/\s/g,'');
+  let num=ch.length===44?String(+ch.slice(25,34)):'';
+  if(!num)num=((U.match(/N[O0º°]?\s*[.:]?\s*(\d{3}\.\d{3}\.\d{3})/)||U.match(/N[º°O]\.?\s*:?\s*(\d{3,9})\b/)||[])[1]||'').replace(/\./g,'');if(num&&!ch)num=String(+num);
+  /* fornecedor = emitente */
+  let forn=((T.match(/EMITENTE\s+(.+?)\s+(?:ROD\b|RODOVIA|RUA\b|AV\b|AV\.|AVENIDA|ESTRADA|TRAVESSA|ALAMEDA|PRA[CÇ]A|FAZENDA|TELEFONE|FONE|CNPJ|\d)/i)||[])[1]||'').trim();
+  if(!forn||forn.length<4)forn=((T.match(/RECEBEMOS\s+DE\s+(.+?)\s+OS\s+PRODUTOS/i)||[])[1]||'').trim();
+  if(/^NF-?E\b|DESTINAT|REMETENTE/i.test(forn))forn='';
+  const itens=[];let m;
+  /* linha do produto: NCM (8) [CST] CFOP UN QTD V.UNIT V.TOTAL */
+  const re=/(\d{8})\s+(?:\d{3}\s+)?([1-7]\d{3})\s+([A-Za-z]{1,6})\s+([\d.]+(?:,\d+)?)\s+([\d.]+,\d{2,10})\s+([\d.]+,\d{2})/g;
+  while((m=re.exec(T))){const antes=T.slice(Math.max(0,m.index-80),m.index).replace(/^.*V\.?\s*TOTAL\s*/i,'').replace(/^\d+\s+/,'').trim();
+    itens.push({desc:antes,un:semAc(m[3]),qtd:numNF(m[4]),vTot:numNF(m[6])});}
+  if(!itens.length){const r2=/\b(KG|KGS|TON|TN|T|SC|UN)\s+([\d.]+(?:,\d+)?)\s+([\d.]+,\d{2,10})\s+([\d.]+,\d{2})/g;while((m=r2.exec(U)))itens.push({desc:'',un:m[1],qtd:numNF(m[2]),vTot:numNF(m[4])});}
+  let vNF=numNF((U.match(/VALOR\s+TOTAL\s+DA\s+NOTA[^0-9]{0,40}([\d.]+,\d{2})/)||[])[1]);
+  if(!ok(vNF)){const v2=(U.match(/VLR\.?\s*NF\.?\s*R\$\s*([\d.,]+)/)||[])[1];if(v2)vNF=numNF(v2.replace(/\.(\d{2})$/,',$1'));}
+  if(!ok(vNF)&&itens.length)vNF=itens.reduce((a,x)=>a+(ok(x.vTot)?x.vTot:0),0);
+  /* descrição vazia: procura o nome de um insumo cadastrado no texto da nota */
+  itens.forEach(x=>{if(!x.desc||!nfAcharIns(x.desc))x.desc=x.desc||'';x.todo=T;});
+  return {dia:dt?dt.split('/').reverse().join('-'):'',forn,num,vNF,itens};}
 const nfFator=u=>{u=semAc(u).replace(/[^A-Z]/g,'');return /^(KG|KGS|QUILO|QUILOS|KILO)$/.test(u)?1:/^(TON|TONS|TN|T|TO|TL|TONELADA)$/.test(u)?1000:null;};
 function nfAcharIns(desc){const D=semAc(desc),I=gTodos('insumo').filter(i=>!i.inativo);let best=null,bs=0;
   I.forEach(i=>{const ws=semAc(i.nome).split(/[^A-Z0-9]+/).filter(w=>w.length>=3);let sc=0;ws.forEach(w=>{if(D.includes(w))sc+=w.length;});if(sc>bs){bs=sc;best=i;}});return best?best.uid:'';}
@@ -1815,7 +1829,7 @@ async function nfLer(file){if(!file)return;NF={lendo:true,nome:file.name};gRende
       img=await new Promise(o=>cv.toBlob(o,'image/jpeg',.85));if(txt.replace(/\s/g,'').length<60)txt=await nfOCR(cv);r=nfDoTexto(txt);}
     else{img=file;r=nfDoTexto(await nfOCR(await nfCanvasDe(file,2200)));}
     if(img){try{NF_IMG={big:await fzRedim(img,1600,.7),mini:await fzRedim(img,300,.6)};}catch(e){NF_IMG=null;}}
-    const its=(r.itens&&r.itens.length?r.itens:[{desc:'',un:'',qtd:NaN,vTot:r.vNF}]).map(x=>{const f=nfFator(x.un);return Object.assign({},x,{ins:nfAcharIns(x.desc),kg:ok(x.qtd)&&f?Math.round(x.qtd*f):NaN});});
+    const its=(r.itens&&r.itens.length?r.itens:[{desc:'',un:'',qtd:NaN,vTot:r.vNF}]).map(x=>{const f=nfFator(x.un),todo=x.todo;delete x.todo;return Object.assign({},x,{ins:nfAcharIns(x.desc)||(r.itens.length<=1&&todo?nfAcharIns(todo):''),kg:ok(x.qtd)&&f?Math.round(x.qtd*f):NaN});});
     NF=Object.assign({},r,{itens:its,nome:file.name});}
   catch(e){console.error(e);NF={erro:'Não consegui ler esta nota. Tente o arquivo XML ou o PDF da nota, ou uma foto mais nítida.',nome:file.name};}
   gRender();}
