@@ -224,7 +224,7 @@ function pintarSinal(){const segs=A.ultDado?(Date.now()-A.ultDado)/1000:null;let
   if(!A.fonte){t='⚪ Balança desconectada · toque em Conectar antes de tratar';cl='desc';}
   else if(A.btReconectando){t='🔄 Reconectando a balança… não forneça agora';cl='ruim';}
   else if(segs==null||segs>3){t=segs==null?'⏳ Conectada, esperando o primeiro peso…':`⚠ SEM PESO há ${Math.round(segs)} s · não forneça agora`;cl=segs==null&&Date.now()-(A.tCon||0)<6000?'':'ruim';}
-  else{t=`<i></i>Recebendo peso · ao vivo`;cl='ok';}
+  else{t=`<i></i>Recebendo peso`;cl='ok';}
   ['aSinal','acSinal'].forEach(id=>{const e=$(id);if(!e)return;if(e.innerHTML!==t)e.innerHTML=t;e.className='aSinal '+cl;});
   /* depois de conectar e o peso chegar, recolhe a parte da conexão (fica só a bolinha no título; a setinha abre de novo) */
   if(cl!==A.sinalAnt){if(cl==='ok')A.balRec=true;else if(cl==='ruim'||(cl==='desc'&&A.sinalAnt))A.balRec=false;A.sinalAnt=cl;} // conectou: recolhe; parou o peso ou caiu: abre; fora isso, vale a setinha
@@ -703,11 +703,12 @@ function aContinuarPausa(){const P=A.pausa;if(!P)return;A.pausa=null;
 window.aPausar=aPausar;window.aContinuarPausa=aContinuarPausa;
 /* peso na tela entre uma leitura e outra: enquanto está carregando/fornecendo, segue a velocidade (kg/s) por até "prever" segundos,
    para o número andar junto com o vagão em vez de pular. Só na tela: registro, apito e peso firme usam a leitura real. */
-function pesoTela(){if(A.peso==null||A.pausa)return A.peso;if(A.descFit&&!naCargaAuto()&&A.est==='descarregando'&&!A.estavel)return pesoDescRef();const p0=A.peso,lim=Math.max(0,Math.min(2,+cfg().prever||0))*1000;if(!lim||!A.tUlt)return p0;
+function pesoTela(){if(A.peso==null||A.pausa||naCargaAuto())return A.peso;  // carregar: mostra a leitura da balança direto (a pazada aparece na hora; pico sobe e volta), sem prever
+  if(A.descFit&&!naCargaAuto()&&A.est==='descarregando'&&!A.estavel)return pesoDescRef();const p0=A.peso,lim=Math.max(0,Math.min(2,+cfg().prever||0))*1000;if(!lim||!A.tUlt)return p0;
   let dir=0,tx=0;if(caindoAgora()){dir=-1;tx=taxaQueda();}else if(typeof subindoAgora==='function'&&subindoAgora()){dir=1;tx=taxaQueda(-1);}
   if(!dir||!(tx>0))return p0;const dt=Math.min(Date.now()-A.tUlt,lim,(A.dtMed||700)*1.5);return p0+dir*tx*dt/1000;}
 function comPesoTela(f){const r=A.peso;try{A._pesoReal=r;A.peso=pesoTela();A._tela=true;f();}finally{A.peso=r;A._tela=false;}}
-setInterval(()=>{if(document.visibilityState!=='visible'||A.peso==null)return;if(caindoAgora()||(A.est==='descarregando'&&A.descFit&&A.descFit.b<0&&!naCargaAuto()))comPesoTela(pintarPeso0);else if(typeof subindoAgora==='function'&&subindoAgora())comPesoTela(pintarCarga0);},150);
+setInterval(()=>{if(document.visibilityState!=='visible'||A.peso==null)return;if(caindoAgora()||(A.est==='descarregando'&&A.descFit&&A.descFit.b<0&&!naCargaAuto()))comPesoTela(pintarPeso0);else if((typeof subindoAgora==='function'&&subindoAgora()))comPesoTela(pintarCarga0);},150);
 function pintarPeso(){comPesoTela(pintarPeso0);}
 function pintarPeso0(){
   if(!$('aPeso')||$('viewAuto').hidden)return;
@@ -733,7 +734,7 @@ function pintarPeso0(){
   if(!A.fonte)txt='';
   else if(A.peso==null)txt='Esperando o peso chegar da balança…';
   else if(!cur)txt=lista().length?'✓ Trato completo':'Sem previsto neste trato (lance na aba Previsto)';
-  else if(A.est==='descarregando'){const zz=zona()||{};txt=A.estavel?'Parou de cair · confira e toque em Registrar':zz.caindo?`▼ Fornecendo no ${cur.nome} · ${fmt(zz.taxa)} kg/s`:'■ Parou de cair · esperando o peso firmar';cl='desc';}
+  else if(A.est==='descarregando'){const zz=zona()||{};txt=A.estavel?'■ Parou de fornecer':zz.caindo?`▼ Fornecendo no ${cur.nome} · ${fmt(zz.taxa)} kg/s`:'■ Parou de fornecer';cl='desc';}
   else if(A.base==null)txt='Deixe o vagão parado para pegar o peso inicial';
   else{txt='Pronto pra fornecer no '+cur.nome;cl='pronto';}
   et.textContent=txt;et.className='aEtapa '+cl;et.hidden=!txt;
@@ -839,13 +840,14 @@ window.acTela=(nova,dia)=>{
       <div class="cbPrev"><span>Carregar</span><b class="num">${it?nf(it.prev):'—'}</b></div></div>
     ${B.escolha?`<div class="escolha">${B.itens.map((x,j)=>`<button data-c="ir" data-i="${j}" class="${j===i?'sel':''}">${ok(x.real)?'✓ ':''}${esc(x.nome)} · ${nf(x.prev)} kg</button>`).join('')}</div>`:''}
     ${it&&ok(it.real)?`<p class="avisoJa">Este produto já foi carregado (${nf(it.real)} kg). Para refazer, toque em Desfazer último, lá embaixo.</p>`:''}
-    <div class="aEtapa" id="acEtapa"></div>
+    ${window.fixoNota?fixoNota(it):''}<div class="aEtapa" id="acEtapa"></div>
     <div class="aFalta" id="acFaltaBox"><small id="acFaltaTit">Carregar</small><b class="num" id="acFalta">—</b><em id="acFaltaTxt">&nbsp;</em></div>
     <div class="aMini">
       <div class="caiu"><small>Carregado</small><b class="num" id="acCarr">—</b></div>
       <div><small>Peso inicial</small><b class="num" id="acIni">—</b></div>
       <div><small>Parar com</small><b class="num" id="acAlvo">—</b></div>
     </div>
+    ${window.manNotaAtiva?manNotaAtiva(B):''}
     ${todosC?`<p class="avisoJa">✓ Todos os produtos foram carregados.</p><button class="primary" data-c="concluir">✓ Finalizar batida</button>`
       :`<button class="primary" data-c="registrar" id="acReg" disabled>${ultimoC?'✓ Registrar último produto':'✓ Registrar e ir para o próximo ▶'}</button>`}
     <div class="row"><button data-c="ant"${i>0?'':' disabled'}>◀ Produto anterior</button><button class="lima" data-c="prox"${i<B.itens.length-1?'':' disabled'}>Próximo produto ▶</button></div>
@@ -855,10 +857,12 @@ window.acIniciou=()=>{acNovoProduto();const B=acB();AC.idx=B?B.atual:null;const 
   if(!A.fonte)toast('Conecte a balança para carregar pela Automação');};
 window.acRegistrar=()=>{const B=acB(),it=acItem();if(!B||!it)return;
   if(ok(it.real)){toast('Este produto já foi registrado. Para refazer, toque em Desfazer último.');return;}
-  if(!ok(it.ini)){toast('Sem peso inicial ainda');return;}
-  const fim=A.estavel?A.valEst:A.peso;if(fim==null){toast('Sem leitura da balança');return;}
-  if(!(fim>it.ini)){toast('O peso não subiu desde o início');return;}
-  it.fim=fim;it.real=fim-it.ini;it.hora=new Date().toTimeString().slice(0,5);it.tsReg=Date.now();
+  const fixo=window.insFixo&&insFixo(it.ins);
+  if(!fixo&&!ok(it.ini)){toast('Sem peso inicial ainda');return;}
+  let fim=A.estavel?A.valEst:A.peso;if(fim==null&&!fixo){toast('Sem leitura da balança');return;}
+  if(fixo){regFixo(B,it,fim);fim=it.fim;}   // núcleo etc.: registra o previsto; o próximo começa do peso real da balança
+  else{if(!(fim>it.ini)){toast('O peso não subiu desde o início');return;}
+    it.fim=fim;it.real=fim-it.ini;it.hora=new Date().toTimeString().slice(0,5);it.tsReg=Date.now();}
   diagLog('carga',Object.assign({produto:it.nome,trato:B.trato,prev:it.prev,ini:it.ini,fim,real:it.real},resumoBal()));
   const k=B.itens.findIndex((x,j)=>j>B.atual&&!ok(x.real)),nx=k>=0?k:B.itens.findIndex(x=>!ok(x.real));
   if(nx>=0){B.atual=nx;const n=B.itens[nx];if(!ok(n.real)){n.ini=fim;n.fim=null;}}
@@ -866,6 +870,7 @@ window.acRegistrar=()=>{const B=acB(),it=acItem();if(!B||!it)return;
   if(nx<0)toast('Todos os produtos carregados. Toque em ✓ Finalizar batida.');};
 /* "Próximo produto": se já carregou este produto, registra (e vai para o próximo); senão só passa para o próximo */
 window.acProximo=()=>{const B=acB(),it=acItem();if(!B||!it)return;const c=cfg();
+  if(!ok(it.real)&&window.insFixo&&insFixo(it.ins))return acRegistrar();   // registra o previsto ao passar para o próximo
   if(!ok(it.real)&&ok(it.ini)&&A.peso!=null&&(A.estavel?A.valEst:A.peso)>it.ini+Math.max(c.tol,5))return acRegistrar();
   if(B.atual>=B.itens.length-1)return;
   B.atual++;const n=B.itens[B.atual];
@@ -878,7 +883,7 @@ function acSyncTopo(){if(!$('acStatus'))return;
 function pintarCarga(){comPesoTela(pintarCarga0);}
 function pintarCarga0(){
   if(!naCargaAuto()||!$('acPeso'))return;
-  $('acPeso').textContent=A.peso==null?'—':fmt(A.peso);
+  const prC=A._tela&&A._pesoReal!=null?A._pesoReal:A.peso;$('acPeso').textContent=prC==null?'—':fmt(prC);  // Balança: igual ao visor do indicador
   const e=$('acEstTxt');e.textContent=(A.peso==null?'sem leitura':A.estavel?'● Estável':'○ Oscilando')+idadeLeitura();e.className=atrasada()?'atraso':A.estavel?'est':'';
   if(!$('acFaltaBox'))return;
   const it=acItem(),z=zonaC(),fb=$('acFaltaBox');
@@ -896,10 +901,10 @@ function pintarCarga0(){
   else if(!it)txt='—';
   else if(ok(it.real))txt='✓ Já carregado · vá para o próximo produto';
   else if(!ok(it.ini))txt='Deixe o vagão parado para pegar o peso inicial';
-  else if(AC.est==='carregando'){txt=A.estavel?'Parou de subir · confira e toque em Registrar':z&&z.caindo?`▲ Carregando ${it.nome} · ${fmt(z.taxa)} kg/s`:'■ Parou de subir · esperando o peso firmar';cl='desc';}
-  else{txt='Pronto: pode carregar '+it.nome;cl='pronto';}
+  else if(AC.est==='carregando'){txt=A.estavel?'■ Parou de carregar':z&&z.caindo?`▲ Carregando ${it.nome} · ${fmt(z.taxa)} kg/s`:'■ Parou de carregar';cl='desc';}
+  else{txt='Pronto pra carregar '+it.nome;cl='pronto';}
   $('acEtapa').textContent=txt;$('acEtapa').className='aEtapa '+cl;$('acEtapa').hidden=!txt;
-  if($('acReg'))$('acReg').disabled=!(it&&!ok(it.real)&&ok(it.ini)&&A.peso!=null&&A.peso>it.ini)||modoVer;
+  if($('acReg'))$('acReg').disabled=!(it&&!ok(it.real)&&((window.insFixo&&insFixo(it.ins))||(ok(it.ini)&&A.peso!=null&&A.peso>it.ini)))||modoVer;
 }
 $('acBox').addEventListener('click',e=>{const b=e.target.closest('[data-ac]');if(!b)return;const a=b.dataset.ac;
   if(a==='ser')return conectarSerial();if(a==='bt')return conectarBt();if(a==='ws')return conectarWs();if(a==='sim'){conectarSim();return cRender();}

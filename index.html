@@ -156,6 +156,7 @@ body.somenteVer .fBar{display:none!important}
 :is(#cBox,#acBox,.fornSetup) label{margin:12px 0 4px}
 :is(#cBox,#acBox,.fornSetup) h2+label{margin-top:4px}
 :is(#cBox,#acBox) section.panel>label+*,.fornSetup>label+*{margin-top:-14px!important}
+.cTrLin{display:flex;gap:8px;align-items:stretch}.cTrLin .tSeta{flex:1;min-width:0}.cTrLin>button{flex:none;width:auto!important;margin:0!important;padding:0 14px;font-size:.85rem;white-space:nowrap}
 .cBotoes.c4{display:flex;gap:5px}.cBotoes.c4>button{flex:1 1 auto;width:auto!important;font-size:.74rem;padding:9px 6px;white-space:nowrap;line-height:1.15}.cSobra{margin:10px 0;padding:10px;border:1px dashed #b9c7a5;border-radius:12px}.cSobra .linhas button{margin:0;padding:6px 14px;min-height:0;border-radius:99px}.cSobra .linhas button.sel{background:var(--accent);border-color:var(--accent);color:#fff}.cSobLin{display:grid;grid-template-columns:1fr 110px;gap:8px;margin-top:8px}.cSobLin select,.cSobLin input{margin:0}.cAviso{color:#b3261e;font-weight:700;font-size:.85rem;margin:6px 0}
 .cCancelar{display:block;width:100%;margin-top:10px;background:#fff;color:#b3261e;border:2px solid #e3b4ae;font-weight:700}
 .cOrdem{margin:10px 0;padding:8px;border:1px dashed #b9c7a5;border-radius:12px}.cOrdLin{display:grid;grid-template-columns:28px 1fr 44px 44px;gap:6px;align-items:center;padding:4px 0}.cOrdLin button{margin:0;padding:6px 0;min-height:0}.cJaIn{width:80px;margin:0;padding:6px 8px;text-align:right}
@@ -1118,7 +1119,7 @@ body.naInicio .topoTxt h1{font-size:clamp(16px,5vw,28px)!important}
 <div class="toast" id="toast" hidden></div>
 <script>
 'use strict';
-const APP_VERSAO='103';
+const APP_VERSAO='104';
 const APP_DATA='19/10/2026';
 const KEY='confinamento-completo-v1';
 const $=id=>document.getElementById(id);
@@ -3260,7 +3261,7 @@ function cardCargaAoVivo(d){const ini=parseFloat(d.ini),fim=parseFloat(d.fim),pv
 function avTelaSint(d,carga){const ini=parseFloat(d.ini),fim=parseFloat(d.fim),pv=+d.prev;if(isNaN(ini)||!(pv>0))return null;
   const feito=isNaN(fim)?0:(carga?fim-ini:ini-fim),falta=pv-feito,alvo=carga?ini+pv:ini-pv;
   const cor=falta<0?'passou':falta<=Math.max(15,pv*.03)?'vermelho':falta<=Math.max(60,pv*.12)?'amarelo':'verde';
-  return {peso:isNaN(fim)?'—':fmt(fim),pesoTxt:'',etapa:feito>0?(carga?`▲ Carregando ${d.prod||''}`:`▼ Fornecendo no ${d.curral||''}`):(carga?`Pronto: pode carregar ${d.prod||''}`:`Pronto pra fornecer no ${d.curral||''}`),
+  return {peso:isNaN(fim)?'—':fmt(fim),pesoTxt:'',etapa:feito>0?(carga?`▲ Carregando ${d.prod||''}`:`▼ Fornecendo no ${d.curral||''}`):(carga?`Pronto pra carregar ${d.prod||''}`:`Pronto pra fornecer no ${d.curral||''}`),
     etCl:'aEtapa '+(feito>0?'desc':'pronto'),fCl:'aFalta '+cor,fTit:falta<0?'PASSOU':(carga?'Carregar':'Fornecer'),fVal:fmt(Math.abs(falta)),
     fTxt:falta<0?'DO PREVISTO':'\u00a0',feito:fmt(Math.max(0,feito)),ini:fmt(ini),alvo:fmt(alvo)};}
 function avTelaHTML(d,carga){const T=d.tela;
