@@ -609,7 +609,7 @@ function tCocho(t){
     /* base escolhida à mão (o dia anterior não serve de referência): outra data, previsto ou digitada */
     const lt0=G.it[idLeit(dia,c)],bs0=(GT.base||{})[c]||(lt0&&!lt0.del&&lt0.baseM&&lt0.baseM!=='ontem'?{m:lt0.baseM,d:lt0.baseDia,kg:lt0.base}:null),bs=bs0&&bs0.m!=='ontem'?bs0:null;
     if(bs&&bs.m==='dia'&&bs.d){base=ix.get(bs.d+'|'+c)||0;orig='realizado de '+diaBR(bs.d).slice(0,5);}
-    else if(bs&&bs.m==='prev'){base=window.prevApi?prevApi.totalCurral(c,prevApi.prevDoDia(ont)):0;orig='previsto de '+(ont===hojeKey()?'hoje':diaBR(ont).slice(0,5));}
+    else if(bs&&bs.m==='prev'){base=window.prevApi?(prevApi.totalDia||prevApi.totalCurral)(c,prevApi.prevDoDia(ont),ont):0;orig='previsto de '+(ont===hojeKey()?'hoje':diaBR(ont).slice(0,5));}
     else if(bs&&bs.m==='kg'&&ok(bs.kg)){base=+bs.kg;orig='base digitada';}
     const bm=bs?bs.m:'ontem';
     /* MS da ração mudou entre o dia da base e o dia da leitura: a base (kg de matéria natural) é convertida para dar a mesma matéria seca */
@@ -1079,7 +1079,7 @@ function tCfg(){const c=gCfg(),hj=hojeKey(),tx=vig(c.taxa,hj),ab=GT.cab||'custo'
     h=`<section class="panel gCfgP"><h2>Tratos</h2>
     <p class="note">Só os tratos ativos aparecem nas telas que perguntam o trato (Carregar, Fornecer, Previsto). O nome é opcional (ex.: Manhã, 7h).</p>
     <div class="gEdLista gTrLista">${TC.map(t=>`<div class="${t.ativo?'':'gInativa'}"><span><b>Trato ${t.k}</b>${t.nome?' · '+esc(t.nome):''} <span class="pill${t.ativo?' done':''}">${t.ativo?'ativo':'inativo'}</span></span><button class="mini" data-g="trEd" data-k="${t.k}">✎ Editar</button><button class="mini${t.ativo?' danger':''}" data-g="trAt" data-k="${t.k}">${t.ativo?'Desativar':'Ativar'}</button></div>`).join('')}</div>
-    ${TC.length<tratosApi.MAXT?`<button class="lima" data-g="trAdd">+ Novo trato (Trato ${TC.length+1})</button>`:''}</section>
+    ${(()=>{const ina=TC.find(t=>!t.ativo);return ina?`<button class="lima" data-g="trAdd">+ Novo trato (Trato ${ina.k})</button>`:TC.length<tratosApi.MAXT?`<button class="lima" data-g="trAdd">+ Novo trato (Trato ${TC.length+1})</button>`:'';})()}</section>
   <section class="panel gCfgP"><h2>Quantidade de tratos por curral</h2>
     <p class="note">Em quantas vezes o total do dia do curral é dividido. <b>Salva sozinho</b> ao escolher (aparece a confirmação embaixo) e o previsto de hoje já é redividido. O botão “Salvar divisão” é só para os % abaixo.</p>
     ${(()=>{const A=(S.cadastro||[]).filter(n=>typeof curralAtivo!=='function'||curralAtivo(n));return locBotoes('ntLoc',lt,k=>A.filter(c=>doLocal(k,c)).length);})()}
@@ -1198,7 +1198,8 @@ $('gBox').addEventListener('click',e=>{
   if(a==='bkAgora'){if(!window.bkApi)return;Promise.resolve(bkApi.agora()).then(()=>setTimeout(()=>{if(GT.cab==='backup')gRender();},800));return;}
   if(a==='bkRest'){if(window.bkApi)bkApi.restaurar();return;}
   if(a==='trEd'||a==='trAt'||a==='trAdd'){const L=tratosCad().map(t=>Object.assign({},t)),k=+b.dataset.k,t=L.find(x=>x.k===k);
-    if(a==='trAdd'){if(L.length>=tratosApi.MAXT)return toast('Máximo de '+tratosApi.MAXT+' tratos');L.push({k:L.length+1,nome:'',ativo:true});tratosApi.salvar(L);gRender();return toast(`Trato ${L.length} cadastrado e ativo`);}
+    if(a==='trAdd'){const ina=L.find(x=>!x.ativo);if(ina){ina.ativo=true;tratosApi.salvar(L);gRender();return toast(`Trato ${ina.k} ativo`);}   // usa o primeiro trato que está inativo (ex.: Trato 3)
+      if(L.length>=tratosApi.MAXT)return toast('Máximo de '+tratosApi.MAXT+' tratos');L.push({k:L.length+1,nome:'',ativo:true});tratosApi.salvar(L);gRender();return toast(`Trato ${L.length} cadastrado e ativo`);}
     if(a==='trEd'){const v=prompt(`Nome do Trato ${k} (opcional, ex.: Manhã ou 7h). Deixe vazio para só "Trato ${k}":`,t.nome||'');if(v==null)return;t.nome=v.trim().slice(0,20);tratosApi.salvar(L);gRender();return toast('Trato salvo');}
     if(t.ativo&&L.filter(x=>x.ativo).length<=1)return toast('Precisa ficar pelo menos um trato ativo');
     t.ativo=!t.ativo;tratosApi.salvar(L);gRender();return toast(`Trato ${k} ${t.ativo?'ativado':'desativado'}. Confira a quantidade de tratos dos currais.`);}
@@ -1291,7 +1292,7 @@ $('gBox').addEventListener('click',e=>{
 ['pointerdown','pointermove'].forEach(ev=>$('gBox').addEventListener(ev,e=>{const r=e.target.closest&&e.target.closest('.gEvHit');if(r)evolMostrar(+r.dataset.ev);}));
 $('gBox').addEventListener('click',e=>{const i=e.target.closest('.gDataBox input');if(i&&i.showPicker){try{i.showPicker();}catch(_){}}});
 $('gBox').addEventListener('change',e=>{const s_=e.target.closest('select[data-ntc]');if(!s_||!window.prevApi)return;if(typeof bloqueado==='function'&&bloqueado())return;
-  const cu=s_.dataset.ntc,n=+s_.value;prevApi.setNTratos(cu,n);const t=prevApi.totalCurral(cu);if(t>0){prevApi.distribuir(cu,t,n,S.prev);if(typeof marcarPrev==='function')marcarPrev();if(typeof render==='function')render();}toast(`${cu}: ${n} trato${n>1?'s':''}`);});
+  const cu=s_.dataset.ntc,n=+s_.value;const t=window.mudarNTratos?mudarNTratos(cu,n,S.prev,hojeKey()):(prevApi.setNTratos(cu,n),prevApi.totalCurral(cu));if(t>0){if(!window.mudarNTratos)prevApi.distribuir(cu,t,n,S.prev);if(typeof marcarPrev==='function')marcarPrev();if(typeof render==='function')render();}toast(`${cu}: ${n} trato${n>1?'s':''}`);});
 $('gBox').addEventListener('input',e=>{
   if(e.target.matches('[data-div]')){const n=e.target.dataset.div,v=[...document.querySelectorAll(`#gBox [data-div="${n}"]`)].map(i=>gNum(i.value)||0),t=v.reduce((a,b)=>a+b,0),el=document.querySelector(`#gBox [data-divsoma="${n}"]`);if(el){el.textContent=nf(t,1)+'%';el.classList.toggle('bad',Math.abs(t-100)>0.5);}}
   const t=e.target;

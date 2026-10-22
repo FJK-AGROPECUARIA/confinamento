@@ -153,6 +153,7 @@ function montar(){
       <div><small>Parar com</small><b class="num" id="aAlvo">—</b></div>
     </div>
     <button class="primary" id="aReg" disabled>Registrar trato</button>
+    <button class="fFinal" data-ffinal="1" type="button">⚠ Finalizar fornecimento</button>
     <button id="aTestarSom" hidden>🔊 Testar apito (amarelo, vermelho e direto)</button>
     <button id="aRecomecar" hidden>↺ Pegar peso inicial</button><button id="aPular">Pular curral ▶</button>
     <button class="naoForn" id="aNaoForn" type="button">🚫 Não fornecer neste curral</button>
@@ -464,6 +465,17 @@ function numeroDaLinha(l){
   return neg?-n:n;
 }
 const med=a=>a.length?a.reduce((x,y)=>x+y,0)/a.length:NaN;
+/* média sem os picos: tira 20% das leituras mais altas e 20% das mais baixas */
+function mediaSemPicos(vs){const v=vs.slice().sort((x,y)=>x-y),k=Math.floor(v.length*0.2),m=v.slice(k,v.length-k);return Math.round(med(m.length?m:v));}
+/* inclinação (kg/ms) à prova de pico: mediana das inclinações entre pares de leituras */
+function tendencia(P){const sl=[];for(let i=0;i<P.length;i++)for(let k=i+1;k<P.length;k++){const dt=P[k].t-P[i].t;if(dt>300)sl.push((P[k].v-P[i].v)/dt);}
+  sl.sort((x,y)=>x-y);return {b:sl.length?sl[Math.floor((sl.length-1)/2)]:0};}
+/* peso para REGISTRAR: firme → o peso firme (média); ainda oscilando → média sem picos das leituras desde que parou de
+   subir/descer (até 4 s). Se acabou de parar, espera ~1,5 s juntando leituras. Assim não depende do momento do toque. */
+function pesoMedioDesde(desdeT){const ag=Date.now(),cr=(A.crus||[]).filter(q=>q.t>=Math.max(desdeT||0,ag-4000));return cr.length>=3?mediaSemPicos(cr.map(q=>q.v)):null;}
+async function pesoParaRegistrar(desdeT){if(A.estavel&&A.valEst!=null)return A.valEst;
+  if(Date.now()-(desdeT||0)<1500||pesoMedioDesde(desdeT)==null){toast('Tirando a média do peso…');await new Promise(r=>setTimeout(r,1600));if(A.estavel&&A.valEst!=null)return A.valEst;}
+  const v=pesoMedioDesde(desdeT);return v!=null?v:A.peso;}
 /* peso de referência quando a balança ainda não firmou: menor/maior dos últimos 3 s, ou a média se estiver sem subir nem descer */
 function refProvisoria(sinal){const c=cfg(),agora=Date.now(),ss=(A.suaves||[]).filter(a=>a.t>=agora-3000);if(ss.length<4||A.amostras.length<4||agora-A.amostras[0].t<2500)return null;
   const vs=ss.map(a=>a.v),ext=sinal>0?Math.min(...vs):Math.max(...vs);
@@ -485,7 +497,7 @@ function novoPeso(n){
   if(kf>1&&A.brutos.length>1&&!mexendo){const u=A.brutos.slice(-kf).slice().sort((x,y)=>x-y);n=u[Math.floor((u.length-1)/2)];}
   ['aPeso','acPeso'].forEach(i=>{const b=$(i);if(b&&b.style.opacity)b.style.opacity='';});
   if(A.tUlt){const dt=agora-A.tUlt;if(dt>0&&dt<3000)A.dtMed=A.dtMed?A.dtMed*0.8+dt*0.2:dt;}A.tUlt=agora;
-  A.peso=n;A.amostras.push({t:agora,v:n});
+  A.peso=n;A.amostras.push({t:agora,v:n});A.crus=(A.crus||[]).filter(q=>q.t>=agora-12000);A.crus.push({t:agora,v:nCru});A.h45=(A.h45||[]).filter(q=>q.t>=agora-45000);A.h45.push({t:agora,v:nCru});
   const ini=agora-c.tempo*1000;A.amostras=A.amostras.filter(a=>a.t>=agora-Math.max(c.tempo*1000,3000)-1500);
   const jan=A.amostras.filter(a=>a.t>=ini);
   const cobre=A.amostras.length&&A.amostras[0].t<=ini+300;
@@ -497,8 +509,17 @@ function novoPeso(n){
     const deriva=Math.abs(med(vs.slice(-k))-med(vs.slice(0,k)));
     // parado: ou varia menos que o aceito, ou (com balança tremendo) não sobe/desce e a média fica firme
     A.estavel=(mx-mn)<=c.tol||(deriva<=c.tol&&(Math.max(...ss)-Math.min(...ss))<=c.tol*2);
-    A.valEst=A.estavel?Math.round(med(vs)):null;}
-  else{A.estavel=false;A.valEst=null;}
+    A.valEst=A.estavel?Math.round(med(vs)):null;
+    /* tomada de força girando: a balança nunca fica parada (oscila 50–150 kg), mas a MÉDIA não sobe nem desce.
+       Firme pela tendência: reta das leituras cruas da janela quase sem inclinação (menos de ~10 kg na janela toda)
+       → Estável, e o peso firme é a média sem os picos (tira 20% de cima e 20% de baixo). */
+    if(!A.estavel){const j6=agora-Math.max(c.tempo*1000,5000),cr=A.crus.filter(q=>q.t>=j6);
+      if(cr.length>=8&&cr[0].t<=j6+800&&Math.abs(tendencia(cr).b)*1000<=12){   // menos de 12 kg/s: não está carregando nem descarregando
+        if(!A.firmeTdp)A.firmeT0=agora-3000;A.estavel=true;A.firmeTdp=true;
+        A.valEst=mediaSemPicos(A.crus.filter(q=>q.t>=Math.max(A.firmeT0,agora-10000)).map(q=>q.v));}   // quanto mais tempo firme, mais leituras na média (até 10 s)
+      else A.firmeTdp=false;}
+    else A.firmeTdp=false;}
+  else{A.estavel=false;A.valEst=null;A.firmeTdp=false;}
   /* fornecendo: o "Fornecer" segue a RETA das leituras dos últimos 4 s (não cada leitura), então o balanço do vagão
      (pula 100 kg pra cima e pra baixo) não aparece e o número desce liso entre uma leitura e outra.
      Leitura muito fora da reta é descartada. Não trava: se a balança mostrar que caiu menos, o número volta (só ignora sobe de menos de 40 kg).
@@ -554,7 +575,8 @@ async function registrarAuto(){
   const L=lista(),cur=L[S.atual];
   if(!cur){toast(L.length?'Trato completo':'Sem previsto neste trato');return;}
   if(A.base==null){toast('Sem peso inicial ainda');return;}
-  const fim=A.estavel?A.valEst:A.peso;if(fim==null){toast('Sem leitura da balança');return;}
+  if(A.peso==null){toast('Sem leitura da balança');return;}
+  registrando=true;let fim;try{fim=await pesoParaRegistrar(A.ancT);}finally{registrando=false;}if(fim==null){toast('Sem leitura da balança');return;}
   const ini=A.base;
   if(!(fim<ini)){toast('O peso não caiu desde o início');return;}
   const ja=regsAtuais().filter(x=>x.curral===cur.nome);
@@ -571,7 +593,7 @@ async function registrarAuto(){
   const regs=regsAtuais();
   let nx=L.findIndex((x,i)=>i>S.atual&&!feito(x.nome,regs));if(nx<0)nx=L.findIndex(x=>!feito(x.nome,regs));
   setAtual(nx<0?L.length:nx);
-  diagLog('trato',Object.assign({curral:cur.nome,trato:S.tratoSel,prev:cur.prev,ini,fim,forn:ini-fim,iniConf:A.baseConf!==false},resumoBal()));
+  diagLog('trato',Object.assign({curral:cur.nome,trato:S.tratoSel,prev:cur.prev,ini,fim,forn:ini-fim,iniConf:A.baseConf!==false},resumoBal()));diagCurva('trato',cur.nome,{prev:cur.prev,ini,fim});
   novoCurral();A.base=fim;A.baseConf=false; // provisório: o final deste curral; troca pelo peso real da balança assim que firmar
   save();render();aRender();registrando=false;
   setTimeout(()=>{if(window.compensarCurral){compensarCurral(cur.nome);if(window.proximoTratoSeCompleto&&proximoTratoSeCompleto()){$('aTrato').value=String(S.tratoSel);novoCurral(true);}render();aRender();}},1200);
@@ -703,7 +725,8 @@ function aContinuarPausa(){const P=A.pausa;if(!P)return;A.pausa=null;
 window.aPausar=aPausar;window.aContinuarPausa=aContinuarPausa;
 /* peso na tela entre uma leitura e outra: enquanto está carregando/fornecendo, segue a velocidade (kg/s) por até "prever" segundos,
    para o número andar junto com o vagão em vez de pular. Só na tela: registro, apito e peso firme usam a leitura real. */
-function pesoTela(){if(A.peso==null||A.pausa||naCargaAuto())return A.peso;  // carregar: mostra a leitura da balança direto (a pazada aparece na hora; pico sobe e volta), sem prever
+function pesoTela(){if(A.peso!=null&&!A.pausa&&A.estavel&&A.valEst!=null)return A.valEst;  // firme: o número para (média sem os picos)
+  if(A.peso==null||A.pausa||naCargaAuto())return A.peso;  // carregar: mostra a leitura da balança direto (a pazada aparece na hora; pico sobe e volta), sem prever
   if(A.descFit&&!naCargaAuto()&&A.est==='descarregando'&&!A.estavel)return pesoDescRef();const p0=A.peso,lim=Math.max(0,Math.min(2,+cfg().prever||0))*1000;if(!lim||!A.tUlt)return p0;
   let dir=0,tx=0;if(caindoAgora()){dir=-1;tx=taxaQueda();}else if(typeof subindoAgora==='function'&&subindoAgora()){dir=1;tx=taxaQueda(-1);}
   if(!dir||!(tx>0))return p0;const dt=Math.min(Date.now()-A.tUlt,lim,(A.dtMed||700)*1.5);return p0+dir*tx*dt/1000;}
@@ -713,7 +736,7 @@ function pintarPeso(){comPesoTela(pintarPeso0);}
 function pintarPeso0(){
   if(!$('aPeso')||$('viewAuto').hidden)return;
   const c=cfg(),cur=curralAtual();
-  const pr=A._tela&&A._pesoReal!=null?A._pesoReal:A.peso;$('aPeso').textContent=pr==null?'—':fmt(pr);  // Balança: igual ao visor do indicador
+  const pr=A.estavel&&A.valEst!=null?A.valEst:A._tela&&A._pesoReal!=null?A._pesoReal:A.peso;$('aPeso').textContent=pr==null?'—':fmt(pr);  // Balança: igual ao visor do indicador
   const e=$('aEstTxt');e.textContent=(A.peso==null?'sem leitura':A.estavel?'● Estável':'○ Oscilando')+idadeLeitura();e.className=atrasada()?'atraso':A.estavel?'est':'';
   $('aIni').textContent=A.base==null?'—':fmt(A.base);
   const alvo=(cur&&!cur.semPrev&&A.base!=null)?A.base-cur.prev:null;
@@ -742,6 +765,7 @@ function pintarPeso0(){
 }
 function aRender(){
   if(!$('aBox')||!$('aBox').dataset.ok)return;
+  try{window.pintarCancForn&&pintarCancForn();}catch(e){}
   cfg();
   const L=lista(),regs=regsAtuais(),cur=L[S.atual];
   $('aData').textContent=(S.dataManual?'⚠ ':'')+diaBR(diaAtivo());
@@ -772,7 +796,16 @@ function mostrarAEscolha(){const L=lista(),regs=regsAtuais();
 /* continuar o trato que outro aparelho deixou no meio (bateria acabou, etc.): usa o peso inicial que ele tinha */
 /* ---------- Diário da balança: guarda na nuvem o que aconteceu (registros, ajustes, reconexões, correções)
    em um item por dia e por aparelho, para analisar depois ---------- */
-let diagT=null;
+let diagT=null,diagCT=null;
+/* curva do peso: as leituras cruas dos últimos 45 s antes de cada registro (para analisar picos e estabilização).
+   Fica num item por dia e aparelho (diagc-…), no máximo 25 curvas, compactado: valor inicial + "décimos de segundo,variação;…" */
+function diagCurva(tipo,nome,reg){try{if(typeof gPut!=='function'||!S)return;const P=(A.h45||[]).slice();if(P.length<2)return;
+  const dia=typeof diaAtivo==='function'?diaAtivo():new Date().toISOString().slice(0,10),uid='diagc-'+dia+'-'+S.aparelho;
+  let s='',pt=P[0].t,pv=P[0].v;for(let i=1;i<P.length;i++){s+=(i>1?';':'')+Math.round((P[i].t-pt)/100)+','+Math.round(P[i].v-pv);pt=P[i].t;pv=P[i].v;}
+  const it=G.it[uid]&&!G.it[uid].del?JSON.parse(JSON.stringify(G.it[uid])):{uid,tipo:'diagc',dia,aparelho:S.aparelho,c:[]};
+  it.c=(it.c||[]).concat([Object.assign({e:tipo,n:nome,t:new Date(P[P.length-1].t).toTimeString().slice(0,8),v0:Math.round(P[0].v),s,est:!!A.estavel,tdp:!!A.firmeTdp},reg||{})]).slice(-25);
+  G.it[uid]=it;clearTimeout(diagCT);diagCT=setTimeout(()=>{try{gPut(JSON.parse(JSON.stringify(G.it[uid])));}catch(e){}},5000);}catch(e){}}
+window.diagCurva=diagCurva;
 window.diagLog=function(tipo,d){try{if(typeof gPut!=='function'||typeof G==='undefined'||!S)return;
   const dia=typeof diaAtivo==='function'?diaAtivo():new Date().toISOString().slice(0,10),uid='diag-'+dia+'-'+S.aparelho;
   const it=G.it[uid]&&!G.it[uid].del?G.it[uid]:{uid,tipo:'diag',dia,aparelho:S.aparelho,ev:[]};
@@ -855,15 +888,16 @@ window.acTela=(nova,dia)=>{
 window.acDepois=()=>{acSyncTopo();const B=acB();if(B&&AC.idx!==B.atual){AC.idx=B.atual;acNovoProduto();}pintarCarga();};
 window.acIniciou=()=>{acNovoProduto();const B=acB();AC.idx=B?B.atual:null;const it=acItem();if(it&&A.estavel){it.ini=A.valEst;cSave();}pintarCarga();
   if(!A.fonte)toast('Conecte a balança para carregar pela Automação');};
-window.acRegistrar=()=>{const B=acB(),it=acItem();if(!B||!it)return;
+window.acRegistrar=async()=>{const B=acB(),it=acItem();if(!B||!it)return;if(AC.registrando)return;
   if(ok(it.real)){toast('Este produto já foi registrado. Para refazer, toque em Desfazer último.');return;}
   const fixo=window.insFixo&&insFixo(it.ins);
   if(!fixo&&!ok(it.ini)){toast('Sem peso inicial ainda');return;}
-  let fim=A.estavel?A.valEst:A.peso;if(fim==null&&!fixo){toast('Sem leitura da balança');return;}
+  let fim=null;if(A.peso!=null){AC.registrando=true;try{fim=await pesoParaRegistrar(AC.ancT);}finally{AC.registrando=false;}}if(fim==null&&!fixo){toast('Sem leitura da balança');return;}
+  if(acItem()!==it||ok(it.real))return;
   if(fixo){regFixo(B,it,fim);fim=it.fim;}   // núcleo etc.: registra o previsto; o próximo começa do peso real da balança
   else{if(!(fim>it.ini)){toast('O peso não subiu desde o início');return;}
     it.fim=fim;it.real=fim-it.ini;it.hora=new Date().toTimeString().slice(0,5);it.tsReg=Date.now();}
-  diagLog('carga',Object.assign({produto:it.nome,trato:B.trato,prev:it.prev,ini:it.ini,fim,real:it.real},resumoBal()));
+  diagLog('carga',Object.assign({produto:it.nome,trato:B.trato,prev:it.prev,ini:it.ini,fim,real:it.real},resumoBal()));diagCurva('carga',it.nome,{prev:it.prev,ini:it.ini,fim,real:it.real,fixo:!!fixo});
   const k=B.itens.findIndex((x,j)=>j>B.atual&&!ok(x.real)),nx=k>=0?k:B.itens.findIndex(x=>!ok(x.real));
   if(nx>=0){B.atual=nx;const n=B.itens[nx];if(!ok(n.real)){n.ini=fim;n.fim=null;}}
   AC.idx=B.atual;acNovoProduto();pararSom();cSave();toast(`${it.nome}: ${nf(it.real)} kg`);cRender();
@@ -883,7 +917,7 @@ function acSyncTopo(){if(!$('acStatus'))return;
 function pintarCarga(){comPesoTela(pintarCarga0);}
 function pintarCarga0(){
   if(!naCargaAuto()||!$('acPeso'))return;
-  const prC=A._tela&&A._pesoReal!=null?A._pesoReal:A.peso;$('acPeso').textContent=prC==null?'—':fmt(prC);  // Balança: igual ao visor do indicador
+  const prC=A.estavel&&A.valEst!=null?A.valEst:A._tela&&A._pesoReal!=null?A._pesoReal:A.peso;$('acPeso').textContent=prC==null?'—':fmt(prC);  // Balança: igual ao visor do indicador
   const e=$('acEstTxt');e.textContent=(A.peso==null?'sem leitura':A.estavel?'● Estável':'○ Oscilando')+idadeLeitura();e.className=atrasada()?'atraso':A.estavel?'est':'';
   if(!$('acFaltaBox'))return;
   const it=acItem(),z=zonaC(),fb=$('acFaltaBox');

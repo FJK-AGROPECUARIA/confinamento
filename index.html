@@ -165,7 +165,8 @@ body.somenteVer .fBar{display:none!important}
 .cvFundo{position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:9999;display:flex;align-items:center;justify-content:center;padding:16px}.cvCaixa{background:var(--card,#fff);border-radius:16px;max-width:420px;width:100%;padding:20px;border:3px solid #d32f2f;max-height:90vh;overflow:auto}.cvCaixa .cvBt{display:grid;gap:10px;margin-top:12px}.gBatEd label{display:block;font-size:.85rem;font-weight:700;margin:8px 0 0}.gBatEd input{width:100%;margin-top:4px}
 #tbHist .hAcoes{display:inline-flex;gap:4px;margin-left:6px;vertical-align:middle}#tbHist .hAcoes .mini{padding:3px 7px;font-size:.78rem;min-height:0;margin:0}.gBatAc{display:flex;gap:8px;margin-top:8px}.gBatAc .mini{flex:1}
 .gEst4{display:grid!important;grid-template-columns:1fr 1fr!important;gap:8px}.gNfArq{display:flex;align-items:center;justify-content:center;padding:18px;border:2px dashed #8fb43a;border-radius:14px;font-weight:800;font-size:1.1rem;color:#2e6b2f;background:#f3f7dc;cursor:pointer;margin-top:8px}.gNfImg{display:block;max-width:160px;border-radius:10px;border:1px solid #dde3ea;margin:6px 0}.gNfItem{border-top:1px solid #dde3ea;padding-top:8px;margin-top:8px}
-body.somenteVer .fCancForn{display:none!important}
+body.somenteVer .fCancForn,body.somenteVer .fFinal{display:none!important}
+button.fFinal{margin-top:34px!important;background:#f2b705!important;border-color:#d9a300!important;color:#3a2a00!important;font-weight:800}
 .gTagLin{display:flex;gap:6px;align-items:center}.gTagLin input{flex:1;min-width:0;font-family:monospace;font-size:.85rem!important}.gTagLin button{white-space:nowrap;flex:none}
 .tagBar{display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin:6px 0 2px;padding:6px 8px;border-radius:10px;background:var(--soft,#eef3ee);font-size:.82rem;line-height:1.25}
 .tagBar .tgTxt{flex:1;min-width:0}.tagBar .tgTxt small{display:block;color:var(--muted);font-size:.74rem}
@@ -211,6 +212,9 @@ tr.arrastando td{background:var(--lima-claro)}
 #tbPrev td.acoes{white-space:nowrap;width:1%}
 #tbPrev td.acoes button.mini{padding:4px 8px;margin-left:3px}
 #tbPrev td.alca{width:1.8em}
+.pvComHora table:has(#tbPrev) th.pvCurTh{text-align:left!important;padding-left:4px}.pvComHora table:has(#tbPrev) th.pvPrevTh{text-align:right!important}
+.pvComHora #tbPrev td.hora{width:2.7em;font-size:.72rem;padding-left:0!important;padding-right:3px!important}.pvComHora table:has(#tbPrev) th.hora{text-align:left!important;padding-left:0!important}
+.pvComHora #tbPrev td.c{font-size:.98rem;padding-left:2px}.pvComHora #tbPrev input.cell{width:4.2em!important;font-size:.98rem!important}.pvComHora #tbPrev td.num{font-size:.85rem}
 table:has(#tbPrev) th:nth-child(2){text-align:left;padding-left:4px}
 html,body{overscroll-behavior-y:none;touch-action:manipulation;-webkit-text-size-adjust:100%;text-size-adjust:100%}
 input,select,textarea{font-size:16px}
@@ -953,6 +957,7 @@ body.naInicio .topoTxt h1{font-size:clamp(16px,5vw,28px)!important}
       <div><small>Diferença do previsto</small><b class="num" id="desv">—</b></div>
     </div>
     <button class="primary" id="btnReg" disabled>Registrar trato</button>
+    <button class="fFinal" data-ffinal="1" type="button">⚠ Finalizar fornecimento</button>
     <button class="naoForn" id="btnNaoForn" type="button">🚫 Não fornecer neste curral</button>
     <button class="danger fCancForn" data-fcancforn="1" type="button">✕ Cancelar fornecimento</button>
     <div class="row navtrato"><button id="btnAnterior">◀ Trato anterior</button><button class="lima" id="btnProximo">Ir para o Trato 2 ▶</button></div>
@@ -1119,7 +1124,7 @@ body.naInicio .topoTxt h1{font-size:clamp(16px,5vw,28px)!important}
 <div class="toast" id="toast" hidden></div>
 <script>
 'use strict';
-const APP_VERSAO='104';
+const APP_VERSAO='105';
 const APP_DATA='19/10/2026';
 const KEY='confinamento-completo-v1';
 const $=id=>document.getElementById(id);
@@ -1278,6 +1283,15 @@ function nTratos(c,obj){const m=ntMapa(),na=tratosAtivos().length;if(+m[c]>=1)re
 const tratosDoCurral=(c,obj,n)=>tratosAtivos().slice(0,n||nTratos(c,obj));
 function setNTratos(c,n){const m=Object.assign({},ntMapa());m[c]=Math.max(1,Math.min(MAXT,+n||1));if(gOk()&&typeof gPut==='function')gPut({uid:'prevNTr',tipo:'prevNTr',v:m});}
 function totalCurral(c,obj){obj=obj||S.prev||{};let t=0;for(let k=1;k<=MAXT;k++){const v=(obj[k]||{})[c];if(typeof v==='number')t+=v;}return t;}
+/* previsto do DIA do curral (coluna "Todos"): com a compensação, o que sobrou/faltou num trato já feito foi para o último trato.
+   Então: tratos já feitos (menos o último) contam o realizado; os que faltam e o último contam o previsto.
+   Ex.: total 2.230 = T1 1.120 + T2 1.110; T1 fez 1.110 → T2 vira 1.120 → previsto do dia continua 2.230 (não 1.120+1.120). */
+function totalDia(c,obj,dia){obj=obj||S.prev||{};dia=dia||hojeKey();const ks=[];for(let k=1;k<=MAXT;k++){const v=(obj[k]||{})[c];if(typeof v==='number'&&v>0)ks.push(k);}
+  const cfgG=gOk()&&typeof gCfg==='function'?gCfg():{};if(ks.length<2||cfgG.compensa===false)return totalCurral(c,obj);
+  const regs=HIST.filter(r=>r.dia===dia&&r.curral===c);if(!regs.length)return totalCurral(c,obj);
+  const ult=ks[ks.length-1];let t=0;
+  for(let k=1;k<=MAXT;k++){const v=(obj[k]||{})[c];if(typeof v!=='number')continue;const rk=regs.filter(r=>+r.trato===k);t+=k!==ult&&rk.length?rk.reduce((a,r)=>a+(+r.forn||0),0):v;}
+  return t;}
 function arredPrev(v){let a=gOk()&&typeof gCfg==='function'?+gCfg().arred:10;if(!(a>0))a=10;return Math.round(v/a)*a;}
 /* divide o total do curral nos tratos pela % configurada; o último trato fica com a sobra do arredondamento */
 /* tudo em dezena (ou no arredondamento do Config.): unidade 1–4 desce, 5–9 sobe; o total também, então a soma dos tratos fecha certinho */
@@ -1400,7 +1414,14 @@ function iniciarFornecimento(){FS.fim='';S.forn={ativo:true,ts0:Date.now(),dia:h
 document.addEventListener('click',e=>{const lb=e.target.closest('[data-floc]');if(lb){FS.local=lb.dataset.floc;FS.rac=null;FS.trato=null;FS.passo=2;mostrarFornecimento();return;}
   const fp=e.target.closest('[data-fpasso]');if(fp){FS.passo=+fp.dataset.fpasso;mostrarFornecimento();return;}
   if(e.target.closest('#fIniciar'))return iniciarFornecimentoChecado();
-  if(e.target.closest('[data-fcancforn]')){(async()=>{if(window.autoDescarregando&&autoDescarregando()){toast('Está fornecendo num curral: registre antes de cancelar.');return;}const f=filtroForn();if(!f)return;
+  if(e.target.closest('[data-ffinal]')){(async()=>{if(window.autoDescarregando&&autoDescarregando()){toast('Está fornecendo num curral: registre antes de finalizar.');return;}const f=filtroForn();if(!f)return;
+    const L=lista(),regs=regsAtuais(),falta=L.filter(x=>!feito(x.nome,regs)),feitos=L.length-falta.length;
+    if(!await perg(falta.length?`Deseja finalizar este fornecimento? Faltam ${falta.length} curral(is)`:'Deseja finalizar este fornecimento?',falta.length?`Trato ${S.tratoSel}: ${feitos} de ${L.length} currais feitos. Faltam: ${falta.map(x=>x.nome).join(', ')}. Eles ficam sem registro; depois dá para abrir o Trato ${S.tratoSel} de novo e continuar.`:`Trato ${S.tratoSel}: todos os ${L.length} currais feitos.`,'Sim, finalizar','Não, continuar fornecendo'))return;
+    if(!filtroForn())return;const tk=L.reduce((a,x)=>a+x.prev,0);
+    FS.fim=`✓ Fornecimento finalizado · ${f.local==='C'?'Confinamento':'Pasto'} · Trato ${S.tratoSel} · ${feitos} de ${L.length} curral(is)`;toast(FS.fim);
+    try{window.diagLog&&diagLog('forn_finalizado',{local:f.local,trato:S.tratoSel,n:feitos,de:L.length,prev:tk});}catch(e){}
+    FS.local=f.local;FS.rac=f.rac;FS.trato=null;FS.passo=3;S.forn=Object.assign({},f,{ativo:false});save();render();mostrarFornecimento();if(window.aRenderFora)aRenderFora();window.scrollTo({top:0});})();return;}
+  if(e.target.closest('[data-fcancforn]')){(async()=>{if(fornTemRegistro()){toast('Já tem curral tratado neste fornecimento: não dá para cancelar. Use Finalizar fornecimento.');pintarCancForn();return;}if(window.autoDescarregando&&autoDescarregando()){toast('Está fornecendo num curral: registre antes de cancelar.');return;}const f=filtroForn();if(!f)return;
     const L=lista(),regs=regsAtuais(),falta=L.filter(x=>!feito(x.nome,regs)).length;
     if(!await perg('Deseja realmente cancelar o fornecimento?',`Trato ${S.tratoSel}: ${falta} curral(is) ainda sem fornecer. Os currais já registrados continuam salvos.`,'Sim, cancelar','Não, continuar fornecendo'))return;
     if(!await perg('Tem certeza?','O fornecimento será encerrado agora e volta para a tela de escolher local, ração e trato.','Sim, cancelar o fornecimento','Não, voltar'))return;
@@ -1410,8 +1431,8 @@ document.addEventListener('click',e=>{const lb=e.target.closest('[data-floc]');i
 document.addEventListener('change',e=>{if(e.target.id==='fRac'){FS.rac=e.target.value==='-'?null:e.target.value;FS.trato=null;if(FS.rac!=null)FS.passo=Math.max(FS.passo,3);mostrarFornecimento();}if(e.target.id==='fTrato'){FS.trato=+e.target.value;FS.tAuto=false;mostrarFornecimento();}});
 /* terminou todos os currais do trato (fornecidos ou "não fornecer"): já passa para o próximo trato */
 function proximoTratoSeCompleto(){try{const f=filtroForn();
-  if(f){const L=lista(),regs=regsAtuais();if(!L.length||!L.every(x=>feito(x.nome,regs)))return false;
-    const tk=L.reduce((a,x)=>a+x.prev,0);FS.fim=`✓ Fornecimento finalizado · ${f.local==='C'?'Confinamento':'Pasto'} · Trato ${S.tratoSel} · ${L.length} curral(is)`;toast(FS.fim);if(window.diagLog)try{diagLog('forn_finalizado',{local:f.local,trato:S.tratoSel,n:L.length,prev:tk});}catch(e){}FS.local=f.local;FS.rac=f.rac;FS.trato=null;FS.passo=3;S.forn=Object.assign({},f,{ativo:false});save();mostrarFornecimento();return true;}
+  /* fornecimento aberto: NÃO finaliza sozinho. Fez todos os currais → só avisa; quem finaliza é o botão ✓ Finalizar fornecimento */
+  if(f){const L=lista(),regs=regsAtuais();if(L.length&&L.every(x=>feito(x.nome,regs)))toast('✓ Todos os currais feitos · toque em Finalizar fornecimento');return false;}
   if(!tratoCompleto(S.tratoSel))return false;const antes=S.tratoSel;
   let alvo=null;for(let k=antes+1;k<=MAXT;k++){if(lista(k).length&&!tratoCompleto(k)){alvo=k;break;}}
   if(alvo==null)return false;$('tratoSel').value=String(alvo);$('tratoSel').dispatchEvent(new Event('change'));
@@ -1433,7 +1454,7 @@ async function naoFornecer(){if(bloqueado())return;const L=lista(),c=L[S.atual];
   setTimeout(()=>{compensarCurral(c.nome);proximoTratoSeCompleto();render();if(window.aRenderFora)aRenderFora();},600);
   render();if(window.aRenderFora)aRenderFora();sincronizar();}
 window.naoFornecer=naoFornecer;
-window.prevApi={MAXT,divisao,nTratos,setNTratos,totalCurral,distribuir,prevDoDia,prevGuardado,guardarPrevDia,guardarPrevHoje,diaFinalizado,arredPrev};
+window.prevApi={MAXT,divisao,nTratos,setNTratos,totalCurral,totalDia,distribuir,prevDoDia,prevGuardado,guardarPrevDia,guardarPrevHoje,diaFinalizado,arredPrev};
 function duvidas(k){const m=(S.prev&&S.prev[String(k||S.tratoSel)])||{};return S.cadastro.filter(n=>m[n]==='?');}
 /* Ao abrir: no 1º acesso do dia começa no Trato 1; se o trato atual já foi todo feito, passa para o próximo que falta */
 function tratoCompleto(k){const L=lista(k),hj=diaAtivo();return L.length>0&&L.every(x=>HIST.some(r=>r.dia===hj&&r.trato===k&&r.curral===x.nome));}
@@ -1475,7 +1496,14 @@ function ordemTabela(L,extras,regs){const t0=n=>{const rs=regs.filter(r=>r.curra
   const feitos=it.filter(x=>x.t!=null).sort((a,b)=>a.t-b.t),atual=it.filter(x=>x.t==null&&x.i===S.atual),resto=it.filter(x=>x.t==null&&x.i!==S.atual);
   return feitos.concat(atual,resto);}
 window.ordemTabela=ordemTabela;
+/* já registrou curral neste fornecimento: não pode mais cancelar, só "Finalizar fornecimento" */
+function fornTemRegistro(){try{const f=filtroForn();if(!f)return false;const L=lista(),t0=+f.ts0||0;
+  return HIST.some(r=>r.dia===diaAtivo()&&+r.trato===+S.tratoSel&&(+r.ts||0)>=t0&&L.some(x=>x.nome===r.curral));}catch(e){return false;}}
+window.fornTemRegistro=fornTemRegistro;
+function pintarCancForn(){const tem=fornTemRegistro();document.querySelectorAll('[data-fcancforn]').forEach(b=>{b.style.display=tem?'none':'';});}
+window.pintarCancForn=pintarCancForn;
 function render(){try{aplicarRenomesHist();limparPrevRenomes();}catch(e){}
+  try{pintarCancForn();}catch(e){}
   try{encherSelTrato();}catch(e){}
   const man=!!S.dataManual;
   const amh=diaAtivo()===amanhaKey();
@@ -1646,7 +1674,7 @@ function marcarPv(){if(PV.dia===hojeKey())marcarPrev();else if(PV.dia===amanhaKe
 /* o que a tabela mostra: total de cada curral (Todos), um trato, ou o total do período */
 function pvMapa(){const o=pvObj(),m={};
   if(PV.per){let d=PV.ini,n=0;while(d<=PV.fim&&n<400){const od=prevDoDia(d);S.cadastro.forEach(c=>{const t=totalCurral(c,od);if(t)m[c]=(m[c]||0)+t;});d=somaDias(d,1);n++;}return m;}
-  if(PV.t===0){S.cadastro.forEach(c=>{const t=totalCurral(c,o);if(t)m[c]=t;});return m;}
+  if(PV.t===0){S.cadastro.forEach(c=>{const t=totalDia(c,o,PV.dia);if(t)m[c]=t;});return m;}
   return Object.assign({},o[String(PV.t)]||{});}
 function pvEstado(){const e=$('pvEstado'),hj=hojeKey();let t='';
   if(PV.per)t='Período: total previsto de cada curral, somando os dias. Só consulta.';
@@ -1660,14 +1688,15 @@ function renderPrev(){
   const ed=pvEditavel(),hoje=PV.dia===hojeKey()&&!PV.per,o=pvObj(),m=pvMapa(),ims=PV.ims&&ed&&PV.t===0&&!PV.per;
   /* realizado do dia (todos os tratos) ou do trato escolhido; curral já tratado não deixa mais mudar o previsto */
   const comReal=!PV.per&&PV.dia<=hojeKey(),realDe=c=>{const rs=HIST.filter(r=>r.dia===PV.dia&&r.curral===c&&(PV.t===0||+r.trato===PV.t));return rs.length?rs.reduce((a,r)=>a+(+r.forn||0),0):null;};
+  const horaDe=c=>{const rs=HIST.filter(r=>r.dia===PV.dia&&r.curral===c&&+r.trato===PV.t).sort((a,b)=>(a.ts||0)-(b.ts||0));return rs.length?rs[rs.length-1].hora||'':'';};  // hora em que foi tratado (Trato N)
   const feitoT=(c,k)=>HIST.some(r=>r.dia===PV.dia&&r.curral===c&&+r.trato===k);
   const travado=c=>{if(PV.t>0)return feitoT(c,PV.t);const ks=[];for(let k=1;k<=MAXT;k++){const v=(o[k]||{})[c];if(typeof v==='number'&&v>0)ks.push(k);}return ks.length>0&&ks.every(k=>feitoT(c,k));}; // Todos: trava quando todos os tratos do curral já foram feitos
-  $('viewPrev').classList.toggle('pvSoVer',!ed);
+  $('viewPrev').classList.toggle('pvSoVer',!ed);$('viewPrev').classList.toggle('pvComHora',PV.t>0&&comReal&&!PV.per);
   const podeIncl=ed&&hoje&&PV.t>0;$('inclPrevLinha').hidden=!podeIncl;$('btnInclPrev').classList.toggle('on',!!PV.incl);$('listaBtns').hidden=!(podeIncl&&PV.incl);$('btnLimparPrev').hidden=true;$('btnIms').hidden=!(ed&&PV.t===0);
   $('btnOrdem').hidden=!hoje;$('btnCadastrar').hidden=true;$('btnRemoverCurral').hidden=true;
   $('pvImsBar').hidden=!ims;$('viewPrev').classList.toggle('pvImsOn',ims);$('viewPrev').classList.toggle('pvTodos',PV.t===0&&!PV.per);$('btnIms').classList.toggle('on',ims);
   $('pvHead').innerHTML=PV.per?'<tr><th></th><th>Curral</th><th>Total do período (kg)</th><th></th></tr>':
-    PV.t===0?`<tr><th></th><th>Curral</th>${ims?'<th>% IMS</th>':''}<th>Previsto do dia</th>${comReal?'<th>Realiz.</th><th>Dif.</th>':''}<th></th></tr>`:`<tr><th></th><th>Curral</th><th>Previsto T${PV.t}</th>${comReal?'<th>Realiz.</th><th>Dif.</th>':''}<th></th></tr>`;
+    PV.t===0?`<tr><th></th><th>Curral</th>${ims?'<th>% IMS</th>':''}<th>Previsto do dia</th>${comReal?'<th>Realiz.</th><th>Dif.</th>':''}<th></th></tr>`:`<tr><th></th>${comReal?'<th class="hora">Hora</th>':''}<th class="pvCurTh">Curral</th><th class="pvPrevTh">Previsto T${PV.t}</th>${comReal?'<th>Realiz.</th><th>Dif.</th>':''}<th></th></tr>`;
   $('tbPrev').innerHTML=S.cadastro.map((c,i)=>{const v=m[c],esc_=esc(c),tr=travado(c),rl=comReal?realDe(c):null,pvN=typeof v==='number'?v:0;
     const colR=comReal?(PV.t===0?`<td class="num pvReal">${rl!=null?fmt(rl):''}</td><td class="num ${rl!=null&&pvN?classeDesv(rl-pvN,pvN):''}">${rl!=null&&pvN?sgn(rl-pvN):''}</td>`
       :`<td class="num pvReal">${rl!=null?fmt(rl):''}</td><td class="num ${rl!=null&&pvN?classeDesv(rl-pvN,pvN):''}">${rl!=null&&pvN?sgn(rl-pvN):''}</td>`):'';
@@ -1682,7 +1711,7 @@ function renderPrev(){
       const sel=ed?`<select class="mini ntSel" data-nt="${esc_}">${tratosAtivos().map((_,i)=>i+1).map(x=>`<option value="${x}"${x===n?' selected':''}>${x}</option>`).join('')}</select>`:`<b>${n}</b>`;
       const imsC=ims?`<td><input class="cell imsIn" type="text" inputmode="decimal" data-ims="${esc_}" placeholder="${(()=>{const p=window.gImsDe?gImsDe(c,PV.dia,v||0):null;return p?nf(p,2):'%';})()}" value="${PV.imsV&&PV.imsV[c]!=null?esc(PV.imsV[c]):''}"><small class="imsKg" data-imskg="${esc_}"></small></td>`:'';
       return `<tr${ocultar?' hidden':''}><td class="alca" title="Arraste para mudar a ordem" aria-label="Arrastar ${esc_}">☰</td>${nome}${ims?imsC:''}${cel}${colR}${ac}</tr>`;}
-    return `<tr${ocultar?' hidden':''}><td class="alca" title="Arraste para mudar a ordem" aria-label="Arrastar ${esc_}">☰</td>${nome}${cel}${colR}${ac}</tr>`;}).join('');
+    return `<tr${ocultar?' hidden':''}><td class="alca" title="Arraste para mudar a ordem" aria-label="Arrastar ${esc_}">☰</td>${comReal?`<td class="hora">${esc(horaDe(c))}</td>`:''}${nome}${cel}${colR}${ac}</tr>`;}).join('');
   if(ims)document.querySelectorAll('#tbPrev .imsIn').forEach(calcIms);
   $('pvTot').title=`${S.cadastro.length} currais cadastrados`;
   resumoPrev();
@@ -1692,19 +1721,19 @@ ligarNavDia($('pvData'),PV,()=>{fecharTeclado();PV.am=null;PV.ims=false;PV.imsV=
 ligarTratoNav($('pvTN'),PV,()=>{fecharTeclado();PV.ims=false;renderPrev();});
 /* nº de tratos do curral: muda e já redivide o total */
 $('tbPrev').addEventListener('change',e=>{const s_=e.target.closest('select[data-nt]');if(!s_||!pvEditavel())return;const c=s_.dataset.nt,n=+s_.value,o=pvObj();
-  setNTratos(c,n);const t=totalCurral(c,o);if(t>0)distribuir(c,t,n,o);marcarPv();if(PV.dia===hojeKey()){editandoPrev=true;render();editandoPrev=false;}renderPrev();toast(`${c}: ${n} trato(s)`);});
+  mudarNTratos(c,n,o,PV.dia);marcarPv();if(PV.dia===hojeKey()){editandoPrev=true;render();editandoPrev=false;}renderPrev();toast(`${c}: ${n} trato(s)`);});
 /* % IMS: calcula na hora o total em kg de matéria natural */
 function calcIms(inp){const c=inp.dataset.ims,p=parseNum(inp.value),out=document.querySelector(`#tbPrev [data-imskg="${CSS.escape(c)}"]`);PV.imsV=PV.imsV||{};PV.imsV[c]=inp.value;
   if(!out)return;if(!(p>0)){out.textContent='';return;}const kg=window.gMnIms?gMnIms(c,p,PV.dia):null;out.textContent=kg==null?'sem lote':'→ '+fmt(arredPrev(kg))+' kg';}
 $('tbPrev').addEventListener('input',e=>{if(e.target.matches('.imsIn'))calcIms(e.target);});
 $('btnIms').onclick=()=>{if(!pvEditavel())return;PV.ims=!PV.ims;PV.imsV={};renderPrev();};
 $('pvImsCanc').onclick=()=>{PV.ims=false;PV.imsV={};renderPrev();};
-$('pvImsAplicar').onclick=()=>{if(!pvEditavel())return;const o=pvObj();let n=0,sem=[];
+$('pvImsAplicar').onclick=()=>{if(!pvEditavel())return;const o=pvObj();let n=0,sem=[],feitosTodos=[];
   document.querySelectorAll('#tbPrev .imsIn').forEach(inp=>{const c=inp.dataset.ims,p=parseNum(inp.value);if(!(p>0))return;const kg=window.gMnIms?gMnIms(c,p,PV.dia):null;if(kg==null){sem.push(c);return;}
-    const antes=snapTratos(c,o);distribuir(c,arredPrev(kg),nTratos(c,o),o);desfPrev.push({d:PV.dia,k:'T',nome:c,antes});n++;});
-  if(!n){toast(sem.length?'Sem lote/ração cadastrado para: '+sem.join(', '):'Digite o % de IMS de algum curral');return;}
+    const antes=snapTratos(c,o);if(!ajustarTotalCurral(c,arredPrev(kg),o)){feitosTodos.push(c);return;}desfPrev.push({d:PV.dia,k:'T',nome:c,antes});n++;});
+  if(!n){toast(sem.length?'Sem lote/ração cadastrado para: '+sem.join(', '):feitosTodos.length?'Todos os tratos de hoje já foram feitos: '+feitosTodos.join(', '):'Digite o % de IMS de algum curral');return;}
   marcarPv();if(PV.dia===hojeKey()){editandoPrev=true;render();editandoPrev=false;}PV.ims=false;PV.imsV={};renderPrev();
-  toast(`Previsto calculado por % IMS em ${n} curral(is)`+(sem.length?` · sem lote: ${sem.join(', ')}`:''));};
+  toast(`Previsto calculado por % IMS em ${n} curral(is)`+(sem.length?` · sem lote: ${sem.join(', ')}`:'')+(feitosTodos.length?` · já tratados (não muda): ${feitosTodos.join(', ')}`:''));};
 function snapTratos(c,o){const r={};for(let k=1;k<=MAXT;k++){const v=(o[k]||{})[c];if(v!==undefined)r[k]=v;}return r;}
 /* Soma do previsto por linha: C = confinamento, P = pasto TIP */
 function infoCurral(n){try{const it=gOk()&&G.it.currais;return (it&&!it.del&&it.v&&it.v[n])||{};}catch(e){return {};}}
@@ -1747,22 +1776,32 @@ let tecIdx=null,tecBuf='',tecNovo=false,tecOrig='';
 const desfPrev=[];
 const desfChave=()=>PV.t?String(PV.t):'T';
 function marcarVoltar(){const b=$('tecVoltar');if(b)b.disabled=!(tecIdx!=null&&tecBuf!==tecOrig)&&!desfPrev.some(d=>d.k===desfChave()&&d.d===PV.dia);}
+/* novo total do dia do curral (digitado no Todos ou calculado pelo % IMS):
+   nenhum trato feito → divide pelos tratos; já tem trato feito → os feitos não mudam e o que falta é dividido entre os tratos que faltam (pela %) */
+function ajustarTotalCurral(nome,v,o,dia){dia=dia||PV.dia;const feitosK=new Set(HIST.filter(r=>r.dia===dia&&r.curral===nome).map(r=>+r.trato)),nt=nTratos(nome,o);
+  if(!feitosK.size){distribuir(nome,v,nt,o);return true;}
+  const ksN=tratosDoCurral(nome,o,nt);for(let k=1;k<=MAXT;k++)if(!ksN.includes(k)&&!feitosK.has(k)&&o[k])delete o[k][nome];   // trato que saiu (diminuiu a quantidade)
+  const pend=ksN.filter(k=>!feitosK.has(k));if(!pend.length)return false;
+  const real=HIST.filter(r=>r.dia===dia&&r.curral===nome).reduce((a,r)=>a+(+r.forn||0),0);
+  /* o que falta (novo total − já fornecido) é dividido entre os tratos que faltam, pela % de cada trato na configuração;
+     o último fica com a sobra do arredondamento */
+  const ks=tratosDoCurral(nome,o,nt),pc=divisao(nt),w=pend.map(k=>+pc[ks.indexOf(k)]||0),sw=w.reduce((a,x)=>a+x,0);
+  let resto=Math.max(0,arredPrev(v-real));
+  pend.forEach((k,j)=>{if(!o[k])o[k]={};const q=j===pend.length-1?resto:Math.max(0,arredPrev((v-real)*(sw>0?w[j]/sw:1/pend.length)));o[k][nome]=Math.max(0,q);resto-=q;});
+  if(S.prevOrig&&S.prevOrig.v){delete S.prevOrig.v[nome];delete S.prevOrig.set[nome];}return true;}
+/* mudou a quantidade de tratos do curral: mantém o total do dia; tratos já feitos não mudam;
+   o que falta é dividido entre os tratos que faltam pela % da nova divisão */
+function mudarNTratos(c,n,o,dia){o=o||S.prev;dia=dia||hojeKey();const tot=totalDia(c,o,dia);setNTratos(c,n);if(tot>0)ajustarTotalCurral(c,tot,o,dia);return tot;}
+window.mudarNTratos=mudarNTratos;
 function campoPrev(i){return document.querySelector(`#tbPrev input[data-n="${i}"]`);}
 function aplicarPrev(i,t){
   const nome=S.cadastro[i];if(nome==null||!pvEditavel())return true;
   if(PV.t===0){const o=pvObj();t=String(t).trim();const v=t===''?0:parseNum(t);if(isNaN(v)||v<0||t==='?'){toast('Digite uma quantidade válida');return false;}
-    const antesT=totalCurral(nome,o);if(Math.round(v)!==Math.round(antesT)){const antes=snapTratos(nome,o);
-      /* já tem trato feito hoje: os tratos feitos não mudam; a diferença vai para o último trato que falta */
-      const feitosK=new Set(HIST.filter(r=>r.dia===PV.dia&&r.curral===nome).map(r=>+r.trato)),nt=nTratos(nome,o);
-      if(feitosK.size){const pend=tratosDoCurral(nome,o,nt).filter(k=>!feitosK.has(k));
-        if(!pend.length){toast(`${nome}: todos os tratos de hoje já foram feitos`);const x=campoPrev(i);if(x)x.value=valPrev(antesT||null);return true;}
-        const real=HIST.filter(r=>r.dia===PV.dia&&r.curral===nome).reduce((a,r)=>a+(+r.forn||0),0);
-        const fixo=real+pend.slice(0,-1).reduce((a,k)=>a+(+((o[k]||{})[nome])||0),0);
-        const ult=pend[pend.length-1];if(!o[ult])o[ult]={};o[ult][nome]=Math.max(0,arredPrev(v-fixo));
-        if(S.prevOrig&&S.prevOrig.v){delete S.prevOrig.v[nome];delete S.prevOrig.set[nome];}}
-      else distribuir(nome,v,nt,o);desfPrev.push({d:PV.dia,k:'T',nome,antes});if(desfPrev.length>100)desfPrev.shift();
+    const antesT=totalDia(nome,o,PV.dia);if(Math.round(v)!==Math.round(antesT)){const antes=snapTratos(nome,o);
+      if(!ajustarTotalCurral(nome,v,o)){toast(`${nome}: todos os tratos de hoje já foram feitos`);const x=campoPrev(i);if(x)x.value=valPrev(antesT||null);return true;}
+      desfPrev.push({d:PV.dia,k:'T',nome,antes});if(desfPrev.length>100)desfPrev.shift();
       marcarPv();if(PV.dia===hojeKey()){editandoPrev=true;render();editandoPrev=false;}}
-    const x=campoPrev(i);if(x)x.value=valPrev(totalCurral(nome,o)||null);resumoPrev();return true;}
+    const x=campoPrev(i);if(x)x.value=valPrev(totalDia(nome,o,PV.dia)||null);resumoPrev();return true;}
   const k=String(PV.t);const m=mapaPv(k);
   t=String(t).trim();const antes=m[nome];
   if(t===''){delete m[nome];}
