@@ -1439,14 +1439,17 @@ function cTelaNova0(){if(!CG.passo){CG.passo=1;CG.local=null;}if(!CG.local)CG.pa
   else if(!CG.trato&&!CG.avulso&&trC.length===1)CG.trato=trC[0];  // só os tratos com previsto; se for um só, já vem escolhido
   CG.juntos=CG.avulso?[]:(CG.juntos||[]).filter(k=>k!==+CG.trato);const trs=[+CG.trato].concat(CG.juntos).sort((a,b)=>a-b);
   const partes=trs.map(k=>({k,sg:sugestaoCarga(k,CG.rac,CG.local)})),sg={tot:partes.reduce((a,p)=>a+p.sg.tot,0),cs:[...new Set(partes.flatMap(p=>p.sg.cs))]};
-  const chave=CG.avulso?'avulso|'+CG.rac:CG.local+'|'+trs.join('+')+'|'+CG.rac;if(CG.totalDe!==chave){CG.total=CG.avulso?0:(sg.tot||0);CG.totalDe=chave;CG.ordem=null;CG.ja={};CG.sobModo='rac';CG.sobRac=null;CG.sobKg=0;CG.ordAberto=false;CG.jaAberto=false;CG.man={};CG.manAberto=false;cSave();}
+  const chave=CG.avulso?'avulso|'+CG.rac:CG.local+'|'+trs.join('+')+'|'+CG.rac;if(CG.totalDe!==chave){const mesmaRac=CG.totalDe!=null&&String(CG.totalDe).split('|').pop()===String(CG.rac);CG.total=CG.avulso?0:(sg.tot||0);CG.totalDe=chave;if(!mesmaRac)CG.ordem=null;  /* a Ordem é independente: continua valendo se a ração é a mesma */
+    CG.ja={};CG.sobModo='rac';CG.sobRac=null;CG.sobKg=0;CG.ordAberto=false;CG.jaAberto=false;CG.man={};CG.manAberto=false;cSave();}
+  if(CG.abrirDepois){if(CG.abrirDepois==='man')CG.manAberto=true;else CG.jaAberto=true;CG.abrirDepois=null;cSave();}
   const its=itensAjust(itensCarga(CG.rac,CG.total||0));
   const passoTrato=passoRac+(CG.avulso?`
-    <label>3. Trato</label><div class="cAvInfo">✳ Trato avulso · sem previsto, você digita a quantidade</div>`:`
+    <label>3. Trato</label><div class="cAvInfo">✳ Trato avulso · sem previsto, você digita a quantidade</div>
+    <div class="cBotoes c4"><button type="button" class="mini cAvulso sel" data-cavulso="1">✳ Avulso</button>${cBotAjuste()}</div>`:`
     <label for="cTrato">3. Trato</label><div class="cTrLin">${window.tratoSeta?tratoSeta('cTrato',CG.trato,'',trC):''}<button type="button" class="mini cJtTog${CG.juntoAberto?' sel':''}" data-cjtog="1">＋ Trato</button></div>
     <div class="cBotoes c4"><button type="button" class="mini cAvulso" data-cavulso="1">✳ Avulso</button>${cBotAjuste()}</div>
     <div class="cJuntoLista">${CG.juntoAberto?tratosAtivos().filter(k=>k!==+CG.trato).map(k=>{const t=sugestaoCarga(k,CG.rac,CG.local).tot;return `<button type="button" data-cjunto="${k}" class="${CG.juntos.includes(k)?'sel':''}"${t||CG.juntos.includes(k)?'':' disabled'}><span>${CG.juntos.includes(k)?'✓ ':''}Trato ${k}</span>${t?`<small>${nf(t)} kg</small>`:''}</button>`;}).join(''):''}</div>`)+
-    (CG.avulso?`<div class="cBotoes"><button type="button" class="mini cAvulso sel" data-cavulso="1">↩ Voltar para os tratos do previsto</button>${cBotAjuste()}</div>`:cJaTratadoHTML(trs));
+    (CG.avulso?'':cJaTratadoHTML(trs));
   if(!CG.avulso&&!CG.trato)return passoTrato+'</section>';  // escolhe o trato antes de mostrar o total
   return passoTrato+`
     <div><label>4. Total a carregar (kg)${CG.avulso?' · digite':' · pode mudar'}</label><div class="campoX cTotWrap"><input class="big num" id="cTotal" type="text" readonly inputmode="none" value="${CG.total?nf(CG.total):''}" placeholder="${CG.avulso?'digite':''}" data-ct="total"><div class="cSetas"><button type="button" data-ctot="-50" aria-label="Menos 50 kg">▼</button><button type="button" data-ctot="50" aria-label="Mais 50 kg">▲</button></div></div>
@@ -1503,36 +1506,47 @@ function cTelaDia(){const dia=CG.verDia||hojeKey(),L=cargasDia(dia);
     ${L.length?`<div class="stat gStat3">${st('Batidas',nf(L.length))}${st('Previsto',nf(tp)+' kg')}${st('Carregado',nf(tr)+' kg')}</div>${cards}
     <div class="row compart"><button class="verde" data-c="imgCarga">🖼 Foto</button><button class="verde" data-c="xlsCarga">📊 Excel</button></div>`:'<p class="note">Nenhuma batida nesta data.</p>'}</section>`;}
 /* teclado numérico grande (igual ao do Tratar) */
-function cTeclado(campo){if(bloqueado())return;cTec=campo;const A=cAtiva(),it=A&&A.itens[A.atual];
-  const v=campo==='total'?CG.total:it?it[campo]:null;cBuf=ok(v)&&v?String(Math.round(v)):'';
-  $('ctNome').textContent=campo==='total'?'Total a carregar (kg)':campo==='ini'?'Balança no início (kg)':'Balança no final (kg)';cMostra();$('tecCarga').hidden=false;
-  document.body.classList.add('comteclado');cCaixa().querySelectorAll('[data-ct]').forEach(e=>e.classList.toggle('sel',e.dataset.ct===campo));
-  requestAnimationFrame(()=>{const f=cCaixa().querySelector(`[data-ct="${campo}"]`);if(!f)return;const r=f.getBoundingClientRect(),livre=innerHeight-$('tecCarga').offsetHeight;
+function cTeclado(campo,el){if(bloqueado())return;if(cTec)cFecha();cTec=campo;const A=cAtiva(),it=A&&A.itens[A.atual];
+  /* campo 'inp': um quadradinho da tela (Sobra kg, Manual, Sobra por produto) — usa este mesmo teclado em vez do teclado do Android */
+  window.cTecEl=campo==='inp'?el:null;
+  if(campo==='inp'){const v=gNum(el.value);cBuf=v>0?String(Math.round(v)):'';}
+  else{const v=campo==='total'?CG.total:it?it[campo]:null;cBuf=ok(v)&&v?String(Math.round(v)):'';}
+  const f=cCampoEl();window.cTecOrig=f?f.value:null;window.cNovo=true;   // primeiro número digitado substitui o valor antigo
+  $('ctNome').textContent=campo==='inp'?(el.dataset.tecnome||'Quantidade (kg)'):campo==='total'?'Total a carregar (kg)':campo==='ini'?'Balança no início (kg)':'Balança no final (kg)';cMostra();$('tecCarga').hidden=false;
+  document.body.classList.add('comteclado');cCaixa().querySelectorAll('[data-ct],[data-tecin]').forEach(e=>e.classList.remove('sel'));if(f)f.classList.add('sel');
+  requestAnimationFrame(()=>{const f2=cCampoEl();if(!f2)return;const r=f2.getBoundingClientRect(),livre=innerHeight-$('tecCarga').offsetHeight;
     const mb=typeof topoLivre==='function'?topoLivre():80;if(r.bottom>livre-12||r.top<mb)window.scrollBy({top:r.top-mb,behavior:'smooth'});});}
-function cMostra(){$('ctValor').textContent=cBuf?nf(+cBuf):'—';}
-function cFecha(){cTec=null;$('tecCarga').hidden=true;document.body.classList.remove('comteclado');document.querySelectorAll('#cBox [data-ct].sel,#acBox [data-ct].sel').forEach(e=>e.classList.remove('sel'));}
+/* o campo que está sendo digitado (o número aparece nele mesmo, na hora) */
+function cCampoEl(){if(cTec==='inp')return window.cTecEl&&document.body.contains(window.cTecEl)?window.cTecEl:null;return cTec?cCaixa().querySelector(`[data-ct="${cTec}"]`):null;}
+function cMostra(){const t=cBuf?nf(+cBuf):'';$('ctValor').textContent=t||'—';const f=cCampoEl();if(f)f.value=t;}
+function cFecha(){const f=cCampoEl();if(f&&window.cTecOrig!=null)f.value=window.cTecOrig;   // fechou sem OK: o campo volta como estava
+  cTec=null;window.cTecEl=null;window.cTecOrig=null;$('tecCarga').hidden=true;document.body.classList.remove('comteclado');document.querySelectorAll('#cBox .sel[data-ct],#acBox .sel[data-ct],#cBox .sel[data-tecin],#acBox .sel[data-tecin]').forEach(e=>e.classList.remove('sel'));}
 function cConfirma(){const v=cBuf===''?null:+cBuf,A=cAtiva();
+  if(cTec==='inp'){const el=window.cTecEl;window.cTecOrig=null;cFecha();if(el){el.value=v?String(v):'';el.dispatchEvent(new Event('change',{bubbles:true}));}return;}
   if(cTec==='total'){CG.total=v||0;cSave();}
   else if(A){const it=A.itens[A.atual];it[cTec]=v;if(cTec==='ini'&&v!=null&&!ok(it.fim))it.fim=null;cSave();}
-  const prox=cTec==='ini'&&A&&!cAuto()?'fim':null;cFecha();cRender();if(prox)cTeclado(prox);}
+  const prox=cTec==='ini'&&A&&!cAuto()?'fim':null;window.cTecOrig=null;cFecha();cRender();if(prox)cTeclado(prox);}
+['cBox','acBox'].forEach(id=>{const bx=document.getElementById(id);if(bx)bx.addEventListener('click',e=>{const el=e.target.closest('[data-tecin]');if(!el)return;e.preventDefault();el.blur();cTeclado('inp',el);});});
 (function(){const d=document.createElement('div');d.className='teclado';d.id='tecCarga';d.hidden=true;
   d.innerHTML=`<div class="tecTopo"><span id="ctNome"></span><b id="ctValor">—</b></div><div class="tecGrade">${[1,2,3,4,5,6,7,8,9].map(n=>`<button data-k="${n}">${n}</button>`).join('')}<button data-k="limpar" class="tecSec">Limpar</button><button data-k="0">0</button><button data-k="del" class="tecSec">⌫</button></div><div class="tecAcoes"><button data-k="fechar" class="tecSec">Fechar</button><button data-k="ok" class="tecOk">OK</button></div>`;
   document.body.appendChild(d);d.addEventListener('pointerdown',e=>e.preventDefault());
   d.addEventListener('click',e=>{const b=e.target.closest('button[data-k]');if(!b)return;const k=b.dataset.k;
-    if(k==='fechar')return cFecha();if(k==='ok')return cConfirma();if(k==='limpar')cBuf='';else if(k==='del')cBuf=cBuf.slice(0,-1);else if(cBuf.length<6)cBuf=(cBuf+k).replace(/^0+(?=\d)/,'');cMostra();});})();
+    if(k==='fechar')return cFecha();if(k==='ok')return cConfirma();if(window.cNovo&&k!=='del'){cBuf='';}window.cNovo=false;if(k==='limpar')cBuf='';else if(k==='del')cBuf=cBuf.slice(0,-1);else if(cBuf.length<6)cBuf=(cBuf+k).replace(/^0+(?=\d)/,'');cMostra();});})();
 function cClique(e){
   const lb=e.target.closest('[data-cloc]');if(lb){const loc=lb.dataset.cloc;cLimparSetup();CG.local=loc;CG.passo=2;cSave();return cRender();}
   const cp=e.target.closest('[data-cpasso]');if(cp){CG.passo=+cp.dataset.cpasso;cSave();return cRender();}
   if(e.target.closest('[data-ccancel]')){cLimparSetup();cRender();window.scrollTo({top:0});toast('Batida cancelada');return;}
   if(e.target.closest('[data-cjtog]')){if(CG.juntoAberto){CG.juntoAberto=false;CG.juntos=[];}else CG.juntoAberto=true;cSave();return cRender();}  // fechar = tira os tratos juntos
   if(e.target.closest('[data-cordtog]')){CG.ordAberto=!CG.ordAberto;cSave();return cRender();}
-  if(e.target.closest('[data-cmantog]')){if(CG.manAberto){CG.manAberto=false;CG.man={};}else CG.manAberto=true;cSave();return cRender();}  // fechar = zera o manual
-  if(e.target.closest('[data-cjatog]')){if(CG.jaAberto){CG.jaAberto=false;CG.ja={};CG.sobRac=null;CG.sobKg=0;CG.sobModo='rac';}else CG.jaAberto=true;cSave();return cRender();}  // fechar = zera a sobra
+  if(e.target.closest('[data-cmantog]')){if(CG.manAberto){CG.manAberto=false;CG.man={};}else{CG.jaAberto=false;CG.ja={};CG.sobRac=null;CG.sobKg=0;CG.sobModo='rac';
+    if(CG.avulso){CG.avulso=false;CG.totalDe='x|'+CG.rac;CG.abrirDepois='man';}else CG.manAberto=true;}cSave();return cRender();}  // abrir o Manual fecha e zera a Sobra e o Avulso  // fechar = zera o manual
+  if(e.target.closest('[data-cjatog]')){if(CG.jaAberto){CG.jaAberto=false;CG.ja={};CG.sobRac=null;CG.sobKg=0;CG.sobModo='rac';}else{CG.manAberto=false;CG.man={};
+    if(CG.avulso){CG.avulso=false;CG.totalDe='x|'+CG.rac;CG.abrirDepois='ja';}else CG.jaAberto=true;}cSave();return cRender();}  // abrir a Sobra fecha e zera o Manual e o Avulso  // fechar = zera a sobra
   {const sm=e.target.closest('[data-csmodo]');if(sm){CG.sobModo=sm.dataset.csmodo;cSave();return cRender();}}
   {const m=e.target.closest('[data-cmov]');if(m){const its=itensAjust(itensCarga(CG.rac,CG.total||0)).map(i=>i.ins),i=its.indexOf(m.dataset.ins),j=i+(+m.dataset.cmov);
     if(i>=0&&j>=0&&j<its.length){[its[i],its[j]]=[its[j],its[i]];const pad=itensCarga(CG.rac,CG.total||0).map(i=>i.ins);CG.ordem=its.join('|')===pad.join('|')?null:its;cSave();cRender();}return;}}  // voltou à ordem original = sem mudança
   if(e.target.closest('[data-cordreset]')){CG.ordem=null;cSave();return cRender();}
-  if(e.target.closest('[data-cavulso]')){CG.avulso=!CG.avulso;CG.juntos=[];CG.juntoAberto=false;CG.totalDe=null;cSave();return cRender();}
+  if(e.target.closest('[data-cavulso]')){CG.avulso=!CG.avulso;if(CG.avulso){CG.manAberto=false;CG.man={};CG.jaAberto=false;CG.ja={};CG.sobRac=null;CG.sobKg=0;CG.sobModo='rac';}CG.juntos=[];CG.juntoAberto=false;CG.totalDe='x|'+CG.rac;cSave();return cRender();}
   const ct=e.target.closest('[data-ctot]');if(ct){CG.total=Math.max(0,(+CG.total||0)+(+ct.dataset.ctot));cSave();return cRender();}
   const jb=e.target.closest('[data-cjunto]');if(jb){const k=+jb.dataset.cjunto;CG.juntos=CG.juntos||[];CG.juntos=CG.juntos.includes(k)?CG.juntos.filter(x=>x!==k):CG.juntos.concat(k);cSave();return cRender();}
   const inp=e.target.closest('[data-ct]');if(inp)return cTeclado(inp.dataset.ct);
@@ -1567,10 +1581,16 @@ function cClique(e){
   if(a==='cancelar'){const feitos=A.itens.filter(x=>ok(x.real)).length;
     confirmaVermelho('Deseja realmente cancelar a batida?',`${feitos?`Os ${feitos} produto(s) já carregado(s) nesta batida serão perdidos.`:'Esta batida será descartada.'} Nada dela será salvo e não dá para desfazer.`,'Sim, cancelar batida','Não, continuar carregando')
       .then(sim=>sim&&confirmaVermelho('Tem certeza?','A batida será cancelada agora.','Sim, cancelar a batida','Não, voltar')).then(sim=>{if(!sim)return;if(CG.ativa!==A)return;CG.passo=1;CG.local=null;CG.juntos=[];CG.avulso=false;CG.juntoAberto=false;try{window.diagLog&&diagLog('batida_cancelada',{trato:A.trato,itens:A.itens.map(x=>[x.nome,x.prev,x.real])});}catch(e){}CG.ativa=null;cLimparSetup();cRender();toast('Batida cancelada');window.scrollTo({top:0});});return;}
-  if(a==='concluir'){A.itens.forEach(x=>regFixo(A,x,null));const falta=A.itens.filter(x=>!ok(x.real)).length;if(falta&&!confirm(`Faltam ${falta} produto(s). Finalizar assim mesmo?`))return;
+  if(a==='concluir'){(async()=>{if(CG.conclAberto)return;CG.conclAberto=true;
+    /* igual ao Finalizar fornecimento: tudo carregado → caixa verde; faltando produto → caixa vermelha (alerta) */
+    let sim;try{A.itens.forEach(x=>regFixo(A,x,null));const F=A.itens.filter(x=>!ok(x.real)),n=A.itens.length-F.length;
+      sim=await confirmaVermelho(F.length?`Deseja finalizar esta batida? Faltam ${F.length} produto(s)`:'Deseja finalizar esta batida?',
+        F.length?`${n} de ${A.itens.length} produtos carregados. Faltam: ${F.map(x=>x.nome).join(', ')}. Eles ficam sem registro nesta batida.`:`Todos os ${A.itens.length} produtos carregados.`,
+        'Sim, finalizar','Não, continuar carregando',!F.length);}finally{CG.conclAberto=false;}
+    if(!sim||CG.ativa!==A)return;
     gPut({uid:novoId('carga'),tipo:'carga',dia:A.dia,local:A.local||'',avulso:!!A.avulso,trato:A.trato,tratos:A.tratos||[A.trato],racao:A.rac,racNome:A.racNome,total:A.total,ts0:A.ts0,hora:new Date(A.ts0).toTimeString().slice(0,5),
       itens:juntaManual(A),origem:A.origem||''});
-    CG.ativa=null;CG.verDia=A.dia;cLimparSetup();toast('Batida salva');cRender();window.scrollTo({top:0});return;}
+    CG.ativa=null;CG.verDia=A.dia;cLimparSetup();toast('Batida salva');cRender();window.scrollTo({top:0});})();return;}
   if(a==='apagaCarga'){if(!confirm('Apagar esta batida?'))return;gDel(b.dataset.id);return cRender();}
 }
 $('cBox').addEventListener('click',cClique);$('acBox').addEventListener('click',cClique);
@@ -1596,13 +1616,14 @@ $('tabCarga').addEventListener('click',()=>aba('carga'));
 window.cAoAbrir=()=>{cLimparSetup();cRender();cBuscarRemoto();};window.cLimparSetup=cLimparSetup;window.cFecha=cFecha;
 
 /* confirmação com aviso em vermelho (ex.: cancelar batida) */
-function confirmaVermelho(tit,txt,sim,nao){return new Promise(res=>{
+function confirmaVermelho(tit,txt,sim,nao,verde){return new Promise(res=>{   // verde=true: tudo certo (caixa verde em vez do alerta vermelho)
   if(!document.getElementById('cvEstilo')){const st=document.createElement('style');st.id='cvEstilo';st.textContent=`.cvFundo{position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:9999;display:flex;align-items:center;justify-content:center;padding:16px}
 .cvCaixa{background:var(--card,#fff);border-radius:16px;max-width:420px;width:100%;padding:20px;border:3px solid #d32f2f;box-shadow:0 10px 40px rgba(0,0,0,.35)}
-.cvCaixa h3{margin:0 0 10px;color:#d32f2f;font-size:1.25rem}.cvCaixa p{margin:0 0 18px;color:#d32f2f;font-weight:600;line-height:1.35}
+.cvCaixa h3{margin:0 0 10px;color:#d32f2f;font-size:1.25rem}.cvCaixa p{white-space:pre-line;margin:0 0 18px;color:#d32f2f;font-weight:600;line-height:1.35}
+.cvCaixa.verde{border-color:#2e7d32}.cvCaixa.verde h3,.cvCaixa.verde p{color:#2e7d32}.cvCaixa.verde .cvSim{background:#2e7d32;border-color:#2e7d32}
 .cvCaixa .cvBt{display:grid;gap:10px}.cvCaixa button{padding:14px;font-size:1rem;border-radius:12px}.cvCaixa .cvSim{background:#d32f2f;color:#fff;border-color:#d32f2f}`;document.head.appendChild(st);}
   const f=document.createElement('div');f.className='cvFundo';
-  f.innerHTML=`<div class="cvCaixa" role="alertdialog"><h3>⚠️ ${esc(tit)}</h3><p>${esc(txt)}</p><div class="cvBt"><button class="cvSim">${esc(sim)}</button><button class="cvNao">${esc(nao)}</button></div></div>`;
+  f.innerHTML=`<div class="cvCaixa${verde?' verde':''}" role="alertdialog"><h3>${verde?'✅':'⚠️'} ${esc(tit)}</h3><p>${esc(txt)}</p><div class="cvBt"><button class="cvSim">${esc(sim)}</button><button class="cvNao">${esc(nao)}</button></div></div>`;
   const fim=v=>{f.remove();res(v);};
   f.querySelector('.cvSim').onclick=()=>fim(true);f.querySelector('.cvNao').onclick=()=>fim(false);
   f.addEventListener('click',e=>{if(e.target===f)fim(false);});document.body.appendChild(f);});}
@@ -2301,13 +2322,13 @@ function cTabelaCarga(its){const temJa=CG.jaAberto||its.some(i=>i.ja>0),tot=its.
     const rac=gTodos('racao').filter(r=>!r.inativa||r.uid===CG.sobRac).sort(porNome);
     jaNota=`<div class="cSobra"><div class="linhas"><b>Sobra no vagão:</b><button type="button" data-csmodo="rac" class="${md==='rac'?'sel':''}">Ração</button><button type="button" data-csmodo="ins" class="${md==='ins'?'sel':''}">Insumo</button></div>
       ${md==='rac'?`<div class="cSobLin"><select id="cSobRac"><option value="">— qual ração sobrou —</option>${rac.map(r=>`<option value="${r.uid}"${r.uid===CG.sobRac?' selected':''}>${esc(r.nome)}</option>`).join('')}</select>
-        <input type="text" inputmode="decimal" id="cSobKg" placeholder="kg" value="${CG.sobKg?String(CG.sobKg).replace('.',','):''}"></div>
+        <input type="text" readonly inputmode="none" data-tecin="1" data-tecnome="Sobra no vagão (kg)" id="cSobKg" placeholder="kg" value="${CG.sobKg?String(CG.sobKg).replace('.',','):''}"></div>
         ${Object.keys(sob).length?`<p class="note">Nessa sobra tem: ${Object.keys(sob).map(k=>`<b>${esc((G.it[k]||{}).nome||'?')}</b> ${nf(sob[k])} kg`).join(' · ')}. Já foi descontado abaixo.</p>`:'<p class="note">Escolha a ração que sobrou e quantos kg. O app calcula quanto tem de cada produto e desconta da batida.</p>'}`
       :'<p class="note">Digite na coluna <b>Sobra</b> quanto de cada produto já está no vagão.</p>'}
       ${fora.length?`<p class="cAviso">⚠ Na sobra tem produto que esta ração não usa: ${fora.join(', ')}. Ele vai junto na mistura.</p>`:''}
       ${demais.length?`<p class="cAviso">⚠ Sobra maior que o necessário: ${demais.join('; ')}.</p>`:''}
       <p class="note">A fórmula da ração não muda; o estoque baixa só o que for carregado agora.</p></div>`;}
-  return ord+jaNota+manNota+`<div class="tablebox"><table class="gTab"><thead><tr><th>Produto</th><th>% MN</th>${temJa?'<th>Sobra</th>':''}${temMan?'<th>Manual</th>':''}<th>Carregar (kg)</th></tr></thead><tbody>${its.map(i=>`<tr><td class="c">${esc(i.nome)}${i.ja>0?`<small>mistura: ${nf(i.prevOrig)} kg</small>`:''}</td><td>${nf(i.pMN,1)}</td>${temJa?`<td>${CG.jaAberto&&(CG.sobModo||'rac')!=='rac'?`<input type="text" inputmode="decimal" class="cJaIn" data-cja="${esc(i.ins)}" value="${i.ja?String(i.ja).replace('.',','):''}" placeholder="0">`:nf(i.ja)}</td>`:''}${temMan?`<td>${CG.manAberto?`<input type="text" inputmode="decimal" class="cJaIn" data-cman="${esc(i.ins)}" value="${i.man?String(i.man).replace('.',','):''}" placeholder="0">`:nf(i.man||0)}</td>`:''}<td><b>${nf(i.prev)}</b>${i.ja>0&&i.prev===0?'<small>já tem tudo</small>':i.man>0&&i.prev===0?'<small>tudo manual</small>':''}</td></tr>`).join('')}
+  return ord+jaNota+manNota+`<div class="tablebox"><table class="gTab"><thead><tr><th>Produto</th><th>% MN</th>${temJa?'<th>Sobra</th>':''}${temMan?'<th>Manual</th>':''}<th>Carregar (kg)</th></tr></thead><tbody>${its.map(i=>`<tr><td class="c">${esc(i.nome)}${i.ja>0?`<small>mistura: ${nf(i.prevOrig)} kg</small>`:''}</td><td>${nf(i.pMN,1)}</td>${temJa?`<td>${CG.jaAberto&&(CG.sobModo||'rac')!=='rac'?`<input type="text" readonly inputmode="none" data-tecin="1" data-tecnome="Sobra · ${esc(i.nome)} (kg)" class="cJaIn" data-cja="${esc(i.ins)}" value="${i.ja?String(i.ja).replace('.',','):''}" placeholder="0">`:nf(i.ja)}</td>`:''}${temMan?`<td>${CG.manAberto?`<input type="text" readonly inputmode="none" data-tecin="1" data-tecnome="Manual · ${esc(i.nome)} (kg)" class="cJaIn" data-cman="${esc(i.ins)}" value="${i.man?String(i.man).replace('.',','):''}" placeholder="0">`:nf(i.man||0)}</td>`:''}<td><b>${nf(i.prev)}</b>${i.ja>0&&i.prev===0?'<small>já tem tudo</small>':i.man>0&&i.prev===0?'<small>tudo manual</small>':''}</td></tr>`).join('')}
       <tr class="grp"><td>Total</td><td>100,0</td>${temJa?`<td>${nf(totJa)}</td>`:''}${temMan?`<td>${nf(totMan)}</td>`:''}<td>${nf(tot)}</td></tr></tbody></table></div>
     ${totMan>0?`<p class="note">✋ Manual: <b>${nf(totMan)} kg</b> já colocado à mão · a balança carrega <b>${nf(tot)} kg</b>.</p>`:''}${totJa>0?(()=>{const sobT=Object.values(sobraPorIns()).reduce((a,v)=>a+(+v||0),0),fin=sobT+tot;return `<p class="note">Mistura final no vagão: <b>${nf(fin)} kg</b> = ${nf(sobT)} kg de sobra + ${nf(tot)} kg a carregar${Math.abs(fin-CG.total)>1?` (o previsto era ${nf(CG.total)} kg)`:''}.</p>`;})():''}`;}
 /* Carregar: avisa (sem bloquear) quando todos os currais do trato escolhido já foram tratados hoje */

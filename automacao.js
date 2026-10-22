@@ -37,6 +37,23 @@ const css=`
 :is(#aBox,#acBox,#aoVivo) .curhead .balMini.ruim{color:#c62828}
 :is(#aBox,#acBox,#aoVivo) section.balRec :is(.aStatus,.aConn,.aSinal,.aTeclas,.aSim,.btAutoLin){display:none!important}
 :is(#aBox,#acBox,#aoVivo) .aTeclas{display:none!important}
+.fCols,.fColE,.fColD{display:contents}
+/* tablet deitado: duas colunas (curral/trato à esquerda, o número grande e os botões à direita) e topo mais baixo */
+@media (orientation:landscape) and (min-width:760px) and (max-height:1000px){
+  .topo{padding-top:4px!important;padding-bottom:4px!important}
+  .topo img.topoLogo{height:30px!important}
+  .wrap{max-width:1180px;padding-top:8px;gap:10px}
+  :is(#aBox,#acBox) .fColD button{display:block;width:100%}
+  #aBox .fColD #aReg{padding:12px}
+  :is(#aBox,#acBox) section.balRec{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.1fr);gap:0 16px;align-items:center;padding-top:8px;padding-bottom:8px}
+  :is(#aBox,#acBox) section.balRec .balHead{margin:0}
+  :is(#aBox,#acBox) section.balRec .aPeso{margin:0;padding-top:6px;padding-bottom:6px}
+  :is(#aBox,#acBox) .fCols{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.1fr);gap:0 16px;align-items:start}
+  :is(#aBox,#acBox) :is(.fColE,.fColD){display:block;min-width:0}
+  :is(#aBox,#acBox) :is(.fColE,.fColD)>*+*{margin-top:8px}
+  :is(#aBox,#acBox) .fColD .aFalta b{font-size:7.5rem}
+  #aBox .fColD button.fFinal{margin-top:14px!important}
+}
 :is(#aBox,#acBox,#aoVivo) .aConn.comTag{grid-template-columns:3fr 2fr 1.3fr}
 :is(#aBox,#acBox,#aoVivo) .aConn .aTagBt{font-weight:700}
 :is(#aBox,#acBox,#aoVivo) .aConn .aTagBt.tgOk{background:#2e7d32!important;border-color:#2e7d32!important;color:#fff!important}
@@ -68,7 +85,8 @@ const css=`
 :is(#aBox,#acBox,#aoVivo) .aFalta.continuo{background:#c62828;animation:aPisca .5s steps(2) infinite}
 :is(#aBox,#acBox,#aoVivo) .aFalta.cinza{background:#7c8794}
 #aBox .aChkGeo{display:flex;align-items:center;gap:8px;font-weight:600;margin:4px 0 8px}#aBox .aChkGeo input{width:22px;height:22px}
-#aBox .aPausaBt{padding:8px 12px;font-size:.95rem;width:auto;margin:0 0 0 auto;display:block}
+#aBox #aFaltaBox{position:relative}
+#aBox .aPausaBt{position:absolute;top:8px;right:8px;padding:6px 10px;font-size:.9rem;width:auto!important;margin:0!important;display:block;background:#fff;color:#11253d;border:2px solid rgba(0,0,0,.15);border-radius:10px;font-weight:700;z-index:2}
 #aBox .aPausaBt[hidden]{display:none}
 #aBox .aPausaBox{box-sizing:border-box;width:100%;max-width:100%;min-width:0;overflow:hidden;border-radius:18px;padding:34px 16px;text-align:center;background:#1565c0;color:#fff;display:grid;gap:8px;cursor:pointer;min-height:300px;align-content:center;border:4px solid #0d47a1}
 #aBox .aPausaBox[hidden]{display:none}
@@ -127,7 +145,6 @@ function montar(){
       <button id="aDesc" class="aDescBt" disabled>Desconectar</button>
       <button type="button" class="aTagBt" data-tagbt hidden title="Leitor de tag">🏷 Tag</button>
     </div>
-    <label class="aChk btAutoLin"><input type="checkbox" data-btauto> Conectar a balança sozinho</label>
     <div class="aSinal" id="aSinal">⚪ Balança desconectada</div>
     <div class="aTeclas" id="aTeclas" hidden><button data-tecla="43">▸0◂<br>Zero</button><button data-tecla="40">▸T◂<br>Tara</button><button data-tecla="10">Líquido/<br>Bruto</button><button data-tecla="23">🖨<br>Imprimir</button></div>
     <div class="aSim" id="aSimBox" hidden>
@@ -141,6 +158,7 @@ function montar(){
   <section class="panel fornSetup" id="fSetupA" hidden></section>
   <section class="panel">
     <div class="fBar" id="fBarA" hidden></div>
+    <div class="fCols"><div class="fColE">
     <div class="tSeta tSetaFixa"><button type="button" data-tsd="-1" aria-label="Trato anterior">◀</button><select class="trato" id="aTrato">
         ${window.opcoesTrato?opcoesTrato(S.tratoSel):'<option value="1">Trato 1</option>'}
       </select><button type="button" data-tsd="1" aria-label="Próximo trato">▶</button></div>
@@ -151,9 +169,9 @@ function montar(){
     <div class="escolha" id="aEscolha" hidden></div>
     <div class="tagAviso" data-tagaviso hidden></div><div class="tagBar" data-tagbar hidden></div>
     <div class="aEtapa" id="aEtapa">Conecte a balança</div>
-    <button type="button" class="aPausaBt" id="aPausar">⏸ Pausar (trajeto)</button>
     <div class="aPausaBox" id="aPausaBox" hidden role="button" tabindex="0"><b>⏸ PAUSADO</b><span>No trajeto: a balança não está contando nada.</span><em>▶ Toque aqui para continuar</em></div>
-    <div class="aFalta" id="aFaltaBox"><small id="aFaltaTit">Fornecer</small><b class="num" id="aFalta">—</b><em id="aFaltaTxt">&nbsp;</em></div>
+    </div><div class="fColD">
+    <div class="aFalta" id="aFaltaBox"><button type="button" class="aPausaBt" id="aPausar">⏸ Pausar (trajeto)</button><small id="aFaltaTit">Fornecer</small><b class="num" id="aFalta">—</b><em id="aFaltaTxt">&nbsp;</em></div>
     <div class="aMini">
       <div class="caiu"><small>Fornecido</small><b class="num" id="aCaiu">—</b></div>
       <div><small>Peso inicial</small><b class="num" id="aIni">—</b></div>
@@ -161,6 +179,7 @@ function montar(){
     </div>
     <button class="primary" id="aReg" disabled>Registrar trato</button>
     <button class="fFinal" data-ffinal="1" type="button">⚠ Finalizar fornecimento</button>
+    </div></div>
     <button id="aTestarSom" hidden>🔊 Testar apito (amarelo, vermelho e direto)</button>
     <button id="aRecomecar" hidden>↺ Pegar peso inicial</button><button id="aPular">Pular curral ▶</button>
     <button class="naoForn" id="aNaoForn" type="button">🚫 Não fornecer neste curral</button>
@@ -239,6 +258,7 @@ function pintarSinal(){const segs=A.ultDado?(Date.now()-A.ultDado)/1000:null;let
   const mini=!A.fonte?(A.statusTipo==='wait'?'🟡 conectando…':A.statusTipo==='err'?'🔴 erro ao conectar':'🔴 desconectada'):cl==='ok'?'🟢 conectada':cl==='ruim'?'🔴 sem peso':'🟡 esperando peso';
   ['aBalMini','acBalMini'].forEach(id=>{const e=$(id);if(!e)return;if(e.textContent!==mini)e.textContent=mini;e.className='balMini '+(cl==='ruim'?'ruim':'');});
   aplicarBalRec();}
+window.recolherBal=()=>{A.balRec=true;aplicarBalRec();};
 function aplicarBalRec(){[['aBox',$('aBox')&&$('aBox').querySelector(':scope>section')],['acBox',$('acBox')&&$('acBox').querySelector(':scope>section')]].forEach(([_,sec])=>{if(!sec)return;
   sec.classList.toggle('balRec',!!A.balRec);const b=sec.querySelector('.balTog');if(b)b.textContent=A.balRec?'▼':'▲';});}
 document.addEventListener('click',e=>{if(!e.target.closest('[data-baltog]'))return;A.balRec=!A.balRec;aplicarBalRec();});
@@ -305,7 +325,8 @@ setInterval(()=>{if(A.fonte!=='bt'||!A.bt||!A.digiStar||A.btReconectando)return;
    1) se o Chrome deixa (getDevices), conecta sem perguntar;
    2) se não deixa, o primeiro toque em qualquer lugar da tela já abre a lista só com a balança (NEW EZ) — é só tocar nela;
    3) caiu: fica reconectando sozinho. */
-const btAutoOn=()=>{try{return localStorage.getItem('btAuto')!=='0';}catch(e){return true;}};
+/* desligado (22/10): no tablet não funcionava bem e ficava em "conectando…"; a pessoa conecta no botão. Se a conexão cair, continua tentando voltar sozinho (reconectarBt). */
+const btAutoOn=()=>false;
 function pintarBtAuto(){document.querySelectorAll('[data-btauto]').forEach(i=>{i.checked=btAutoOn();});}
 function armarToque(){if(!btAutoOn()||A.fonte||A.toqueArmado||!navigator.bluetooth)return;A.toqueArmado=true;
   setStatus('Toque em qualquer lugar da tela para conectar a balança','wait');
@@ -569,16 +590,18 @@ function novoPeso(n){
    parou de cair → registra (inicial − final) e passa para o próximo curral */
 function curralAtual(){try{return (S&&lista()[S.atual])||null;}catch(e){return null;}}
 /* troca de curral: o peso de agora vira o inicial */
-function novoCurral(manterPeso){A.est='aguardando';A.ancV=null;A.ancT=0;A.fpMin=null;A.menor=null;A.base=manterPeso&&A.peso!=null?(A.estavel?A.valEst:A.peso):null;}
+function novoCurral(manterPeso){A.posPausa=false;A.est='aguardando';A.ancV=null;A.ancT=0;A.fpMin=null;A.menor=null;A.base=manterPeso&&A.peso!=null?(A.estavel?A.valEst:A.peso):null;}
 function maquina(){
   if(A.pausa)return; // pausado no trajeto: o peso que varia nos buracos não conta
   if(naCargaAuto())return; // na tela de carregar o trato fica parado (não perde o que já estava fornecendo)
   const c=cfg(),cur=curralAtual();if(A.peso==null)return;
   if(A.est==='aguardando'){
     const lim=cur&&cur.prev>0?Math.min(c.minDesc,Math.max(c.tol,cur.prev/2)):c.minDesc; // curral pequeno: começa com menos
-    if(A.base!=null&&cur&&A.suave<A.base-lim){A.est='descarregando';A.menor=A.peso;A.avisou1=false;A.avisou2=false;A.ancV=A.suave;A.ancT=Date.now();A.fpMin=null;return;}
+    const limP=A.posPausa?Math.max(lim,120):lim;  // acabou de despausar e o vagão ainda não parou de verdade: o balanço do trajeto não pode virar fornecido
+    if(A.base!=null&&cur&&A.suave<A.base-limP){A.posPausa=false;A.est='descarregando';A.menor=A.peso;A.avisou1=false;A.avisou2=false;A.ancV=A.suave;A.ancT=Date.now();A.fpMin=null;return;}
     /* parado: o peso inicial é sempre o peso real da balança agora (não o final do curral anterior, que pode variar) */
-    if(A.estavel&&(A.base==null||(A.valEst!==A.base&&(A.valEst>A.base||(A.estrito&&A.base-A.valEst<=Math.max(+c.tol||0,10)))))){if(A.base!=null&&A.baseConf===false&&Math.abs(A.valEst-A.base)>=5)diagLog('ini_ajustado',{curral:cur?cur.nome:'',de:A.base,para:A.valEst});A.base=A.valEst;A.baseConf=true;}
+    if(A.estavel&&(A.base==null||(A.valEst!==A.base&&(A.valEst>A.base||A.posPausa||(A.estrito&&A.base-A.valEst<=Math.max(+c.tol||0,10)))))){if(A.base!=null&&A.baseConf===false&&Math.abs(A.valEst-A.base)>=5)diagLog('ini_ajustado',{curral:cur?cur.nome:'',de:A.base,para:A.valEst});A.base=A.valEst;A.baseConf=true;}
+    if(A.posPausa&&A.estrito&&A.base===A.valEst)A.posPausa=false;  // parou de verdade: daqui pra frente vale a regra normal
     if(A.base==null){const r=refProvisoria(-1);if(r)A.base=r.v;}  // balança tremendo ou já começou a descer: não fica esperando
     return;
   }
@@ -742,7 +765,7 @@ function aPausar(){if(A.pausa)return;const z0=zona(),cur0=curralAtual();A.pausa=
   toast('⏸ Pausado: a balança não conta até você continuar');pintarPeso();if(typeof agendarAoVivo==='function')agendarAoVivo();}
 function aContinuarPausa(){const P=A.pausa;if(!P)return;A.pausa=null;
   if(P.est==='descarregando'){A.est='descarregando';A.base=P.base;A.ancV=null;A.ancT=Date.now();A.fpMin=null;}  // estava no meio do curral: continua com o mesmo início
-  else{novoCurral(true);A.baseConf=false;}  // ainda não tinha começado: o peso de agora vira o inicial (e acerta quando a balança firmar)
+  else{novoCurral(true);A.baseConf=false;A.posPausa=true;}  // ainda não tinha começado: o peso de agora vira o inicial (e acerta quando a balança firmar)
   diagLog('despausou',{est:A.est,base:A.base,peso:A.peso,seg:Math.round((Date.now()-P.ts)/1000)});
   toast(P.est==='descarregando'?'▶ Continuando o mesmo curral':'▶ Continuando: deixe o vagão parado para pegar o peso inicial');pintarPeso();aRender();
   if(typeof agendarAoVivo==='function')agendarAoVivo();}
@@ -842,7 +865,40 @@ window.pesoBalanca=()=>A.fonte&&A.peso!=null&&A.ultDado&&Date.now()-A.ultDado<30
 window.aRenderFora=()=>{try{if($('viewAuto')&&!$('viewAuto').hidden){novoCurral(true);$('aTrato').value=String(S.tratoSel);aRender();}}catch(e){}};
 window.aContinuar=v=>{diagLog('continuou_outro_aparelho',{ini:+v,peso:A.peso});A.est='aguardando';A.ancV=null;A.ancT=0;A.fpMin=null;A.menor=null;A.base=+v;
   if(A.peso!=null&&A.peso<A.base-cfg().minDesc){A.est='descarregando';A.menor=A.peso;A.ancV=A.suave;A.ancT=0;}aRender();};
-window.aAoAbrir=()=>{montar();aRender();if(!modoVer&&window.btAutoVoltar)btAutoVoltar();try{pintarTag();}catch(e){}try{if(typeof gSync==='function')gSync(true).catch(()=>{});}catch(e){}};
+/* ---- segurança: o app saiu da tela no meio de um curral (Android fechou a aba / recarregou) ----
+   guarda a cada segundo o curral em andamento (peso inicial); ao voltar, se for o mesmo curral e ainda não registrado,
+   continua de onde estava em vez de começar do zero. */
+const CUR_KEY='aCurSalvo';
+setInterval(()=>{try{if(!A.restChk||A.pausa||naCargaAuto())return;const f=window.filtroForn&&filtroForn(),cur=curralAtual();
+  if(!f||!cur||A.base==null){return;}
+  if(A.est!=='descarregando'){const v=JSON.parse(localStorage.getItem(CUR_KEY)||'null');if(v&&v.curral===cur.nome&&v.est==='descarregando'&&+v.trato===+S.tratoSel)localStorage.removeItem(CUR_KEY);return;}
+  localStorage.setItem(CUR_KEY,JSON.stringify({dia:diaAtivo(),trato:S.tratoSel,curral:cur.nome,base:A.base,est:A.est,ts:Date.now()}));}catch(e){}},1000);
+/* curral atual já tratado (ex.: o app voltou sozinho no C-10, que já está ✓): vai para o próximo que falta */
+function pularParaFalta(avisar){try{const f=window.filtroForn&&filtroForn(),cur=curralAtual();if(!f||!cur||A.est==='descarregando'||A.pausa)return false;
+  const L=lista(),regs=regsAtuais();if(!feito(cur.nome,regs))return false;
+  let j=L.findIndex((x,k)=>k>S.atual&&!feito(x.nome,regs));if(j<0)j=L.findIndex(x=>!feito(x.nome,regs));if(j<0)return false;
+  setAtual(j);save();novoCurral(true);try{render();}catch(e){}aRender();if(avisar)toast(`${cur.nome} já foi tratado: indo para o ${L[j].nome}`);return true;}catch(e){return false;}}
+window.pularParaFalta=pularParaFalta;
+/* o app voltou sozinho (Android fechou/recarregou) com um fornecimento aberto: pergunta se continua; tocar em Continuar já abre a lista da balança */
+window.aPerguntaVoltou=async()=>{try{const f=window.filtroForn&&filtroForn();if(!f||modoVer||A.perguntou)return;A.perguntou=true;
+  const L=lista(),regs=regsAtuais(),n=L.filter(x=>feito(x.nome,regs)).length;let v=null;try{v=JSON.parse(localStorage.getItem(CUR_KEY)||'null');}catch(e){}
+  const meio=v&&+v.trato===+S.tratoSel&&v.dia===diaAtivo()&&Date.now()-v.ts<3*3600e3&&!feito(v.curral,regs)&&L.some(x=>x.nome===v.curral);
+  const cur=curralAtual();
+  const sim=await confirmaVermelho('Continuar o fornecimento?',`${f.local==='C'?'Confinamento':'Pasto'} · Trato ${S.tratoSel} · ${n} de ${L.length} currais feitos.\n`+
+    (meio?`Estava no meio do ${v.curral}: o peso inicial (${fmt(v.base)} kg) ficou guardado e continua de onde parou.`:`Próximo curral: ${cur?cur.nome:'—'}.`)+(A.fonte?'':'\nAo tocar em Continuar, escolha a balança na lista para conectar.'),
+    'Sim, continuar o trato','Não, finalizar fornecimento',true);
+  if(sim){if(!A.fonte)conectarBt(true).catch(()=>{});}
+  else{const b=document.querySelector('#aBox [data-ffinal]');if(b)b.click();}}catch(e){}};
+setInterval(()=>{try{if(A.restChk||A.peso==null)return;A.restChk=true;
+  const v=JSON.parse(localStorage.getItem(CUR_KEY)||'null');localStorage.removeItem(CUR_KEY);
+  const f=window.filtroForn&&filtroForn();if(!f)return;
+  const L=lista(),k=v?L.findIndex(x=>x.nome===v.curral):-1;
+  if(!v||k<0||+v.trato!==+S.tratoSel||v.dia!==diaAtivo()||Date.now()-v.ts>3*3600e3||feito(v.curral,regsAtuais())){pularParaFalta(true);return;}
+  if(k!==S.atual){setAtual(k);save();try{render();}catch(e){}}
+  if(A.peso>v.base+cfg().minDesc)return;   // peso maior que o inicial guardado: recarregou, não continua
+  diagLog('curral_restaurado',{curral:v.curral,ini:v.base,peso:A.peso,seg:Math.round((Date.now()-v.ts)/1000)});
+  window.aContinuar(v.base);toast(`↩ Voltou para o ${v.curral}: continuando com o peso inicial ${fmt(v.base)} kg (o que já caiu não se perdeu)`);}catch(e){}},500);
+window.aAoAbrir=()=>{montar();aRender();try{pularParaFalta(true);}catch(e){}if(!modoVer&&window.btAutoVoltar)btAutoVoltar();try{pintarTag();}catch(e){}try{if(typeof gSync==='function')gSync(true).catch(()=>{});}catch(e){}};
 /* quando a aba Tratar ou a nuvem mudam algo, a tela da Automação acompanha */
 const renderOriginal=window.render;
 if(typeof renderOriginal==='function'){window.render=function(){const r=renderOriginal.apply(this,arguments);try{if(!$('viewAuto').hidden)aRender();}catch(e){}return r;};}
@@ -884,7 +940,6 @@ window.acTela=(nova,dia)=>{
     <div class="curhead balHead"><button type="button" class="mini balTog" data-baltog="1" aria-label="Mostrar ou esconder a conexão">▲</button><h2>Balança</h2><span class="balMini" id="acBalMini"></span></div>
     <div class="aStatus" id="acStatus"><i></i><span id="acStatusTxt">Desconectado</span></div>
     <div class="aConn"><button data-ac="ser" id="acBtSer" hidden>🔵 Bluetooth</button><button data-ac="bt" id="acBtBt">Conectar a balança</button><button data-ac="ws" id="acBtWs" hidden>📶 Caixinha Wi-Fi</button><button data-ac="sim" id="acBtSim" hidden>🧪 Simulador</button><button data-ac="desc" id="acDesc" class="aDescBt" disabled>Desconectar</button></div>
-    <label class="aChk btAutoLin"><input type="checkbox" data-btauto> Conectar a balança sozinho</label>
     <div class="aSinal" id="acSinal">⚪ Balança desconectada</div>
     <div class="aTeclas" id="acTeclas" hidden><button data-tecla="43">▸0◂<br>Zero</button><button data-tecla="40">▸T◂<br>Tara</button><button data-tecla="10">Líquido/<br>Bruto</button><button data-tecla="23">🖨<br>Imprimir</button></div>
     <div class="aSim" id="acSimBox" hidden><button class="lima" data-ac="simSobe">▲ Carregar</button><button data-ac="simPara">■ Parar</button><button data-ac="simZera">Esvaziar</button></div>
@@ -895,11 +950,13 @@ window.acTela=(nova,dia)=>{
   const pend=B.itens.filter(x=>!ok(x.real)).length,todosC=!pend,ultimoC=pend===1&&it&&!ok(it.real);
   const h=cTelaBatida(),k=h.indexOf('<section',h.indexOf('<section')+8),tabela=k>0?h.slice(k):'';
   return topo+(window.barraBatida?barraBatida(B):'')+`<section class="panel"><div class="curhead"><h2>Batida · ${B.avulso?'Avulsa':'Trato '+B.trato}</h2><span class="note">${esc(B.racNome)} · ${nf(B.total)} kg</span></div>
+    <div class="fCols"><div class="fColE">
     <div class="curBox2"><div class="cbCur" data-c="escolher" role="button"><span>Produto ${i+1} de ${B.itens.length} <i class="seta">▼</i></span><b>${esc(it?it.nome:'—')}</b></div>
       <div class="cbPrev"><span>Carregar</span><b class="num">${it?nf(it.prev):'—'}</b></div></div>
     ${B.escolha?`<div class="escolha">${B.itens.map((x,j)=>`<button data-c="ir" data-i="${j}" class="${j===i?'sel':''}">${ok(x.real)?'✓ ':''}${esc(x.nome)} · ${nf(x.prev)} kg</button>`).join('')}</div>`:''}
     ${it&&ok(it.real)?`<p class="avisoJa">Este produto já foi carregado (${nf(it.real)} kg). Para refazer, toque em Desfazer último, lá embaixo.</p>`:''}
     ${window.fixoNota?fixoNota(it):''}<div class="aEtapa" id="acEtapa"></div>
+    </div><div class="fColD">
     <div class="aFalta" id="acFaltaBox"><small id="acFaltaTit">Carregar</small><b class="num" id="acFalta">—</b><em id="acFaltaTxt">&nbsp;</em></div>
     <div class="aMini">
       <div class="caiu"><small>Carregado</small><b class="num" id="acCarr">—</b></div>
@@ -909,6 +966,7 @@ window.acTela=(nova,dia)=>{
     ${window.manNotaAtiva?manNotaAtiva(B):''}
     ${todosC?`<p class="avisoJa">✓ Todos os produtos foram carregados.</p><button class="primary" data-c="concluir">✓ Finalizar batida</button>`
       :`<button class="primary" data-c="registrar" id="acReg" disabled>${ultimoC?'✓ Registrar último produto':'✓ Registrar e ir para o próximo ▶'}</button>`}
+    </div></div>
     <div class="row"><button data-c="ant"${i>0?'':' disabled'}>◀ Produto anterior</button><button class="lima" data-c="prox"${i<B.itens.length-1?'':' disabled'}>Próximo produto ▶</button></div>
   </section>`+tabela+dia;};
 window.acDepois=()=>{acSyncTopo();const B=acB();if(B&&AC.idx!==B.atual){AC.idx=B.atual;acNovoProduto();}pintarCarga();};

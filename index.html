@@ -821,6 +821,17 @@ body.naInicio .topoTxt h1{font-size:clamp(16px,5vw,28px)!important}
 .tSeta>select{flex:1;min-width:0;border:0!important;background:transparent!important;text-align:center;text-align-last:center;font-weight:800;font-size:1.02rem;-webkit-appearance:none;appearance:none;padding:0 2px!important;text-overflow:clip;margin:0!important;box-shadow:none!important;color:var(--fg)}
 .tSeta.sel{border-color:var(--accent);background:#eef4e0}
 .tNavS{grid-template-columns:auto minmax(0,1fr)!important}.tNavS>button{padding:0 12px!important;min-width:0;font-size:.95rem}.tNav2.tNavS{grid-template-columns:1fr!important}
+/* teclados padrão (todos iguais): teclas quadradinhas, um pouco menores, centralizadas embaixo; o número aparece no próprio campo */
+.teclado{left:50%!important;right:auto!important;transform:translateX(-50%);width:auto!important;max-width:100%;border-radius:16px 16px 0 0}
+.teclado .tecTopo{width:276px;max-width:100%;margin:0 auto;padding:0 2px 4px!important}
+.teclado .tecGrade{grid-template-columns:repeat(3,88px)!important;justify-content:center;gap:6px!important}
+.teclado .tecGrade button{height:60px;min-height:60px!important;padding:0!important;font-size:26px!important}
+.teclado .tecGrade button.tecSec{font-size:1rem!important}
+.teclado .tecAcoes,.teclado .tecAcoes1{width:276px;max-width:100%;margin-left:auto!important;margin-right:auto!important}
+.teclado .tecAcoes button,.teclado .tecAcoes1 button{min-height:48px}
+.teclado .tecAcoes4{grid-template-columns:1fr 1fr!important}
+#teclado #tecValor,#tecBal #balValor,#tecCarga #ctValor{display:none}
+:is(#cBox,#acBox) input.sel{border-color:var(--lima)!important;box-shadow:0 0 0 3px var(--lima-claro)}
 </style>
 </head>
 <body>
@@ -1125,7 +1136,7 @@ body.naInicio .topoTxt h1{font-size:clamp(16px,5vw,28px)!important}
 <div class="toast" id="toast" hidden></div>
 <script>
 'use strict';
-const APP_VERSAO='107';
+const APP_VERSAO='108';
 const APP_DATA='19/10/2026';
 const KEY='confinamento-completo-v1';
 const $=id=>document.getElementById(id);
@@ -1334,7 +1345,11 @@ function compensarCurral(c){try{
   const hj=hojeKey();if(diaAtivo()!==hj||!S.prev)return null;
   if(!S.prevOrig||S.prevOrig.dia!==hj)S.prevOrig={dia:hj,v:{},set:{}};
   const O=S.prevOrig;let orig=O.v[c],setv=O.set[c];
-  let mao=false;if(orig&&setv){for(const k in setv){if(((S.prev[k]||{})[c])!==setv[k]){orig=null;mao=true;break;}}}  // mudaram o previsto à mão: vale o que digitaram
+  /* mudaram o previsto à mão: vale o que digitaram. Mas se o valor só VOLTOU para o original ou para uma compensação anterior
+     (ex.: o previsto veio da nuvem sem a compensação), não é mudança à mão: compensa de novo */
+  const hist=(O.hist&&O.hist[c])||[];
+  let mao=false;if(orig&&setv){for(const k in setv){const atual=((S.prev[k]||{})[c]);if(atual===setv[k])continue;
+      if(atual===orig[k]||hist.some(h=>h&&h[k]===atual))continue;orig=null;mao=true;break;}}
   const regs=HIST.filter(r=>r.dia===hj&&r.curral===c);const feitos=new Set(regs.map(r=>+r.trato));
   if(!orig){orig={};for(let k=1;k<=MAXT;k++){const v=(S.prev[k]||{})[c];if(typeof v==='number'&&v>0)orig[k]=v;
       if(mao&&feitos.has(k))orig[k]=regs.filter(r=>+r.trato===k).reduce((a,r)=>a+(+r.forn||0),0);}}
@@ -1349,12 +1364,27 @@ function compensarCurral(c){try{
   const meio=pend.filter(k=>k!==ult).reduce((a,k)=>a+orig[k],0);
   const novo={};pend.filter(k=>k!==ult).forEach(k=>novo[k]=orig[k]);novo[ult]=Math.max(0,arredPrev(T-real-meio));
   let mudou=false;pend.forEach(k=>{if(!S.prev[k])S.prev[k]={};if(S.prev[k][c]!==novo[k]){S.prev[k][c]=novo[k];mudou=true;}});
-  O.v[c]=orig;O.set[c]=novo;save();
+  O.v[c]=orig;O.set[c]=novo;if(!O.hist)O.hist={};O.hist[c]=((O.hist[c]||[]).concat([novo])).slice(-10);save();
   if(mudou){marcarPrev();const d=real-ks.filter(k=>feitos.has(k)&&!pulou.has(k)).reduce((a,k)=>a+orig[k],0);
     try{window.diagLog&&diagLog('compensou',{curral:c,total:T,realizado:real,dif:d,novo});}catch(e){}
     toast(`${c}: último trato (Trato ${ult}) → ${fmt(novo[ult])} kg (${d>0?'+':''}${fmt(d)} kg compensados)`);}
   return novo;}catch(e){return null;}}
 window.compensarCurral=compensarCurral;
+/* segurança: a compensação feita neste aparelho se perdeu (ex.: o previsto veio da nuvem/recarregou sem ela)? refaz.
+   Só nos currais que este aparelho já compensou hoje (tem o previsto original guardado), para não compensar duas vezes. */
+function recompensar(){try{if((typeof modoVer!=='undefined'&&modoVer)||!S||!S.prev||!S.prevOrig||S.prevOrig.dia!==hojeKey()||diaAtivo()!==hojeKey())return 0;
+  let n=0;Object.keys(S.prevOrig.v||{}).forEach(c=>{const s0=JSON.stringify(Object.keys(S.prev).map(k=>(S.prev[k]||{})[c]));compensarCurral(c);
+    if(JSON.stringify(Object.keys(S.prev).map(k=>(S.prev[k]||{})[c]))!==s0)n++;});
+  if(n){try{window.diagLog&&diagLog('recompensou',{n});}catch(e){}render();}return n;}catch(e){return 0;}}
+window.recompensar=recompensar;setInterval(recompensar,15000);
+/* correção única de 22/10/2026: C-10 e C-9 perderam a compensação do Trato 3 (o previsto voltou da nuvem sem ela) */
+setTimeout(()=>{try{if((typeof modoVer!=='undefined'&&modoVer)||!S||!S.prev||hojeKey()!=='2026-10-22'||diaAtivo()!=='2026-10-22')return;
+  if(localStorage.getItem('fixComp2210'))return;const hj='2026-10-22';let n=0;
+  [['C-10',{1:1120,2:560,3:560},670],['C-9',{1:510,2:260,3:260},270]].forEach(([c,orig,novo])=>{
+    const regs=HIST.filter(r=>r.dia===hj&&r.curral===c);if(!regs.some(r=>+r.trato===2)||regs.some(r=>+r.trato===3))return;
+    if(((S.prev[3]||{})[c])!==orig[3])return;S.prev[3][c]=novo;
+    if(!S.prevOrig||S.prevOrig.dia!==hj)S.prevOrig={dia:hj,v:{},set:{}};S.prevOrig.v[c]=orig;S.prevOrig.set[c]={3:novo};n++;});
+  localStorage.setItem('fixComp2210','1');if(n){marcarPrev();render();toast('Trato 3 atualizado: C-10 = 670 kg e C-9 = 270 kg (compensação)');}}catch(e){}},5000);
 const FS={local:null,rac:null,trato:null,passo:1};
 /* fornecimento ainda não iniciado: sempre começa limpo (entrar no Fornecer, 10 min com o app em segundo plano). Fornecimento aberto fica. */
 function fLimparSetup(){if(typeof filtroForn==='function'&&filtroForn())return;FS.local=null;FS.rac=null;FS.trato=null;FS.tAuto=false;FS.passo=1;}
@@ -1417,11 +1447,12 @@ document.addEventListener('click',e=>{const lb=e.target.closest('[data-floc]');i
   if(e.target.closest('#fIniciar'))return iniciarFornecimentoChecado();
   if(e.target.closest('[data-ffinal]')){(async()=>{if(window.autoDescarregando&&autoDescarregando()){toast('Está fornecendo num curral: registre antes de finalizar.');return;}const f=filtroForn();if(!f)return;
     const L=lista(),regs=regsAtuais(),falta=L.filter(x=>!feito(x.nome,regs)),feitos=L.length-falta.length;
-    if(!await perg(falta.length?`Deseja finalizar este fornecimento? Faltam ${falta.length} curral(is)`:'Deseja finalizar este fornecimento?',falta.length?`Trato ${S.tratoSel}: ${feitos} de ${L.length} currais feitos. Faltam: ${falta.map(x=>x.nome).join(', ')}. Eles ficam sem registro; depois dá para abrir o Trato ${S.tratoSel} de novo e continuar.`:`Trato ${S.tratoSel}: todos os ${L.length} currais feitos.`,'Sim, finalizar','Não, continuar fornecendo'))return;
+    if(!await perg(falta.length?`Deseja finalizar este fornecimento? Faltam ${falta.length} curral(is)`:'Deseja finalizar este fornecimento?',falta.length?`Trato ${S.tratoSel}: ${feitos} de ${L.length} currais feitos. Faltam: ${falta.map(x=>x.nome).join(', ')}. Eles ficam sem registro; depois dá para abrir o Trato ${S.tratoSel} de novo e continuar.`:`Trato ${S.tratoSel}: todos os ${L.length} currais feitos.`,'Sim, finalizar','Não, continuar fornecendo',!falta.length))return;
     if(!filtroForn())return;const tk=L.reduce((a,x)=>a+x.prev,0);
     FS.fim=`✓ Fornecimento finalizado · ${f.local==='C'?'Confinamento':'Pasto'} · Trato ${S.tratoSel} · ${feitos} de ${L.length} curral(is)`;toast(FS.fim);
     try{window.diagLog&&diagLog('forn_finalizado',{local:f.local,trato:S.tratoSel,n:feitos,de:L.length,prev:tk});}catch(e){}
-    FS.local=f.local;FS.rac=f.rac;FS.trato=null;FS.passo=3;S.forn=Object.assign({},f,{ativo:false});save();render();mostrarFornecimento();if(window.aRenderFora)aRenderFora();window.scrollTo({top:0});})();return;}
+    /* fecha tudo: volta para o começo (escolher local), balança recolhida; pronto para outro trato se quiser */
+    FS.local=null;FS.rac=null;FS.trato=null;FS.passo=1;S.forn=Object.assign({},f,{ativo:false});save();render();mostrarFornecimento();try{window.recolherBal&&recolherBal();}catch(e){}if(window.aRenderFora)aRenderFora();window.scrollTo({top:0});})();return;}
   if(e.target.closest('[data-fcancforn]')){(async()=>{if(fornTemRegistro()){toast('Já tem curral tratado neste fornecimento: não dá para cancelar. Use Finalizar fornecimento.');pintarCancForn();return;}if(window.autoDescarregando&&autoDescarregando()){toast('Está fornecendo num curral: registre antes de cancelar.');return;}const f=filtroForn();if(!f)return;
     const L=lista(),regs=regsAtuais(),falta=L.filter(x=>!feito(x.nome,regs)).length;
     if(!await perg('Deseja realmente cancelar o fornecimento?',`Trato ${S.tratoSel}: ${falta} curral(is) ainda sem fornecer. Os currais já registrados continuam salvos.`,'Sim, cancelar','Não, continuar fornecendo'))return;
@@ -1441,7 +1472,7 @@ function proximoTratoSeCompleto(){try{const f=filtroForn();
 window.proximoTratoSeCompleto=proximoTratoSeCompleto;
 /* "Não fornecer neste curral": lança 0 kg, conta como passado no curral */
 /* pergunta antes de ações que não dá para voltar (caixa vermelha) */
-async function perg(tit,txt,sim,nao){return window.confirmaVermelho?await confirmaVermelho(tit,txt,sim,nao):confirm(tit+'\n\n'+txt);}
+async function perg(tit,txt,sim,nao,verde){return window.confirmaVermelho?await confirmaVermelho(tit,txt,sim,nao,verde):confirm(tit+'\n\n'+txt);}
 window.perg=perg;
 async function naoFornecer(){if(bloqueado())return;const L=lista(),c=L[S.atual];if(!c)return;
   if(regsAtuais().some(x=>x.curral===c.nome)){toast(c.nome+' já tem registro neste trato');return;}
@@ -2556,6 +2587,7 @@ async function puxarPrevisto(forcar){
   if(j&&j.ok&&j.dados&&Array.isArray(j.dados.cadastro)&&+j.dados.ts>(S.prevTs||0)){
     if(S.prevPend){const snap=S.prevSnap?JSON.parse(S.prevSnap):{};S.prev=juntarPrev(j.dados.prev||{},S.prev,snap);}else S.prev=j.dados.prev||{};
     aplicarCadastro(j.dados.cadastro);S.cadSnap=JSON.stringify(S.cadastro);S.prevTs=Math.max(+j.dados.ts,S.prevTs||0);S.prevSyncTs=+j.dados.ts;if(!S.prevPend)S.prevSnap=JSON.stringify(S.prev);padronizarNomes();save();render();
+    setTimeout(()=>{try{recompensar();}catch(e){}},300);
   }
 }
 /* Traz sozinho os tratos que outros celulares lançaram (últimos 7 dias), a cada 2 minutos com internet */
@@ -3408,7 +3440,9 @@ function renderAoVivo(){const box=$('aoVivo');if(!modoVer){box.innerHTML='';pint
 let avUltBusca=0;const avAlguemTrabalhando=()=>{if(!avDados)return false;const passou=Date.now()-avRecebido;return Object.values(avDados).some(d=>d&&(d.modo==='carga'&&!d.semBatida||d.modo==='trato'&&!d.fimForn)&&(avAgora-(+d.tsServ||0)+passou)<60000);};
 setInterval(()=>{if(!(modoVer&&navigator.onLine&&document.visibilityState==='visible'&&(!$('viewTrato').hidden||(!avAbriu&&window.abaAtual===''))))return;
   const iv=avAlguemTrabalhando()?2000:5000;if(Date.now()-avUltBusca>=iv-200){avUltBusca=Date.now();puxarAoVivo();}},1000);
-Promise.resolve(iniciar()).catch(()=>{}).then(()=>{
+Promise.resolve(iniciar()).catch(()=>{})
+  /* espera a página terminar de carregar (automacao.js) antes de reabrir a tela: senão o Fornecer abria vazio às vezes */
+  .then(()=>new Promise(r=>document.readyState==='loading'?document.addEventListener('DOMContentLoaded',()=>r(),{once:true}):r())).then(()=>{
   // voltou de uma atualização: abre de novo onde estava
   try{const vp=sessionStorage.getItem('voltarPara');sessionStorage.removeItem('voltarPara');
     let t=null;try{t=JSON.parse(sessionStorage.getItem('telaApp')||'null');}catch(e){}
@@ -3417,7 +3451,8 @@ Promise.resolve(iniciar()).catch(()=>{}).then(()=>{
     if(m==='trato')entrarExec('trato');else if(m==='gest')entrarExec('gest');else if(m==='ver')$('btnModoVer').onclick();
     if(t&&t.aba&&m){if(t.aba==='gest'){if(t.gt){try{GT=t.gt;}catch(e){}}aba('gest');}else aba(t.aba);
       setTimeout(()=>{try{if(window.menuFecha)menuFecha();}catch(e){}},200);
-      if(['auto','autoc'].includes(t.aba)&&window.btAutoVoltar)btAutoVoltar();}}catch(e){}
+      if(['auto','autoc'].includes(t.aba)&&window.btAutoVoltar)btAutoVoltar();
+      if(t.aba==='auto'&&window.aPerguntaVoltou)setTimeout(()=>aPerguntaVoltou(),600);}}catch(e){}
 });
 
 /* ---------- Atualização automática do app ---------- */
