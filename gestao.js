@@ -444,10 +444,16 @@ function tLotes(t){
 /* animais que faltaram num fechamento: o custo fica separado até serem achados */
 function gravarFalta(l,d,cab,peso,share,obs){const K=custoAteDia(l,d),cst={};['compra','alim','op','outros'].forEach(k=>cst[k]=Math.round(K[k]*share*100)/100);
   gPut({uid:novoId('sai'),tipo:'saida',mot:'falta',lote:l.uid,dia:d,cab,peso:Math.round(peso*10)/10,cst,custo:Object.values(cst).reduce((a,v)=>a+v,0),achados:[],obs:obs||''});}
-const campoFaltas=(pre,F)=>`<h3 class="gSubT">❓ Faltaram (sumidos)</h3><div class="gForm"><div class="gCampo meia"><label>Cabeças que faltaram</label><input type="text" inputmode="decimal" id="${pre}falta" value="${esc(F.falta||'')}" placeholder="0" autocomplete="off"></div>
-  <div class="gCampo meia"><label>Peso estimado <span class="gSuf">(kg)</span></label><input type="text" inputmode="decimal" id="${pre}fpeso" value="${esc(F.fpeso||'')}" placeholder="em branco = peso médio" autocomplete="off"></div>
-  <div class="gCampo"><label>Observação</label><input type="text" id="${pre}fobs" value="${esc(F.fobs||'')}" placeholder="ex.: brincos 1023, 1045" autocomplete="off"></div></div>
-  <p class="note">Saem do lote levando o custo deles (pelo peso). O custo fica separado em Lotes › “Animais que faltaram” até serem achados.</p>`;
+const campoFaltas=(pre,F,attr)=>{const A=k=>attr?`data-fc="${k}"`:`id="${pre}${k}"`;return `<h3 class="gSubT">❓ Faltaram (sumidos)</h3><div class="gForm"><div class="gCampo meia"><label>Cabeças que faltaram</label><input type="text" inputmode="decimal" ${A('falta')} value="${esc(F.falta||'')}" placeholder="0" autocomplete="off"></div>
+  <div class="gCampo meia"><label>Calcular o custo pelo</label><select ${A('fmodo')}><option value="atual"${F.fmodo!=='entrada'?' selected':''}>Peso de agora / da venda</option><option value="entrada"${F.fmodo==='entrada'?' selected':''}>Peso de entrada</option></select></div>
+  <div class="gCampo meia"><label>Peso médio <span class="gSuf">(kg)</span></label><input type="text" inputmode="decimal" ${A('fpeso')} value="${esc(F.fpeso||'')}" placeholder="em branco = média do lote" autocomplete="off"></div>
+  <div class="gCampo meia"><label>ou Peso total <span class="gSuf">(kg)</span></label><input type="text" inputmode="decimal" ${A('fpesoT')} value="${esc(F.fpesoT||'')}" autocomplete="off"></div>
+  <div class="gCampo"><label>Observação</label><input type="text" ${A('fobs')} value="${esc(F.fobs||'')}" placeholder="ex.: brincos 1023, 1045" autocomplete="off"></div></div>
+  <p class="note">Saem do lote levando o custo deles. <b>Peso de entrada</b>: o custo é a parte que eles eram do peso de entrada do lote. <b>Peso de agora/venda</b>: entra na conta junto com o peso dos vendidos e dos outros. O custo fica separado em Lotes › “Animais que faltaram” até serem achados.</p>`;};
+function faltaCalc(l,d,tem,F,pesoRef){const cab=Math.max(0,gNum(F.falta)||0),modo=F.fmodo==='entrada'?'entrada':'atual',pm=gNum(F.fpeso),pt=gNum(F.fpesoT);
+  const pE=pesoEntMed(l),p=pm>0?pm:(pt>0&&cab>0?pt/cab:(modo==='entrada'?pE:(pesoRef>0?pesoRef:pesoEm(l,d))));
+  if(modo==='entrada'){const base=tem*pE;return {cab,modo,p,kg:0,fixo:base>0?Math.min(1,cab*p/base):0};}
+  return {cab,modo,p,kg:cab*(p>0?p:0),fixo:null};}
 const faltaPend=s=>(+s.cab||0)-(s.achados||[]).reduce((a,x)=>a+(+x.cab||0),0);
 function faltasAbertas(){return gTodos('saida').filter(s=>s.mot==='falta'&&faltaPend(s)>0&&G.it[s.lote]&&!G.it[s.lote].del).sort(porDia);}
 function painelFaltas(){const F=faltasAbertas();if(!F.length)return '';
@@ -613,16 +619,16 @@ function tApartForm(t){const l=G.it[t.id],hj=hojeKey();t.dia=t.dia||hj;
 function apPrevia(){const t=GT,l=G.it[t.id],box=$('gApRes');if(!box||!l)return null;const d=t.dia,tem=cabPres(l,d);
   const ant=somaDias(d,-1),R=resumoLote(l,ant<l.ent.dia?l.ent.dia:ant),outros=custosDe(l).filter(c=>c.dia<=d).reduce((a,c)=>a+(+c.rs||0),0);
   const custo=custoAteDia(l,d).total,G_=t.g.map(g=>({...g,cab:gNum(g.cab),peso:gNum(g.peso)}));
-  const cabF=Math.max(0,gNum(t.falta)||0),pF=gNum(t.fpeso)>0?gNum(t.fpeso):pesoEm(l,d),kgF=cabF*(pF>0?pF:0);
-  const cab=G_.reduce((a,g)=>a+(g.cab>0?g.cab:0),0)+cabF,kgL=G_.reduce((a,g)=>a+(g.cab>0&&g.peso>0?g.cab*g.peso:0),0),kg=kgL+kgF;
+  const kgL0=G_.reduce((a,g)=>a+(g.cab>0&&g.peso>0?g.cab*g.peso:0),0),cabL0=G_.reduce((a,g)=>a+(g.cab>0?g.cab:0),0),FC=faltaCalc(l,d,tem,t,cabL0?kgL0/cabL0:0),cabF=FC.cab,pF=FC.p,kgF=FC.kg;
+  const cab=cabL0+cabF,kgL=kgL0,kg=kgL+kgF,shF=FC.fixo!=null?FC.fixo:(kg?kgF/kg:0),fL=k=>kgL?(1-shF)*k/kgL:0;
   const cabL=cab-cabF,pesoM=cabL?kgL/cabL:NaN,pE=pesoEntMed(l),ganho=kgL-cabL*pE,dias=difDias(l.ent.dia,d);
-  const lin=G_.map(g=>{const k=g.cab>0&&g.peso>0?g.cab*g.peso:0;return `<tr><td>${esc(g.nome||'—')}</td><td>${nf(g.cab)}</td><td>${nf(g.peso,1)}</td><td>${pc(kg?k/kg*100:NaN,1)}</td><td>${rs(kg?custo*k/kg:NaN)}<small>${rs(kg&&g.cab?custo*k/kg/g.cab:NaN)}/cab</small></td></tr>`;}).join('')+(cabF?`<tr><td>Faltaram<small>custo fica separado</small></td><td>${nf(cabF)}</td><td>${nf(pF,1)}</td><td>${pc(kg?kgF/kg*100:NaN,1)}</td><td>${rs(kg?custo*kgF/kg:NaN)}</td></tr>`:'');
+  const lin=G_.map(g=>{const k=g.cab>0&&g.peso>0?g.cab*g.peso:0;return `<tr><td>${esc(g.nome||'—')}</td><td>${nf(g.cab)}</td><td>${nf(g.peso,1)}</td><td>${pc(fL(k)*100,1)}</td><td>${rs(custo*fL(k))}<small>${rs(g.cab?custo*fL(k)/g.cab:NaN)}/cab</small></td></tr>`;}).join('')+(cabF?`<tr><td>Faltaram<small>custo fica separado</small></td><td>${nf(cabF)}</td><td>${nf(pF,1)}<small>${t.fmodo==='entrada'?'entrada':'agora'}</small></td><td>${pc(shF*100,1)}</td><td>${rs(custo*shF)}</td></tr>`:'');
   box.innerHTML=`<div class="stat gStat3">${st('Cabeças',`${nf(cab)} de ${nf(tem)}`,cab===tem?'':'bad')}${st('Peso médio',nf(pesoM,1)+' kg')}${st('Ganho (GMD)',cabL?nf(ganho/cabL/Math.max(1,dias),2)+' kg/dia':'—')}</div>
     ${cab!==tem?`<p class="aviso warn">Em ${dB(d)} o lote tem ${nf(tem)} cabeças: a soma dos lotes novos precisa dar ${nf(tem)} (${cab<tem?'faltam '+nf(tem-cab):'sobram '+nf(cab-tem)}).</p>`:''}
     <div class="tablebox"><table><thead><tr><th>Lote novo</th><th>Cab.</th><th>Peso</th><th>% do peso</th><th>Custo que leva</th></tr></thead><tbody>${lin}</tbody></table></div>
     <p class="note">Custo do lote até a apartação: <b>${rs(custo)}</b> (compra + alimentação + operacional + outros). GMD estimado = (peso da pesagem − peso de entrada ${nf(pE,1)} kg) ÷ ${nf(dias)} dias.</p>`;
-  return {tem,cab,G_,d,cabF,pF,shF:kg?kgF/kg:0};}
-function apLer(){document.querySelectorAll('[data-ap]').forEach(e=>{const [i,k]=e.dataset.ap.split('|');if(GT.g&&GT.g[i])GT.g[i][k]=e.value;});const d=$('gApDia');if(d&&d.value)GT.dia=d.value;['falta','fpeso','fobs'].forEach(k=>{const e=$('gAp'+k);if(e)GT[k]=e.value;});}
+  return {tem,cab,G_,d,cabF,pF,shF};}
+function apLer(){document.querySelectorAll('[data-ap]').forEach(e=>{const [i,k]=e.dataset.ap.split('|');if(GT.g&&GT.g[i])GT.g[i][k]=e.value;});const d=$('gApDia');if(d&&d.value)GT.dia=d.value;['falta','fmodo','fpeso','fpesoT','fobs'].forEach(k=>{const e=$('gAp'+k);if(e)GT[k]=e.value;});}
 function salvaApart(id){apLer();const l=G.it[id],P=apPrevia();if(!P)return;const {d,tem,cab,G_,cabF,pF,shF}=P;
   if(d<l.ent.dia)return toast('A data é antes da entrada do lote');if(d>hojeKey())return toast('A data não pode ser depois de hoje');
   if(G_.some(g=>!g.nome.trim()))return toast('Coloque o nome de cada lote novo');
@@ -716,31 +722,31 @@ function tFechaForm(t){const l=G.it[t.id],hj=hojeKey(),cfg=gCfg();
         <div class="gCampo meia"><label>Tipo</label><select id="gf_cprCat" data-fc="cprCat">${TIPOS_CPR.map(x=>`<option${x===F.cprCat?' selected':''}>${esc(x)}</option>`).join('')}</select></div></div>
       <div class="gCampo"><label>Observação</label><input type="text" data-fc="obs" value="${esc(F.obs)}" autocomplete="off"></div></div>
     <h3 class="gSubT">↔ Os que sobraram</h3>${trs}<button data-g="fcAdd">＋ Mais um lote</button>
-    <h3 class="gSubT">❓ Faltaram (sumidos)</h3><div class="gForm">${inp('falta','Cabeças que faltaram',F.falta,1,'','0')}${inp('fpeso','Peso estimado',F.fpeso,1,'kg','em branco = peso médio')}${inp('fobs','Observação',F.fobs,0,'','ex.: brincos 1023, 1045')}</div>
-    <p class="note">Saem do lote levando o custo deles (pelo peso), e o lote fecha só com os outros. O custo fica <b>separado</b> em Lotes › “Animais que faltaram”; quando forem achados, toque em “Achou” e escolha o lote (ou crie um) — eles entram com esse custo.</p>
+    ${campoFaltas('',F,1)}
     <div id="gFcRes" class="gApRes"></div>
     <button class="primary" data-g="salvaFecha" data-id="${l.uid}">💲 Confirmar venda + sobra</button></section>`;}
 function fcLer(){const F=GT.f;if(!F)return;document.querySelectorAll('[data-fc]').forEach(e=>F[e.dataset.fc]=e.value);let mudou=false;document.querySelectorAll('[data-ft]').forEach(e=>{const [i,k]=e.dataset.ft.split('|');if(F.tr[i]){if(k==='dest'&&(F.tr[i].dest==='__novo')!==(e.value==='__novo'))mudou=true;F.tr[i][k]=e.value;}});
   if(mudou)setTimeout(()=>{gRender();},0);
   const n=$('gFcNovo');if(n)n.hidden=F.comp!=='__novo';}
 /* contas do fechamento: pesos de cada grupo, custo que cada lote leva e o que fica com os vendidos */
-function fcCalc(l,F){const d=F.dia||hojeKey(),tem=cabPres(l,d),cabV=gNum(F.cab)||0,cabF=Math.max(0,gNum(F.falta)||0),pF=gNum(F.fpeso)>0?gNum(F.fpeso):pesoEm(l,d),kgF=cabF*(pF>0?pF:0);
+function fcCalc(l,F){const d=F.dia||hojeKey(),tem=cabPres(l,d),cabV=gNum(F.cab)||0;
   const T=F.tr.map(g=>{const c=gNum(g.cab)||0,pt=gNum(g.pesoT),pm=gNum(g.peso);const p=pm>0?pm:(pt>0&&c>0?pt/c:NaN);const nv=g.dest==='__novo';return {dest:g.dest,nv,nome:g.nome||'',c:g.c,r:g.r,obs:g.obs||'',l:nv?{nome:(g.nome||'').trim()||'(lote novo)',ent:{dia:'0000'}}:G.it[g.dest],cab:c,peso:p,kg:c>0&&p>0?c*p:0};});
   const kgT=T.reduce((a,g)=>a+g.kg,0),pL=gNum(F.pesoL);let pV=gNum(F.peso);if(!(pV>0)&&gNum(F.pesoT)>0&&cabV>0)pV=gNum(F.pesoT)/cabV;
   let deLote=false;if(!(pV>0)&&pL>0&&cabV>0&&pL>kgT){pV=(pL-kgT)/cabV;deLote=true;}
-  const kgV=cabV>0&&pV>0?cabV*pV:0,kgTot=kgV+kgT+kgF,K=custoAteDia(l,d);
-  T.forEach(g=>{g.sh=kgTot?g.kg/kgTot:0;g.cst={};['compra','alim','op','outros'].forEach(k=>g.cst[k]=K[k]*g.sh);g.custo=K.total*g.sh;});
+  const FC=faltaCalc(l,d,tem,F,pV),cabF=FC.cab,pF=FC.p,kgF=FC.kg;
+  const kgV=cabV>0&&pV>0?cabV*pV:0,kgTot=kgV+kgT+kgF,K=custoAteDia(l,d),fixo=FC.fixo!=null?FC.fixo:0,resto=1-fixo;
+  T.forEach(g=>{g.sh=kgTot?g.kg/kgTot*resto:0;g.cst={};['compra','alim','op','outros'].forEach(k=>g.cst[k]=K[k]*g.sh);g.custo=K.total*g.sh;});
   /* no dia da venda os vendidos ainda comem no curral (os transferidos já comem no lote novo): esse trato fica com os vendidos */
   let extraD=0;try{if(cabV>0){const x=diaLote(l,d,gCtx());if(x&&ok(x.custoR))extraD=x.custoR*(x.juntos>1?cabV/Math.max(1,x.cab):1);}}catch(e){}
-  const cabTot=cabV+cabF+T.reduce((a,g)=>a+g.cab,0),shF=kgTot?kgF/kgTot:0,custoF=K.total*shF,cstF={};['compra','alim','op','outros'].forEach(k=>cstF[k]=K[k]*shF);const custoV=K.total-T.reduce((a,g)=>a+g.custo,0)-custoF+extraD;
+  const cabTot=cabV+cabF+T.reduce((a,g)=>a+g.cab,0),shF=FC.fixo!=null?fixo:(kgTot?kgF/kgTot:0),custoF=K.total*shF,cstF={};['compra','alim','op','outros'].forEach(k=>cstF[k]=K[k]*shF);const custoV=K.total-T.reduce((a,g)=>a+g.custo,0)-custoF+extraD;
   const rc=gNum(F.rc)>0&&gNum(F.rc)<100?gNum(F.rc):50,s={cab:cabV,peso:pV,rc,unid:F.unid,preco:gNum(F.preco)||0,desc:gNum(F.desc)||0},rec=valorVenda(s);
-  return {d,tem,cabV,cabF,pF,custoF,cstF,pV,deLote,kgV,T,kgTot,K,cabTot,custoV,rc,rec,res:rec-custoV};}
+  return {d,tem,cabV,cabF,pF,shF,custoF,cstF,pV,deLote,kgV,T,kgTot,K,cabTot,custoV,rc,rec,res:rec-custoV};}
 function fcPrevia(){const box=$('gFcRes'),l=G.it[GT.id];if(!box||!l||!GT.f)return;const X=fcCalc(l,GT.f);
   box.innerHTML=`<div class="stat gStat3">${st('Cabeças',`${nf(X.cabTot)} de ${nf(X.tem)}`,X.cabTot===X.tem?'':'bad')}${st('Peso dos vendidos',X.pV>0?nf(X.pV,1)+` kg<small>${X.deLote?'pelo peso do lote inteiro':'média'}</small>`:'—')}${st('Peso total',nf(X.kgTot)+' kg')}</div>
     ${X.cabTot!==X.tem?`<p class="aviso warn">Em ${dB(X.d)} o lote tem ${nf(X.tem)} cabeças: vendidos + os que vão para outros lotes + os que faltaram precisam dar ${nf(X.tem)} (${X.cabTot<X.tem?'faltam '+nf(X.tem-X.cabTot):'sobram '+nf(X.cabTot-X.tem)}).</p>`:''}
     <div class="tablebox"><table><thead><tr><th>Para onde</th><th>Cab.</th><th>Peso</th><th>% peso</th><th>Custo</th></tr></thead><tbody>
-    <tr><td><b>Vendidos</b></td><td>${nf(X.cabV)}</td><td>${nf(X.pV,1)}</td><td>${pc(X.kgTot?X.kgV/X.kgTot*100:NaN,1)}</td><td>${rs(X.custoV)}<small>${rs(X.cabV?X.custoV/X.cabV:NaN)}/cab</small></td></tr>
-    ${X.cabF?`<tr><td>Faltaram<small>custo fica separado</small></td><td>${nf(X.cabF)}</td><td>${nf(X.pF,1)}<small>${gNum(GT.f.fpeso)>0?'estim.':'médio'}</small></td><td>${pc(X.kgTot?X.cabF*X.pF/X.kgTot*100:NaN,1)}</td><td>${rs(X.custoF)}<small>${rs(X.cabF?X.custoF/X.cabF:NaN)}/cab</small></td></tr>`:''}
+    <tr><td><b>Vendidos</b></td><td>${nf(X.cabV)}</td><td>${nf(X.pV,1)}</td><td>${pc(X.kgTot?X.kgV/X.kgTot*100*(1-(GT.f.fmodo==='entrada'?X.shF:0)):NaN,1)}</td><td>${rs(X.custoV)}<small>${rs(X.cabV?X.custoV/X.cabV:NaN)}/cab</small></td></tr>
+    ${X.cabF?`<tr><td>Faltaram<small>custo fica separado</small></td><td>${nf(X.cabF)}</td><td>${nf(X.pF,1)}<small>${GT.f.fmodo==='entrada'?'entrada':'agora'}</small></td><td>${pc(X.shF*100,1)}</td><td>${rs(X.custoF)}<small>${rs(X.cabF?X.custoF/X.cabF:NaN)}/cab</small></td></tr>`:''}
     ${X.T.map(g=>`<tr><td>${esc(g.l?g.l.nome:'(escolha o lote)')}</td><td>${nf(g.cab)}</td><td>${nf(g.peso,1)}</td><td>${pc(g.sh*100,1)}</td><td>${rs(g.custo)}<small>${rs(g.cab?g.custo/g.cab:NaN)}/cab</small></td></tr>`).join('')}</tbody></table></div>
     <div class="gLinhas">${lin('Custo do lote até a data',rs(X.K.total))}${lin('Receita da venda',X.rec>0?rs(X.rec):'—')}${lin(X.res>=0?'Lucro (vendidos)':'Prejuízo (vendidos)',X.rec>0?rs(X.res):'—',X.rec>0?(X.res>=0?'ok':'bad'):'')}</div>`;}
 function salvaFecha(id){fcLer();const l=G.it[id],F=GT.f,X=fcCalc(l,F),d=X.d;
@@ -1702,7 +1708,7 @@ $('gBox').addEventListener('click',e=>{
       let cp=fv('comp');if(cp==='__novo'){const nm=(($('gf_cprNome')||{}).value||'').trim();if(!nm)return toast('Digite o nome do novo comprador');
         const ja=gTodos('comprador').find(c=>alfa(c.nome,nm)===0);if(ja)cp=ja.uid;else{cp=novoId('cpr');gPut({uid:cp,tipo:'comprador',nome:nm,cat:$('gf_cprCat').value});}}
       s.comp=cp||'';if(!(s.preco>0)&&!confirm('Salvar sem o preço de venda?'))return;}
-    if(cabF>0){const pF=fn('vfpeso')>0?fn('vfpeso'):pesoEm(l,dia),base=tem*pesoEm(l,dia);gravarFalta(l,dia,cabF,pF,base>0?Math.min(1,cabF*pF/base):0,fv('vfobs'));}
+    if(cabF>0){const FC=faltaCalc(l,dia,tem,{falta:fv('vfalta'),fmodo:fv('vfmodo'),fpeso:fv('vfpeso'),fpesoT:fv('vfpesoT')},fn('peso')),base=tem*pesoEm(l,dia);gravarFalta(l,dia,cabF,FC.p,FC.fixo!=null?FC.fixo:(base>0?Math.min(1,FC.kg/base):0),fv('vfobs'));}
     gPut(s);toast(old?'Venda atualizada':m?'Morte lançada':'Saída lançada');return gVoltar();}
   if(a==='apAdd'){apLer();GT.g.push({nome:`${G.it[GT.id].nome} ${String.fromCharCode(65+GT.g.length)}`,cab:'',peso:'',c:'',r:(GT.g[0]||{}).r||''});return gRender();}
   if(a==='apRm'){apLer();GT.g.splice(+b.dataset.i,1);return gRender();}
@@ -1783,7 +1789,7 @@ $('gBox').addEventListener('change',e=>{const s_=e.target.closest('select[data-n
 $('gBox').addEventListener('input',e=>{if(GT.t==='transfForm')trPrevia();if(GT.t==='fechaForm'){fcLer();fcPrevia();}});
 $('gBox').addEventListener('change',e=>{if(GT.t==='fechaForm'){fcLer();fcPrevia();}});
 $('gBox').addEventListener('change',e=>{if(GT.t==='transfForm')trPrevia();if(GT.t==='achouForm'&&e.target.id==='gf_aDest'&&$('gAchNovo'))$('gAchNovo').hidden=e.target.value!=='__novo';});
-$('gBox').addEventListener('input',e=>{if(GT.t==='apartForm'&&e.target.matches&&(e.target.matches('[data-ap]')||/^gAp(falta|fpeso)$/.test(e.target.id))){apLer();apPrevia();}});
+$('gBox').addEventListener('input',e=>{if(GT.t==='apartForm'&&e.target.matches&&(e.target.matches('[data-ap]')||/^gAp(falta|fpeso|fpesoT)$/.test(e.target.id))){apLer();apPrevia();}});
 $('gBox').addEventListener('input',e=>{
   if(e.target.matches('[data-div]')){const n=e.target.dataset.div,v=[...document.querySelectorAll(`#gBox [data-div="${n}"]`)].map(i=>gNum(i.value)||0),t=v.reduce((a,b)=>a+b,0),el=document.querySelector(`#gBox [data-divsoma="${n}"]`);if(el){el.textContent=nf(t,1)+'%';el.classList.toggle('bad',Math.abs(t-100)>0.5);}}
   const t=e.target;
