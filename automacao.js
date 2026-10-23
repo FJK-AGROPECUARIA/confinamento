@@ -100,8 +100,8 @@ const css=`
 #cfgTBox .aCores{margin:10px 0 4px;padding:10px;border:1px solid var(--line);border-radius:10px;display:grid;gap:6px;font-size:.88rem}
 #cfgTBox .aCores i{display:inline-block;width:22px;height:16px;border-radius:4px;margin-right:8px;vertical-align:-3px}
 #cfgTBox .aCores i.pisca{animation:aPisca .5s steps(2) infinite}#cfgTBox .aCores i.pisca2{animation:aPisca2 .4s steps(2) infinite}
-:is(#aBox,#acBox,#aoVivo) .aFalta.passou{background:#6a1b9a;animation:aPisca2 .4s steps(2) infinite}
-@keyframes aPisca2{50%{background:#38006b}}
+:is(#aBox,#acBox,#aoVivo) .aFalta.passou{background:#000;color:#fff;animation:aPisca2 .4s steps(2) infinite}
+@keyframes aPisca2{50%{background:#3a3a3a}}
 @keyframes aPisca{50%{background:#7f0000}}
 :is(#aBox,#acBox,#aoVivo) .aMini{display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px}
 :is(#aBox,#acBox,#aoVivo) .aMini div{background:var(--chip);border-radius:10px;padding:6px 8px}
@@ -824,7 +824,7 @@ function pintarPeso0(){
   if(z&&z.semPrev){$('aFaltaTit').textContent='Sem previsto';$('aFalta').textContent=caiu==null?'—':fmt(caiu);fb.className='aFalta cinza';$('aFaltaTxt').textContent='fornecido até agora';}
   else if(z){$('aFalta').textContent=fmt(z.falta);fb.className='aFalta '+z.z;
     $('aFaltaTxt').textContent=z.falta<0?'DO PREVISTO':z.falta===0?'NO PONTO!':'\u00a0';
-    if(z.falta<0)$('aFalta').textContent=fmt(-z.falta);}
+    if(z.falta<0)$('aFalta').textContent='-'+fmt(-z.falta);}
   else{$('aFalta').textContent=cur?fmt(cur.prev):'—';fb.className='aFalta cinza';$('aFaltaTxt').textContent=A.fonte?'esperando peso inicial':'conecte a balança';}
   const et=$('aEtapa');let txt,cl='';
   pintarPausa();
@@ -1045,7 +1045,7 @@ function pintarCarga0(){
   $('acAlvo').textContent=it&&ok(it.ini)?fmt(it.ini+it.prev):'—';
   $('acCarr').textContent=it&&ok(it.real)?fmt(it.real):z?fmt(z.carregado):'—';
   $('acFaltaTit').textContent=(z&&z.falta<0)?'PASSOU':'Carregar';
-  if(z){$('acFalta').textContent=z.falta<0?fmt(-z.falta):fmt(z.falta);fb.className='aFalta '+z.z;
+  if(z){$('acFalta').textContent=z.falta<0?'-'+fmt(-z.falta):fmt(z.falta);fb.className='aFalta '+z.z;
     $('acFaltaTxt').textContent=z.falta<0?'DO PREVISTO':z.falta===0?'NO PONTO!':'\u00a0';}
   else{$('acFalta').textContent=it?fmt(ok(it.real)?it.real:it.prev):'—';fb.className='aFalta cinza';
     $('acFaltaTxt').textContent=it&&ok(it.real)?'já carregado':A.fonte?'esperando peso inicial':'conecte a balança';}
@@ -1158,7 +1158,7 @@ function pintarCores(){const el=$('cfgT_cores');if(!el)return;const c=cfg();
   <div><i style="background:#f2b705"></i>Amarelo · faltam ${fmt(+c.amarelo)} kg ou menos (apito lento)</div>
   <div><i style="background:#c62828"></i>Vermelho · faltam ${fmt(+c.vermelho)} kg ou menos (apito rápido)</div>
   <div><i class="pisca" style="background:#c62828"></i>Vermelho piscando · faltam ${fmt(+c.continuo)} kg ou menos (apito direto)</div>
-  <div><i class="pisca2" style="background:#6a1b9a"></i>Roxo piscando · passou do previsto (negativo), apito bem rápido</div>`;}
+  <div><i class="pisca2" style="background:#000"></i>Preto piscando · passou do previsto (mostra quanto passou com sinal de menos), apito bem rápido</div>`;}
 function preencherCfgT(){if(!$('cfgT_tol'))return;const c=cfg();pintarCores();
   CAMPOS.forEach(([k])=>{const el=$('cfgT_'+k);if(document.activeElement!==el)el.value=c[k];});
   if(document.activeElement!==$('cfgT_ws'))$('cfgT_ws').value=c.ws;if(document.activeElement!==$('cfgT_ble'))$('cfgT_ble').value=c.bleUuid||'';if(document.activeElement!==$('cfgT_cmd'))$('cfgT_cmd').value=c.bleCmd||'';$('cfgT_som').checked=!!c.som;if($('cfgT_tag'))$('cfgT_tag').checked=!!c.tagOn;if($('cfgT_inst'))$('cfgT_inst').checked=+c.fornInst!==0;}

@@ -697,7 +697,7 @@ body.comteclado .wrap{padding-bottom:300px!important}
 .gCochoMin .gSelo{width:84px!important;min-width:84px!important;max-width:84px!important}.gCochoMin .gSelo small{color:var(--led)!important}.gCochoMin .gSelo.pasto small{color:#d9ef7a!important}.gCochoMin>span{min-width:0}
 .gMinBase{margin-left:auto;font-style:normal;font-size:.68rem;line-height:1.25;color:var(--muted);text-align:right;flex:none}.gMinBase b{font-size:.78rem;color:var(--fg)}
 .gVoltarFim{margin-top:12px;width:100%}
-.gCochoMin{display:flex;align-items:center;gap:12px;width:100%;text-align:left;padding:8px 10px;margin:0 0 8px;background:#eef4e0;border:2px solid #cfe3a0;border-radius:14px}.gCochoMin .gSelo{width:96px;min-width:96px!important;max-width:96px!important;padding:6px}.gCochoMin span{display:flex;flex-direction:column;font-size:.95rem}.gCochoMin small{font-size:.75rem;color:var(--muted);font-weight:500}
+.gCochoMin .gMinHora{display:block;font-style:normal;font-weight:800;font-size:.9rem;color:var(--ink,#11253d);margin-bottom:2px}.gCochoMin{display:flex;align-items:center;gap:12px;width:100%;text-align:left;padding:8px 10px;margin:0 0 8px;background:#eef4e0;border:2px solid #cfe3a0;border-radius:14px}.gCochoMin .gSelo{width:96px;min-width:96px!important;max-width:96px!important;padding:6px}.gCochoMin span{display:flex;flex-direction:column;font-size:.95rem}.gCochoMin small{font-size:.75rem;color:var(--muted);font-weight:500}
 .icoCurral{width:1.15em;height:1.15em;vertical-align:-.2em;flex:none}
 .gEstBtns{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin:8px 0}.gEstBtns button{margin:0;padding:10px 4px;font-size:.88rem}
 .gEstIt small{display:block;color:var(--muted);font-size:.78rem;margin-top:2px}.gEstSaldo{font-weight:800;white-space:nowrap}.gEstBaixo{border-color:#c62828!important}.gEstBaixo .gEstSaldo{color:#c62828}
@@ -1148,7 +1148,7 @@ body.naInicio .topoTxt h1{font-size:clamp(16px,5vw,28px)!important}
 <div class="toast" id="toast" hidden></div>
 <script>
 'use strict';
-const APP_VERSAO='117';
+const APP_VERSAO='118';
 const APP_DATA='19/10/2026';
 const KEY='confinamento-completo-v1';
 const $=id=>document.getElementById(id);
@@ -3375,7 +3375,7 @@ function avTelaSint(d,carga){const ini=parseFloat(d.ini),fim=parseFloat(d.fim),p
   const feito=isNaN(fim)?0:(carga?fim-ini:ini-fim),falta=pv-feito,alvo=carga?ini+pv:ini-pv;
   const cor=falta<0?'passou':falta<=Math.max(15,pv*.03)?'vermelho':falta<=Math.max(60,pv*.12)?'amarelo':'verde';
   return {peso:isNaN(fim)?'—':fmt(fim),pesoTxt:'',etapa:feito>0?(carga?`▲ Carregando ${d.prod||''}`:`▼ Fornecendo no ${d.curral||''}`):(carga?`Pronto pra carregar ${d.prod||''}`:`Pronto pra fornecer no ${d.curral||''}`),
-    etCl:'aEtapa '+(feito>0?'desc':'pronto'),fCl:'aFalta '+cor,fTit:falta<0?'PASSOU':(carga?'Carregar':'Fornecer'),fVal:fmt(Math.abs(falta)),
+    etCl:'aEtapa '+(feito>0?'desc':'pronto'),fCl:'aFalta '+cor,fTit:falta<0?'PASSOU':(carga?'Carregar':'Fornecer'),fVal:falta<0?'-'+fmt(-falta):fmt(falta),
     fTxt:falta<0?'DO PREVISTO':'\u00a0',feito:fmt(Math.max(0,feito)),ini:fmt(ini),alvo:fmt(alvo)};}
 function avTelaHTML(d,carga){const T=d.tela;
   return `<div class="avEspelho"><div class="aPeso"><div><small>Balança (kg)</small><em>${esc(T.pesoTxt||'')}</em></div><b class="num">${esc(T.peso||'—')}</b></div>
