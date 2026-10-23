@@ -1097,23 +1097,7 @@ function montarCfgT(){const box=$('cfgTBox');if(!box||box.dataset.ok)return;box.
     <input id="cfgT_cmd" type="text" autocapitalize="off" autocorrect="off" spellcheck="false" placeholder="deixe vazio se a balança manda sozinha">
     <label for="cfgT_ws" style="margin-top:8px">Endereço da caixinha Wi-Fi</label>
     <input id="cfgT_ws" type="text" autocapitalize="off" autocorrect="off" spellcheck="false">
-  </section>
-  <section class="panel">
-    <div class="curhead"><h2>🏷 Leitor de tag</h2></div>
-    <label class="aChk"><input type="checkbox" id="cfgT_tag"> Usar Tag</label>
-    <label class="aChk"><input type="checkbox" id="cfgT_inst"> Fornecer instantâneo (igual ao visor da balança)</label>
-    <p class="note">Cada curral tem a sua tag (Gestão › Currais). Ao ler a tag de outro curral, o app registra o curral que estava fornecendo e passa para o curral da tag. Curral sem previsto: pergunta se quer fornecer mesmo assim. Tag sem curral (fim de linha) só registra o curral que estava fornecendo. Só funciona no Fornecer da Automação. Leituras repetidas da mesma tag são ignoradas. Se o leitor cair, continue no manual (trocar curral e Registrar).</p>
-    <p class="note">Leitor aceito: Bluetooth BLE (serial) ou leitor tipo teclado (HID), que digita o código e dá Enter.</p>
-  </section>
-  <section class="panel">
-    <div class="curhead"><h2>🔊 Apito</h2></div>
-    <label class="aChk"><input type="checkbox" id="cfgT_som"> Apito ligado (sem vibração)</label>
-    <p class="note">Funciona como sensor de ré: começa espaçado no amarelo e vai apertando até o direto, que é um bip bem rápido. Quando o peso para de cair, o apito para na hora.</p>
-    <button id="cfgT_teste">🔊 Testar apito (lento → rápido → direto)</button>
-    <button id="cfgT_padrao" style="margin-top:6px">Voltar ao padrão</button>
-  </section>
-  <section class="panel">
-    <div class="curhead"><h2>📖 Como conectar a balança</h2></div>
+    <h3 class="gSub" style="margin-top:16px">📖 Como conectar a balança</h3>
     <ol class="note" style="padding-left:18px;margin:6px 0">
       <li>Feche o app <b>TAP Feed</b> (a balança aceita um aparelho por vez).</li>
       <li>Use o <b>Chrome</b>. Na Automação, toque em <b>🔷 Balança Bluetooth</b> e escolha <b>NEW EZ</b>.</li>
@@ -1129,6 +1113,20 @@ function montarCfgT(){const box=$('cfgTBox');if(!box||box.dataset.ok)return;box.
       <li>Na Automação, toque em <b>📶 Caixinha Wi-Fi</b>. O app tenta o endereço salvo e as portas 8000 e 6432; a que responder fica salva.</li>
       <li>Se o Chrome bloquear: toque no cadeado ao lado do endereço › Configurações do site › Conteúdo não seguro › <b>Permitir</b>.</li>
       <li>Na caixinha (página 10.10.100.254) o WebSocket precisa estar ligado e a velocidade da serial igual à do indicador.</li></ol></details>
+  </section>
+  <section class="panel">
+    <div class="curhead"><h2>🏷 Leitor de tag</h2></div>
+    <label class="aChk"><input type="checkbox" id="cfgT_tag"> Usar Tag</label>
+    <label class="aChk"><input type="checkbox" id="cfgT_inst"> Fornecer instantâneo (igual ao visor da balança)</label>
+    <p class="note">Cada curral tem a sua tag (Gestão › Currais). Ao ler a tag de outro curral, o app registra o curral que estava fornecendo e passa para o curral da tag. Curral sem previsto: pergunta se quer fornecer mesmo assim. Tag sem curral (fim de linha) só registra o curral que estava fornecendo. Só funciona no Fornecer da Automação. Leituras repetidas da mesma tag são ignoradas. Se o leitor cair, continue no manual (trocar curral e Registrar).</p>
+    <p class="note">Leitor aceito: Bluetooth BLE (serial) ou leitor tipo teclado (HID), que digita o código e dá Enter.</p>
+  </section>
+  <section class="panel">
+    <div class="curhead"><h2>🔊 Apito</h2></div>
+    <label class="aChk"><input type="checkbox" id="cfgT_som"> Apito ligado (sem vibração)</label>
+    <p class="note">Funciona como sensor de ré: começa espaçado no amarelo e vai apertando até o direto, que é um bip bem rápido. Quando o peso para de cair, o apito para na hora.</p>
+    <button id="cfgT_teste">🔊 Testar apito (lento → rápido → direto)</button>
+    <button id="cfgT_padrao" style="margin-top:6px">Voltar ao padrão</button>
   </section>
   <section class="panel">
     <details id="cfgDados"><summary>🔧 Dados recebidos da balança (para teste)</summary>
