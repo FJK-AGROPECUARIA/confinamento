@@ -195,7 +195,7 @@ button.fFinal{margin-top:8px!important;background:#f2b705!important;border-color
 .naoForn{margin-top:8px;border-color:#b26a00;color:#b26a00;font-weight:700}
 body.somenteVer .naoForn{display:none!important}
 .escolhaModo p{margin:6px 0;text-align:center;font-size:1.05rem;font-weight:600;color:var(--muted)}
-.stat{display:flex;gap:10px;flex-wrap:wrap}.gCbTab td,.gCbTab th{font-size:.78rem;padding:4px 5px}.gCbTab td small{color:var(--muted)}.gCbMais{color:#b26a00;font-weight:700}.gCbMenos{color:#1565c0;font-weight:700}.gCbBloco{border-top:2px solid var(--line);margin-top:10px;padding-top:6px}.gCbRes{display:grid;grid-template-columns:1fr auto;gap:2px 10px;font-size:.85rem;background:#f3f7dc;border-radius:10px;padding:8px 10px;margin-top:6px}.gCbRes>b{text-align:right}#hCompSec{padding:10px 14px!important}.hCompLin{display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap}.hCompLin>span:first-child{font-size:.8rem;font-weight:700;color:var(--muted)}.hCompBts{display:flex;gap:6px}.hCompBts button{width:auto!important;min-height:0!important;margin:0!important;padding:5px 10px!important;font-size:.78rem!important;border-radius:999px!important}.stat.st4>div{flex:1 1 40%}#hFalta.hFaltaTem{color:#b26a00}
+.stat{display:flex;gap:10px;flex-wrap:wrap}.gCbTab td,.gCbTab th{font-size:.78rem;padding:4px 5px}.gCbTab td small{color:var(--muted)}.gCbMais{color:#b26a00;font-weight:700}.gCbMenos{color:#1565c0;font-weight:700}.gCbBloco{border-top:2px solid var(--line);margin-top:10px;padding-top:6px}.gCbRes{display:grid;grid-template-columns:1fr auto;gap:2px 10px;font-size:.85rem;background:#f3f7dc;border-radius:10px;padding:8px 10px;margin-top:6px}.gCbRes>b{text-align:right}.gCoLocNav{margin:10px 0}.fzSalvaLin{display:grid;gap:8px;margin:12px 0}.fzEditando{background:#fff4d6;border-radius:10px;padding:8px 10px;color:#7a5a00}.pvLocBox,#pvTN{margin:6px 0}#pvTN>*,#linhas>*{margin-top:0!important;margin-bottom:0!important}#viewPrev .somaLinha{margin:8px 0}.hNavB .gDataBox span .icoCurral{margin-right:4px}.zootBox .zTit{margin:0 0 8px}.zootBox .zNavDia{margin-bottom:8px}.zootBox .zLocNav{margin-bottom:10px}.hNavB .gNavData{flex:1;min-width:0}.hNavB .gDataBox select{position:absolute;inset:0;opacity:0;width:100%;height:100%;border:0;cursor:pointer}.hNavB .gDataBox span{font-weight:700;font-size:1.05rem}.hNavB .gSeta{min-height:46px;border-radius:10px}.hNavB .gSeta:disabled{opacity:.35}.hNavUm{display:flex!important;width:100%;gap:8px;align-items:stretch}.hNavLbl{flex:0 0 70px;width:70px;box-sizing:border-box;align-self:stretch!important;display:flex;align-items:center;justify-content:center;text-align:center;padding:4px 12px;border-radius:14px;border:2px solid var(--line,#dde3ea);background:#fff;color:var(--ink,#11253d);font-weight:700;font-size:.74rem;line-height:1.1;padding:2px 4px!important}.hNavUm .tSeta{flex:1 1 auto!important;width:100%!important;max-width:none!important}.hNavUm .tSeta select{flex:1;text-align:center;text-align-last:center}#hCompSec{padding:10px 14px!important}.hCompLin{display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap}.hCompLin>span:first-child{font-size:.8rem;font-weight:700;color:var(--muted)}.hCompBts{display:flex;gap:6px}.hCompBts button{width:auto!important;min-height:0!important;margin:0!important;padding:5px 10px!important;font-size:.78rem!important;border-radius:999px!important}.stat.st4>div{flex:1 1 40%}#hFalta.hFaltaTem{color:#b26a00}
 .stat div{flex:1 1 90px;background:var(--chip);border-radius:10px;padding:8px 12px}
 .stat small{display:block;font-size:.72rem;color:var(--muted);text-transform:uppercase;letter-spacing:.05em}
 .stat b{font-family:var(--display);font-stretch:condensed;font-size:1.4rem}
@@ -893,7 +893,7 @@ body.naInicio .topoTxt h1{font-size:clamp(16px,5vw,28px)!important}
 <div id="viewEscolha" hidden><section class="panel escolhaModo"><p id="escolhaTxt">Escolha ⚡ Automação ou ✋ Manual no menu acima.</p></section></div>
 <div id="viewPrev" hidden>
   <section class="panel">
-    <div class="curhead"><h2>Previsto e currais</h2><span class="note num" id="pvTot"></span></div>
+    <div class="curhead"><h2>Previsão de trato</h2><span class="note num" id="pvTot"></span></div>
     <div id="pvData"></div>
     <p class="note pvEstado" id="pvEstado" hidden></p>
     <div hidden>
@@ -928,11 +928,9 @@ body.naInicio .topoTxt h1{font-size:clamp(16px,5vw,28px)!important}
       </table></div>
       <div class="row" style="margin-top:10px"><button class="primary" id="btnAplicarRev">Atualizar previsto</button><button id="btnCancRev">Cancelar</button></div>
     </div>
-    <div class="linhas" id="linhas">
-      <button data-l="T" class="sel">Todos</button><button data-l="C"><svg class="icoCurral" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 21V7.5L5.5 5 7 7.5V21M10.5 21V7.5L12 5l1.5 2.5V21M17 21V7.5L18.5 5 20 7.5V21" fill="#c9a26b" stroke="#7a4f21" stroke-width="1.3" stroke-linejoin="round"/><path d="M2.5 10.5h19M2.5 16h19" stroke="#7a4f21" stroke-width="2.2" stroke-linecap="round"/></svg> Confinamento</button><button data-l="P">🌿 Pasto</button>
-      <div class="somaLinha" id="somaLinha"></div>
-    </div>
+    <div class="pvLocBox" id="linhas"></div>
     <div id="pvTN"></div>
+    <div class="somaLinha" id="somaLinha"></div>
     <div class="pvImsBar" id="pvImsBar" hidden><p class="note">Digite o % de IMS (consumo de matéria seca em % do peso vivo) de cada curral. O total em kg de matéria natural aparece ao lado e, ao aplicar, é dividido nos tratos.</p>
       <div class="row"><button class="primary" id="pvImsAplicar">✓ Aplicar % IMS</button><button id="pvImsCanc">Cancelar</button></div></div>
     <div class="tablebox"><table>
@@ -1011,7 +1009,7 @@ body.naInicio .topoTxt h1{font-size:clamp(16px,5vw,28px)!important}
   <section class="panel">
     <div class="curhead"><h2>Filtrar</h2><span id="hPerBox"></span></div>
     <div id="hData"></div>
-    <div class="linhas hLocal" id="hLocal"><button data-loc="T" class="sel">Todos</button><button data-loc="C"><svg class="icoCurral" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 21V7.5L5.5 5 7 7.5V21M10.5 21V7.5L12 5l1.5 2.5V21M17 21V7.5L18.5 5 20 7.5V21" fill="#c9a26b" stroke="#7a4f21" stroke-width="1.3" stroke-linejoin="round"/><path d="M2.5 10.5h19M2.5 16h19" stroke="#7a4f21" stroke-width="2.2" stroke-linecap="round"/></svg> Confinamento</button><button data-loc="P">🌿 Pasto</button></div>
+    <div class="hLocal" id="hLocal"></div>
     <div id="hTN"></div>
     <div class="stat" id="hStat">
       <div><small id="hPrevLbl">Previsto</small><b class="num" id="hPrev">—</b></div>
@@ -1043,10 +1041,6 @@ body.naInicio .topoTxt h1{font-size:clamp(16px,5vw,28px)!important}
       <button class="wa" id="hWa">Enviar no WhatsApp</button><button id="hCopiar">Copiar lista</button>
       <button id="hExcel">Exportar Excel</button><button id="hShare" class="shareX" hidden>Compartilhar planilha</button>
     </div>
-  </section>
-  <section class="panel hCompSec" id="hCompSec">
-    <div class="hCompLin"><span title="Carregamento e fornecimento com o peso da balança no início e no final de cada produto e curral">⚖️ Relatório com dados da balança</span>
-    <span class="hCompBts"><button class="verde" id="hcPdf">📄 PDF</button><button class="verde" id="hcImg">🖼 Foto</button><button class="verde" id="hcXls">📊 Excel</button></span></div>
   </section>
 
   <section class="panel zootBox" id="zootSec" hidden></section>
@@ -1153,7 +1147,7 @@ body.naInicio .topoTxt h1{font-size:clamp(16px,5vw,28px)!important}
 <div class="toast" id="toast" hidden></div>
 <script>
 'use strict';
-const APP_VERSAO='123';
+const APP_VERSAO='124';
 const APP_DATA='19/10/2026';
 const KEY='confinamento-completo-v1';
 const $=id=>document.getElementById(id);
@@ -1744,7 +1738,10 @@ function pvEstado(){const e=$('pvEstado'),hj=hojeKey();let t='';
   e.textContent=t;e.hidden=!t;}
 function renderPrev(){
   pvIni();if(PV.t>0){$('pvTrato').value=String(PV.t);S.pvTrato=PV.t;}
-  PV.per=false;$('pvData').innerHTML=navDiaHTML(PV,true);$('pvTN').innerHTML=PV.per?'':tratoNavHTML(PV.t);pvEstado();
+  PV.per=false;$('pvData').innerHTML=navDiaHTML(PV,true);
+  {const LO=window.LOC_OPS||[['T','Todos'],['C','Confinamento'],['P','Pasto']];$('linhas').innerHTML=selSetas('Local',LO,Math.max(0,LO.findIndex(o=>o[0]===linhaSel)),'data-pvlp','data-pvlsel');
+   const TO=[[0,'Todos os tratos']].concat(tratosAtivos().map(Number).sort((a,b)=>a-b).map(k=>[k,nomeTrato(k)]));$('pvTN').innerHTML=PV.per?'':selSetas('Escolher<br>trato',TO,Math.max(0,TO.findIndex(o=>o[0]===PV.t)),'data-pvtp','data-pvtsel');}
+  pvEstado();
   const ed=pvEditavel(),hoje=PV.dia===hojeKey()&&!PV.per,o=pvObj(),m=pvMapa(),ims=PV.ims&&ed&&PV.t===0&&!PV.per;
   /* realizado do dia (todos os tratos) ou do trato escolhido; curral já tratado não deixa mais mudar o previsto */
   const comReal=!PV.per&&PV.dia<=hojeKey(),realDe=c=>{const rs=HIST.filter(r=>r.dia===PV.dia&&r.curral===c&&(PV.t===0||+r.trato===PV.t));return rs.length?rs.reduce((a,r)=>a+(+r.forn||0),0):null;};
@@ -1778,7 +1775,9 @@ function renderPrev(){
   if(tecIdx!=null){const x=campoPrev(tecIdx);if(x){x.classList.add('sel');x.value=tecBuf;}}
 }
 ligarNavDia($('pvData'),PV,()=>{fecharTeclado();PV.am=null;PV.ims=false;PV.imsV={};renderPrev();});
-ligarTratoNav($('pvTN'),PV,()=>{fecharTeclado();PV.ims=false;renderPrev();});
+{const mud=()=>{fecharTeclado();PV.ims=false;renderPrev();};
+ $('pvTN').addEventListener('click',e=>{const b=e.target.closest('[data-pvtp]');if(!b||b.disabled)return;const O=[...$('pvTN').querySelectorAll('select option')].map(o=>+o.value);let i=Math.max(0,O.indexOf(PV.t));PV.t=O[Math.max(0,Math.min(O.length-1,i+(+b.dataset.pvtp)))];mud();});
+ $('pvTN').addEventListener('change',e=>{const s_=e.target.closest('select[data-pvtsel]');if(!s_)return;PV.t=+s_.value;mud();});}
 /* nº de tratos do curral: muda e já redivide o total */
 $('tbPrev').addEventListener('change',e=>{const s_=e.target.closest('select[data-nt]');if(!s_||!pvEditavel())return;const c=s_.dataset.nt,n=+s_.value,o=pvObj();
   mudarNTratos(c,n,o,PV.dia);marcarPv();if(PV.dia===hojeKey()){editandoPrev=true;render();editandoPrev=false;}renderPrev();toast(`${c}: ${n} trato(s)`);});
@@ -1815,10 +1814,10 @@ function somaLinhas(){
   const nome={T:'Todos',C:'Confinamento',P:'Pasto'}[linhaSel],x=t[linhaSel];
   $('somaLinha').innerHTML=`<b>${fmt(x[0])} kg</b> <span>${x[1]} ${x[1]===1?'curral':'currais'}</span>`+
     (linhaSel==='T'?`<small>Confinamento: ${fmt(t.C[0])} kg · Pasto: ${fmt(t.P[0])} kg</small>`:'');
-  document.querySelectorAll('#linhas button[data-l]').forEach(b=>b.classList.toggle('sel',b.dataset.l===linhaSel));
 
 }
-$('linhas').addEventListener('click',e=>{const b=e.target.closest('button[data-l]');if(!b)return;linhaSel=b.dataset.l;if(typeof fecharTeclado==='function')fecharTeclado();renderPrev();});
+$('linhas').addEventListener('click',e=>{const b=e.target.closest('[data-pvlp]');if(!b||b.disabled)return;const L=['T','C','P'];let i=Math.max(0,L.indexOf(linhaSel));linhaSel=L[Math.max(0,Math.min(2,i+(+b.dataset.pvlp)))];if(typeof fecharTeclado==='function')fecharTeclado();renderPrev();});
+$('linhas').addEventListener('change',e=>{const s_=e.target.closest('select[data-pvlsel]');if(!s_)return;linhaSel=s_.value;if(typeof fecharTeclado==='function')fecharTeclado();renderPrev();});
 function resumoPrev(){
   const k=PV.t||'',m=pvMapa();let tot=0,n=0;
   S.cadastro.forEach(c=>{const v=m[c];if(typeof v==='number'&&v>0){tot+=v;n++;}});
@@ -2263,7 +2262,7 @@ $('escolhaImg').addEventListener('click',async e=>{const b=e.target.closest('but
   if(expPdfHist){const [pa,pb]=intervaloHist(),nm=`FJK - Tratos - ${dataArq(pa)}${pa!==pb?' a '+dataArq(pb):''}.pdf`;return compartilharArquivo(await pngsParaPdf(blobs),nm,'application/pdf');}
   compartilharVarios(blobs,nomes);
 });
-$('hModo').addEventListener('click',e=>{const b=e.target.closest('[data-hm]');if(!b)return;hModo=b.dataset.hm;renderHist();});
+$('hModo').addEventListener('click',e=>{const b=e.target.closest('[data-hm]');if(!b)return;hModo=b.dataset.hm;if(hModo==='T'&&HD.t===0)HD.t=-1;renderHist();});
 /* batidas: um relatório só (batidas com subtotal, total geral e o quadro de total dos insumos embaixo) */
 function expBat(pdf){const [pa,pb]=intervaloHist();const L=batidasLista(pa,pb,localSel,HD.per||HD.t<0?0:HD.t);if(!L.length)return toast('Nenhuma batida');
   window.__expPdf=!!pdf;imgBatidas(L,pa===pb?diaBR(pa):diaBR(pa)+' a '+diaBR(pb),'juntas');}
@@ -2294,9 +2293,9 @@ async function compExp(pdf){const G_=compDados();if(!G_.length)return toast('Nad
   const blob=await desenharTabela(compSecoes(G_),`FJK - Relatório completo - ${per}`);
   if(pdf)return compartilharArquivo(await pngsParaPdf([blob]),`FJK - Relatório completo - ${arq}.pdf`,'application/pdf');
   compartilharVarios([blob],[`FJK - Relatório completo - ${arq}.png`]);}
-$('hcPdf').onclick=()=>compExp(true);
-$('hcImg').onclick=()=>compExp(false);
-$('hcXls').onclick=()=>{const G_=compDados();if(!G_.length)return toast('Nada para mostrar nesse filtro');const H=t=>({v:t,s:1});
+if($('hcPdf'))$('hcPdf').onclick=()=>compExp(true);
+if($('hcImg'))$('hcImg').onclick=()=>compExp(false);
+if($('hcXls'))$('hcXls').onclick=()=>{const G_=compDados();if(!G_.length)return toast('Nada para mostrar nesse filtro');const H=t=>({v:t,s:1});
   const diaSerial=k=>{const [y,m,d]=k.split('-').map(Number);return (Date.UTC(y,m-1,d)-Date.UTC(1899,11,30))/86400000;};
   const rows=[[H('Data'),H('Tipo'),H('Trato'),H('Hora'),H('Curral / produto'),H('Previsto (kg)'),H('Realizado (kg)'),H('Diferença (kg)'),H('Balança início'),H('Balança final')]];
   G_.forEach(g=>g.linhas.forEach(l=>{const n=rows.length+1;rows.push([{v:diaSerial(g.dia),s:2},{v:g.tipo},{v:g.trato||'',s:4},{v:l.hora||''},{v:l.nome},l.prev!=null?{v:l.prev,s:4}:{v:''},l.real!=null?{v:l.real,s:4}:{v:''},
@@ -2316,7 +2315,7 @@ function aba(qual){const vq=qual;if(modoVer&&(qual==='auto'||qual==='autoc'||qua
   if(qual!=='prev'&&typeof modoOrdem==='function')modoOrdem(false);
   if(typeof camStream!=='undefined'&&camStream)fecharCamera();
   $('viewPrev').hidden=qual!=='prev';$('viewTrato').hidden=qual!=='trato';$('viewHist').hidden=qual!=='hist';$('viewGest').hidden=!(qual==='gest'||qual==='leit');window.abaAtual=qual;$('tabLeit').setAttribute('aria-selected',String(qual==='leit'));if(qual!=='leit')['tabFez','tabMS'].forEach(i=>$(i)&&$(i).setAttribute('aria-selected','false'));if(qual==='leit'&&window.gAbrir)gAbrir('leit');$('viewCarga').hidden=qual!=='carga';$('viewAuto').hidden=qual!=='auto';$('viewAutoC').hidden=qual!=='autoc';$('tabAutoC').setAttribute('aria-selected',String(qual==='autoc'));if(qual==='autoc'&&window.acAoAbrir)acAoAbrir();$('tabAuto').setAttribute('aria-selected',String(qual==='auto'));if(qual==='auto'&&window.aAoAbrir)aAoAbrir();$('tabCarga').setAttribute('aria-selected',String(qual==='carga'));if(qual==='carga'&&window.cAoAbrir)cAoAbrir();
-  if(qual==='hist'&&$('viewHist').dataset.aberta!=='1'){HD.dia=HD.ini=HD.fim=hojeKey();HD.per=false;HD.t=0;localSel='T';}
+  if(qual==='hist'&&$('viewHist').dataset.aberta!=='1'){HD.dia=HD.ini=HD.fim=hojeKey();HD.per=false;HD.t=hModo==='T'?-1:0;localSel='T';}
   $('viewHist').dataset.aberta=qual==='hist'?'1':'';
   if(qual==='prev'&&$('viewPrev').dataset.aberta!=='1'){linhaSel='T';PV.dia=PV.ini=PV.fim=hojeKey();PV.per=false;PV.t=0;PV.ims=false;PV.am=null;virarDiaPrev();} // Previsto abre em hoje, Todos
   $('viewPrev').dataset.aberta=qual==='prev'?'1':'';
@@ -2409,14 +2408,30 @@ function tratoNavHTML(t,dois,extra){const a=[...new Set(tratosAtivos().concat(ex
 function ligarTratoNav(box,st,mudou){box.addEventListener('click',e=>{const b=e.target.closest('[data-tt],[data-tp]');if(!b||b.disabled)return;
   if(b.dataset.tt!=null)st.t=+b.dataset.tt;else{const nv=b.closest('[data-lista]'),a=nv?nv.dataset.lista.split(',').map(Number):tratosAtivos();if(!(st.t>0))st.t=a[0];else{const i=Math.max(0,a.indexOf(st.t));st.t=a[Math.max(0,Math.min(a.length-1,i+(+b.dataset.tp)))];}}mudou();});
   box.addEventListener('change',e=>{const s_=e.target.closest('select[data-tsel]');if(!s_||!s_.value)return;st.t=+s_.value;mudou();});}
-const HD={dia:null,per:false,ini:null,fim:null,t:0};let localSel='T';
-function pintarFiltrosHist(){if(!HD.dia){HD.dia=hojeKey();HD.ini=HD.fim=HD.dia;}if(hModo!=='T'&&HD.t===-1)HD.t=0;
+const HD={dia:null,per:false,ini:null,fim:null,t:-1};let localSel='T';
+function pintarFiltrosHist(){if($('hLocal'))$('hLocal').innerHTML=locNavHTML();if(!HD.dia){HD.dia=hojeKey();HD.ini=HD.fim=HD.dia;}if(hModo!=='T'&&HD.t===-1)HD.t=0;
   $('hData').innerHTML=navDiaHTML(HD,false,true);$('hPerBox').innerHTML=`<label class="dPer"><input type="checkbox" data-dp ${HD.per?'checked':''}> Período</label>`;
-  const [ia,ib]=intervaloHist();$('hTN').innerHTML=HD.per?'':tratoNavHTML(HD.t,hModo==='T',HIST.filter(r=>r.dia>=ia&&r.dia<=ib).map(r=>+r.trato));}
-ligarNavDia($('hData'),HD,()=>renderHist());ligarTratoNav($('hTN'),HD,()=>renderHist());
+  const [ia,ib]=intervaloHist();$('hTN').innerHTML=HD.per?'':histNavHTML(HD.t,hModo==='T',HIST.filter(r=>r.dia>=ia&&r.dia<=ib).map(r=>+r.trato));}
+ligarNavDia($('hData'),HD,()=>renderHist());
+/* Histórico: um botão só com setas — Tratos: Total do dia · Todos os tratos (detalhado) · Trato 1…; Batidas: Todos · Trato 1… */
+/* seletor com setas: estilo A (setas dentro do quadro) ou B (igual à data: setas verdes fora, caixa no meio) */
+function selSetas(lbl,O,i,pAttr,sAttr){const opts=O.map(o=>`<option value="${o[0]}"${o[0]===O[i][0]?' selected':''}>${esc(o[1])}</option>`).join('');
+  const ant=`<button type="button" ${pAttr}="-1" aria-label="Anterior"${i<=0?' disabled':''}`,prx=`<button type="button" ${pAttr}="1" aria-label="Próximo"${i>=O.length-1?' disabled':''}`;
+  if(window.__navB!==false)return `<div class="hNavUm hNavB"><span class="hNavLbl">${lbl}</span><div class="gNavData">${ant} class="gSeta">◀</button><label class="gDataBox"><span>${O[i][2]||esc(O[i][1])}</span><select ${sAttr} aria-label="Escolher">${opts}</select></label>${prx} class="gSeta">▶</button></div></div>`;
+  return `<div class="tNav tNavS hNavUm"><span class="hNavLbl">${lbl}</span><div class="tSeta sel">${ant}>◀</button><select class="trato" ${sAttr} aria-label="Escolher">${opts}</select>${prx}>▶</button></div></div>`;}
+function histOpcoes(dois,extra){const a=[...new Set(tratosAtivos().concat(extra||[]).map(Number))].filter(k=>k>0).sort((x,y)=>x-y);
+  return (dois?[[-1,'Total do dia'],[0,'Todos os tratos (detalhado)']]:[[0,'Todos']]).concat(a.map(k=>[k,nomeTrato(k)]));}
+function histNavHTML(t,dois,extra){const O=histOpcoes(dois,extra);let i=O.findIndex(o=>o[0]===t);if(i<0)i=0;
+  return `<div data-ops="${O.map(o=>o[0]).join(',')}">${selSetas('Escolher<br>trato',O,i,'data-hp','data-hsel')}</div>`;}
+$('hTN').addEventListener('click',e=>{const b=e.target.closest('[data-hp]');if(!b||b.disabled)return;const O=b.closest('[data-ops]').dataset.ops.split(',').map(Number);let i=O.indexOf(HD.t);if(i<0)i=0;HD.t=O[Math.max(0,Math.min(O.length-1,i+(+b.dataset.hp)))];renderHist();});
+$('hTN').addEventListener('change',e=>{const s_=e.target.closest('select[data-hsel]');if(!s_)return;HD.t=+s_.value;renderHist();});
 $('hPerBox').addEventListener('change',e=>{if(!e.target.matches('[data-dp]'))return;HD.per=e.target.checked;if(HD.per){HD.ini=HD.dia;HD.fim=HD.dia;}renderHist();
   if(HD.per)setTimeout(()=>{const x=$('hData').querySelector('[data-di]');if(x&&x.showPicker){try{x.showPicker();}catch(_){}}},50);});
-$('hLocal').addEventListener('click',e=>{const b=e.target.closest('button[data-loc]');if(!b)return;localSel=b.dataset.loc;renderHist();});
+/* Local: quadradinho "Local" + seletor com setas (Todos · Confinamento · Pasto) */
+const LOC_OPS=[['T','Todos'],['C','Confinamento',(typeof ICO_C!=='undefined'?ICO_C:'')+' Confinamento'],['P','Pasto','🌿 Pasto']];window.LOC_OPS=LOC_OPS;
+function locNavHTML(){let i=LOC_OPS.findIndex(o=>o[0]===localSel);if(i<0)i=0;return selSetas('Local',LOC_OPS,i,'data-lp','data-lsel');}
+$('hLocal').addEventListener('click',e=>{const b=e.target.closest('[data-lp]');if(!b||b.disabled)return;let i=LOC_OPS.findIndex(o=>o[0]===localSel);if(i<0)i=0;localSel=LOC_OPS[Math.max(0,Math.min(LOC_OPS.length-1,i+(+b.dataset.lp)))][0];renderHist();});
+$('hLocal').addEventListener('change',e=>{const s_=e.target.closest('select[data-lsel]');if(!s_)return;localSel=s_.value;renderHist();});
 function intervaloHist(){if(!HD.dia){HD.dia=hojeKey();HD.ini=HD.fim=HD.dia;}return HD.per?[HD.ini,HD.fim]:[HD.dia,HD.dia];}
 function rotuloData(){const [a,b]=intervaloHist();return HD.per?`Período ${diaBR(a)}${a===b?'':' a '+diaBR(b)}`:diaBR(a);}
 function filtrados(){

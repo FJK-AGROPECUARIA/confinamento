@@ -218,7 +218,7 @@ let gLoc='T'; // filtro dos lotes: T todos, C confinamento, P pasto
 const SEM=['dom.','seg.','ter.','qua.','qui.','sex.','sáb.'];
 function navData(id,dia,rot){const hj=hojeKey(),[y,m,d]=dia.split('-').map(Number),sem=SEM[new Date(y,m-1,d).getDay()];
   const tag=dia===hj?'Hoje':dia===somaDias(hj,-1)?'Ontem':'';
-  return `<div class="gCampo"><label for="${id}">${rot}</label><div class="gNavData">
+  return `<div class="gCampo">${rot?`<label for="${id}">${rot}</label>`:''}<div class="gNavData">
     <button class="gSeta" data-g="dataPasso" data-alvo="${id}" data-n="-1" aria-label="Dia anterior">◀</button>
     <label class="gDataBox"><span>${sem} ${dB(dia).slice(0,6)+dB(dia).slice(8)}${tag?` <i>${tag}</i>`:''}</span><input type="date" id="${id}" value="${dia}"></label>
     <button class="gSeta" data-g="dataPasso" data-alvo="${id}" data-n="1" aria-label="Dia seguinte">▶</button></div>
@@ -997,12 +997,12 @@ function tCocho(t){
     return `<div class="gCocho${lt&&!lt.del?' feito':''}${trv?' gCoRO':''}" data-c="${esc(c)}" data-base="${base}" data-msf="${msFator}">
       <div class="gCoTopo">${seloCurral(c)}<div><span><b>${esc(L.map(l=>l.nome).join(', '))}</b> · ${nf(cab)} cab</span><span>Ontem: <b>${ontem?nf(ontem)+' kg':'—'}</b>${ok(imsOnt)?` · ${pc(imsOnt,2)} IMS`:''}</span></div>${lt&&!lt.del&&(GT.coAberto||{})[c]?`<button type="button" class="mini gCoFecha" data-g="coFecha" data-c="${esc(c)}" aria-label="Recolher">▲</button>`:''}</div>
       ${baseOp}
-      ${trv?'<p class="gCoROtxt">🔒 Já teve trato neste dia: só para ver, não dá para alterar.</p>':''}
+      ${trv?'<p class="gCoROtxt">🔒 Trato feito neste dia: não pode alterar.</p>':''}
       ${gradeNotas(notas,nota,c)}
       <div class="gCoNovo"><b class="gCoPct">% IMS</b><input class="cell num gCoImsIn" inputmode="decimal" data-ims="${esc(c)}"${trv?' readonly':''} value="${sel&&sel.ims>0?String(sel.ims).replace('.',','):''}" placeholder="${(()=>{const q=ok(kg)&&window.gImsDe?gImsDe(c,dia,kg):null;return q?nf(q,2):'%';})()}"><input class="cell num" inputmode="numeric" data-kg="${esc(c)}" value="${kg!=null?kg:''}" placeholder="kg/dia"${trv?' readonly':''}>${pode.ok&&!trv?`<button type="button" class="gCoSalva" data-g="salvaCocho1" data-c="${esc(c)}" aria-label="Salvar este curral">💾</button>`:''}</div></div>`;}).join('');
   return `<section class="panel"><h2 class="gH2Bt"><span>Leitura de cocho</span>${rows&&pode.ok?'<button type="button" class="gSalvaTop" data-g="salvaCocho">💾 Salvar</button>':''}</h2>
-    ${navData('gCoDia',dia,'Data da leitura')}
-    ${locBotoes('coLoc',lc,k=>{const A=CsT.filter(c=>doLocal(k,c));return A.filter(c=>G.it[idLeit(dia,c)]&&!G.it[idLeit(dia,c)].del).length+'/'+A.length;})}
+    ${navData('gCoDia',dia,'')}
+    ${typeof selSetas==='function'&&window.LOC_OPS?`<div class="gCoLocNav">${selSetas('Local',LOC_OPS,Math.max(0,LOC_OPS.findIndex(o=>o[0]===lc)),'data-g="coLocP" data-n','data-colsel')}</div>`:locBotoes('coLoc',lc)}
     <details class="gLeg"><summary class="note">Ver as notas</summary>${notas.map(x=>`<p class="note"><b>${notaTxt(x.n)}</b> — ${esc(x.t)}: ${x.p>0?'+':''}${nf(x.p,0)}%</p>`).join('')}<p class="note">Para mudar as notas: Config.</p></details>
     ${pode.ok?'':`<p class="aviso">${esc(pode.msg)}${pode.falta&&pode.falta.length?`<br><b>Ainda sem registro hoje:</b><br>${pode.falta.map(esc).join('<br>')}`:''}</p>
       ${pode.lib?`<p class="note">Se algum desses currais não vai ser tratado hoje (ex.: pasto, curral vazio), libere a leitura assim mesmo.</p><button class="lima" data-g="libLeit">🔓 Liberar a leitura de amanhã</button>`:''}`}
@@ -1527,7 +1527,12 @@ function msAvisoHTML(){const m=msStatus();
   if(m.bloq)return `<div class="gMsAviso bloq">⛔ Existem currais pendentes para finalizar o trato do dia:<br>${m.porT.filter(x=>x.falta).map(x=>`<b>Trato ${x.k}</b>: faltam ${x.falta} de ${x.tot} curral(is)`).join(' · ')}.<br>A matéria seca só pode ser alterada após a finalização de todos os tratos do dia (e antes da leitura do dia seguinte).</div>`;
   return `<div class="gMsAviso${m.leit?' atencao':''}">${m.amanha?'✓ Tratos de hoje finalizados. ':''}A nova MS vale a partir de <b>${dB(m.dia)}</b>${m.amanha?' (amanhã)':' (hoje)'}: leitura, previsto, rações e batidas desse dia em diante. Os dias anteriores ficam como estão.${m.leit?`<br>⚠ A leitura de ${dB(m.dia)} já foi feita com a MS antiga: depois de alterar, refaça a leitura para recalcular o previsto.`:''}</div>`;}
 function tInsMS(t){const I=gTodos('insumo').sort(porNome),H=msHistTodos(),sel=(t&&t.ins)||'',iS=sel&&G.it[sel];
-  const linhas=H.map(x=>`<tr data-msh="${esc(x.uid||'')}"${sel&&x.uid!==sel?' hidden':''}><td>${dB(x.dia)}${x.hora?`<small>${esc(x.hora)}</small>`:''}</td><td class="c">${esc(x.nome)}</td><td>${x.ini?'inicial':pc(+x.de,1)}</td><td><b>${pc(+x.para,1)}</b></td></tr>`).join('');
+  let vis=0;const linhas=H.map(x=>{const v=(!sel||x.uid===sel)&&vis<7;if(v)vis++;return `<tr data-msh="${esc(x.uid||'')}"${v?'':' hidden'}><td>${dB(x.dia)}${x.hora?`<small>${esc(x.hora)}</small>`:''}</td><td class="c">${esc(x.nome)}</td><td>${x.ini?'inicial':pc(+x.de,1)}</td><td><b>${pc(+x.para,1)}</b></td></tr>`;}).join('');
+  if(!GT.msAberto)return `${t&&t.t==='ms'?'':voltar()}<section class="panel"><h2>💧 Matéria seca</h2>
+    <button class="primary" data-g="msAbre">💧 Alterar matéria seca</button></section>
+    <section class="panel"><h2 id="gMsHTit">Últimas alterações</h2>
+    <div class="tablebox"${H.length?'':' hidden'}><table class="gTab"><thead><tr><th>Vale de</th><th>Produto</th><th>De</th><th>Para</th></tr></thead><tbody>${linhas}</tbody></table></div>
+    <p class="note"${H.length?' hidden':''}>Nenhuma alteração de matéria seca ainda.</p></section>`;
   return `${t&&t.t==='ms'?'':voltar()}<section class="panel"><h2>💧 Alterar matéria seca</h2>
     <p class="note">Escolha o produto e digite a nova % de MS.</p>
     <label>Produto<select id="gMsIns" onchange="msFiltrar(this.value)">
@@ -1535,7 +1540,7 @@ function tInsMS(t){const I=gTodos('insumo').sort(porNome),H=msHistTodos(),sel=(t
     <div class="gMsLinha"><div><span>MS atual</span><b id="gMsAtual">${iS?pc(+iS.ms,1):'—'}</b></div>
       <label>Nova MS (%)<input type="text" inputmode="decimal" id="gMsNova" placeholder="ex.: 35,5"></label></div>
     ${msAvisoHTML()}
-    <button class="primary" data-g="salvaMS"${msStatus().bloq?' disabled':''}>Alterar matéria seca</button></section>
+    <button class="primary" data-g="salvaMS"${msStatus().bloq?' disabled':''}>Alterar matéria seca</button><button class="danger" data-g="msCancela">✕ Cancelar</button></section>
     <section class="panel"><h2 id="gMsHTit">${iS?'Últimas alterações · '+esc(iS.nome):'Últimas alterações'}</h2>
     <div class="tablebox"${H.length?'':' hidden'}><table class="gTab"><thead><tr><th>Vale de</th><th>Produto</th><th>De</th><th>Para</th></tr></thead><tbody>${linhas}</tbody></table></div>
     <p class="note" id="gMsVazio"${H.some(x=>!sel||x.uid===sel)?' hidden':''}>Nenhuma alteração de matéria seca${iS?' desse produto':''} ainda.</p></section>`;}
@@ -1543,7 +1548,7 @@ function tInsMS(t){const I=gTodos('insumo').sort(porNome),H=msHistTodos(),sel=(t
 window.msFiltrar=uid=>{const i=G.it[uid];if(GT&&(GT.t==='ms'||GT.t==='insMS'))GT.ins=uid;
   const a=document.getElementById('gMsAtual');if(a)a.textContent=i?pc(+i.ms,1):'—';
   const t=document.getElementById('gMsHTit');if(t)t.textContent='Últimas alterações'+(i?' · '+i.nome:'');let n=0;
-  document.querySelectorAll('#gBox tr[data-msh]').forEach(r=>{const v=!uid||r.dataset.msh===uid;r.hidden=!v;if(v)n++;});
+  document.querySelectorAll('#gBox tr[data-msh]').forEach(r=>{const v=(!uid||r.dataset.msh===uid)&&n<7;r.hidden=!v;if(v)n++;});
   const tb=document.querySelector('#gBox tr[data-msh]');if(tb)tb.closest('.tablebox').hidden=!n;
   const z=document.getElementById('gMsVazio');if(z){z.hidden=!!n;z.textContent='Nenhuma alteração de matéria seca'+(i?' desse produto':'')+' ainda.';}
   const nv=document.getElementById('gMsNova');if(nv){nv.value='';nv.focus();}};
@@ -1553,7 +1558,7 @@ function salvaMS(){const st_=msStatus();if(st_.bloq)return toast('Termine todos 
   const x=JSON.parse(JSON.stringify(i)),d=new Date(),hist=Array.isArray(x.msHist)?x.msHist:(x.msDia&&x.msAnt!=null?[{dia:x.msDia,ts:0,de:+x.msAnt,para:+x.ms}]:[]);
   hist.push({dia:st_.dia,ts:Date.now(),hora:String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0'),de:+i.ms,para:v});
   x.msHist=hist.slice(-30);x.msAnt=+i.ms;x.ms=v;x.msDia=st_.dia;gPut(x);
-  const nAj=ajustarLeiturasMS();toast(`${i.nome}: MS ${pc(+i.ms,1)} → ${pc(v,1)} a partir de ${dB(st_.dia)}${nAj?` · leitura e previsto ajustados em ${nAj} curral(is)`:''}`);GT.ins=i.uid;gRender();}
+  const nAj=ajustarLeiturasMS();toast(`${i.nome}: MS ${pc(+i.ms,1)} → ${pc(v,1)} a partir de ${dB(st_.dia)}${nAj?` · leitura e previsto ajustados em ${nAj} curral(is)`:''}`);GT.ins=i.uid;GT.msAberto=false;gRender();}
 function tInsForm(t){const i=t.id?G.it[t.id]:null,hj=hojeKey();
   const hist=i?(i.precos||[]).slice().reverse().map((p,k,a)=>`<tr><td>${dB(p.desde)}</td><td>${rs(+p.rs,2)}</td><td class="acoes">${a.length>1?`<button class="mini danger" data-g="insPrecoRm" data-id="${i.uid}" data-d="${p.desde}">✕</button>`:''}</td></tr>`).join(''):'';
   return `${voltar()}<section class="panel"><h2>${i?'Insumo':'Novo insumo'}</h2><div class="gForm">${[
@@ -1691,7 +1696,7 @@ function salvaCfg(){const c=JSON.parse(JSON.stringify(gCfg()));const t=fn('taxa'
 /* =====================================================================================
    EVENTOS
    ===================================================================================== */
-const SO_VER=new Set(['cbExp','fzFotoVer','fzHN','fzHPdf','fzHImg','resPdf','resImg','resXls','insPdf','insImg','insXls','estPdf','estImg','estXls','estPerE','estOrd','nfVer','fzPdf','fzImgG','fzCur','fzLoc','fzImg','fzXls','fzXlsHist','cfgAba','coLoc','coAbre','coFecha','estPer','evLoc','evolN','imgDia','imgPer','imgComp','imgLote','pdfLote','imgVendas','pdfVendas','xlsVendas','pdfComp','xlsGraf','racaAdd','racaRm','grafLoc','grafCur','celGraf','imgGraf','filtroLoc','dataPasso','dataHoje','voltar','ir','lote','raiz','compRel','compDia','xlsDia','xlsPer','xlsComp','xlsLote','perAtalho','nota','racAdd','racRm','notaAdd','notaRm','notaPadrao']);
+const SO_VER=new Set(['cbExp','coLocP','fzLocP','fzFotoVer','fzHN','fzHPdf','fzHImg','resPdf','resImg','resXls','insPdf','insImg','insXls','estPdf','estImg','estXls','estPerE','estOrd','nfVer','fzPdf','fzImgG','fzCur','fzLoc','fzImg','fzXls','fzXlsHist','cfgAba','coLoc','coAbre','coFecha','estPer','evLoc','evolN','imgDia','imgPer','imgComp','imgLote','pdfLote','imgVendas','pdfVendas','xlsVendas','pdfComp','xlsGraf','racaAdd','racaRm','grafLoc','grafCur','celGraf','imgGraf','filtroLoc','dataPasso','dataHoje','voltar','ir','lote','raiz','compRel','compDia','xlsDia','xlsPer','xlsComp','xlsLote','perAtalho','nota','racAdd','racRm','notaAdd','notaRm','notaPadrao']);
 /* ---------- apagar: sempre com senha (1010) e só o que ainda não foi usado ---------- */
 const H_=()=>typeof HIST!=='undefined'?HIST:[];
 function racUsoTxt(id){const r=G.it[id];if(!r)return '';const L=gTodos('lote').filter(l=>(l.rac||[]).some(h=>h.r===id)),B=gTodos('carga').filter(c=>c.racao===id||(r.nome&&c.racNome===r.nome));
@@ -1724,6 +1729,7 @@ $('gBox').addEventListener('click',e=>{
   if(a==='coFecha'){if(GT.coAberto)delete GT.coAberto[b.dataset.c];if(GT.sel)delete GT.sel[b.dataset.c];const y=window.scrollY;gRender();window.scrollTo({top:y});return;}
   if(a==='baseM'){const c=b.dataset.c,m=b.dataset.m;GT.base=GT.base||{};GT.base[c]=m==='dia'?{m:'dia',d:null}:{m};if(GT.sel&&GT.sel[c])delete GT.sel[c].kg;const y=window.scrollY;gRender();window.scrollTo({top:y});return;}
   if(a==='coAbre'){GT.coAberto=GT.coAberto||{};GT.coAberto[b.dataset.c]=1;const y=window.scrollY;gRender();window.scrollTo({top:y});return;}
+  if(a==='coLocP'){const L=['T','C','P'];let i=Math.max(0,L.indexOf(GT.coLoc||'T'));document.querySelectorAll('#gBox .gCocho').forEach(el=>{const x=el.querySelector('input[data-kg]'),c=el.dataset.c;if(x&&GT.sel&&GT.sel[c]&&x.value)GT.sel[c].kg=gNum(x.value);});GT.coLoc=L[Math.max(0,Math.min(2,i+(+b.dataset.n)))];return gRender();}
   if(a==='coLoc'){document.querySelectorAll('#gBox .gCocho').forEach(el=>{const i=el.querySelector('input[data-kg]'),c=el.dataset.c;if(i&&GT.sel&&GT.sel[c]&&i.value)GT.sel[c].kg=gNum(i.value);});GT.coLoc=b.dataset.l;return gRender();}
   if(a==='evLoc'){GT.evLoc=b.dataset.l;return gRender();}
   if(a==='ecTodos'){const rc=gNum(($('gEcRcT')||{}).value),pr=gNum(($('gEcPrT')||{}).value);if(!ok(rc)&&!ok(pr))return toast('Coloque o preço e/ou o rendimento da compra');
@@ -1844,6 +1850,9 @@ $('gBox').addEventListener('click',e=>{
   if(a==='apagaRac'){const r=G.it[id];if(racUsoTxt(id))return toast('Esta ração já foi usada: não pode apagar.');if(!confirm(`Deseja realmente apagar a ração ${r.nome}?`))return;gDel(id);GT.itens=null;return gVoltar();}
   if(a==='salvaIns')return salvaIns(id);
   if(a==='salvaMS')return salvaMS();
+  if(a==='msAbre'){GT.msAberto=true;return gRender();}
+  if(a==='msCancela'){const nv=document.getElementById('gMsNova'),sl=document.getElementById('gMsIns'),mud=(nv&&nv.value.trim())||(sl&&sl.value);
+    (mud&&window.perg?perg('Cancelar a alteração de matéria seca?','O que foi escolhido não vai ser salvo.','Sim, cancelar','Não, continuar',false):Promise.resolve(true)).then(v=>{if(!v)return;GT.msAberto=false;GT.ins='';gRender();});return;}
   if(a==='resPdf')return resPdf();
   if(a==='resImg')return resImg();
   if(a==='resXls')return resXls();
@@ -1904,6 +1913,7 @@ $('gBox').addEventListener('input',e=>{const t=e.target;if(!t.matches||!t.matche
 $('gBox').addEventListener('change',e=>{
   const t=e.target;
   if(GT.t==='racForm'&&t.matches('[data-ri]'))calcRacao();
+  if(t.matches&&t.matches('select[data-colsel]')){document.querySelectorAll('#gBox .gCocho').forEach(el=>{const i=el.querySelector('input[data-kg]'),c=el.dataset.c;if(i&&GT.sel&&GT.sel[c]&&i.value)GT.sel[c].kg=gNum(i.value);});GT.coLoc=t.value;return gRender();}
   if(t.id==='gCbDia'){GT.cbDia=t.value||hojeKey();const y=window.scrollY;gRender();window.scrollTo({top:y});return;}
   if(t.id==='gCoDia'){GT.sel={};GT.base={};GT.dia=t.value||hojeKey();gRenderCom({dia:GT.dia});}
   if(t.id==='gDiaDia'){gRenderCom({dia:t.value||hojeKey()});}
@@ -2614,12 +2624,16 @@ const fzPc=v=>v.toFixed(1).replace('.',',')+'%';
 function fzCurrais(dia,loc){const s=new Set();gTodos('lote').filter(l=>cabPres(l,dia)>0).forEach(l=>{const c=curralEm(l,dia);if(c&&doLocal(loc||'T',c))s.add(c);});
   gTodos('fezes').filter(x=>x.dia===dia&&doLocal(loc||'T',x.curral)).forEach(x=>s.add(x.curral));
   return [...s].sort(alfa);}  // ordem alfabética (C-3, C-4 … C-10)
+/* histórico: as últimas N leituras (dias com avaliação), não N dias corridos */
+function fzIni(t,dia,cH){const ds=[...new Set(gTodos('fezes').filter(x=>x.dia<=dia&&(cH?nAt(x.curral)===cH:doLocal(t.loc,nAt(x.curral)))&&fzCalc(x.c).tot).map(x=>x.dia))].sort();
+  const hN=[7,15,30].includes(+t.hN)?+t.hN:30;return ds.length?ds[Math.max(0,ds.length-hN)]:dia;}
 function tFezes(t){const hj=hojeKey();t.dia=t.dia||hj;t.loc=t.loc||'T';const dia=t.dia,Cs=fzCurrais(dia,t.loc);
   if(t.cur&&!Cs.includes(t.cur))t.cur=null;
   const chips=Cs.map(c=>{const k=fzCalc((fzItem(dia,c)||{}).c),st=fzStatus(k);
     return `<button class="fzChip ${t.cur===c?'sel':''} ${k.tot?'feito '+st.cl:''}" data-g="fzCur" data-c="${esc(c)}"><b>${esc(c)}</b><small>${k.tot?'✓ média '+fz1(k.media):'avaliar'}</small></button>`;}).join('');
   let ficha='';
-  if(t.cur){const c=t.cur,x=fzItem(dia,c),k=fzCalc(x&&x.c),st=fzStatus(k);
+  if(t.cur){const c=t.cur,x0=fzItem(dia,c);if(!t.fzR)t.fzR={c:((x0&&x0.c)||[0,0,0,0,0]).map(v=>+v||0),obs:(x0&&x0.obs)||'',orig:JSON.stringify([((x0&&x0.c)||[0,0,0,0,0]).map(v=>+v||0),(x0&&x0.obs)||''])};
+    const x=Object.assign({},x0||{},{c:t.fzR.c,obs:t.fzR.obs}),k=fzCalc(x.c),st=fzStatus(k);
     const L=gTodos('lote').filter(l=>curralEm(l,dia)===c&&cabPres(l,dia)>0);
     ficha=`<section class="panel fzFicha"><div class="curhead"><h2>${esc(c)}</h2><span class="note">${L.map(l=>esc(l.nome)+' · '+nf(cabPres(l,dia))+' cab').join(' · ')}</span></div>
       <div class="fzTot"><span>Total de fezes avaliadas</span><b>${k.tot}</b></div>
@@ -2629,7 +2643,8 @@ function tFezes(t){const hj=hojeKey();t.dia=t.dia||hj;t.loc=t.loc||'T';const dia
       <div class="fzMedia ${st.cl}"><span>Escore médio ponderado</span><b>${fz1(k.media)}</b><em>${st.txt}</em></div>
       ${fzFotosHTML(x)}
       <label for="fzObs">Observações</label><textarea id="fzObs" rows="2" placeholder="Ex.: fezes com grãos inteiros, muco, bolhas…">${esc((x&&x.obs)||'')}</textarea>
-      ${k.tot?`<button class="mini danger" data-g="fzApagar">Apagar avaliação deste curral</button>`:''}</section>`;}
+      <div class="fzSalvaLin"><button class="primary" data-g="fzSalvar">💾 Salvar score</button><button class="danger" data-g="fzCancelar">✕ Cancelar</button></div>
+      ${x0&&fzCalc(x0.c).tot?`<button class="mini danger" data-g="fzApagar">Apagar avaliação deste curral</button>`:''}</section>`;}
   /* relatório do dia */
   const R=gTodos('fezes').filter(x=>x.dia===dia&&doLocal(t.loc,x.curral)).map(x=>({c:x.curral,k:fzCalc(x.c),obs:x.obs})).filter(o=>o.k.tot).sort((a,b)=>alfa(a.c,b.c));
   const G5=[0,0,0,0,0];R.forEach(o=>o.k.cs.forEach((n,i)=>G5[i]+=n));const KG=fzCalc(G5);
@@ -2641,24 +2656,26 @@ function tFezes(t){const hj=hojeKey();t.dia=t.dia||hj;t.loc=t.loc||'T';const dia
     <div class="row compart fz3"><button class="verde" data-g="fzPdf">📄 PDF</button><button class="verde" data-g="fzImg">🖼 Foto</button><button class="verde" data-g="fzXls">📊 Excel</button></div></section>`
     :`<section class="panel"><p class="note">Nenhuma avaliação de fezes em ${dB(dia)}${t.loc!=='T'?' neste local':''}.</p></section>`;
   /* histórico */
-  const hN=[7,15,30].includes(+t.hN)?+t.hN:30,ini=somaDias(dia,-(hN-1)),cH=t.hCur||'';
+  const hN=[7,15,30].includes(+t.hN)?+t.hN:30,cH=t.hCur||'',ini=fzIni(t,dia,cH);
   const HI=gTodos('fezes').filter(x=>x.dia>=ini&&x.dia<=dia&&(cH?nAt(x.curral)===cH:doLocal(t.loc,nAt(x.curral))));
   const porDia={};HI.forEach(x=>{const k=fzCalc(x.c);if(!k.tot)return;const d=porDia[x.dia]||(porDia[x.dia]=[0,0,0,0,0]);k.cs.forEach((n,i)=>d[i]+=n);});
   const dias=Object.keys(porDia).sort().reverse();
   const opC=[...new Set(gTodos('fezes').map(x=>x.curral))].sort(alfa);
-  const hist=`<section class="panel"><div class="curhead"><h2>Histórico</h2><div class="fzHN">${[7,15,30].map(n=>`<button class="${n===hN?'sel':''}" data-g="fzHN" data-n="${n}">${n} dias</button>`).join('')}</div></div>
+  const hist=`<section class="panel"><div class="curhead"><h2>Histórico</h2><div class="fzHN">${[7,15,30].map(n=>`<button class="${n===hN?'sel':''}" data-g="fzHN" data-n="${n}">${n} leituras</button>`).join('')}</div></div>
     <select id="fzHCur"><option value="">${t.loc==='T'?'Todos os currais':t.loc==='C'?'Todo o confinamento':'Todo o pasto'}</option>${opC.map(c=>`<option${c===cH?' selected':''}>${esc(c)}</option>`).join('')}</select>
     ${dias.length?`<div class="fzBarras">${dias.slice().reverse().map(d=>{const k=fzCalc(porDia[d]);return `<div class="fzBar" title="${dB(d)} · média ${fz1(k.media)}">${k.pct.map((p,i)=>`<i class="e${i+1}" style="height:${p}%"></i>`).join('')}<small>${dB(d).slice(0,5)}</small></div>`;}).join('')}</div>
       <div class="fzLeg">${[1,2,3,4,5].map(i=>`<span><i class="e${i}"></i>${i} ${FZ_DESC[i]}</span>`).join('')}</div>
       <div class="tablebox"><table class="gTab fzTab"><thead><tr><th>Dia</th><th>N</th><th>1</th><th>2</th><th>3</th><th>4</th><th>5</th><th>Média</th></tr></thead><tbody>
       ${dias.map(d=>{const k=fzCalc(porDia[d]);return `<tr><td class="c">${dB(d).slice(0,5)}</td><td>${k.tot}</td>${k.pct.map((p,i)=>`<td class="${i===2?'fz3':''}">${p?p.toFixed(0)+'%':'·'}</td>`).join('')}<td class="${fzStatus(k).cl}"><b>${fz1(k.media)}</b></td></tr>`;}).join('')}</tbody></table></div>
       <div class="row compart fz3"><button class="verde" data-g="fzHPdf">📄 PDF</button><button class="verde" data-g="fzHImg">🖼 Foto</button><button class="verde" data-g="fzXlsHist">📊 Excel</button></div>`:'<p class="note">Sem avaliações nesse período.</p>'}</section>`;
-  return `<section class="panel"><h2>Escore de fezes</h2>${navData('fzDia',dia,'Dia da avaliação')}${locBotoes('fzLoc',t.loc)}
-    <p class="note">Escolha o curral e toque em + para cada fezes avaliada.</p>
-    <div class="fzChips">${chips||'<p class="note">Nenhum curral com lote neste local.</p>'}</div></section>${ficha}${rel}${hist}`;}
-function fzMudar(i,d){const t=GT,c=t.cur;if(!c)return;const x=fzItem(t.dia,c)||{uid:fzId(t.dia,c),tipo:'fezes',dia:t.dia,curral:c,c:[0,0,0,0,0],obs:''};
-  const n=JSON.parse(JSON.stringify(x));n.c=(n.c||[0,0,0,0,0]).map(v=>+v||0);n.c[i-1]=Math.max(0,n.c[i-1]+d);
-  const o=$('fzObs');if(o)n.obs=o.value;gPut(n);const y=window.scrollY;gRender();window.scrollTo({top:y});}
+  return `<section class="panel"><h2>Escore de fezes</h2>${navData('fzDia',dia,'')}${typeof selSetas==='function'&&window.LOC_OPS?`<div class="gCoLocNav">${selSetas('Local',LOC_OPS,Math.max(0,LOC_OPS.findIndex(o=>o[0]===t.loc)),'data-g="fzLocP" data-n','data-fzlsel')}</div>`:locBotoes('fzLoc',t.loc)}
+    ${t.cur?`<p class="note fzEditando">✏️ Avaliando o <b>${esc(t.cur)}</b>. Salve o score ou cancele para escolher outro curral.</p>`:`<p class="note">Escolha o curral e toque em + para cada fezes avaliada.</p>
+    <div class="fzChips">${chips||'<p class="note">Nenhum curral com lote neste local.</p>'}</div>`}</section>${ficha}${t.cur?'':rel+hist}`;}
+function fzMudar(i,d){const t=GT,c=t.cur;if(!c||!t.fzR)return;t.fzR.c[i-1]=Math.max(0,t.fzR.c[i-1]+d);
+  const o=$('fzObs');if(o)t.fzR.obs=o.value;const y=window.scrollY;gRender();window.scrollTo({top:y});}
+function fzSalvar(){const t=GT,c=t.cur;if(!c||!t.fzR)return;const o=$('fzObs');if(o)t.fzR.obs=o.value;
+  const x=fzItem(t.dia,c),n=x?JSON.parse(JSON.stringify(x)):{uid:fzId(t.dia,c),tipo:'fezes',dia:t.dia,curral:c};n.c=t.fzR.c.slice();n.obs=t.fzR.obs;n.hora=new Date().toTimeString().slice(0,5);
+  gPut(n);toast(`${c}: score salvo`);t.cur=null;t.fzR=null;gRender();window.scrollTo({top:0,behavior:'smooth'});}
 function fzImg(){const t=GT,R=gTodos('fezes').filter(x=>x.dia===t.dia&&doLocal(t.loc,x.curral)).map(x=>({c:x.curral,k:fzCalc(x.c),obs:x.obs})).filter(o=>o.k.tot).sort((a,b)=>alfa(a.c,b.c));
   const G5=[0,0,0,0,0];R.forEach(o=>o.k.cs.forEach((n,i)=>G5[i]+=n));const KG=fzCalc(G5);
   enviarImg(`Escore de fezes · ${dB(t.dia)}`,[{cab:'% de fezes em cada escore (1 líquida · 3 ideal · 5 seca)',cols:[['Curral',170,'l'],['N',60,'r'],['1',90,'r'],['2',90,'r'],['3',90,'r'],['4',90,'r'],['5',90,'r'],['Média',100,'r']],
@@ -2668,13 +2685,17 @@ function fzXls(hist){const t=GT;
   if(!hist){const R=gTodos('fezes').filter(x=>x.dia===t.dia&&doLocal(t.loc,x.curral)).map(x=>({c:x.curral,k:fzCalc(x.c),obs:x.obs})).filter(o=>o.k.tot).sort((a,b)=>alfa(a.c,b.c));
     return gExcel(`Escore de fezes ${dB(t.dia).replace(/\//g,'-')}`,[['Escore de fezes',['Dia','Curral','Total','Esc. 1','Esc. 2','Esc. 3','Esc. 4','Esc. 5','% 1','% 2','% 3','% 4','% 5','Média','Situação','Observação'],
       R.map(o=>[xc(t.dia,'dia'),xc(o.c),xc(o.k.tot,'int')].concat(o.k.cs.map(n=>xc(n,'int')),o.k.pct.map(p=>xc(p/100,'pct')),[xc(o.k.media,'dec'),xc(fzStatus(o.k).txt),xc(o.obs||'')])),[11,16,8,7,7,7,7,7,8,8,8,8,8,8,24,40]]]);}
-  const hN=[7,15,30].includes(+t.hN)?+t.hN:30,ini=somaDias(t.dia,-(hN-1)),cH=t.hCur||'';
+  const hN=[7,15,30].includes(+t.hN)?+t.hN:30,cH=t.hCur||'',ini=fzIni(t,t.dia,cH);
   const HI=gTodos('fezes').filter(x=>x.dia>=ini&&x.dia<=t.dia&&(cH?nAt(x.curral)===cH:doLocal(t.loc,nAt(x.curral)))).map(x=>({d:x.dia,c:x.curral,k:fzCalc(x.c),obs:x.obs})).filter(o=>o.k.tot).sort((a,b)=>a.d.localeCompare(b.d)||alfa(a.c,b.c));
-  gExcel(`Escore de fezes historico ${hN} dias ${(cH||'todos').replace(/[\\/:*?"<>|]/g,'-')} ${dB(t.dia).replace(/\//g,'-')}`,[['Histórico',['Dia','Curral','Total','% 1','% 2','% 3','% 4','% 5','Média','Situação','Observação'],
+  gExcel(`Escore de fezes historico ${hN} leituras ${(cH||'todos').replace(/[\\/:*?"<>|]/g,'-')} ${dB(t.dia).replace(/\//g,'-')}`,[['Histórico',['Dia','Curral','Total','% 1','% 2','% 3','% 4','% 5','Média','Situação','Observação'],
     HI.map(o=>[xc(o.d,'dia'),xc(o.c),xc(o.k.tot,'int')].concat(o.k.pct.map(p=>xc(p/100,'pct')),[xc(o.k.media,'dec'),xc(fzStatus(o.k).txt),xc(o.obs||'')])),[11,16,8,8,8,8,8,8,8,24,40]]]);}
 $('gBox').addEventListener('click',e=>{const b=e.target.closest('[data-g^="fz"]');if(!b||GT.t!=='fezes')return;const a=b.dataset.g;
-  if(a==='fzCur'){GT.cur=GT.cur===b.dataset.c&&b.tagName==='BUTTON'?null:b.dataset.c;gRender();if(GT.cur)setTimeout(()=>{const f=document.querySelector('.fzFicha');if(f)f.scrollIntoView({behavior:'smooth',block:'start'});},50);return;}
+  if(a==='fzSalvar'){if(typeof bloqueado==='function'&&bloqueado())return;return fzSalvar();}
+  if(a==='fzCancelar'){const o=$('fzObs');if(o&&GT.fzR)GT.fzR.obs=o.value;const mud=GT.fzR&&JSON.stringify([GT.fzR.c,GT.fzR.obs])!==GT.fzR.orig;
+    (mud&&window.perg?perg('Cancelar esta avaliação?','O que você marcou neste curral não vai ser salvo.','Sim, cancelar','Não, continuar',false):Promise.resolve(!mud||confirm('Cancelar esta avaliação?'))).then(v=>{if(!v)return;GT.cur=null;GT.fzR=null;gRender();window.scrollTo({top:0,behavior:'smooth'});});return;}
+  if(a==='fzCur'){if(GT.cur&&GT.fzR&&b.dataset.c!==GT.cur)return;GT.fzR=null;GT.cur=GT.cur===b.dataset.c&&b.tagName==='BUTTON'?null:b.dataset.c;gRender();if(GT.cur)setTimeout(()=>{const f=document.querySelector('.fzFicha');if(f)f.scrollIntoView({behavior:'smooth',block:'start'});},50);return;}
   if(a==='fzLoc'){GT.loc=b.dataset.l;GT.cur=null;return gRender();}
+  if(a==='fzLocP'){if(GT.fzR&&!confirm('Tem uma avaliação sem salvar. Descartar?'))return;const L=['T','C','P'];let i=Math.max(0,L.indexOf(GT.loc||'T'));GT.loc=L[Math.max(0,Math.min(2,i+(+b.dataset.n)))];GT.cur=null;GT.fzR=null;return gRender();}
   if(a==='fzPdf')return fzRelPdf();if(a==='fzImgG')return fzRelImg();
   if(a==='fzImg')return fzImg();if(a==='fzXls')return fzXls(false);if(a==='fzXlsHist')return fzXls(true);
   if(a==='fzHN'){GT.hN=+b.dataset.n;const y=window.scrollY;gRender();window.scrollTo({top:y});return;}
@@ -2684,13 +2705,13 @@ $('gBox').addEventListener('click',e=>{const b=e.target.closest('[data-g^="fz"]'
   if(a==='fzFotoAdd'){const f=document.getElementById('fzFotoIn');if(f)f.click();return;}
   if(a==='fzFotoVer')return fzFotoVer(+b.dataset.n);
   if(a==='fzFotoRm')return fzFotoRm(+b.dataset.n);
-  if(a==='fzApagar'){if(!confirm(`Apagar a avaliação de fezes do ${GT.cur} em ${dB(GT.dia)}?`))return;const x=fzItem(GT.dia,GT.cur);if(x)gDel(x.uid);return gRender();}});
+  if(a==='fzApagar'){if(!confirm(`Apagar a avaliação de fezes do ${GT.cur} em ${dB(GT.dia)}?`))return;const x=fzItem(GT.dia,GT.cur);if(x)gDel(x.uid);GT.cur=null;GT.fzR=null;return gRender();}});
 $('gBox').addEventListener('change',e=>{if(GT.t!=='fezes')return;
-  if(e.target.id==='fzDia'){GT.dia=e.target.value||hojeKey();GT.cur=null;return gRender();}
+  if(e.target.id==='fzDia'){GT.dia=e.target.value||hojeKey();GT.cur=null;GT.fzR=null;return gRender();}
+  if(e.target.matches&&e.target.matches('select[data-fzlsel]')){GT.loc=e.target.value;GT.cur=null;GT.fzR=null;return gRender();}
   if(e.target.id==='fzHCur'){GT.hCur=e.target.value;return gRender();}
   if(e.target.id==='fzFotoIn'){const fs=[...(e.target.files||[])];e.target.value='';return fzFotosAnexar(fs);}
-  if(e.target.id==='fzObs'){if(typeof bloqueado==='function'&&bloqueado())return;const c=GT.cur;if(!c)return;const x=fzItem(GT.dia,c)||{uid:fzId(GT.dia,c),tipo:'fezes',dia:GT.dia,curral:c,c:[0,0,0,0,0]};
-    const n=JSON.parse(JSON.stringify(x));n.obs=e.target.value;gPut(n);toast('Observação salva');}});
+  if(e.target.id==='fzObs'){if(GT.fzR)GT.fzR.obs=e.target.value;}});
 
 /* ---------- Escore de fezes: fotos (até 4 por curral/dia), guardadas no Google Drive pela planilha ---------- */
 const FZ_MAXF=6,FZ_FOTO={},FZ_ENV={};   // FZ_FOTO: cache id → dataURL; FZ_ENV: fotos subindo (por curral)
@@ -2797,14 +2818,14 @@ async function fzFotosParaPdf(){const D=fzDadosDia(),imgs={},ids=[];D.forEach(o=
     imgs[f.id]=await new Promise((ok_,er)=>{const im=new Image();im.onload=()=>ok_(im);im.onerror=er;im.src=src;});}catch(e){}}));
   return imgs;}
 /* histórico do escore (7/15/30 dias, um curral ou todos): gráfico + tabela, em PDF ou imagem */
-function fzHistCanvas(){const t=GT,dia=t.dia,hN=[7,15,30].includes(+t.hN)?+t.hN:30,ini=somaDias(dia,-(hN-1)),cH=t.hCur||'';
+function fzHistCanvas(){const t=GT,dia=t.dia,hN=[7,15,30].includes(+t.hN)?+t.hN:30,cH=t.hCur||'',ini=fzIni(t,dia,cH);
   const porDia={};gTodos('fezes').filter(x=>x.dia>=ini&&x.dia<=dia&&(cH?nAt(x.curral)===cH:doLocal(t.loc,nAt(x.curral)))).forEach(x=>{const k=fzCalc(x.c);if(!k.tot)return;const d=porDia[x.dia]||(porDia[x.dia]=[0,0,0,0,0]);k.cs.forEach((n,i)=>d[i]+=n);});
   const dias=Object.keys(porDia).sort();if(!dias.length)return null;
   const W=1240,top=130,gH=460,rowH=44,H=top+40+gH+70+60+(dias.length+1)*rowH+90,cv=document.createElement('canvas');cv.width=W;cv.height=H;const x=cv.getContext('2d');
   const quem=cH||(t.loc==='C'?'Todo o confinamento':t.loc==='P'?'Todo o pasto':'Todos os currais');
   x.fillStyle='#fff';x.fillRect(0,0,W,H);x.fillStyle='#24502a';x.fillRect(0,0,W,top);
   x.fillStyle='#fff';x.textAlign='left';x.font='bold 40px Arial';x.fillText('Escore de fezes · Histórico',40,62);
-  x.font='24px Arial';x.fillStyle='#d8f06a';x.fillText(`${quem} · últimos ${hN} dias (${dB(ini).slice(0,5)} a ${dB(dia).slice(0,5)}) · FJK Agropecuária`,40,102);
+  x.font='24px Arial';x.fillStyle='#d8f06a';x.fillText(`${quem} · últimas ${hN} leituras (${dB(ini).slice(0,5)} a ${dB(dia).slice(0,5)}) · FJK Agropecuária`,40,102);
   const T5=[0,0,0,0,0];dias.forEach(d=>porDia[d].forEach((n,i)=>T5[i]+=n));const KT=fzCalc(T5);
   x.textAlign='right';x.fillStyle='#fff';x.font='bold 24px Arial';x.fillText(`${KT.tot} fezes · média ${fz1(KT.media)}`,W-40,62);
   /* gráfico: uma coluna por dia avaliado, empilhada 1→5 em % */
@@ -2829,7 +2850,7 @@ function fzHistCanvas(){const t=GT,dia=t.dia,hN=[7,15,30].includes(+t.hN)?+t.hN:
   x.textAlign='left';x.fillStyle='#5d6b7a';x.font='18px Arial';x.fillText('Ideal: maioria no escore 3, média entre 2,5 e 3,5 · >20% em 1+2 = moles (acidose) · >20% em 4+5 = firmes.',40,H-30);
   return cv;}
 async function fzHistExport(pdf){const cv=fzHistCanvas();if(!cv)return toast('Sem avaliações nesse período');const t=GT,hN=[7,15,30].includes(+t.hN)?+t.hN:30;
-  const nome=`Escore de fezes historico ${hN} dias ${(t.hCur||'todos').replace(/[\\/:*?"<>|]/g,'-')} ${dB(t.dia).replace(/\//g,'-')}`;
+  const nome=`Escore de fezes historico ${hN} leituras ${(t.hCur||'todos').replace(/[\\/:*?"<>|]/g,'-')} ${dB(t.dia).replace(/\//g,'-')}`;
   try{if(pdf)await compartilharArquivo(fzPdf([cv]),nome+'.pdf','application/pdf');
     else cv.toBlob(b=>compartilharArquivo(b,nome+'.png','image/png'),'image/png');}catch(e){toast('Não consegui gerar o arquivo');}}
 window.fzHistCanvas=fzHistCanvas;
@@ -2866,8 +2887,10 @@ function zootCards(T){return [['Cabeças',nf(T.cab)],['Peso entrada',nf(T.pE,1)+
 /* estado único do relatório de índices: o mesmo em Tratos › Histórico › Relatório e em Gestão › Relatórios › Índices do dia */
 window.ZST=window.ZST||{dia:null,loc:'T'};
 function zootBoxHTML(){const dia=ZST.dia||(ZST.dia=hojeKey()),loc=ZST.loc||'T',D=zootDados(dia,loc);
-  const top=`<div class="curhead"><h2>Índices do dia</h2><input type="date" id="zDia" value="${dia}" max="${hojeKey()}" aria-label="Dia do relatório"></div>
-    <div class="linhas zLoc">${[['T','Todos'],['C','Confinamento'],['P','🌿 Pasto']].map(([k,t])=>`<button data-zloc="${k}" class="${loc===k?'sel':''}">${t}</button>`).join('')}</div>
+  const LZ=window.LOC_OPS||[['T','Todos'],['C','Confinamento'],['P','Pasto']],li=Math.max(0,LZ.findIndex(o=>o[0]===loc)),hj=hojeKey(),[y_,m_,d_]=dia.split('-').map(Number),tg=dia===hj?' <i>Hoje</i>':dia===somaDias(hj,-1)?' <i>Ontem</i>':'';
+  const top=`<h2 class="zTit">Índices do dia</h2>
+    <div class="gNavData zNavDia"><button type="button" class="gSeta" data-zd="-1" aria-label="Dia anterior">◀</button><label class="gDataBox"><span>${SEM[new Date(y_,m_-1,d_).getDay()]} ${dB(dia).slice(0,6)+dB(dia).slice(8)}${tg}</span><input type="date" id="zDia" value="${dia}" max="${hj}" aria-label="Dia do relatório"></label><button type="button" class="gSeta" data-zd="1" aria-label="Dia seguinte"${dia>=hj?' disabled':''}>▶</button></div>
+    <div class="zLocNav">${typeof selSetas==='function'?selSetas('Local',LZ,li,'data-zlp','data-zlsel'):''}</div>
     ${D.rows.length?'<div class="row compart fz3"><button class="verde" data-z="pdf">📄 PDF</button><button class="verde" data-z="img">🖼 Foto</button><button class="verde" data-z="xls">📊 Excel</button></div>':''}
     <p class="note">${dB(dia)}: consumo de matéria natural, matéria seca, % do peso vivo e custo por cabeça.</p>`;
   if(!D.rows.length)return top+'<p class="note">Nenhum lote com animais neste dia.</p>';
@@ -2881,8 +2904,12 @@ function zootRepintar(){try{if(window.pintarZoot)pintarZoot();}catch(e){}if(GT&&
 if(!window.__zootEv){window.__zootEv=1;
   document.addEventListener('click',e=>{const box=e.target.closest('.zootBox');if(!box)return;
     const l=e.target.closest('[data-zloc]');if(l){ZST.loc=l.dataset.zloc;zootRepintar();return;}
+    const zd=e.target.closest('[data-zd]');if(zd&&!zd.disabled){const n=somaDias(ZST.dia||hojeKey(),+zd.dataset.zd);ZST.dia=n>hojeKey()?hojeKey():n;zootRepintar();return;}
+    const zp=e.target.closest('[data-zlp]');if(zp&&!zp.disabled){const L=['T','C','P'];let i=Math.max(0,L.indexOf(ZST.loc||'T'));ZST.loc=L[Math.max(0,Math.min(2,i+(+zp.dataset.zlp)))];zootRepintar();return;}
+    const zi=e.target.closest('.zNavDia .gDataBox input');if(zi&&zi.showPicker){try{zi.showPicker();}catch(_){}}
     const b=e.target.closest('[data-z]');if(b)zootExport(b.dataset.z,ZST.dia||hojeKey(),ZST.loc||'T');});
-  document.addEventListener('change',e=>{if(e.target.id==='zDia'&&e.target.closest('.zootBox')&&e.target.value){ZST.dia=e.target.value;zootRepintar();}});}
+  document.addEventListener('change',e=>{if(e.target.id==='zDia'&&e.target.closest('.zootBox')&&e.target.value){ZST.dia=e.target.value;zootRepintar();return;}
+    const zs=e.target.closest('.zootBox select[data-zlsel]');if(zs){ZST.loc=zs.value;zootRepintar();}});}
 function tIndices(){return `${voltar('Relatórios')}<section class="panel zootBox">${zootBoxHTML()}</section>`;}
 function zootCanvas(D){const W=1754,top=84,rowH=38,hd=72,porPag=Math.max(5,Math.floor((1240-top-30-hd-60)/rowH)),pags=[];
   const all=D.rows.concat([{__tot:1}]),nP=Math.ceil(all.length/porPag);
