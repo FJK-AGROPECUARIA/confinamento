@@ -1025,7 +1025,9 @@ function tCocho(t){
     const sug=cn?arred(base*(1+cn.p/100),cfg.arred):null,kg=sel&&ok(sel.kg)?sel.kg:sug;
     const ant=[3,2,1].map(i=>{const x=G.it[idLeit(somaDias(dia,-i),c)];return x&&!x.del?notaTxt(x.nota):'·';}).join('  ');
     const pvT=L.reduce((a,l)=>a+cabPres(l,dia)*pesoEm(l,dia),0),msF=(()=>{let w=0,t=0;L.forEach(l=>{const r=racaoEm(l,dia),cp=r&&compRacao(r,dia);if(cp){w+=cabPres(l,dia);t+=cabPres(l,dia)*cp.ms/100;}});return w?t/w:NaN;})();
-    const imsOnt=ontem&&pvT&&ok(msF)?ontem*msF/pvT*100:NaN;
+    /* IMS de ontem: com a MS e o peso do PRÓPRIO dia de ontem (MS alterada depois do trato só vale a partir do dia seguinte) */
+    const pvO=L.reduce((a,l)=>a+cabPres(l,ont)*pesoEm(l,ont),0),msO=(()=>{let w=0,t=0;L.forEach(l=>{const r=racaoEm(l,ont),cp=r&&compRacao(r,ont);if(cp){w+=cabPres(l,ont);t+=cabPres(l,ont)*cp.ms/100;}});return w?t/w:NaN;})();
+    const imsOnt=ontem&&pvO&&ok(msO)?ontem*msO/pvO*100:NaN;
     const baseOp=`<details class="gBaseOp"${bs?' open':''}><summary>Base: <b>${nf(base)} kg</b> <small>(${orig})</small> <span class="gMudarBt">✎ mudar</span></summary><div class="gBaseF">
       ${opB('ontem','Realizado do dia anterior')}${opB('prev','Previsto do dia anterior')}${opB('dia','Igual ao trato de uma data')}
       ${bm==='dia'?`<div class="gBaseChips">${chips}</div>`:''}</div></details>`;
@@ -2519,7 +2521,7 @@ function estCor(e){if(e.saldo==null)return '';if(e.saldo<=0)return 'r';if(!ok(e.
 function tEstoque(){const I=gTodos('insumo').filter(i=>!i.inativo).sort(porNome),hj=hojeKey();
   const L=I.map(i=>({i,e:estoqueIns(i)}));
   const item=({i,e})=>{const cor=estCor(e),baixo=cor==='r',abMin=e.saldo!=null&&e.min&&e.saldo<e.min;
-    return `<button class="gItem gEstIt${cor?' gEstC'+cor:''}" data-g="ir" data-t="estIns" data-id="${i.uid}"><div class="gItemTopo"><b>${esc(i.nome)}</b><span class="gEstSaldo">${e.saldo==null?'sem lançamento':nf(e.saldo)+' kg'}</span></div>
+    return `<button class="gItem gEstIt${cor?' gEstC'+cor:''}" data-g="ir" data-t="estIns" data-id="${i.uid}"><div class="gItemTopo"><b>${esc(i.nome)}</b><span class="gEstSaldo">${e.saldo==null?'sem lançamento':'<small class="gEstSL">saldo</small>'+nf(e.saldo)+' kg'}</span></div>
       <small>${e.saldo==null?'Lance uma entrada ou uma contagem para começar o controle.':((x)=>x.replace(/^(⚠ )?([a-zà-ú])/,(m,w,c)=>(w||'')+c.toUpperCase()))([baixo?'⚠ estoque baixo':'',abMin&&!baixo?'abaixo do mínimo':'',ok(e.dias)?`finaliza em <span class="gEstDias">~${nf(e.dias,1)} dia${Math.round(e.dias*10)===10?'':'s'}</span>`:'',e.cons>0?`consumo ${nf(e.cons)} kg/dia (média 7 dias)`:'sem consumo nos últimos 7 dias',e.min?`mínimo ${nf(e.min)} kg`:''].filter(Boolean).join(' · '))}</small></button>`;};
   return `<section class="panel"><div class="curhead"><h2>Estoque</h2><span class="note">${dB(hj)}</span></div>
     <div class="gEstBtns gEst4"><button class="lima" data-g="ir" data-t="estForm" data-mov="ent">＋ Entrada</button><button class="lima" data-g="nfNova">📎 ＋ NF</button><button data-g="ir" data-t="estForm" data-mov="sai">－ Saída manual</button><button data-g="ir" data-t="estForm" data-mov="inv">Contagem</button></div>
@@ -3233,7 +3235,7 @@ async function estCardsPdf(dia){const I=gTodos('insumo').filter(i=>!i.inativo).s
   let y=TOP;blocos.forEach(b=>{const e=b.o.e,c=CORES[estCor(e)],h=hB(b);
     rr(M,y,W-2*M,h,22);x.fillStyle=c[0];x.fill();x.lineWidth=5;x.strokeStyle=c[1];x.stroke();
     let yy=y+PAD+23;x.font=`800 42px ${FN}`;x.fillStyle=estCor(e)==='r'?c[2]:'#11253d';x.textAlign='left';x.fillText(b.o.i.nome,M+PAD,yy);
-    x.textAlign='right';x.fillStyle=c[2];x.fillText(nf(e.saldo)+' kg',W-M-PAD,yy);x.textAlign='left';yy+=23+14+26;
+    x.textAlign='right';x.fillStyle=c[2];const sT=nf(e.saldo)+' kg';x.fillText(sT,W-M-PAD,yy);const sW=x.measureText(sT).width;x.font=`500 22px ${FN}`;x.fillStyle='#78909c';x.fillText('saldo',W-M-PAD-sW-12,yy+6);x.textAlign='left';yy+=23+14+26;
     b.L.forEach(lin=>{let xx=M+PAD;lin.forEach((tk,k)=>{if(k)xx+=8;
       if(tk.badge){x.font=`800 32px ${FN}`;const bw=tk.w,bh=46;rr(xx,yy-bh/2,bw,bh,23);x.fillStyle=estCor(e)==='a'?'#f2b600':c[1];x.fill();x.fillStyle=estCor(e)==='a'?'#3a2a00':'#fff';x.fillText(tk.t,xx+14,yy+1);}
       else{x.font=`500 30px ${FN}`;x.fillStyle='#3d4a3d';x.fillText(tk.t,xx,yy);}xx+=tk.w;});yy+=52;});
