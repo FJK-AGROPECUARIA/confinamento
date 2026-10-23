@@ -1148,7 +1148,7 @@ body.naInicio .topoTxt h1{font-size:clamp(16px,5vw,28px)!important}
 <div class="toast" id="toast" hidden></div>
 <script>
 'use strict';
-const APP_VERSAO='119';
+const APP_VERSAO='120';
 const APP_DATA='19/10/2026';
 const KEY='confinamento-completo-v1';
 const $=id=>document.getElementById(id);
@@ -1960,8 +1960,8 @@ $('tbPrev').addEventListener('click',e=>{
     try{const r=G.it.renomes&&!G.it.renomes.del?JSON.parse(JSON.stringify(G.it.renomes)):{uid:'renomes',tipo:'renomes',v:{}};r.v=r.v||{};r.v[n]=novo;Object.keys(r.v).forEach(k=>{if(r.v[k]===n)r.v[k]=novo;});delete r.v[novo];gPut(r);}catch(e){}
     toast(`${n} agora é ${novo}`);
   }else if(b.dataset.a==='rm'){
-    if(!confirm(`Excluir o ${n}? O previsto dele em todos os tratos também sai. Os registros já feitos continuam no histórico.`))return;
-    C.splice(i,1);Object.values(S.prev).forEach(m=>{delete m[n];});toast(`${n} excluído`);
+    const u=window.curUsoTxt?curUsoTxt(n):'';if(u){toast(`O ${n} já foi usado (${u}): não pode apagar. Inative em Gestão › Currais.`);return;}
+    (async()=>{if(!await pedirSenhaAcao('Senha para apagar'))return;if(!confirm(`Deseja realmente apagar o ${n}?`))return;const e_=curraisApi.apagar(n);if(e_)toast(e_);else toast(`${n} apagado`);renderPrev();})();return;
   }else return;
   marcarPrev();render();renderPrev();
 });
@@ -1977,6 +1977,8 @@ function salvarInfoCurral(n,info){const it=G.it.currais&&!G.it.currais.del?JSON.
 window.curraisApi={
   lista:()=>S.cadastro.slice(),info:n=>Object.assign({tipo:linhaDe(n),inativo:false},infoCurral(n)),achar:acharCadastro,limpo:nomeLimpo,
   novo(n,info){n=nomeLimpo(n||'');if(!n)return 'Coloque o nome';const ja=acharCadastro(n);if(ja)return `${ja} já está cadastrado`;S.cadastro.push(n);marcarPrev();salvarInfoCurral(n,info||{});return '';},
+  apagar(n){const C=S.cadastro,i=C.indexOf(n);if(i<0)return 'Curral não encontrado';C.splice(i,1);Object.values(S.prev).forEach(m=>{delete m[n];});
+    try{const it=G.it.currais&&!G.it.currais.del?JSON.parse(JSON.stringify(G.it.currais)):null;if(it&&it.v&&it.v[n]){delete it.v[n];gPut(it);}}catch(e){}marcarPrev();try{render();}catch(e){}return '';},
   salvar(n,novo,info){novo=nomeLimpo(novo||'');if(!novo)return 'Coloque o nome';if(novo!==n){const ja=acharCadastro(novo);if(ja&&ja!==n)return `${ja} já está cadastrado`;renomearCurral(n,novo);}salvarInfoCurral(novo,info||{});return '';}};
 $('btnCadastrar').onclick=()=>{
   const n=nomeLimpo(prompt('Nome do curral que quer adicionar (ex.: C-11):')||'');if(!n)return;

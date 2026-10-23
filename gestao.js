@@ -180,7 +180,7 @@ const fn=k=>gNum(fv(k));
 const opCurrais=atual=>(S.cadastro||[]).filter(n=>n===atual||!window.curraisApi||!curraisApi.info(n).inativo).slice().sort((a,b)=>alfa(a,b)).map(n=>[n,n]);
 const racAtivas=()=>gTodos('racao').filter(r=>!r.inativa);
 const opRacoes=atual=>[['','— escolher —']].concat(gTodos('racao').filter(r=>!r.inativa||r.uid===atual).sort(porNome).map(r=>[r.uid,r.nome+(r.inativa?' (inativa)':'')]));
-const opInsumos=()=>gTodos('insumo').sort(porNome).map(r=>[r.uid,r.nome]);
+const opInsumos=()=>gTodos('insumo').sort(porNome).map(r=>[r.uid,r.nome+(r.inativo?' (inativo)':'')]);
 const UNID_C=[['arroba','R$ por @ (peso vivo ÷ 30)'],['cab','R$ por cabeça'],['kg','R$ por kg vivo']];
 const UNID_V=[['arroba','R$ por @ (carcaça ÷ 15)'],['cab','R$ por cabeça'],['kg','R$ por kg vivo']];
 
@@ -1437,7 +1437,7 @@ function salvaRac(id){
 /* ---------- insumos ---------- */
 function tInsumos(){
   const hj=hojeKey(),I=gTodos('insumo').sort(porNome);
-  const rows=I.map(i=>{const p=precoIns(i,hj),e=estoqueIns(i);return `<tr data-g="ir" data-t="insForm" data-id="${i.uid}" class="gClic"><td class="c">${esc(i.nome)}<small>${e.saldo==null?'estoque: sem lançamento':'estoque: '+nf(e.saldo)+' kg'}</small>${i.obs?`<small>📝 ${esc(i.obs)}</small>`:''}</td><td>${pc(+i.ms,1)}</td><td>${rs(p)}<small>${rs(p/1000/(i.ms/100),3)}/kg MS</small></td></tr>`;}).join('');
+  const rows=I.map(i=>{const p=precoIns(i,hj),e=estoqueIns(i);return `<tr data-g="ir" data-t="insForm" data-id="${i.uid}" class="gClic"><td class="c">${esc(i.nome)}${i.inativo?' <span class="pill">inativo</span>':''}<small>${e.saldo==null?'estoque: sem lançamento':'estoque: '+nf(e.saldo)+' kg'}</small>${i.obs?`<small>📝 ${esc(i.obs)}</small>`:''}</td><td>${pc(+i.ms,1)}</td><td>${rs(p)}<small>${rs(p/1000/(i.ms/100),3)}/kg MS</small></td></tr>`;}).join('');
   return `<section class="panel"><div class="curhead gLotesTopo"><h2>Insumos <span class="note">${I.length}</span></h2>
       <span class="gLotesBts"><button type="button" class="mini lima" data-g="ir" data-t="insForm">+ Novo insumo</button><button type="button" class="mini" data-g="ir" data-t="insMS">💧 Matéria seca</button></span></div>
     ${I.length?`<div class="row compart fz3 lotesExp"><button class="verde" data-g="insPdf">📄 PDF</button><button class="verde" data-g="insImg">🖼 Foto</button><button class="verde" data-g="insXls">📊 Excel</button></div>`:''}
@@ -1509,7 +1509,9 @@ function tInsForm(t){const i=t.id?G.it[t.id]:null,hj=hojeKey();
     {k:'obs',l:'Observação',v:i&&i.obs?i.obs:'',ph:'Ex.: fornecedor, frete, umidade...'}].map(campo).join('')}</div>
     <button class="primary" data-g="salvaIns" data-id="${t.id||''}">Salvar</button></section>
     ${i?`<section class="panel"><h2>Histórico de preço</h2><div class="tablebox"><table><thead><tr><th>Desde</th><th>R$/t</th><th></th></tr></thead><tbody>${hist}</tbody></table></div>
-    <button class="dangerfill" data-g="apagaIns" data-id="${i.uid}">Apagar insumo</button></section>`:''}`;}
+    </section><section class="panel"><h2>Situação</h2><p class="note">${i.inativo?'<b>Inativo</b>: não aparece no estoque nem nas entradas. Os registros antigos continuam.':'<b>Ativo</b>: aparece no estoque e nas entradas.'}</p>
+      <button class="${i.inativo?'lima':'danger'}" data-g="insAtiva" data-id="${i.uid}">${i.inativo?'✓ Reativar insumo':'⏸ Inativar insumo (não vai usar mais)'}</button>
+      <button class="dangerfill" data-g="apagaIns" data-id="${i.uid}">Apagar insumo</button></section>`:''}`;}
 function salvaIns(id){const nome=fv('nome'),ms=Math.round(fn('ms')*10)/10,preco=fn('preco'),desde=fv('desde')||hojeKey();
   if(!nome)return toast('Coloque o nome');if(!(ms>0&&ms<=100))return toast('Matéria seca entre 1 e 100%');if(!(preco>=0))return toast('Coloque o preço por tonelada');
   const i=id?JSON.parse(JSON.stringify(G.it[id])):{uid:novoId('ins'),tipo:'insumo',precos:[]};
@@ -1633,6 +1635,23 @@ function salvaCfg(){const c=JSON.parse(JSON.stringify(gCfg()));const t=fn('taxa'
    EVENTOS
    ===================================================================================== */
 const SO_VER=new Set(['fzFotoVer','fzHN','fzHPdf','fzHImg','resPdf','resImg','resXls','insPdf','insImg','insXls','estPdf','estImg','estXls','estPerE','estOrd','nfVer','fzPdf','fzImgG','fzCur','fzLoc','fzImg','fzXls','fzXlsHist','cfgAba','coLoc','coAbre','coFecha','estPer','evLoc','evolN','imgDia','imgPer','imgComp','imgLote','pdfLote','imgVendas','pdfVendas','xlsVendas','pdfComp','xlsGraf','racaAdd','racaRm','grafLoc','grafCur','celGraf','imgGraf','filtroLoc','dataPasso','dataHoje','voltar','ir','lote','raiz','compRel','compDia','xlsDia','xlsPer','xlsComp','xlsLote','perAtalho','nota','racAdd','racRm','notaAdd','notaRm','notaPadrao']);
+/* ---------- apagar: sempre com senha (1010) e só o que ainda não foi usado ---------- */
+const H_=()=>typeof HIST!=='undefined'?HIST:[];
+function racUsoTxt(id){const r=G.it[id];if(!r)return '';const L=gTodos('lote').filter(l=>(l.rac||[]).some(h=>h.r===id)),B=gTodos('carga').filter(c=>c.racao===id||(r.nome&&c.racNome===r.nome));
+  return L.length||B.length?[L.length?'lotes: '+L.map(l=>l.nome).slice(0,4).join(', '):'',B.length?B.length+' batida(s)':''].filter(Boolean).join(' · '):'';}
+function insUsoTxt(id){const i=G.it[id];if(!i)return '';const R_=gTodos('racao').filter(r=>(r.versoes||[]).some(v=>(v.itens||[]).some(x=>x.ins===id))),M=gTodos('estmov').filter(m=>m.ins===id),
+  B=gTodos('carga').filter(c=>(c.itens||[]).some(x=>Array.isArray(x)?x[0]===i.nome:(x.ins===id||x.nome===i.nome)));
+  return [R_.length?'rações: '+R_.map(r=>r.nome).slice(0,4).join(', '):'',B.length?B.length+' batida(s)':'',M.length?M.length+' lançamento(s) de estoque':''].filter(Boolean).join(' · ');}
+function curUsoTxt(n){const L=gTodos('lote').filter(l=>(l.curr||[]).some(h=>nAt(h.c)===n)),T=H_().filter(r=>nAt(r.curral)===n),Le=gTodos('leitura').filter(x=>nAt(x.curral)===n);
+  return [L.length?'lotes: '+L.map(l=>l.nome).slice(0,4).join(', '):'',T.length?T.length+' trato(s)':'',Le.length?Le.length+' leitura(s)':''].filter(Boolean).join(' · ');}
+window.curUsoTxt=curUsoTxt;
+const APAGAR=new Set(['apaga','apagaLote','apagaRac','apagaIns','apagaCpr','apagaCur','estRm','apagaCarga','fzApagar','fzFotoRm','catRm','racaRm','insPrecoRm']);
+$('gBox').addEventListener('click',e=>{const b=e.target.closest('[data-g]');if(!b||!APAGAR.has(b.dataset.g)||b._senhaOk)return;
+  e.stopImmediatePropagation();e.preventDefault();if(typeof bloqueado==='function'&&bloqueado())return;const a=b.dataset.g,id=b.dataset.id;
+  if(a==='apagaRac'){const u=racUsoTxt(id);if(u)return toast(`Esta ração já foi usada (${u}): não pode apagar. Use “Inativar ração”.`);}
+  if(a==='apagaIns'){const u=insUsoTxt(id);if(u)return toast(`Este insumo já foi usado (${u}): não pode apagar. Use “Inativar insumo”.`);}
+  if(a==='apagaCur'){const u=curUsoTxt(id);if(u)return toast(`O ${id} já foi usado (${u}): não pode apagar. Use “Inativar curral”.`);}
+  (window.pedirSenhaAcao?pedirSenhaAcao('Senha para apagar'):Promise.resolve(true)).then(ok=>{if(!ok)return;b._senhaOk=1;try{b.click();}finally{b._senhaOk=0;}});},true);
 $('gBox').addEventListener('click',e=>{
   const b=e.target.closest('[data-g]');if(!b)return;const a=b.dataset.g,id=b.dataset.id;
   if(!SO_VER.has(a)&&bloqueado())return;
@@ -1758,11 +1777,13 @@ $('gBox').addEventListener('click',e=>{
   if(a==='nota'){const c=b.dataset.c,n=+b.dataset.n;if(leitTravada(GT.dia||hojeKey(),c))return;GT.sel=GT.sel||{};GT.sel[c]=b.classList.contains('sel')?{n:null}:{n};const y=window.scrollY;gRender();window.scrollTo({top:y});return;}  // tocou de novo na mesma nota: desmarca
   if(a==='salvaCocho')return salvaCocho();
   if(a==='salvaCocho1')return salvaCocho(b.dataset.c);
+  if(a==='curAtiva'){const A=window.curraisApi,inf=A.info(id),novo=!inf.inativo;A.salvar(id,id,Object.assign({},inf,{inativo:novo}));toast(novo?`${id} inativo (pausado)`:`${id} ativo de novo`);if(typeof render==='function')try{render();}catch(e){}return gRender();}
+  if(a==='apagaCur'){if(curUsoTxt(id))return toast('Este curral já foi usado: não pode apagar.');if(!confirm(`Deseja realmente apagar o curral ${id}?`))return;
+    const r=window.curraisApi&&curraisApi.apagar?curraisApi.apagar(id):'';if(r)return toast(r);toast(`${id} apagado`);return gVoltar();}
   if(a==='racAdd'){lerItensRac();GT.itens.push({ins:'',pMS:''});const y=window.scrollY;gRender();window.scrollTo({top:y});return;}
   if(a==='racRm'){lerItensRac();GT.itens.splice(+b.dataset.i,1);if(!GT.itens.length)GT.itens.push({ins:'',pMS:''});const y=window.scrollY;gRender();window.scrollTo({top:y});return;}
   if(a==='salvaRac')return salvaRac(id);
-  if(a==='apagaRac'){const r=G.it[id],usam=gTodos('lote').filter(l=>(l.rac||[]).some(h=>h.r===id));
-    if(usam.length)return toast(`Usada nos lotes: ${usam.map(l=>l.nome).join(', ')}. Não dá para apagar.`);if(!confirm(`Apagar a ração ${r.nome}?`))return;gDel(id);GT.itens=null;return gVoltar();}
+  if(a==='apagaRac'){const r=G.it[id];if(racUsoTxt(id))return toast('Esta ração já foi usada: não pode apagar.');if(!confirm(`Deseja realmente apagar a ração ${r.nome}?`))return;gDel(id);GT.itens=null;return gVoltar();}
   if(a==='salvaIns')return salvaIns(id);
   if(a==='salvaMS')return salvaMS();
   if(a==='resPdf')return resPdf();
@@ -1776,14 +1797,15 @@ $('gBox').addEventListener('click',e=>{
   if(a==='nfNova'){NF=null;NF_IMG=null;GT={t:'estNF'};gRender();window.scrollTo({top:0});return;}
   if(a==='nfOutra'){NF=null;NF_IMG=null;return gRender();}
   if(a==='nfSalva')return nfSalvar();
+  if(a==='estCancela'){NF=null;NF_IMG=null;toast('Cancelado: nada foi lançado');return gVoltar();}
   if(a==='nfVer')return nfVer(b.dataset.id,b.dataset.mini);
   if(a==='estOrd'){GT.ordE=b.dataset.o;return gRender();}
   if(a==='estPdf'||a==='estImg'||a==='estXls')return estExp(a==='estPdf'?'pdf':a==='estImg'?'img':'xls');
   if(a==='insPrecoRm'){const i=JSON.parse(JSON.stringify(G.it[id]));i.precos=i.precos.filter(p=>p.desde!==b.dataset.d);gPut(i);return gRender();}
   if(a==='racAtiva'){const r=JSON.parse(JSON.stringify(G.it[id]));const usam=lotesAtivos().filter(l=>{const x=racaoEm(l,hojeKey());return x&&x.uid===id;}).length;
     if(!r.inativa&&usam&&!confirm(`${usam} lote(s) ainda usam esta ração. Inativar mesmo assim?`))return;r.inativa=!r.inativa;gPut(r);toast(r.inativa?'Ração inativada':'Ração reativada');return gRender();}
-  if(a==='apagaIns'){const i=G.it[id],usam=gTodos('racao').filter(r=>(r.versoes||[]).some(v=>v.itens.some(x=>x.ins===id)));
-    if(usam.length)return toast(`Usado nas rações: ${usam.map(r=>r.nome).join(', ')}. Não dá para apagar.`);if(!confirm(`Apagar ${i.nome}?`))return;gDel(id);return gVoltar();}
+  if(a==='insAtiva'){const i=JSON.parse(JSON.stringify(G.it[id]));i.inativo=!i.inativo;gPut(i);toast(i.inativo?'Insumo inativado':'Insumo reativado');return gRender();}
+  if(a==='apagaIns'){const i=G.it[id];if(insUsoTxt(id))return toast('Este insumo já foi usado: não pode apagar.');if(!confirm(`Deseja realmente apagar o insumo ${i.nome}?`))return;gDel(id);return gVoltar();}
   if(a==='salvaCfg')return salvaCfg();
   if(a==='senhaTurno'){const c=JSON.parse(JSON.stringify(gCfg()));c.senhaTurno=b.dataset.v==='1';gPut(c);toast(c.senhaTurno?'Senha: 1 vez de manhã e 1 vez à tarde':'Senha: pedir sempre');return gRender();}
   if(a==='salvaDiv')return salvaDiv();
@@ -2251,12 +2273,15 @@ function tCurForm(t){const A=window.curraisApi,n=t.id||'',i=n?A.info(n):{tipo:'C
   return `${voltar()}<section class="panel"><h2>${n?'Curral '+esc(n):'Novo curral'}</h2>
     <div class="gForm">${campo({k:'cnome',l:'Nome do curral',v:n,ph:'Ex.: C-11 ou P-REPRESA-2'})}
     ${campo({k:'ctipo',l:'Tipo',t:'sel',op:[['C','🏠 Confinamento'],['P','🌿 Pasto']],v:i.tipo==='P'?'P':'C'})}
-    ${campo({k:'catv',l:'Situação',t:'sel',op:[['1','Ativo'],['0','Inativo (pausado)']],v:i.inativo?'0':'1'})}
-    <p class="note gCampo"><b>Inativo</b> só tira o curral do previsto, do carregar, do fornecer e da leitura de cocho. Não apaga nada: o lote, os custos e o histórico continuam, dá para lançar a venda e tirar o relatório normalmente, e você pode voltar para <b>Ativo</b> quando quiser.</p>
+    ${n?'':campo({k:'catv',l:'Situação',t:'sel',op:[['1','Ativo'],['0','Inativo (pausado)']],v:i.inativo?'0':'1'})}
+    ${n?'':`<p class="note gCampo"><b>Inativo</b> só tira o curral do previsto, do carregar, do fornecer e da leitura de cocho. Não apaga nada: o lote, os custos e o histórico continuam, dá para lançar a venda e tirar o relatório normalmente, e você pode voltar para <b>Ativo</b> quando quiser.</p>`}
     <div class="gCampo"><label for="gf_ctag">Tag do curral (leitor de tag)</label><div class="gTagLin"><input type="text" id="gf_ctag" value="${esc(i.tag||'')}" placeholder="Ex.: E28011C1200001D461D50375" autocomplete="off" autocapitalize="characters"><button type="button" class="mini lima" data-g="lerTag">🏷 Ler tag</button></div><p class="note" id="gTagMsg">Toque em Ler tag e passe o leitor na tag deste curral. Pode também digitar o código.</p></div></div>
-    <button class="primary" data-g="salvaCur" data-id="${esc(n)}">Salvar curral</button></section>`;}
+    <button class="primary" data-g="salvaCur" data-id="${esc(n)}">Salvar curral</button></section>
+    ${n?`<section class="panel"><h2>Situação</h2><p class="note">${i.inativo?'<b>Inativo (pausado)</b>: não aparece no previsto, carregar, fornecer nem leitura. Nada foi apagado: lote, custos e histórico continuam, e dá para lançar venda e relatório normalmente.':'<b>Ativo</b>: aparece no previsto, carregar, fornecer e leitura. Inativar só pausa: não apaga nada e dá para reativar quando quiser.'}</p>
+      <button class="${i.inativo?'lima':'danger'}" data-g="curAtiva" data-id="${esc(n)}">${i.inativo?'✓ Reativar curral':'⏸ Inativar curral'}</button>
+      ${(()=>{const u=curUsoTxt(n);return u?`<p class="note">Não dá para apagar: já foi usado (${esc(u)}). Se não vai usar mais, deixe inativo.</p>`:`<button class="danger" data-g="apagaCur" data-id="${esc(n)}">🗑 Apagar curral</button><p class="note">Só aparece porque este curral nunca teve lote, trato nem leitura.</p>`;})()}</section>`:''}`;}
 document.addEventListener('click',e=>{const b=e.target.closest('#gBox [data-g="salvaCur"]');if(!b)return;if(typeof bloqueado==='function'&&bloqueado())return;
-  const A=window.curraisApi,n=b.dataset.id,nome=fv('cnome'),tag=String(fv('ctag')).toUpperCase().replace(/[^0-9A-F]/g,''),info={tipo:fv('ctipo')==='P'?'P':'C',inativo:fv('catv')==='0',tag};
+  const A=window.curraisApi,n=b.dataset.id,nome=fv('cnome'),tag=String(fv('ctag')).toUpperCase().replace(/[^0-9A-F]/g,''),info={tipo:fv('ctipo')==='P'?'P':'C',inativo:$('gf_catv')?fv('catv')==='0':!!(n&&A.info(n).inativo),tag};
   if(tag&&tag.length<8)return toast('Tag muito curta: confira o código');
   if(tag){const outro=A.lista().find(x=>x!==n&&String(A.info(x).tag||'').toUpperCase()===tag);if(outro)return toast(`Esta tag já está no ${outro}`);}
   if(window.tagCaptura)tagCaptura(null);
@@ -2386,7 +2411,7 @@ function tEstForm(t){const ed=t.id&&G.it[t.id]&&!G.it[t.id].del?G.it[t.id]:null,
       <p class="note gTresNota">Coloque a quantidade e o valor total (o valor por kg sai sozinho), ou a quantidade e o valor por kg.</p>`
       :campo({k:'ekg',l:mov==='inv'?'Quantidade contada':'Quantidade',suf:'kg',t:'num',v:vKg,meia:1})}
     ${[{k:'eobs',l:mov==='ent'?'Fornecedor / nota (opcional)':'Observação (opcional)',v:ed?ed.obs||'':''}].map(campo).join('')}</div>
-    <button class="primary" data-g="salvaEst" data-id="${ed?ed.uid:''}">${ed?'Salvar alteração':'Salvar'}</button></section>`;}
+    <button class="primary" data-g="salvaEst" data-id="${ed?ed.uid:''}">${ed?'Salvar alteração':'Salvar'}</button><button class="danger" data-g="estCancela">✕ Cancelar</button></section>`;}
 /* ---------- ＋ NF: lê a nota fiscal (XML, PDF ou foto) e lança a entrada no estoque ---------- */
 let NF=null,NF_IMG=null;
 const PDFJS='https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/';
@@ -2452,7 +2477,7 @@ function tEstNF(){const I=gTodos('insumo').filter(i=>!i.inativo).sort(porNome),o
       <div class="gForm">${campo({k:'nfp'+i,l:'Produto',t:'sel',op,v:x.ins})}</div>
       <div class="gTres">${[{k:'nfk'+i,l:'Quantidade',suf:'kg',t:'num',v:ok(x.kg)?x.kg:''},{k:'nfv'+i,l:'Valor total',t:'rs',v:ok(x.vTot)?x.vTot:''},{k:'nfu'+i,l:'Valor por kg',t:'rs',v:ok(x.kg)&&ok(x.vTot)&&x.kg>0?Math.round(x.vTot/x.kg*100)/100:''}].map(campo).join('')}</div></div>`).join('')}
     <p class="note">Item sem produto escolhido não é lançado.</p>
-    <button class="primary" data-g="nfSalva">✓ Lançar entrada${NF.itens.length>1?'s':''}</button><button data-g="nfOutra">Escolher outro arquivo</button></section>`;}
+    <button class="primary" data-g="nfSalva">✓ Lançar entrada${NF.itens.length>1?'s':''}</button><button data-g="nfOutra">Escolher outro arquivo</button><button class="danger" data-g="estCancela">✕ Cancelar</button></section>`;}
 document.addEventListener('change',e=>{if(e.target&&e.target.id==='nfArq'&&e.target.files&&e.target.files[0])nfLer(e.target.files[0]);});
 document.addEventListener('input',e=>{const m=/^gf_nf([kvu])(\d+)$/.exec((e.target&&e.target.id)||'');if(!m)return;const i=m[2],kg=fn('nfk'+i),tot=fn('nfv'+i),pk=fn('nfu'+i),T=$('gf_nfv'+i),P=$('gf_nfu'+i);if(!T||!P)return;
   if(m[1]==='u'){if(kg>0&&pk>0)T.value=rsIn(Math.round(pk*kg*100)/100);}else if(kg>0&&tot>0)P.value=rsIn(Math.round(tot/kg*100)/100);});
