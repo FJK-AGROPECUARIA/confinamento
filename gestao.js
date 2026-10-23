@@ -173,8 +173,21 @@ function campo(f){const id='gf_'+f.k,v=f.v==null?'':f.v;let inp;
   else if(f.t==='dia')inp=`<input type="date" id="${id}" value="${esc(v)}">`;
   else if(f.t==='rs')inp=`<input type="text" inputmode="numeric" class="gRs" id="${id}" value="${esc(rsIn(f.v===''||f.v==null?NaN:+f.v))}" placeholder="R$ 0,00" autocomplete="off">`;
   else if(f.t==='num')inp=`<input type="text" inputmode="decimal" id="${id}" value="${esc(v===''?'':vIn(v))}" placeholder="${esc(f.ph||'')}" autocomplete="off">`;
-  else inp=`<input type="text" id="${id}" value="${esc(v)}" placeholder="${esc(f.ph||'')}" autocomplete="off"${f.lista?` list="${f.lista}"`:''}>`;
+  else inp=`<input type="text" id="${id}" value="${esc(v)}" placeholder="${esc(f.ph||(f.sug==='forn'?'Digite ou escolha um fornecedor':''))}" autocomplete="off"${f.lista?` list="${f.lista}"`:''}${f.sug?` data-sug="${f.sug}"`:''}>${f.sug?'<div class="gSug" hidden></div>':''}`;
   return `<div class="gCampo${f.meia&&f.t!=='dia'?' meia':''}"><label for="${id}">${esc(f.l)}${f.suf?` <span class="gSuf">(${esc(f.suf)})</span>`:''}</label>${inp}${f.ajuda?`<p class="note">${f.ajuda}</p>`:''}</div>`;}
+/* fornecedores: todos os nomes já usados nas entradas do estoque (já ficam cadastrados sozinhos); ao digitar, filtra embaixo */
+const fSem=x=>String(x||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toUpperCase().trim();
+function fornecedores(){const m=new Map();gTodos('estmov').filter(x=>x.mov==='ent'&&x.obs).sort((a,b)=>(b.dia||'').localeCompare(a.dia||'')).forEach(x=>{const n=String(x.obs).trim(),k=fSem(n);if(n&&(!m.has(k)||(n===n.toUpperCase()&&m.get(k)!==m.get(k).toUpperCase())))m.set(k,n);});
+  return [...m.values()].sort((a,b)=>a.localeCompare(b,'pt'));}
+window.fornecedores=fornecedores;
+function sugMostrar(inp){const box=inp.parentNode.querySelector('.gSug');if(!box)return;const q=fSem(inp.value),L=fornecedores().filter(n=>!q||fSem(n).includes(q));
+  const igual=L.length===1&&fSem(L[0])===q;if(!L.length||igual){box.hidden=true;box.innerHTML='';return;}
+  box.innerHTML=`<small>${q?'Já cadastrados com esse nome':'Fornecedores já cadastrados'} · toque para escolher</small>`+L.slice(0,8).map(n=>`<button type="button" data-sugv="${esc(n)}">${esc(n)}</button>`).join('')+(L.length>8?`<small>+${L.length-8}: continue digitando para filtrar</small>`:'');box.hidden=false;}
+document.addEventListener('input',e=>{if(e.target.matches&&e.target.matches('input[data-sug]'))sugMostrar(e.target);});
+document.addEventListener('focusin',e=>{if(e.target.matches&&e.target.matches('input[data-sug]'))sugMostrar(e.target);});
+document.addEventListener('focusout',e=>{if(e.target.matches&&e.target.matches('input[data-sug]')){const box=e.target.parentNode.querySelector('.gSug');setTimeout(()=>{if(box&&!box.contains(document.activeElement))box.hidden=true;},200);}});
+document.addEventListener('pointerdown',e=>{if(e.target.closest('.gSug'))e.preventDefault();},true);
+document.addEventListener('click',e=>{const b=e.target.closest('.gSug [data-sugv]');if(!b)return;e.stopPropagation();const box=b.closest('.gSug'),inp=box.parentNode.querySelector('input[data-sug]');inp.value=b.dataset.sugv;box.hidden=true;inp.dispatchEvent(new Event('change',{bubbles:true}));},true);
 const fv=k=>{const e=$('gf_'+k);return e?e.value.trim():'';};
 const fn=k=>gNum(fv(k));
 const opCurrais=atual=>(S.cadastro||[]).filter(n=>n===atual||!window.curraisApi||!curraisApi.info(n).inativo).slice().sort((a,b)=>alfa(a,b)).map(n=>[n,n]);
@@ -185,7 +198,7 @@ const UNID_C=[['arroba','R$ por @ (peso vivo ÷ 30)'],['cab','R$ por cabeça'],[
 const UNID_V=[['arroba','R$ por @ (carcaça ÷ 15)'],['cab','R$ por cabeça'],['kg','R$ por kg vivo']];
 
 const RAIZ={home:'home',estoque:'estoque',estIns:'estoque',estForm:'estoque',estNF:'estoque',currais:'currais',curForm:'currais',lotes:'lotes',lote:'lotes',loteForm:'lotes',pesForm:'lotes',entForm:'lotes',apartForm:'lotes',transfForm:'lotes',fechaForm:'lotes',achouForm:'lotes',saiForm:'lotes',mudForm:'lotes',rel:'lotes',custoForm:'lotes',
-  cocho:'cocho',cochoGraf:'cocho',fezes:'cocho',rels:'rels',dia:'rels',indices:'rels',periodo:'rels',comp:'rels',vendas:'rels',compradores:'rels',cprForm:'rels',racoes:'racoes',racForm:'racoes',insumos:'insumos',insForm:'insumos',insMS:'insumos',ms:'cocho',cfg:'cfg'};
+  cocho:'cocho',cochoGraf:'cocho',fezes:'cocho',rels:'rels',dia:'rels',indices:'rels',confBal:'rels',periodo:'rels',comp:'rels',vendas:'rels',compradores:'rels',cprForm:'rels',racoes:'racoes',racForm:'racoes',insumos:'insumos',insForm:'insumos',insMS:'insumos',ms:'cocho',cfg:'cfg'};
 /* Leitura de cocho fica no menu Tratos (aba 'leit'); o resto da Gestão na aba 'gest' — as duas usam a mesma tela */
 function gRaiz(t){GT={t};gPilha.length=0;const alvo=RAIZ[t]==='cocho'&&!document.body.classList.contains('modoGest')?'leit':'gest';if(window.abaAtual!==alvo)aba(alvo);else gRender();window.scrollTo({top:0});}
 window.gAbrir=modo=>{const leit=RAIZ[GT.t]==='cocho';if(modo==='leit'&&!leit)GT={t:'cocho'};if(modo==='gest'&&leit&&!document.body.classList.contains('modoGest'))GT={t:'home'};gRender();if(navigator.onLine)gSync(true).catch(()=>{});};
@@ -194,12 +207,13 @@ function gRender(){
   if(window.abaAtual==='gest'&&RAIZ[GT.t]==='cocho'&&!document.body.classList.contains('modoGest')){aba('leit');return;}  // leitura abre no menu Tratos
   if(window.abaAtual==='leit'&&RAIZ[GT.t]!=='cocho'){aba('gest');return;}
   const f={home:tHome,estoque:tEstoque,estIns:tEstIns,estForm:tEstForm,estNF:tEstNF,currais:tCurrais,curForm:tCurForm,lotes:tLotes,lote:tLote,loteForm:tLoteForm,pesForm:tPesForm,entForm:tEntForm,apartForm:tApartForm,transfForm:tTransfForm,fechaForm:tFechaForm,achouForm:tAchouForm,saiForm:tSaiForm,mudForm:tMudForm,rel:tRelLote,custoForm:tCustoForm,
-    cocho:tCocho,cochoGraf:tCochoGraf,fezes:t=>tFezes(t),rels:tRels,dia:tDia,indices:tIndices,periodo:tPeriodo,comp:tComp,vendas:tVendas,compradores:tCompradores,cprForm:tCprForm,racoes:tRacoes,racForm:tRacForm,insumos:tInsumos,insForm:tInsForm,insMS:tInsMS,ms:tInsMS,cfg:tCfg}[GT.t]||tHome;
+    cocho:tCocho,cochoGraf:tCochoGraf,fezes:t=>tFezes(t),rels:tRels,dia:tDia,indices:tIndices,confBal:()=>`${voltar('Relatórios')}${confBatHTML()}`,periodo:tPeriodo,comp:tComp,vendas:tVendas,compradores:tCompradores,cprForm:tCprForm,racoes:tRacoes,racForm:tRacForm,insumos:tInsumos,insForm:tInsForm,insMS:tInsMS,ms:tInsMS,cfg:tCfg}[GT.t]||tHome;
   const raiz=RAIZ[GT.t]||'home';document.querySelectorAll('#subGest button[data-gt]').forEach(x=>x.setAttribute('aria-selected',String(x.dataset.gt===raiz)));
   const cb=$('cfgTBox');if(cb&&$('cfgTParque')&&cb.parentNode!==$('cfgTParque'))$('cfgTParque').appendChild(cb); // ajustes da balança: guarda antes de redesenhar
   b.innerHTML=f(GT);
   try{const fz=GT.t==='fezes',ms=GT.t==='ms',lt=window.abaAtual==='leit';if($('tabFez'))$('tabFez').setAttribute('aria-selected',String(fz&&lt));if($('tabMS'))$('tabMS').setAttribute('aria-selected',String(ms&&lt));if($('tabLeit')&&lt)$('tabLeit').setAttribute('aria-selected',String(!fz&&!ms));}catch(e){}
   if(GT.t==='cfg'&&cb&&$('cfgBalHost')){$('cfgBalHost').appendChild(cb);if(window.cfgTAoAbrir)cfgTAoAbrir();}
+  if(GT.t==='cfg')cfgMinimizar();
   if(GT.t==='racForm')calcRacao();
   if(GT.t==='rel')calcSimul();
   if(GT.t==='pesForm')calcPes();
@@ -213,7 +227,16 @@ function caberSelos(){document.querySelectorAll('#gBox .gLoteV .gSelo b').forEac
   for(let i=0;i<30&&b.scrollWidth>w&&f>11;i++){f-=1;b.style.fontSize=f+'px';}});}
 window.addEventListener('resize',()=>requestAnimationFrame(caberSelos));
 
+/* Config. (todas as abas): cada quadro aparece só com o título (minimizado); tocar no título abre e fecha */
+const gMinAb=new Set();
+function cfgMinimizar(){document.querySelectorAll('#gBox section.panel').forEach(sec=>{const cab=sec.querySelector(':scope>.curhead')||sec.querySelector(':scope>h2');if(!cab)return;
+  const k=(cab.querySelector('h2')||cab).textContent.trim();sec.classList.add('gMinz');sec.dataset.minK=k;cab.classList.add('gMinzCab');sec.classList.toggle('aberto',gMinAb.has(k));});}
+document.addEventListener('click',e=>{const c=e.target.closest('#gBox .gMinz>.gMinzCab');if(!c)return;const sec=c.parentNode,k=sec.dataset.minK;
+  gMinAb.has(k)?gMinAb.delete(k):gMinAb.add(k);sec.classList.toggle('aberto',gMinAb.has(k));});
+const SEN_TIPOS=[['trato','Senha para tratar','entrar nos Tratos (Carregar, Fornecer, Automação)'],['gest','Senha da Gestão / Configurações','entrar na Gestão e nas Configurações'],['acao','Senha para alterar e excluir','editar e apagar registros, batidas e cadastros, e restaurar cópia']];
+function senhaGrava(k,v){const c=JSON.parse(JSON.stringify(gCfg())),s={trato:senhaDe('trato'),gest:senhaDe('gest'),acao:senhaDe('acao')};s[k]=v;c.senhas=s;gPut(c);}
 let gLoc='T'; // filtro dos lotes: T todos, C confinamento, P pasto
+const gLotAb=new Set(),gCurAb=new Set(); // lotes abertos (vários ao mesmo tempo) e grupos de currais abertos
 /* barra de data com setas: ◀ dia anterior | data | dia seguinte ▶ */
 const SEM=['dom.','seg.','ter.','qua.','qui.','sex.','sáb.'];
 function navData(id,dia,rot){const hj=hojeKey(),[y,m,d]=dia.split('-').map(Number),sem=SEM[new Date(y,m-1,d).getDay()];
@@ -422,20 +445,24 @@ function tLotes(t){
   const todosL=gTodos('lote').filter(noLocal),lista=(t.enc?todosL.filter(l=>!ativo(l)).sort(porNome):todosL.filter(ativo).sort(porCurral));
   const cards=lista.map(l=>{const fim=fimLote(l),ref=fim&&fim<hj?fim:hj,cab=cabPres(l,ref),r=racaoEm(l,ref),c=curralEm(l,ref),m=mediaLote(l,X);
     const sub=[sexoTxt(l.sexo),l.raca,catNorm(l.cat)].filter(Boolean).join(' · ');
-    return `<button class="gLote gLoteV" data-g="lote" data-id="${l.uid}"><div class="gLoteTopo">${seloCurral(c)}
+    const ab=gLotAb.has(l.uid);
+    return `<div class="gLote gLoteV gLoteMin${ab?' aberto':''}" data-g="loteTog" data-id="${l.uid}" role="button" tabindex="0"><div class="gLoteTopo">${seloCurral(c)}
       <div class="gLoteInfo"><b>${esc(l.nome)}</b>${sub?`<span>${esc(sub)}</span>`:''}
       <span class="gRacLote">🌾 ${esc(r?r.nome:'sem ração')}</span>
-      ${fim&&fim<hj?`<span>Arquivado em ${dB(fim)}</span>`:l.ent.dia>hj?`<span>Entra em ${dB(l.ent.dia)}</span>`:''}</div></div><div class="gLoteInfo gLoteBaixo">
+      ${fim&&fim<hj?`<span>Arquivado em ${dB(fim)}</span>`:l.ent.dia>hj?`<span>Entra em ${dB(l.ent.dia)}</span>`:''}
+      <span class="gLoteResumo"><b>${nf(cab)}</b> cab · <b>${nf(Math.max(0,difDias(l.ent.dia,ref)))}</b> dias</span></div><span class="gLoteSeta" aria-hidden="true">▼</span></div>${ab?`<div class="gLoteInfo gLoteBaixo">
       <div class="gLoteNums4"><span><b>${nf(cab)}</b> cab</span><span><b>${nf(pesoEntMed(l)||0)}</b> kg entrada</span><span><b>${nf(pesoEm(l,ref))}</b> kg projetado</span><span><b>${nf(Math.max(0,difDias(l.ent.dia,ref)))}</b> dias</span></div>
       ${(()=>{const A=ativo(l)?projAbate(l):null;if(!A)return `<div class="gLoteNums4 gAbate"><span><b>—</b> peso final projetado</span><span><b>—</b> previsão de abate</span><small>Para ver a previsão, coloque no lote o peso desejado ou os dias de cocho.</small></div>`;
         const f=difDias(hj,A.dia);return `<div class="gLoteNums4 gAbate"><span><b>${nf(A.peso)}</b> kg final projetado</span><span><b>${dB(A.dia).slice(0,5)}/${A.dia.slice(2,4)}</b> previsão de abate</span><span><b>${f<0?'atrasado':f===0?'hoje':nf(f)}</b> ${f<0?nf(-f)+' dias':f===0?'':'dias para o abate'}</span><span>pelo ${esc(A.por)}</span></div>`;})()}
       <div class="gLoteNums4 gMed"><span><b>${m.n?nf(m.mn/m.n,1):'—'}</b> MN/cab</span><span><b>${m.nms?nf(m.ms/m.nms,2):'—'}</b> MS/cab</span><span><b>${m.nms?pc(m.pv/m.nms,2):'—'}</b> % IMS</span><span><b>${nf(m.n)}</b> dias c/ trato</span></div>
       ${(()=>{const C=calcLote(l),V=vendaEst(l,C),cr=ok(V.res)?(V.res>=0?'pos':'neg'):'';return `<div class="gLoteNums4 gCus"><span><b>${ok(C.custoCabDia)?rs(C.custoCabDia):'—'}</b> R$/cab/dia</span><span><b>${C.cabE?rs((C.alim+C.op)/C.cabE):'—'}</b> R$/cab tratos</span><span><b>${C.cabE?rs(C.compra/C.cabE):'—'}</b> R$/cab compra</span>
         <span><b>${rs(C.custo)}</b> custo total do lote</span><span><b>${ok(V.venda)?rs(V.venda):'—'}</b> ${V.real?'venda':'venda estimada'}</span><span class="${cr}"><b>${ok(V.res)?rs(V.res):'—'}</b> resultado</span></div>`;})()}
-      <small class="gLoteDica">Médias de todos os tratos do lote · custo total inclui a compra · venda estimada = cabeças × peso projetado × rendimento × preço da @ (editar lote › Estimativa de venda) · toque para abrir</small></div></button>`;}).join('');
+      <button type="button" class="lima gLoteAbrir" data-g="lote" data-id="${l.uid}">Abrir lote ›</button>
+      <small class="gLoteDica">Médias de todos os tratos do lote · custo total inclui a compra · venda estimada = cabeças × peso projetado × rendimento × preço da @ (editar lote › Estimativa de venda) · toque no quadro para minimizar</small></div>`:''}</div>`;}).join('');
   return `<section class="panel"><div class="curhead gLotesTopo"><h2>${t.enc?'Lotes arquivados':'Lotes ativos'} <span class="note">${lista.length}</span></h2>
       <span class="gLotesBts">${t.enc?'':'<button type="button" class="mini lima" data-g="novoLote">+ Novo lote</button>'}<button type="button" class="mini" data-g="ir" data-t="lotes" data-enc="${t.enc?'':'1'}">${t.enc?'Ativos':'Arquivados'}</button></span></div>
-    ${(()=>{const base=gTodos('lote').filter(l=>t.enc?!ativo(l):ativo(l));return locBotoes('filtroLoc',loc,k=>base.filter(l=>doLocal(k,curralEm(l,fimLote(l)||hj))).length);})()}
+    ${typeof selSetas==='function'&&window.LOC_OPS?`<div class="gCoLocNav">${selSetas('Local',LOC_OPS,Math.max(0,LOC_OPS.findIndex(o=>o[0]===loc)),'data-g="lotLocP" data-n','data-lotlsel')}</div>`:locBotoes('filtroLoc',loc)}
+    ${lista.length>1?`<div class="row gLotesAbre"><button type="button" class="mini" data-g="lotTodos" data-v="1">▼ Abrir todos</button><button type="button" class="mini" data-g="lotTodos" data-v="0">▲ Minimizar todos</button></div>`:''}
     ${lista.length?`<div class="row compart fz3 lotesExp"><button class="verde" data-g="lotesPdf" data-enc="${t.enc?'1':''}">📄 PDF</button><button class="verde" data-g="lotesImg" data-enc="${t.enc?'1':''}">🖼 Foto</button><button class="verde" data-g="lotesXls" data-enc="${t.enc?'1':''}">📊 Excel</button></div>`:''}
     ${t.enc?'':painelFaltas()}
     ${cards||`<p class="note">${t.enc?'Nenhum lote arquivado.':'Nenhum lote ainda. Toque em “+ Novo lote”.'}</p>`}
@@ -1339,7 +1366,8 @@ function tRels(){return `<div class="gGrade">
   <button class="gBig" data-g="ir" data-t="periodo">📆<b>Por período</b><small>semana, mês ou datas escolhidas</small></button>
   <button class="gBig" data-g="ir" data-t="comp">📊<b>Comparativo de lotes</b><small>desempenho e resultado lado a lado</small></button>
   <button class="gBig" data-g="ir" data-t="vendas">💲<b>Vendas por comprador</b><small>preço, rendimento e R$/cab por comprador ou tipo</small></button>
-  <button class="gBig" data-g="ir" data-t="compradores">🤝<b>Compradores</b><small>cadastro de frigoríficos e compradores</small></button></div>
+  <button class="gBig" data-g="ir" data-t="compradores">🤝<b>Compradores</b><small>cadastro de frigoríficos e compradores</small></button>
+  <button class="gBig" data-g="ir" data-t="confBal">⚖️<b>Conferência da balança</b><small>batida e trato com a balança no início e no fim</small></button></div>
   <p class="note">O relatório de um lote fica dentro do lote: Lotes → escolha o lote → Resultado.</p>`;}
 function linhasDia(dia){const X=gCtx();return X.L.map(l=>({l,x:diaLote(l,dia,X)})).filter(o=>o.x).sort((a,b)=>porCurral(a.l,b.l));}
 function tDia(t){
@@ -1585,7 +1613,8 @@ const CFG_ABAS=[['custo','Custo'],['venda','Venda'],['notas','Leitura de cocho']
 function tCfg(){const c=gCfg(),hj=hojeKey(),tx=vig(c.taxa,hj),ab=GT.cab||'custo';
   if(!GT.racasEd)GT.racasEd=c.racas.slice().sort(alfa);if(!GT.catsEd)GT.catsEd=c.cats.slice();
   if(!GT.notasEd)GT.notasEd=c.notas.slice().sort((a,b)=>a.n-b.n).map(x=>Object.assign({},x));
-  const botoes=`<div class="gCfgAbas">${CFG_ABAS.map(([k,t])=>`<button data-g="cfgAba" data-k="${k}" class="${k===ab?'sel':''}">${t}</button>`).join('')}</div>`;
+  const botoes=`<div class="gCfgTopo"><div class="gCfgTit">⚙ Configurações</div>${selSetas('Escolher<br>ajuste',CFG_ABAS,Math.max(0,CFG_ABAS.findIndex(o=>o[0]===ab)),'data-g="cfgAbaP" data-n','data-cfgsel')}
+    <div class="gCfgAbas">${CFG_ABAS.map(([k,t])=>`<button data-g="cfgAba" data-k="${k}" class="${k===ab?'sel':''}">${t}</button>`).join('')}</div></div>`;
   const salvar='<button class="primary" data-g="salvaCfg">Salvar</button>';
   let h='';
   if(ab==='custo')h=`<section class="panel gCfgP"><h2>Custo operacional</h2><div class="gForm">${[
@@ -1628,7 +1657,14 @@ function tCfg(){const c=gCfg(),hj=hojeKey(),tx=vig(c.taxa,hj),ab=GT.cab||'custo'
   if(ab==='senha'){const tu=c.senhaTurno===true;
     h=`<section class="panel gCfgP"><h2>Senha para entrar</h2>
     <div class="linhas gFiltro"><button data-g="senhaTurno" data-v="0" class="${tu?'':'sel'}">Pedir sempre</button><button data-g="senhaTurno" data-v="1" class="${tu?'sel':''}">1 vez de manhã e 1 vez à tarde</button></div>
-    <p class="note"><b>1 vez de manhã e 1 vez à tarde:</b> em cada celular, a senha é pedida na primeira entrada da manhã (até 11:59) e na primeira entrada depois do meio-dia. Nas outras vezes do mesmo turno, entra direto. Vale para os Tratos (0000) e para a Gestão (1010), cada um com a sua senha. Um celular que ainda não colocou a senha naquele turno não entra.<br>Editar e apagar registros e batidas continuam pedindo a senha 1010 toda vez.</p></section>`;}
+    <p class="note"><b>1 vez de manhã e 1 vez à tarde:</b> em cada celular, a senha é pedida na primeira entrada da manhã (até 11:59) e na primeira entrada depois do meio-dia. Nas outras vezes do mesmo turno, entra direto. Vale para os Tratos e para a Gestão, cada um com a sua senha. Um celular que ainda não colocou a senha naquele turno não entra.<br>Editar e apagar registros e batidas continuam pedindo a senha de alterar e excluir toda vez.</p></section>
+    ${modoVer?'':`<section class="panel gCfgP gMinzSim"><h2>🔑 Alterar senhas</h2>
+    <p class="note">Só números, de 4 a 8. Quem está aqui nas configurações pode cadastrar, alterar ou tirar. <b>Sem senha</b> = entra ou altera direto, sem pedir.</p>
+    ${SEN_TIPOS.map(([k,t,aj])=>{const v=senhaDe(k),ed=GT.snEd===k,ver=GT.snVer===k;
+      return `<div class="gSenLin"><div><b>${t}</b><small>${aj}</small><span class="pill${v?' done':''}">${v?(ver?esc(v):'●'.repeat(v.length))+' · cadastrada':'sem senha'}</span></div>
+      ${ed?`<div class="gSenIn"><input type="password" id="gSenNova" inputmode="numeric" maxlength="8" autocomplete="new-password" placeholder="Nova senha"><input type="password" id="gSenConf" inputmode="numeric" maxlength="8" autocomplete="new-password" placeholder="Repita"></div>
+        <div class="gSenBts"><button class="primary" data-g="senSalva" data-k="${k}">Salvar senha</button><button class="danger" data-g="senCanc">✕ Cancelar</button></div>`
+      :`<div class="gSenBts"><button class="lima" data-g="senEd" data-k="${k}">✎ ${v?'Alterar':'Cadastrar'}</button>${v?`<button data-g="senVer" data-k="${k}">${ver?'🙈 Esconder':'👁 Mostrar'}</button><button class="danger" data-g="senTira" data-k="${k}">✕ Tirar senha</button>`:''}</div>`}</div>`;}).join('')}</section>`}`;}
   if(ab==='backup'){const I=window.bkApi?bkApi.info():{};
     h=`<section class="panel gCfgP"><h2>Backup</h2>
     <p class="note"><b>Automático:</b> todo dia às 2h da manhã, no Google Drive (pasta SISTEMA COMPLETO - CONFINAMENTO › Backups). Ficam os 20 mais novos.<br>
@@ -1696,7 +1732,7 @@ function salvaCfg(){const c=JSON.parse(JSON.stringify(gCfg()));const t=fn('taxa'
 /* =====================================================================================
    EVENTOS
    ===================================================================================== */
-const SO_VER=new Set(['cbExp','coLocP','fzLocP','fzFotoVer','fzHN','fzHPdf','fzHImg','resPdf','resImg','resXls','insPdf','insImg','insXls','estPdf','estImg','estXls','estPerE','estOrd','nfVer','fzPdf','fzImgG','fzCur','fzLoc','fzImg','fzXls','fzXlsHist','cfgAba','coLoc','coAbre','coFecha','estPer','evLoc','evolN','imgDia','imgPer','imgComp','imgLote','pdfLote','imgVendas','pdfVendas','xlsVendas','pdfComp','xlsGraf','racaAdd','racaRm','grafLoc','grafCur','celGraf','imgGraf','filtroLoc','dataPasso','dataHoje','voltar','ir','lote','raiz','compRel','compDia','xlsDia','xlsPer','xlsComp','xlsLote','perAtalho','nota','racAdd','racRm','notaAdd','notaRm','notaPadrao']);
+const SO_VER=new Set(['perP','cfgAbaP','estInsExp','cbExp','lotLocP','loteTog','lotTodos','curGrp','coLocP','fzLocP','fzFotoVer','fzHN','fzHPdf','fzHImg','resPdf','resImg','resXls','insPdf','insImg','insXls','estPdf','estImg','estXls','estPerE','estOrd','nfVer','fzPdf','fzImgG','fzCur','fzLoc','fzImg','fzXls','fzXlsHist','cfgAba','coLoc','coAbre','coFecha','estPer','evLoc','evolN','imgDia','imgPer','imgComp','imgLote','pdfLote','imgVendas','pdfVendas','xlsVendas','pdfComp','xlsGraf','racaAdd','racaRm','grafLoc','grafCur','celGraf','imgGraf','filtroLoc','dataPasso','dataHoje','voltar','ir','lote','raiz','compRel','compDia','xlsDia','xlsPer','xlsComp','xlsLote','perAtalho','nota','racAdd','racRm','notaAdd','notaRm','notaPadrao']);
 /* ---------- apagar: sempre com senha (1010) e só o que ainda não foi usado ---------- */
 const H_=()=>typeof HIST!=='undefined'?HIST:[];
 function racUsoTxt(id){const r=G.it[id];if(!r)return '';const L=gTodos('lote').filter(l=>(l.rac||[]).some(h=>h.r===id)),B=gTodos('carga').filter(c=>c.racao===id||(r.nome&&c.racNome===r.nome));
@@ -1723,6 +1759,18 @@ $('gBox').addEventListener('click',e=>{
   if(a==='lote')return gIr({t:'lote',id});
   if(a==='raiz')return gRaiz(b.dataset.t);
   if(a==='filtroLoc'){gLoc=b.dataset.l;return gRender();}
+  if(a==='senEd'){GT.snEd=b.dataset.k;GT.snVer=null;gRender();setTimeout(()=>{const i=$('gSenNova');if(i)i.focus();},50);return;}
+  if(a==='senCanc'){const n=$('gSenNova'),c_=$('gSenConf');const go=()=>{GT.snEd=null;gRender();};if((n&&n.value)||(c_&&c_.value)){(window.perg?perg('Cancelar a troca da senha?','A senha continua a mesma.','Sim, cancelar','Não'):Promise.resolve(true)).then(x=>{if(x)go();});return;}return go();}
+  if(a==='senVer'){GT.snVer=GT.snVer===b.dataset.k?null:b.dataset.k;return gRender();}
+  if(a==='senSalva'){const k=b.dataset.k,n=($('gSenNova').value||'').trim(),c_=($('gSenConf').value||'').trim();
+    if(!/^\d{4,8}$/.test(n))return toast('A senha precisa ter de 4 a 8 números');if(n!==c_)return toast('As duas senhas não estão iguais');
+    senhaGrava(k,n);GT.snEd=null;toast('Senha salva: '+SEN_TIPOS.find(x=>x[0]===k)[1]);return gRender();}
+  if(a==='senTira'){const k=b.dataset.k,t=SEN_TIPOS.find(x=>x[0]===k)[1];
+    (window.confirmaVermelho?confirmaVermelho(`Tirar a ${t.toLowerCase()}?`,k==='gest'?'Qualquer pessoa com o aplicativo vai poder entrar na Gestão e nas Configurações sem senha.':k==='trato'?'Qualquer pessoa vai poder entrar nos Tratos sem senha.':'Editar e apagar não vão mais pedir senha.','Sim, tirar','Não'):Promise.resolve(confirm('Tirar a senha?'))).then(x=>{if(!x)return;senhaGrava(k,'');toast('Senha tirada');gRender();});return;}
+  if(a==='lotLocP'){const L=['T','C','P'];let i=Math.max(0,L.indexOf(gLoc));gLoc=L[Math.max(0,Math.min(2,i+(+b.dataset.n)))];return gRender();}
+  if(a==='loteTog'){const y=window.scrollY;gLotAb.has(id)?gLotAb.delete(id):gLotAb.add(id);gRender();window.scrollTo({top:y});return;}
+  if(a==='lotTodos'){const y=window.scrollY;document.querySelectorAll('#gBox [data-g="loteTog"]').forEach(el=>b.dataset.v==='1'?gLotAb.add(el.dataset.id):gLotAb.delete(el.dataset.id));gRender();window.scrollTo({top:y});return;}
+  if(a==='curGrp'){const y=window.scrollY,k=b.dataset.k;gCurAb.has(k)?gCurAb.delete(k):gCurAb.add(k);gRender();window.scrollTo({top:y});return;}
   if(a==='racaAdd'){lerNotasEd();const v=($('gNovaRaca').value||'').trim();if(!v)return toast('Digite o nome da raça');
     if(GT.racasEd.some(r=>alfa(r,v)===0))return toast('Essa raça já está na lista');GT.racasEd.push(v);GT.racasEd.sort(alfa);gRender();return toast('Incluída. Toque em Salvar configurações.');}
   if(a==='ntLoc'){GT.ntLoc=b.dataset.l;return gRender();}
@@ -1860,6 +1908,7 @@ $('gBox').addEventListener('click',e=>{
   if(a==='salvaEst')return salvaEst(b.dataset.id);
   if(a==='estRm'){const m=G.it[id];if(!m)return;if(!confirm(`Apagar este lançamento (${m.mov==='ent'?'entrada':m.mov==='inv'?'contagem':'saída'} de ${nf(+m.kg)} kg em ${dB(m.dia)})?`))return;gDel(id);toast('Lançamento apagado');return gRender();}
   if(a==='estPer'){GT.per=+b.dataset.p;return gRender();}
+  if(a==='perP'){const k=b.dataset.k,O=PER_OPS.map(o=>o[0]);let i=Math.max(0,O.indexOf(perNorm(GT[k]==null?30:GT[k])));GT[k]=O[Math.max(0,Math.min(O.length-1,i+(+b.dataset.n)))];return gRender();}
   if(a==='estPerE'){GT.perE=+b.dataset.p;return gRender();}
   if(a==='nfNova'){NF=null;NF_IMG=null;GT={t:'estNF'};gRender();window.scrollTo({top:0});return;}
   if(a==='nfOutra'){NF=null;NF_IMG=null;return gRender();}
@@ -1867,6 +1916,7 @@ $('gBox').addEventListener('click',e=>{
   if(a==='estCancela'){NF=null;NF_IMG=null;toast('Cancelado: nada foi lançado');return gVoltar();}
   if(a==='nfVer')return nfVer(b.dataset.id,b.dataset.mini);
   if(a==='estOrd'){GT.ordE=b.dataset.o;return gRender();}
+  if(a==='estInsExp')return estInsExp(id,b.dataset.o);
   if(a==='estPdf'||a==='estImg'||a==='estXls')return estExp(a==='estPdf'?'pdf':a==='estImg'?'img':'xls');
   if(a==='insPrecoRm'){const i=JSON.parse(JSON.stringify(G.it[id]));i.precos=i.precos.filter(p=>p.desde!==b.dataset.d);gPut(i);return gRender();}
   if(a==='racAtiva'){const r=JSON.parse(JSON.stringify(G.it[id]));const usam=lotesAtivos().filter(l=>{const x=racaoEm(l,hojeKey());return x&&x.uid===id;}).length;
@@ -1877,6 +1927,7 @@ $('gBox').addEventListener('click',e=>{
   if(a==='senhaTurno'){const c=JSON.parse(JSON.stringify(gCfg()));c.senhaTurno=b.dataset.v==='1';gPut(c);toast(c.senhaTurno?'Senha: 1 vez de manhã e 1 vez à tarde':'Senha: pedir sempre');return gRender();}
   if(a==='salvaDiv')return salvaDiv();
   if(a==='cfgAba'){lerNotasEd();GT.cab=b.dataset.k;gRender();window.scrollTo({top:0});return;}
+  if(a==='cfgAbaP'){lerNotasEd();const O=CFG_ABAS.map(o=>o[0]);let i=Math.max(0,O.indexOf(GT.cab||O[0]));GT.cab=O[Math.max(0,Math.min(O.length-1,i+(+b.dataset.n)))];gRender();return;}
   if(a==='retroCalc')return retroCalc();
   if(a==='retroGera')return retroGera();
   if(a==='retroApaga')return retroApaga();
@@ -1913,6 +1964,11 @@ $('gBox').addEventListener('input',e=>{const t=e.target;if(!t.matches||!t.matche
 $('gBox').addEventListener('change',e=>{
   const t=e.target;
   if(GT.t==='racForm'&&t.matches('[data-ri]'))calcRacao();
+  if(t.id==='gf_emov'&&GT.t==='estForm'){const h=document.querySelector('#gBox section h2');if(h)h.textContent=(GT.id?'Editar ':'')+{ent:'Entrada no estoque',sai:'Saída manual do estoque',inv:'Contagem do estoque'}[t.value];}
+  if(t.matches&&t.matches('select[data-cfgsel]')){lerNotasEd();GT.cab=t.value;return gRender();}
+  if(t.matches&&t.matches('select[data-persel]')){GT[t.dataset.persel]=+t.value;return gRender();}
+  if(t.matches&&t.matches('input[data-perd]')){if(t.value){GT[t.dataset.perd]=t.value;}return gRender();}
+  if(t.matches&&t.matches('select[data-lotlsel]')){gLoc=t.value;return gRender();}
   if(t.matches&&t.matches('select[data-colsel]')){document.querySelectorAll('#gBox .gCocho').forEach(el=>{const i=el.querySelector('input[data-kg]'),c=el.dataset.c;if(i&&GT.sel&&GT.sel[c]&&i.value)GT.sel[c].kg=gNum(i.value);});GT.coLoc=t.value;return gRender();}
   if(t.id==='gCbDia'){GT.cbDia=t.value||hojeKey();const y=window.scrollY;gRender();window.scrollTo({top:y});return;}
   if(t.id==='gCoDia'){GT.sel={};GT.base={};GT.dia=t.value||hojeKey();gRenderCom({dia:GT.dia});}
@@ -2337,12 +2393,11 @@ document.addEventListener('click',async e=>{const b=e.target.closest('[data-hbed
 function tCurrais(){const A=window.curraisApi;if(!A)return '';const L=A.lista().map(n=>({n,i:A.info(n)}));
   const lotesEm=n=>gTodos('lote').filter(l=>cabPres(l,hojeKey())>0&&curralEm(l,hojeKey())===n).length;
   const item=x=>`<button class="gItem${x.i.inativo?' gInativa':''}" data-g="ir" data-t="curForm" data-id="${esc(x.n)}"><div class="gItemTopo"><b>${esc(x.n)}${x.i.tag?' <small title="Tem tag">🏷</small>':''}</b><span class="pill${lotesEm(x.n)?' done':''}">${x.i.inativo?'inativo':lotesEm(x.n)?lotesEm(x.n)+' lote(s)':'sem lote'}</span></div></button>`;
-  const grupo=(tit,arr)=>arr.length?`<h3 class="gSub">${tit} · ${arr.length}</h3>${arr.map(item).join('')}`:'';
+  const grupo=(tit,arr,k)=>{if(!arr.length)return '';const ab=gCurAb.has(k);return `<button type="button" class="gGrpCab${ab?' aberto':''}" data-g="curGrp" data-k="${k}"><span>${tit}</span><small>${arr.length} curral(is)</small><span class="gLoteSeta">▼</span></button>${ab?`<div class="gGrpCorpo">${arr.map(item).join('')}</div>`:''}`;};
   const at=L.filter(x=>!x.i.inativo),ina=L.filter(x=>x.i.inativo);
   return `<section class="panel"><h2>Currais</h2><p class="note">O tipo diz se o curral é do confinamento ou do pasto; vale para os filtros, o Carregar e o Fornecer. Inativo não aparece no Previsto, no Fornecer nem nos lotes (os registros continuam).</p>
     <button class="lima" data-g="ir" data-t="curForm">+ Novo curral</button>
-    ${grupo(ICO_C+' Confinamento',at.filter(x=>x.i.tipo==='C'))}${grupo('🌿 Pasto',at.filter(x=>x.i.tipo==='P'))}${grupo('Sem tipo',at.filter(x=>x.i.tipo!=='C'&&x.i.tipo!=='P'))}</section>
-    ${ina.length?`<section class="panel"><h2>Inativos</h2>${ina.map(item).join('')}</section>`:''}`;}
+    ${grupo(ICO_C+' Confinamento',at.filter(x=>x.i.tipo==='C'),'C')}${grupo('🌿 Pasto',at.filter(x=>x.i.tipo==='P'),'P')}${grupo('Sem tipo',at.filter(x=>x.i.tipo!=='C'&&x.i.tipo!=='P'),'S')}${grupo('⏸ Inativos',ina,'I')}</section>`;}
 function tCurForm(t){const A=window.curraisApi,n=t.id||'',i=n?A.info(n):{tipo:'C',inativo:false};
   return `${voltar()}<section class="panel"><h2>${n?'Curral '+esc(n):'Novo curral'}</h2>
     <div class="gForm">${campo({k:'cnome',l:'Nome do curral',v:n,ph:'Ex.: C-11 ou P-REPRESA-2'})}
@@ -2373,7 +2428,7 @@ function linhasLotes(enc){const hj=hojeKey(),X=gCtx(),loc=gLoc,noLocal=l=>loc===
   const todos=gTodos('lote').filter(noLocal),L=enc?todos.filter(l=>!ativo(l)).sort(porNome):todos.filter(ativo).sort(porCurral);
   return L.map(l=>{const fim=fimLote(l),ref=fim&&fim<hj?fim:hj,m=mediaLote(l,X),C=calcLote(l),r=racaoEm(l,ref);
     return {c:curralEm(l,ref)||'',nome:l.nome,desc:[sexoTxt(l.sexo),l.raca,catNorm(l.cat)].filter(Boolean).join(' · '),rac:r?r.nome:'',cab:cabPres(l,ref),pe:pesoEntMed(l)||0,pp:pesoEm(l,ref),
-      dias:Math.max(0,difDias(l.ent.dia,ref)),mn:m.n?m.mn/m.n:NaN,ms:m.nms?m.ms/m.nms:NaN,ims:m.nms?m.pv/m.nms:NaN,...(()=>{const V=vendaEst(l,C);return {ve:V.venda,vr:V.res,vreal:!!V.real};})(),cd:C.custoCabDia,ctr:C.cabE?(C.alim+C.op)/C.cabE:NaN,cco:C.cabE?C.compra/C.cabE:NaN,ct:C.cabE?C.custo/C.cabE:NaN,tot:C.custo,ent:l.ent.dia,fim:fim||''};});}
+      dias:Math.max(0,difDias(l.ent.dia,ref)),dct:m.n,...(()=>{const A=ativo(l)?projAbate(l):null;return A?{pf:A.peso,ad:A.dia,af:difDias(hj,A.dia),apor:A.por}:{pf:NaN,ad:'',af:NaN,apor:''};})(),mn:m.n?m.mn/m.n:NaN,ms:m.nms?m.ms/m.nms:NaN,ims:m.nms?m.pv/m.nms:NaN,...(()=>{const V=vendaEst(l,C);return {ve:V.venda,vr:V.res,vreal:!!V.real};})(),cd:C.custoCabDia,ctr:C.cabE?(C.alim+C.op)/C.cabE:NaN,cco:C.cabE?C.compra/C.cabE:NaN,ct:C.cabE?C.custo/C.cabE:NaN,tot:C.custo,ent:l.ent.dia,fim:fim||''};});}
 document.addEventListener('click',e=>{const b=e.target.closest('#gBox [data-g="lotesImg"],#gBox [data-g="lotesXls"],#gBox [data-g="lotesPdf"]');if(!b)return;e.stopPropagation();
   const enc=!!b.dataset.enc,R=linhasLotes(enc),loc=gLoc==='C'?' · Confinamento':gLoc==='P'?' · Pasto':'',tit=`${enc?'Lotes arquivados':'Lotes ativos'}${loc} · ${dB(hojeKey())}`;
   if(!R.length)return toast('Nenhum lote');
@@ -2383,12 +2438,12 @@ document.addEventListener('click',e=>{const b=e.target.closest('#gBox [data-g="l
     const cabT=R.reduce((a,x)=>a+(+x.cab||0),0),med=(f,d)=>{let s=0,n=0;R.forEach(x=>{const v=f(x);if(ok(v)&&x.cab>0){s+=v*x.cab;n+=x.cab;}});return n?s/n:NaN;},
       som=f=>R.reduce((a,x)=>a+(ok(f(x))?f(x):0),0),mostra=(v,fn)=>ok(v)?fn(v):'—';
     const cT=som(x=>x.tot),temV=R.some(x=>ok(x.ve)),vT=temV?som(x=>x.ve):NaN,rT=temV?som(x=>x.vr):NaN;
-    return enviarImg(tit,[{cab:tit,cols:[['Curral',100,'l'],['Lote',200,'l'],['Cab',65,'r'],['Peso proj.',100,'r'],['Dias',60,'r'],['MN/cab',85,'r'],['MS/cab',85,'r'],['% IMS',80,'r'],['R$/cab/dia',110,'r'],['R$/cab tratos',125,'r'],['R$/cab compra',130,'r'],['Custo total',140,'r'],['Venda est.',140,'r'],['Resultado',140,'r']],
-    linhas:R.map(x=>[x.c,x.nome,nf(x.cab),nf(x.pp),nf(x.dias),ok(x.mn)?nf(x.mn,1):'—',ok(x.ms)?nf(x.ms,2):'—',ok(x.ims)?pc(x.ims,2):'—',ok(x.cd)?rs(x.cd):'—',ok(x.ctr)?rs(x.ctr):'—',ok(x.cco)?rs(x.cco):'—',rs(x.tot),ok(x.ve)?rs(x.ve):'—',ok(x.vr)?rs(x.vr):'—']),
-    total:['TOTAL',`${R.length} lote(s)`,nf(cabT),mostra(med(x=>x.pp),v=>nf(v)),mostra(med(x=>x.dias),v=>nf(v)),mostra(med(x=>x.mn),v=>nf(v,1)),mostra(med(x=>x.ms),v=>nf(v,2)),mostra(med(x=>x.ims),v=>pc(v,2)),mostra(med(x=>x.cd),rs),mostra(med(x=>x.ctr),rs),mostra(med(x=>x.cco),rs),'','','']},
+    return enviarImg(tit,[{cab:tit,cols:[['Curral',100,'l'],['Lote',200,'l'],['Ração',170,'l'],['Cab',65,'r'],['Peso entr.',100,'r'],['Peso proj.',100,'r'],['Dias',60,'r'],['Peso final',100,'r'],['Prev. abate',110,'r'],['Dias c/ trato',115,'r'],['MN/cab',85,'r'],['MS/cab',85,'r'],['% IMS',80,'r'],['R$/cab/dia',110,'r'],['R$/cab tratos',125,'r'],['R$/cab compra',130,'r'],['Custo total',140,'r'],['Venda est.',140,'r'],['Resultado',140,'r']],
+    linhas:R.map(x=>[x.c,x.nome,x.rac||'—',nf(x.cab),nf(x.pe),nf(x.pp),nf(x.dias),ok(x.pf)?nf(x.pf):'—',x.ad?dB(x.ad):'—',nf(x.dct),ok(x.mn)?nf(x.mn,1):'—',ok(x.ms)?nf(x.ms,2):'—',ok(x.ims)?pc(x.ims,2):'—',ok(x.cd)?rs(x.cd):'—',ok(x.ctr)?rs(x.ctr):'—',ok(x.cco)?rs(x.cco):'—',rs(x.tot),ok(x.ve)?rs(x.ve):'—',ok(x.vr)?rs(x.vr):'—']),
+    total:['TOTAL',`${R.length} lote(s)`,'',nf(cabT),mostra(med(x=>x.pe),v=>nf(v)),mostra(med(x=>x.pp),v=>nf(v)),mostra(med(x=>x.dias),v=>nf(v)),mostra(med(x=>x.pf),v=>nf(v)),'','',mostra(med(x=>x.mn),v=>nf(v,1)),mostra(med(x=>x.ms),v=>nf(v,2)),mostra(med(x=>x.ims),v=>pc(v,2)),mostra(med(x=>x.cd),rs),mostra(med(x=>x.ctr),rs),mostra(med(x=>x.cco),rs),'','','']},
     {cab:'Somatório dos lotes',cols:[['Custo total',520,'c'],['Venda estimada',520,'c'],['Resultado',520,'c']],linhas:[[rs(cT),mostra(vT,rs),mostra(rT,rs)]],cores:[[null,null,!ok(rT)?null:rT<0?'#b3261e':'#2e7d32']]}],`Lotes ${dB(hojeKey()).replace(/\//g,'-')}`);}
-  gExcel(`Lotes ${dB(hojeKey()).replace(/\//g,'-')}`,[['Lotes',['Curral','Lote','Sexo · raça · categoria','Ração','Entrada','Arquivado em','Cabeças','Peso entrada (kg)','Peso projetado (kg)','Dias','MN/cab (média)','MS/cab (média)','% IMS (média)','R$/cab/dia','R$/cab tratos','R$/cab compra','R$/cab total','Custo total do lote','Venda estimada (ou real)','Resultado (estimado ou real)'],
-    R.map(x=>[xc(x.c),xc(x.nome),xc(x.desc),xc(x.rac),xc(x.ent,'dia'),xc(x.fim,'dia'),xc(x.cab,'int'),xc(x.pe,'int'),xc(x.pp,'int'),xc(x.dias,'int'),xc(x.mn,'dec'),xc(x.ms,'dec'),xc(ok(x.ims)?x.ims/100:NaN,'pct'),xc(x.cd,'rs'),xc(x.ctr,'rs'),xc(x.cco,'rs'),xc(x.ct,'rs'),xc(x.tot,'rs'),xc(x.ve,'rs'),xc(x.vr,'rs')]),[10,22,26,16,11,12,9,11,12,7,11,11,10,11,12,12,12,14,16,16]]]);},true);
+  gExcel(`Lotes ${dB(hojeKey()).replace(/\//g,'-')}`,[['Lotes',['Curral','Lote','Sexo · raça · categoria','Ração','Entrada','Arquivado em','Cabeças','Peso entrada (kg)','Peso projetado (kg)','Dias','Peso final projetado (kg)','Previsão de abate','Dias para o abate','Abate calculado pelo','Dias com trato','MN/cab (média)','MS/cab (média)','% IMS (média)','R$/cab/dia','R$/cab tratos','R$/cab compra','R$/cab total','Custo total do lote','Venda estimada (ou real)','Resultado (estimado ou real)'],
+    R.map(x=>[xc(x.c),xc(x.nome),xc(x.desc),xc(x.rac),xc(x.ent,'dia'),xc(x.fim,'dia'),xc(x.cab,'int'),xc(x.pe,'int'),xc(x.pp,'int'),xc(x.dias,'int'),xc(x.pf,'int'),xc(x.ad,'dia'),xc(x.af,'int'),xc(x.apor),xc(x.dct,'int'),xc(x.mn,'dec'),xc(x.ms,'dec'),xc(ok(x.ims)?x.ims/100:NaN,'pct'),xc(x.cd,'rs'),xc(x.ctr,'rs'),xc(x.cco,'rs'),xc(x.ct,'rs'),xc(x.tot,'rs'),xc(x.ve,'rs'),xc(x.vr,'rs')]),[10,22,26,16,11,12,9,11,12,7,13,12,10,14,10,11,11,10,11,12,12,12,14,16,16]]]);},true);
 
 /* ---------- Gestão › Config. › Backup: lista das cópias (automáticas e manuais) ---------- */
 async function gBkLista(){const el=$('gBkLista');if(!el)return;
@@ -2437,23 +2492,30 @@ function tEstoque(){const I=gTodos('insumo').filter(i=>!i.inativo).sort(porNome)
     return `<button class="gItem gEstIt${baixo?' gEstBaixo':''}" data-g="ir" data-t="estIns" data-id="${i.uid}"><div class="gItemTopo"><b>${esc(i.nome)}</b><span class="gEstSaldo">${e.saldo==null?'sem lançamento':nf(e.saldo)+' kg'}</span></div>
       <small>${e.saldo==null?'Lance uma entrada ou uma contagem para começar o controle.':`${e.cons>0?`consumo ${nf(e.cons)} kg/dia (7 dias)`:'sem consumo nos últimos 7 dias'}${ok(e.dias)?` · dá para ~${nf(e.dias,1)} dia(s)`:''}${e.min?` · mínimo ${nf(e.min)} kg`:''}`}${baixo?' · ⚠ estoque baixo':''}</small></button>`;};
   return `<section class="panel"><div class="curhead"><h2>Estoque</h2><span class="note">${dB(hj)}</span></div>
-    <div class="gEstBtns gEst4"><button class="lima" data-g="ir" data-t="estForm" data-mov="ent">＋ Entrada</button><button class="lima" data-g="nfNova">📎 ＋ NF</button><button data-g="ir" data-t="estForm" data-mov="sai">－ Saída manual</button><button data-g="ir" data-t="estForm" data-mov="inv">✓ Contagem</button></div>
+    <div class="gEstBtns gEst4"><button class="lima" data-g="ir" data-t="estForm" data-mov="ent">＋ Entrada</button><button class="lima" data-g="nfNova">📎 ＋ NF</button><button data-g="ir" data-t="estForm" data-mov="sai">－ Saída manual</button><button data-g="ir" data-t="estForm" data-mov="inv">Contagem</button></div>
     ${L.length?`<div class="row compart fz3 lotesExp"><button class="verde" data-g="estPdf">📄 PDF</button><button class="verde" data-g="estImg">🖼 Foto</button><button class="verde" data-g="estXls">📊 Excel</button></div>`:''}
     ${L.map(item).join('')||'<p class="note">Cadastre os insumos primeiro (Gestão › Insumos).</p>'}
     <p class="note">As batidas salvas tiram do estoque automaticamente o realizado de cada produto (ou o previsto, se não tiver realizado). Contagem: o saldo do dia passa a ser o que foi contado (acerto). Toque no produto para ver as entradas e saídas.</p></section>
   ${L.length?estMovHTML():''}`;}
 /* todas as movimentações do estoque (todos os produtos), com período e ordem */
-function estMovs(){const per=GT.perE==null?30:GT.perE,hj=hojeKey(),de=per>0?somaDias(hj,-(per-1)):'0000',novo=GT.ordE!=='antigo';
-  const L=[];gTodos('insumo').filter(i=>!i.inativo).forEach(i=>{const e=estoqueIns(i);e.M.forEach((m,k)=>{if(m.dia>=de)L.push(Object.assign({nome:i.nome,k},m));});});
+/* período: um seletor com setas (7, 30, 60 dias, Tudo ou Período escolhendo as datas) */
+const PER_OPS=[[7,'Últimos 7 dias'],[30,'Últimos 30 dias'],[60,'Últimos 60 dias'],[0,'Tudo'],[-1,'Escolher datas']];
+const perNorm=v=>PER_OPS.some(o=>o[0]===v)?v:30;
+function perFaixa(per,k){const hj=hojeKey();if(per===-1){const a=GT[k+'De']||somaDias(hj,-29),b=GT[k+'Ate']||hj;return a<=b?[a,b]:[b,a];}return [per>0?somaDias(hj,-(per-1)):'0000','9999-99'];}
+function perTexto(per,k){if(per===-1){const [a,b]=perFaixa(per,k);return `${dB(a)} a ${dB(b)}`;}return per>0?`últimos ${per} dias`:'tudo';}
+function perSelHTML(per,k){const i=Math.max(0,PER_OPS.findIndex(o=>o[0]===per)),[a,b]=perFaixa(per,k);
+  return `<div class="gCoLocNav">${selSetas('Período',PER_OPS,i,`data-g="perP" data-k="${k}" data-n`,`data-persel="${k}"`)}</div>${per===-1?`<div class="gPerDatas"><label>De<input type="date" data-perd="${k}De" value="${a}"></label><label>Até<input type="date" data-perd="${k}Ate" value="${b}"></label></div>`:''}`;}
+function estMovs(){const per=perNorm(GT.perE==null?30:GT.perE),[de,ate]=perFaixa(per,'perE'),novo=GT.ordE!=='antigo';
+  const L=[];gTodos('insumo').filter(i=>!i.inativo).forEach(i=>{const e=estoqueIns(i);e.M.forEach((m,k)=>{if(m.dia>=de&&m.dia<=ate)L.push(Object.assign({nome:i.nome,k},m));});});
   L.sort((a,b)=>a.dia.localeCompare(b.dia)||(a.ts||0)-(b.ts||0)||a.nome.localeCompare(b.nome)||a.k-b.k);if(novo)L.reverse();return {L,per,novo};}
 const movSinal=m=>(m.mov==='ent'?'+':m.mov==='inv'?'=':'−')+nf(m.kg);
 const movDet=m=>[m.obs||'',m.mov==='inv'&&ok(m.dif)?`acerto ${m.dif>=0?'+':''}${nf(m.dif)} kg`:'',m.mov==='ent'&&m.rs?rs(m.rs)+(m.kg?` (${rs(m.rs/m.kg)}/kg)`:''):''].filter(Boolean).join(' · ');
 function estMovHTML(){const {L,per,novo}=estMovs();
   return `<section class="panel"><div class="curhead"><h2>Movimentações</h2><span class="note">${L.length}</span></div>
-    <div class="linhas gFiltro">${[[7,'7 dias'],[30,'30 dias'],[90,'90 dias'],[0,'Tudo']].map(([k,r])=>`<button data-g="estPerE" data-p="${k}" class="${per===k?'sel':''}">${r}</button>`).join('')}</div>
+    ${perSelHTML(per,'perE')}
     <div class="linhas gFiltro"><button data-g="estOrd" data-o="novo" class="${novo?'sel':''}">↓ Mais novo primeiro</button><button data-g="estOrd" data-o="antigo" class="${novo?'':'sel'}">↑ Mais antigo primeiro</button></div>
     ${L.length?`<div class="tablebox"><table class="gTab gEstTab"><thead><tr><th>Dia</th><th>Produto · movimento</th><th>kg</th><th>Saldo</th></tr></thead><tbody>${L.map(m=>`<tr><td class="hora">${dB(m.dia).slice(0,5)}</td><td class="c">${esc(m.nome)}<small>${MOV_NOME[m.mov]}${movDet(m)?' · '+esc(movDet(m)):''}${m.nf&&m.nf.id?` <button class="mini" data-g="nfVer" data-id="${esc(m.nf.id)}" data-mini="${esc(m.nf.idMini||'')}">📎 NF</button>`:''}</small></td><td class="${m.mov==='ent'?'ok':m.mov==='inv'?'':'bad'}">${movSinal(m)}</td><td><b>${nf(m.saldo)}</b></td></tr>`).join('')}</tbody></table></div>`:'<p class="note">Nenhum movimento nesse período.</p>'}</section>`;}
-function estExp(tipo){const I=gTodos('insumo').filter(i=>!i.inativo).sort(porNome).map(i=>({i,e:estoqueIns(i)})),{L,per}=estMovs(),d=dB(hojeKey()),nome=`Estoque ${d.replace(/\//g,'-')}`,perTxt=per>0?`últimos ${per} dias`:'tudo';
+function estExp(tipo){const I=gTodos('insumo').filter(i=>!i.inativo).sort(porNome).map(i=>({i,e:estoqueIns(i)})),{L,per}=estMovs(),d=dB(hojeKey()),nome=`Estoque ${d.replace(/\//g,'-')}`,perTxt=perTexto(per,'perE');
   if(tipo==='xls')return gExcel(nome,[['Saldo',['Produto','Saldo (kg)','Consumo/dia 7 dias (kg)','Dá para (dias)','Estoque mínimo (kg)'],I.map(({i,e})=>[xc(i.nome),xc(e.saldo,'int'),xc(e.cons>0?e.cons:NaN,'int'),xc(ok(e.dias)?e.dias:NaN,'dec'),xc(e.min||NaN,'int')]),[24,12,20,13,17]],
     ['Movimentações',['Data','Produto','Movimento','Quantidade (kg)','Valor total (R$)','Valor por kg (R$)','Fornecedor / observação','Acerto da contagem (kg)','Saldo (kg)'],L.map(m=>[xc(m.dia,'dia'),xc(m.nome),xc(MOV_NOME[m.mov]),xc((m.mov==='ent'||m.mov==='inv'?1:-1)*m.kg,'int'),xc(m.mov==='ent'&&m.rs?m.rs:NaN,'rs'),xc(m.mov==='ent'&&m.rs&&m.kg?m.rs/m.kg:NaN,'rs'),xc(m.obs||''),xc(m.mov==='inv'&&ok(m.dif)?m.dif:NaN,'int'),xc(m.saldo,'int')]),[11,22,14,14,15,15,34,16,11]]]);
   window.__expPdf=tipo==='pdf';
@@ -2463,28 +2525,44 @@ function estExp(tipo){const I=gTodos('insumo').filter(i=>!i.inativo).sort(porNom
     {cab:`Movimentações · ${perTxt}`,cols:[['Data',100,'l'],['Produto',210,'l'],['Movimento',150,'l'],['Quantidade',130,'r'],['Valor total',150,'r'],['R$/kg',110,'r'],['Fornecedor / obs.',260,'l'],['Saldo',120,'r']],
       linhas:L.map(m=>[dB(m.dia).slice(0,5),m.nome,MOV_NOME[m.mov]+(m.mov==='inv'&&ok(m.dif)?` (${m.dif>=0?'+':''}${nf(m.dif)})`:''),movSinal(m)+' kg',m.mov==='ent'&&m.rs?rs(m.rs):'—',m.mov==='ent'&&m.rs&&m.kg?rs(m.rs/m.kg):'—',m.obs||'—',nf(m.saldo)]),
       cores:L.map(m=>[null,null,null,m.mov==='ent'?'#2e7d32':m.mov==='inv'?null:'#b3261e'])}],nome);}
-function tEstIns(t){const i=G.it[t.id];if(!i)return voltar();const e=estoqueIns(i),per=GT.per==null?30:GT.per,hj=hojeKey(),de=per>0?somaDias(hj,-(per-1)):'0000';
-  const M=e.M.filter(m=>m.dia>=de).reverse();
-  const tot=k=>e.M.filter(m=>m.dia>=de&&m.mov===k).reduce((a,m)=>a+m.kg,0);
+/* exportar as entradas e saídas de um produto (no período escolhido) */
+function estInsExp(id,tipo){const i=G.it[id];if(!i)return;const e=estoqueIns(i),per=perNorm(GT.per==null?30:GT.per),[de,ate]=perFaixa(per,'per'),perTxt=perTexto(per,'per');
+  const L=e.M.filter(m=>m.dia>=de&&m.dia<=ate).slice().reverse();if(!L.length)return toast('Nada nesse período');
+  const tot=k=>L.filter(m=>m.mov===k).reduce((a,m)=>a+m.kg,0),rsE=L.filter(m=>m.mov==='ent').reduce((a,m)=>a+(+m.rs||0),0),d=dB(hojeKey()),nome=`Estoque ${i.nome} ${d.replace(/\//g,'-')}`;
+  const det=m=>[m.mov==='bat'?movDet(m):'',m.obs||''].filter(Boolean)[0]||'';
+  if(tipo==='xls')return gExcel(nome,[['Resumo',['Produto','Período','Saldo hoje (kg)','Consumo/dia 7 dias (kg)','Dá para (dias)','Entradas (kg)','Valor das entradas (R$)','Batidas (kg)','Saídas manuais (kg)'],
+      [[xc(i.nome),xc(perTxt),xc(e.saldo,'int'),xc(e.cons>0?e.cons:NaN,'int'),xc(ok(e.dias)?e.dias:NaN,'dec'),xc(tot('ent'),'int'),xc(rsE||NaN,'rs'),xc(tot('bat'),'int'),xc(tot('sai'),'int')]],[22,24,14,20,13,13,18,13,16]],
+    ['Entradas e saídas',['Data','Movimento','Quantidade (kg)','Valor total (R$)','Valor por kg (R$)','Fornecedor / observação','Acerto da contagem (kg)','Saldo (kg)'],
+      L.map(m=>[xc(m.dia,'dia'),xc(MOV_NOME[m.mov]),xc((m.mov==='ent'||m.mov==='inv'?1:-1)*m.kg,'int'),xc(m.mov==='ent'&&m.rs?m.rs:NaN,'rs'),xc(m.mov==='ent'&&m.rs&&m.kg?m.rs/m.kg:NaN,'rs'),xc(m.obs||(m.mov==='bat'?movDet(m):'')),xc(m.mov==='inv'&&ok(m.dif)?m.dif:NaN,'int'),xc(m.saldo,'int')]),[11,14,14,15,15,34,16,11]]]);
+  window.__expPdf=tipo==='pdf';
+  return enviarImg(`FJK - Estoque ${i.nome} - ${d}`,[{cab:`${i.nome} · ${perTxt}`,cols:[['Saldo hoje',230,'c'],['Consumo/dia',230,'c'],['Dá para',200,'c'],['Entradas',230,'c'],['Batidas',230,'c'],['Saídas manuais',230,'c']],
+      linhas:[[e.saldo==null?'—':nf(e.saldo)+' kg',e.cons>0?nf(e.cons)+' kg':'—',ok(e.dias)?nf(e.dias,1)+' dia(s)':'—',nf(tot('ent'))+' kg'+(rsE?' · '+rs(rsE):''),nf(tot('bat'))+' kg',nf(tot('sai'))+' kg']]},
+    {cab:`Entradas e saídas · ${perTxt}`,cols:[['Data',100,'l'],['Movimento',160,'l'],['Quantidade',140,'r'],['Valor total',150,'r'],['R$/kg',110,'r'],['Fornecedor / obs.',380,'l'],['Saldo',130,'r']],
+      linhas:L.map(m=>[dB(m.dia).slice(0,5),MOV_NOME[m.mov]+(m.mov==='inv'&&ok(m.dif)?` (${m.dif>=0?'+':''}${nf(m.dif)})`:''),movSinal(m)+' kg',m.mov==='ent'&&m.rs?rs(m.rs):'—',m.mov==='ent'&&m.rs&&m.kg?rs(m.rs/m.kg):'—',det(m)||'—',nf(m.saldo)]),
+      cores:L.map(m=>[null,null,m.mov==='ent'?'#2e7d32':m.mov==='inv'?null:'#b3261e'])}],nome);}
+function tEstIns(t){const i=G.it[t.id];if(!i)return voltar();const e=estoqueIns(i),per=perNorm(GT.per==null?30:GT.per),hj=hojeKey(),[de,ate]=perFaixa(per,'per');
+  const M=e.M.filter(m=>m.dia>=de&&m.dia<=ate).reverse();
+  const tot=k=>e.M.filter(m=>m.dia>=de&&m.dia<=ate&&m.mov===k).reduce((a,m)=>a+m.kg,0);
   const lin=m=>`<tr><td class="hora">${dB(m.dia).slice(0,5)}</td><td class="c">${MOV_NOME[m.mov]}${m.nf&&m.nf.id?` <button class="mini" data-g="nfVer" data-id="${esc(m.nf.id)}" data-mini="${esc(m.nf.idMini||'')}">📎 NF</button>`:''}<small>${esc(m.obs||'')}${m.mov==='inv'&&ok(m.dif)?` · acerto ${m.dif>=0?'+':''}${nf(m.dif)} kg`:''}${m.mov==='ent'&&m.rs?` · ${rs(m.rs)}`:''}</small></td>
     <td class="${m.mov==='ent'?'ok':m.mov==='inv'?'':'bad'}">${m.mov==='ent'?'+':m.mov==='inv'?'=':'−'}${nf(m.kg)}</td><td><b>${nf(m.saldo)}</b></td><td>${m.manual?`<button class="mini" data-g="ir" data-t="estForm" data-id="${m.uid}" aria-label="Editar">✎</button> <button class="mini danger" data-g="estRm" data-id="${m.uid}" aria-label="Apagar">✕</button>`:''}</td></tr>`;
   return `${voltar()}<section class="panel"><div class="curhead"><h2>${esc(i.nome)}</h2><span class="note">estoque</span></div>
     <div class="stat gStat3">${st('Saldo hoje',e.saldo==null?'—':nf(e.saldo)+' kg')}${st('Consumo/dia (7 d)',e.cons>0?nf(e.cons)+' kg':'—')}${st('Dá para',ok(e.dias)?nf(e.dias,1)+' dia(s)':'—')}</div>
-    <div class="gEstBtns"><button class="lima" data-g="ir" data-t="estForm" data-mov="ent" data-ins="${i.uid}">＋ Entrada</button><button data-g="ir" data-t="estForm" data-mov="sai" data-ins="${i.uid}">－ Saída</button><button data-g="ir" data-t="estForm" data-mov="inv" data-ins="${i.uid}">✓ Contagem</button></div></section>
+    <div class="gEstBtns"><button class="lima" data-g="ir" data-t="estForm" data-mov="ent" data-ins="${i.uid}">＋ Entrada</button><button data-g="ir" data-t="estForm" data-mov="sai" data-ins="${i.uid}">－ Saída</button><button data-g="ir" data-t="estForm" data-mov="inv" data-ins="${i.uid}">Contagem</button></div></section>
   <section class="panel"><h2>Entradas e saídas</h2>
-    <div class="linhas gFiltro">${[[7,'7 dias'],[30,'30 dias'],[90,'90 dias'],[0,'Tudo']].map(([k,r])=>`<button data-g="estPer" data-p="${k}" class="${per===k?'sel':''}">${r}</button>`).join('')}</div>
+    ${perSelHTML(per,'per')}
     <div class="stat gStat3">${st('Entradas',nf(tot('ent'))+' kg')}${st('Batidas',nf(tot('bat'))+' kg')}${st('Saídas manuais',nf(tot('sai'))+' kg')}</div>
+    ${M.length?`<div class="row compart fz3"><button class="verde" data-g="estInsExp" data-o="pdf" data-id="${i.uid}">📄 PDF</button><button class="verde" data-g="estInsExp" data-o="img" data-id="${i.uid}">🖼 Foto</button><button class="verde" data-g="estInsExp" data-o="xls" data-id="${i.uid}">📊 Excel</button></div>`:''}
     ${M.length?`<div class="tablebox"><table class="gTab gEstTab"><thead><tr><th>Dia</th><th>Movimento</th><th>kg</th><th>Saldo</th><th></th></tr></thead><tbody>${M.map(lin).join('')}</tbody></table></div>`:'<p class="note">Nenhum movimento nesse período.</p>'}</section>`;}
 function tEstForm(t){const ed=t.id&&G.it[t.id]&&!G.it[t.id].del?G.it[t.id]:null,mov=ed?ed.mov:(t.mov||'ent'),I=gTodos('insumo').filter(i=>!i.inativo||(ed&&i.uid===ed.ins)).sort(porNome),tit=(ed?'Editar ':'')+{ent:'Entrada no estoque',sai:'Saída manual do estoque',inv:'Contagem do estoque'}[mov];
   const vKg=ed?+ed.kg:'',vRs=ed&&+ed.rs>0?+ed.rs:'',vPk=ed&&+ed.rs>0&&+ed.kg>0?Math.round(ed.rs/ed.kg*100)/100:'';
   return `${voltar()}<section class="panel"><h2>${tit}</h2><div class="gForm">${[
-    {k:'emov',l:'Tipo',t:'sel',op:[['ent','＋ Entrada (compra/chegada)'],['sai','－ Saída manual (perda, outro uso)'],['inv','✓ Contagem (acerto do saldo)']],v:mov},
+    {k:'emov',l:'Tipo',t:'sel',op:[['ent','＋ Entrada (compra/chegada)'],['sai','－ Saída manual (perda, outro uso)'],['inv','Contagem (acerto do saldo)']],v:mov},
     {k:'eins',l:'Produto',t:'sel',op:[['','— escolha —']].concat(I.map(i=>[i.uid,i.nome])),v:ed?ed.ins:(t.ins||'')},
     {k:'edia',l:'Data',t:'dia',v:ed?ed.dia:hojeKey(),meia:1}].map(campo).join('')}
     ${mov==='ent'?`<div class="gTres">${[{k:'ekg',l:'Quantidade',suf:'kg',t:'num',v:vKg},{k:'ers',l:'Valor total da nota',t:'rs',v:vRs},{k:'erkg',l:'Valor por kg',t:'rs',v:vPk}].map(campo).join('')}</div>
       <p class="note gTresNota">Coloque a quantidade e o valor total (o valor por kg sai sozinho), ou a quantidade e o valor por kg.</p>`
       :campo({k:'ekg',l:mov==='inv'?'Quantidade contada':'Quantidade',suf:'kg',t:'num',v:vKg,meia:1})}
-    ${[{k:'eobs',l:mov==='ent'?'Fornecedor / nota (opcional)':'Observação (opcional)',v:ed?ed.obs||'':''}].map(campo).join('')}</div>
+    ${[{k:'eobs',l:mov==='ent'?'Fornecedor / nota (opcional)':'Observação (opcional)',v:ed?ed.obs||'':'',sug:mov==='ent'?'forn':''}].map(campo).join('')}</div>
     <button class="primary" data-g="salvaEst" data-id="${ed?ed.uid:''}">${ed?'Salvar alteração':'Salvar'}</button><button class="danger" data-g="estCancela">✕ Cancelar</button></section>`;}
 /* ---------- ＋ NF: lê a nota fiscal (XML, PDF ou foto) e lança a entrada no estoque ---------- */
 let NF=null,NF_IMG=null;
@@ -2546,7 +2624,7 @@ function tEstNF(){const I=gTodos('insumo').filter(i=>!i.inativo).sort(porNome),o
   const obs=[NF.forn,NF.num?'NF '+NF.num:''].filter(Boolean).join(' · ');
   return `${voltar()}<section class="panel"><h2>Entrada pela nota fiscal</h2>
     ${NF_IMG?`<img class="gNfImg" src="${NF_IMG.mini}" alt="nota">`:''}<p class="note">Lido de ${esc(NF.nome||'')}${ok(NF.vNF)?` · valor total da nota ${rs(NF.vNF)}`:''}. Confira e corrija se precisar.</p>
-    <div class="gForm">${[{k:'edia',l:'Data',t:'dia',v:NF.dia||hojeKey(),meia:1},{k:'eobs',l:'Fornecedor / nota',v:obs}].map(campo).join('')}</div>
+    <div class="gForm">${[{k:'edia',l:'Data',t:'dia',v:NF.dia||hojeKey(),meia:1},{k:'eobs',l:'Fornecedor / nota',v:obs,sug:'forn'}].map(campo).join('')}</div>
     ${NF.itens.map((x,i)=>`<div class="gNfItem"><p class="note"><b>Na nota:</b> ${esc(x.desc||'—')}${ok(x.qtd)?` · ${nf(x.qtd,3)} ${esc(x.un||'')}`:''}${ok(x.vTot)?` · ${rs(x.vTot)}`:''}${ok(x.qtd)&&!nfFator(x.un)?` <b>· unidade ${esc(x.un||'?')}: coloque os kg</b>`:''}</p>
       <div class="gForm">${campo({k:'nfp'+i,l:'Produto',t:'sel',op,v:x.ins})}</div>
       <div class="gTres">${[{k:'nfk'+i,l:'Quantidade',suf:'kg',t:'num',v:ok(x.kg)?x.kg:''},{k:'nfv'+i,l:'Valor total',t:'rs',v:ok(x.vTot)?x.vTot:''},{k:'nfu'+i,l:'Valor por kg',t:'rs',v:ok(x.kg)&&ok(x.vTot)&&x.kg>0?Math.round(x.vTot/x.kg*100)/100:''}].map(campo).join('')}</div></div>`).join('')}
