@@ -996,7 +996,7 @@ function tCocho(t){
       ${gradeNotas(notas,nota,c)}
       <div class="gCoNovo"><b class="gCoPct">% IMS</b><input class="cell num gCoImsIn" inputmode="decimal" data-ims="${esc(c)}" value="${sel&&sel.ims>0?String(sel.ims).replace('.',','):''}" placeholder="${(()=>{const q=ok(kg)&&window.gImsDe?gImsDe(c,dia,kg):null;return q?nf(q,2):'%';})()}"><input class="cell num" inputmode="numeric" data-kg="${esc(c)}" value="${kg!=null?kg:''}" placeholder="kg"><small>kg/dia</small></div>
       ${baseOp}</div>`;}).join('');
-  return `<section class="panel"><h2>Leitura de cocho</h2>
+  return `<section class="panel"><h2 class="gH2Bt"><span>Leitura de cocho</span>${rows&&pode.ok?'<button type="button" class="gSalvaTop" data-g="salvaCocho">💾 Salvar</button>':''}</h2>
     ${navData('gCoDia',dia,'Data da leitura')}
     ${locBotoes('coLoc',lc,k=>{const A=CsT.filter(c=>doLocal(k,c));return A.filter(c=>G.it[idLeit(dia,c)]&&!G.it[idLeit(dia,c)].del).length+'/'+A.length;})}
     <details class="gLeg"><summary class="note">Ver as notas</summary>${notas.map(x=>`<p class="note"><b>${notaTxt(x.n)}</b> — ${esc(x.t)}: ${x.p>0?'+':''}${nf(x.p,0)}%</p>`).join('')}<p class="note">Para mudar as notas: Config.</p></details>
@@ -1800,6 +1800,11 @@ $('gBox').addEventListener('input',e=>{
   if(GT.t==='entForm'&&/^gf_(cab|peso|pesoT|dia)$/.test(t.id))calcEnt(t.id.slice(3));
 });
 /* leitura de cocho: % IMS digitado → calcula na hora o trato do dia (kg de matéria natural) e põe no campo kg */
+/* kg digitado → mostra na hora o % de IMS (e vale como leitura mesmo sem nota) */
+$('gBox').addEventListener('input',e=>{const t=e.target;if(!t.matches||!t.matches('input[data-kg]'))return;const c=t.dataset.kg,dia=GT.dia||hojeKey(),kg=gNum(t.value);GT.sel=GT.sel||{};
+  const pi=t.closest('.gCoNovo')&&t.closest('.gCoNovo').querySelector('input[data-ims]'),lt=G.it[idLeit(dia,c)],n0=GT.sel[c]?GT.sel[c].n:(lt&&!lt.del?lt.nota:null);
+  const q=kg>0&&window.gImsDe?gImsDe(c,dia,kg):null,qr=q?Math.round(q*100)/100:null;if(pi){pi.value=qr?nf(qr,2):'';pi.placeholder='%';}
+  GT.sel[c]={n:n0,ims:n0==null?qr:null,kg:kg>0?kg:null};});
 $('gBox').addEventListener('input',e=>{const t=e.target;if(!t.matches||!t.matches('input[data-ims]'))return;const c=t.dataset.ims,p=gNum(t.value),dia=GT.dia||hojeKey();
   const card=t.closest('.gCocho'),kgI=card&&card.querySelector('input[data-kg]'),info=card&&card.querySelector('[data-imsinfo]');GT.sel=GT.sel||{};
   const lt=G.it[idLeit(dia,c)],n0=GT.sel[c]?GT.sel[c].n:(lt&&!lt.del?lt.nota:null);
@@ -1823,8 +1828,7 @@ $('gBox').addEventListener('change',e=>{
   if(t.matches('input[data-bd]')){const c=t.dataset.bd;novaBase(c,{m:'dia',d:t.value||null});return;}
   if(t.matches('input[data-bk]')){const c=t.dataset.bk;novaBase(c,{m:'kg',kg:gNum(t.value)});return;}
   if(t.matches('input[data-kg]')){const c=t.dataset.kg;GT.sel=GT.sel||{};const lt=G.it[idLeit(GT.dia,c)];
-    const n=GT.sel[c]?GT.sel[c].n:(lt&&!lt.del?lt.nota:null),im=GT.sel[c]?GT.sel[c].ims:(lt&&!lt.del?lt.ims:null);if(n==null&&!(im>0)){toast('Marque a nota (ou o % de IMS) primeiro');t.value='';return;}GT.sel[c]={n,ims:im,kg:gNum(t.value)};
-    const pi=t.closest('.gCoNovo')&&t.closest('.gCoNovo').querySelector('input[data-ims]');if(pi&&!pi.value&&window.gImsDe){const q=gImsDe(c,GT.dia||hojeKey(),gNum(t.value));pi.placeholder=q?nf(q,2):'%';}}
+    const n=GT.sel[c]?GT.sel[c].n:(lt&&!lt.del?lt.nota:null),im=GT.sel[c]?GT.sel[c].ims:(lt&&!lt.del?lt.ims:null);if(t.value&&n==null&&!(im>0))toast('Sem lote/ração no curral para calcular o % de IMS — marque a nota');GT.sel[c]={n,ims:im,kg:gNum(t.value)};}
 });
 function gRenderCom(o){Object.assign(GT,o);gRender();}
 
