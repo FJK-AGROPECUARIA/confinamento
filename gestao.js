@@ -1246,11 +1246,11 @@ async function pngsParaPdf(blobs){const cvs=[];for(const b of blobs){const im=aw
 window.pngsParaPdf=pngsParaPdf;
 const kv=(cab,pares)=>({cab,cols:[['',360,'l'],['',300,'r']],linhas:pares.map(([a,b])=>[a,b])});
 const corV='#5f7a00',corR='#b3261e';
-function imgDia(){const dia=$('gDiaDia').value,ls=linhasDia(dia),ins={};let T={cab:0,mn:0,ms:0,c:0};
+function imgDia(d){const dia=d||$('gDiaDia').value,ls=linhasDia(dia),ins={};let T={cab:0,mn:0,ms:0,c:0};
   const L=ls.map(({l,x})=>{somaInsumos(ins,x);const t=(ok(x.custoR)?x.custoR:0)+x.custoOp;T.cab+=x.cab;T.mn+=x.mn;T.ms+=ok(x.ms)?x.ms:0;T.c+=t;
     return [x.c,l.nome,nf(x.cab),nf(x.peso),nf(x.mn),nf(x.msCab,2),pc(x.pv,2),rs(t)];});
   const ie=Object.entries(ins).sort((a,b)=>b[1].kg-a[1].kg);
-  enviarImg(`Relatório do dia · ${dB(dia)}`,[{cab:'Consumo e custo por lote',cols:[['Curral',110,'l'],['Lote',190,'l'],['Cab',70,'r'],['Peso',80,'r'],['MN kg',100,'r'],['MS/cab',90,'r'],['% IMS',85,'r'],['Custo',140,'r']],linhas:L,
+  return enviarImg(`Relatório do dia · ${dB(dia)}`,[{cab:'Consumo e custo por lote',cols:[['Curral',110,'l'],['Lote',190,'l'],['Cab',70,'r'],['Peso',80,'r'],['MN kg',100,'r'],['MS/cab',90,'r'],['% IMS',85,'r'],['Custo',140,'r']],linhas:L,
     total:['TOTAL','',nf(T.cab),'',nf(T.mn),nf(T.cab?T.ms/T.cab:NaN,2),'',rs(T.c)]},
     ...(ie.length?[{cab:'Insumos usados no dia',cols:[['Insumo',420,'l'],['kg (MN)',220,'r'],['Custo',225,'r']],linhas:ie.map(([n,o])=>[n,nf(o.kg),rs(o.rs)]),total:['TOTAL',nf(ie.reduce((a,[,o])=>a+o.kg,0)),rs(ie.reduce((a,[,o])=>a+o.rs,0))]}]:[])],
     `Relatorio do dia ${dB(dia).replace(/\//g,'-')}`);}
@@ -1628,8 +1628,8 @@ function salvaIns(id){const nome=fv('nome'),ms=Math.round(fn('ms')*10)/10,preco=
 
 /* ---------- configurações ---------- */
 /* Config. da Gestão separado em botões: Custo · Notas · Raça · Tratos · Balança */
-const gCfgGrpAb=new Set(),CFG_ICO={custo:'💲',venda:'🏷',notas:'📝',raca:'🐂',tratos:'🌾',balanca:'⚖️',senha:'🔑',backup:'💾'};
-const CFG_ABAS=[['custo','Custo'],['venda','Venda'],['notas','Leitura de cocho'],['raca','Animais'],['tratos','Tratos'],['balanca','Balança'],['senha','Senha'],['backup','Backup']];
+const gCfgGrpAb=new Set(),CFG_ICO={rels:'📤',custo:'💲',venda:'🏷',notas:'📝',raca:'🐂',tratos:'🌾',balanca:'⚖️',senha:'🔑',backup:'💾'};
+const CFG_ABAS=[['custo','Custo'],['venda','Venda'],['notas','Leitura de cocho'],['raca','Animais'],['tratos','Tratos'],['balanca','Balança'],['senha','Senha'],['rels','Relatórios'],['backup','Backup']];
 function tCfg(){const c=gCfg(),hj=hojeKey(),tx=vig(c.taxa,hj),ab=GT.cab||'custo';
   if(!GT.racasEd)GT.racasEd=c.racas.slice().sort(alfa);if(!GT.catsEd)GT.catsEd=c.cats.slice();
   if(!GT.notasEd)GT.notasEd=c.notas.slice().sort((a,b)=>a.n-b.n).map(x=>Object.assign({},x));
@@ -1683,6 +1683,10 @@ function tCfg(){const c=gCfg(),hj=hojeKey(),tx=vig(c.taxa,hj),ab=GT.cab||'custo'
       ${ed?`<div class="gSenIn"><input type="password" id="gSenNova" inputmode="numeric" maxlength="8" autocomplete="new-password" placeholder="Nova senha"><input type="password" id="gSenConf" inputmode="numeric" maxlength="8" autocomplete="new-password" placeholder="Repita"></div>
         <div class="gSenBts"><button class="primary" data-g="senSalva" data-k="${k}">Salvar senha</button><button class="danger" data-g="senCanc">✕ Cancelar</button></div>`
       :`<div class="gSenBts"><button class="lima" data-g="senEd" data-k="${k}">✎ ${v?'Alterar':'Cadastrar'}</button>${v?`<button data-g="senVer" data-k="${k}">${ver?'🙈 Esconder':'👁 Mostrar'}</button><button class="danger" data-g="senTira" data-k="${k}">✕ Tirar senha</button>`:''}</div>`}</div>`;}).join('')}</section>`}`;}
+  if(ab==='rels'){const sel=relDiaSel();
+    h=`<section class="panel gCfgP"><h2>Relatórios do dia</h2>
+    <p class="note">Marque os relatórios que vão no botão <b>📤 Relatórios do dia</b> da tela inicial. Ao tocar no botão (com o dia finalizado), o app gera os PDFs marcados e abre o compartilhar do celular para escolher o WhatsApp e a conversa ou o grupo. Salva sozinho ao marcar.</p>
+    <div class="gRelLista">${REL_DIA.map(([k,t,d])=>`<label class="gRelIt"><input type="checkbox" data-reld="${k}"${sel.includes(k)?' checked':''}><span><b>${t}</b><small>${d}</small></span></label>`).join('')}</div></section>`;}
   if(ab==='backup'){const I=window.bkApi?bkApi.info():{};
     h=`<section class="panel gCfgP"><h2>Backup</h2>
     <p class="note"><b>Automático:</b> todo dia às 2h da manhã, no Google Drive (pasta SISTEMA COMPLETO - CONFINAMENTO › Backups). Ficam os 20 mais novos.<br>
@@ -2452,8 +2456,9 @@ function linhasLotes(enc){const hj=hojeKey(),X=gCtx(),loc=gLoc,noLocal=l=>loc===
   return L.map(l=>{const fim=fimLote(l),ref=fim&&fim<hj?fim:hj,m=mediaLote(l,X),C=calcLote(l),r=racaoEm(l,ref);
     return {c:curralEm(l,ref)||'',nome:l.nome,desc:[sexoTxt(l.sexo),l.raca,catNorm(l.cat)].filter(Boolean).join(' · '),rac:r?r.nome:'',cab:cabPres(l,ref),pe:pesoEntMed(l)||0,pp:pesoEm(l,ref),
       dias:Math.max(0,difDias(l.ent.dia,ref)),dct:m.n,...(()=>{const A=ativo(l)?projAbate(l):null;return A?{pf:A.peso,ad:A.dia,af:difDias(hj,A.dia),apor:A.por}:{pf:NaN,ad:'',af:NaN,apor:''};})(),mn:m.n?m.mn/m.n:NaN,ms:m.nms?m.ms/m.nms:NaN,ims:m.nms?m.pv/m.nms:NaN,...(()=>{const V=vendaEst(l,C);return {ve:V.venda,vr:V.res,vreal:!!V.real};})(),cd:C.custoCabDia,ctr:C.cabE?(C.alim+C.op)/C.cabE:NaN,cco:C.cabE?C.compra/C.cabE:NaN,ct:C.cabE?C.custo/C.cabE:NaN,tot:C.custo,ent:l.ent.dia,fim:fim||''};});}
-document.addEventListener('click',e=>{const b=e.target.closest('#gBox [data-g="lotesImg"],#gBox [data-g="lotesXls"],#gBox [data-g="lotesPdf"]');if(!b)return;e.stopPropagation();
-  const enc=!!b.dataset.enc,R=linhasLotes(enc),loc=gLoc==='C'?' · Confinamento':gLoc==='P'?' · Pasto':'',tit=`${enc?'Lotes arquivados':'Lotes ativos'}${loc} · ${dB(hojeKey())}`;
+document.addEventListener('click',e=>{const b=e.target.closest('#gBox [data-g="lotesImg"],#gBox [data-g="lotesXls"],#gBox [data-g="lotesPdf"]');if(!b)return;e.stopPropagation();lotesExp(b.dataset.g,!!b.dataset.enc);},true);
+function lotesExp(g,enc){const b={dataset:{g}};
+  const R=linhasLotes(enc),loc=gLoc==='C'?' · Confinamento':gLoc==='P'?' · Pasto':'',tit=`${enc?'Lotes arquivados':'Lotes ativos'}${loc} · ${dB(hojeKey())}`;
   if(!R.length)return toast('Nenhum lote');
   window.__expPdf=b.dataset.g==='lotesPdf';
   if(b.dataset.g==='lotesImg'||b.dataset.g==='lotesPdf'){
@@ -2466,7 +2471,7 @@ document.addEventListener('click',e=>{const b=e.target.closest('#gBox [data-g="l
     total:['TOTAL',`${R.length} lote(s)`,'',nf(cabT),mostra(med(x=>x.pe),v=>nf(v)),mostra(med(x=>x.pp),v=>nf(v)),mostra(med(x=>x.dias),v=>nf(v)),mostra(med(x=>x.pf),v=>nf(v)),'','',mostra(med(x=>x.mn),v=>nf(v,1)),mostra(med(x=>x.ms),v=>nf(v,2)),mostra(med(x=>x.ims),v=>pc(v,2)),mostra(med(x=>x.cd),rs),mostra(med(x=>x.ctr),rs),mostra(med(x=>x.cco),rs),'','','']},
     {cab:'Somatório dos lotes',cols:[['Custo total',520,'c'],['Venda estimada',520,'c'],['Resultado',520,'c']],linhas:[[rs(cT),mostra(vT,rs),mostra(rT,rs)]],cores:[[null,null,!ok(rT)?null:rT<0?'#b3261e':'#2e7d32']]}],`Lotes ${dB(hojeKey()).replace(/\//g,'-')}`);}
   gExcel(`Lotes ${dB(hojeKey()).replace(/\//g,'-')}`,[['Lotes',['Curral','Lote','Sexo · raça · categoria','Ração','Entrada','Arquivado em','Cabeças','Peso entrada (kg)','Peso projetado (kg)','Dias','Peso final projetado (kg)','Previsão de abate','Dias para o abate','Abate calculado pelo','Dias com trato','MN/cab (média)','MS/cab (média)','% IMS (média)','R$/cab/dia','R$/cab tratos','R$/cab compra','R$/cab total','Custo total do lote','Venda estimada (ou real)','Resultado (estimado ou real)'],
-    R.map(x=>[xc(x.c),xc(x.nome),xc(x.desc),xc(x.rac),xc(x.ent,'dia'),xc(x.fim,'dia'),xc(x.cab,'int'),xc(x.pe,'int'),xc(x.pp,'int'),xc(x.dias,'int'),xc(x.pf,'int'),xc(x.ad,'dia'),xc(x.af,'int'),xc(x.apor),xc(x.dct,'int'),xc(x.mn,'dec'),xc(x.ms,'dec'),xc(ok(x.ims)?x.ims/100:NaN,'pct'),xc(x.cd,'rs'),xc(x.ctr,'rs'),xc(x.cco,'rs'),xc(x.ct,'rs'),xc(x.tot,'rs'),xc(x.ve,'rs'),xc(x.vr,'rs')]),[10,22,26,16,11,12,9,11,12,7,13,12,10,14,10,11,11,10,11,12,12,12,14,16,16]]]);},true);
+    R.map(x=>[xc(x.c),xc(x.nome),xc(x.desc),xc(x.rac),xc(x.ent,'dia'),xc(x.fim,'dia'),xc(x.cab,'int'),xc(x.pe,'int'),xc(x.pp,'int'),xc(x.dias,'int'),xc(x.pf,'int'),xc(x.ad,'dia'),xc(x.af,'int'),xc(x.apor),xc(x.dct,'int'),xc(x.mn,'dec'),xc(x.ms,'dec'),xc(ok(x.ims)?x.ims/100:NaN,'pct'),xc(x.cd,'rs'),xc(x.ctr,'rs'),xc(x.cco,'rs'),xc(x.ct,'rs'),xc(x.tot,'rs'),xc(x.ve,'rs'),xc(x.vr,'rs')]),[10,22,26,16,11,12,9,11,12,7,13,12,10,14,10,11,11,10,11,12,12,12,14,16,16]]]);}
 
 /* ---------- Gestão › Config. › Backup: lista das cópias (automáticas e manuais) ---------- */
 async function gBkLista(){const el=$('gBkLista');if(!el)return;
@@ -2515,7 +2520,7 @@ function tEstoque(){const I=gTodos('insumo').filter(i=>!i.inativo).sort(porNome)
   const L=I.map(i=>({i,e:estoqueIns(i)}));
   const item=({i,e})=>{const cor=estCor(e),baixo=cor==='r',abMin=e.saldo!=null&&e.min&&e.saldo<e.min;
     return `<button class="gItem gEstIt${cor?' gEstC'+cor:''}" data-g="ir" data-t="estIns" data-id="${i.uid}"><div class="gItemTopo"><b>${esc(i.nome)}</b><span class="gEstSaldo">${e.saldo==null?'sem lançamento':nf(e.saldo)+' kg'}</span></div>
-      <small>${e.saldo==null?'Lance uma entrada ou uma contagem para começar o controle.':((x)=>x.replace(/^(⚠ )?([a-zà-ú])/,(m,w,c)=>(w||'')+c.toUpperCase()))([baixo?'⚠ estoque baixo':'',abMin&&!baixo?'abaixo do mínimo':'',ok(e.dias)?`finaliza em <span class="gEstDias">~${nf(e.dias,1)} dia${Math.round(e.dias*10)===10?'':'s'}</span>`:'',e.cons>0?`consumo ${nf(e.cons)} kg/dia (últimos 7 dias)`:'sem consumo nos últimos 7 dias',e.min?`mínimo ${nf(e.min)} kg`:''].filter(Boolean).join(' · '))}</small></button>`;};
+      <small>${e.saldo==null?'Lance uma entrada ou uma contagem para começar o controle.':((x)=>x.replace(/^(⚠ )?([a-zà-ú])/,(m,w,c)=>(w||'')+c.toUpperCase()))([baixo?'⚠ estoque baixo':'',abMin&&!baixo?'abaixo do mínimo':'',ok(e.dias)?`finaliza em <span class="gEstDias">~${nf(e.dias,1)} dia${Math.round(e.dias*10)===10?'':'s'}</span>`:'',e.cons>0?`consumo ${nf(e.cons)} kg/dia (média 7 dias)`:'sem consumo nos últimos 7 dias',e.min?`mínimo ${nf(e.min)} kg`:''].filter(Boolean).join(' · '))}</small></button>`;};
   return `<section class="panel"><div class="curhead"><h2>Estoque</h2><span class="note">${dB(hj)}</span></div>
     <div class="gEstBtns gEst4"><button class="lima" data-g="ir" data-t="estForm" data-mov="ent">＋ Entrada</button><button class="lima" data-g="nfNova">📎 ＋ NF</button><button data-g="ir" data-t="estForm" data-mov="sai">－ Saída manual</button><button data-g="ir" data-t="estForm" data-mov="inv">Contagem</button></div>
     ${L.length?`<div class="row compart fz3 lotesExp"><button class="verde" data-g="estPdf">📄 PDF</button><button class="verde" data-g="estImg">🖼 Foto</button><button class="verde" data-g="estXls">📊 Excel</button></div>`:''}
@@ -3056,7 +3061,7 @@ function zootCanvas(D){const W=1754,top=84,rowH=38,hd=72,porPag=Math.max(5,Math.
     pags.push(cv);}
   return pags;}
 async function zootExport(tipo,dia,loc){const D=zootDados(dia,loc);if(!D.rows.length)return toast('Nenhum lote com animais neste dia');
-  const nome=`FJK - Tratos ${dB(dia).replace(/\//g,'-')}${D.loc==='C'?' - Confinamento':D.loc==='P'?' - Pasto':''}`;
+  const nome=`FJK - Índices do dia ${dB(dia).replace(/\//g,'-')}${D.loc==='C'?' - Confinamento':D.loc==='P'?' - Pasto':''}`;
   try{if(tipo==='xls'){const lin=r=>ZCOLS.map(c=>{const v=r[c[0]];return c[3]==='dia'?xc(v||null,'dia'):c[3]==='rs'?xc(ok(+v)?+v:'','rs'):c[3]==null?xc(v==null?'':v):xc(ok(+v)&&v!==null?+v:'',c[3]===0?'int':'dec');});
       return gExcel(nome,[['Zootécnico',ZCOLS.map(c=>(c[2]==='fin'?c[1]+' R$/cab':c[0]==='gmd'?'GMD':c[0]==='nota'?'Nota':/^id/.test(c[2])?(c[0]==='msRac'?'MS dieta %':c[0]==='ent'?'Data entrada':c[1]):ZGRP[c[2]].replace(' kg/cab/dia','').replace('% IMS do PV','%PV').replace(' (kg)','')+' '+c[1])),D.rows.map(lin).concat([lin(Object.assign({},D.T,{c:'MÉDIA',lote:'',sexo:'',ent:'',rac:'',nota:'',dias:null,msRac:null}))]),ZCOLS.map(c=>Math.max(8,Math.round(c[4]/9)))]]);}
     const P=zootCanvas(D);
@@ -3139,3 +3144,112 @@ function migrarRenomes(){try{if(typeof modoVer!=='undefined'&&modoVer)return 0;i
   if(n&&!$('viewGest').hidden&&!gEditando())gRender();return n;}catch(e){return 0;}}
 window.migrarRenomes=migrarRenomes;
 setTimeout(migrarRenomes,7000);setInterval(migrarRenomes,60000);
+
+/* =====================================================================================
+   RELATÓRIOS DO DIA: botão da tela inicial → gera os PDFs marcados em Config. › Relatórios e abre o compartilhar (WhatsApp)
+   ===================================================================================== */
+const REL_DIA=[
+  ['tratosJ','Tratos do dia','todos os tratos numa tabela só (hora, curral, previsto, realizado e diferença)'],
+  ['tratosC','Tratos do dia por curral','soma do dia por curral, com % PV'],
+  ['batidas','Batidas do vagão','batidas do dia com os insumos e o total'],
+  ['resumo','Resumo do dia','o resumo da Gestão (cabeças, consumo, custo, alertas)'],
+  ['relDia','Relatório do dia por lote','consumo e custo de cada lote e insumos usados'],
+  ['indices','Índices do dia','MN, MS, % PV e custo por curral'],
+  ['confBal','Conferência da balança','batidas e tratos com a balança no início e no fim'],
+  ['fezes','Escore de fezes','avaliações do dia'],
+  ['estoque','Estoque','os quadros coloridos de cada produto (saldo, finaliza em, consumo, mínimo)'],
+  ['lotes','Lotes ativos','lista dos lotes com custo, venda e previsão de abate'],
+  ['insumos','Insumos','preço e estoque de cada insumo']];
+function relDiaSel(){const c=gCfg();return Array.isArray(c.relDia)?c.relDia:['tratosC','indices','estoque'];}
+window.relDiaSel=relDiaSel;
+$('gBox').addEventListener('change',e=>{const t=e.target;if(!t.matches||!t.matches('input[data-reld]'))return;if(typeof bloqueado==='function'&&bloqueado()){t.checked=!t.checked;return;}
+  const c=JSON.parse(JSON.stringify(gCfg())),v=new Set(relDiaSel());t.checked?v.add(t.dataset.reld):v.delete(t.dataset.reld);c.relDia=REL_DIA.map(x=>x[0]).filter(k=>v.has(k));gPut(c);toast(`${c.relDia.length} relatório(s) marcado(s)`);});
+/* o que ainda falta tratar no dia (previsto sem registro) */
+function diaFaltas(dia){const P=(typeof prevDoDia==='function'?prevDoDia(dia):null)||{},feito=new Set((typeof HIST!=='undefined'?HIST:[]).filter(r=>r.dia===dia).map(r=>r.trato+'|'+r.curral)),F=[];
+  for(let k=1;k<=(typeof MAXT!=='undefined'?MAXT:8);k++){const m=P[String(k)]||P[k]||{};Object.keys(m).forEach(c=>{const v=+m[c];if(!(v>0))return;if(typeof curralAtivo==='function'&&!curralAtivo(c))return;if(!feito.has(k+'|'+c))F.push({t:k,c,kg:v});});}
+  return F;}
+window.diaFaltas=diaFaltas;
+async function relDiaGerar(k,dia){const GT0=GT,gL=gLoc;
+  try{switch(k){
+    case 'tratosJ':return await window.histPdfDia(dia,'juntos');
+    case 'tratosC':return await window.histPdfDia(dia,'curral');
+    case 'batidas':{const L=batidasLista(dia,dia,'T',0);if(!L.length)return;window.__expPdf=true;return await imgBatidas(L,dB(dia),'juntas');}
+    case 'resumo':{GT={t:'home',dia};tHome(GT);return await resPdf();}
+    case 'relDia':window.__expPdf=true;return await imgDia(dia);
+    case 'indices':return await zootExport('pdf',dia,'T');
+    case 'confBal':GT={t:'cfg',cbDia:dia};return await confBatExp('pdf');
+    case 'fezes':GT={t:'fezes',dia,loc:'T'};if(!fzDadosDia().length)return;return await fzRelPdf();
+    case 'estoque':return await estCardsPdf(dia);
+    case 'lotes':gLoc='T';return await lotesExp('lotesPdf',false);
+    case 'insumos':return await insExp('pdf');}}
+  finally{GT=GT0;gLoc=gL;window.__expPdf=false;}}
+let relDiaRodando=false;
+async function relDiaEnviar(){if(relDiaRodando)return;const dia=hojeKey(),sel=relDiaSel();
+  if(!sel.length)return toast('Nenhum relatório marcado (Gestão › Config. › Relatórios)');
+  relDiaRodando=true;const bt=$('btnRelDia');if(bt)bt.classList.add('girando');
+  try{
+    if(navigator.onLine){toast('Atualizando os dados…');try{await Promise.allSettled([typeof gSync==='function'?gSync(true):0,typeof puxarRegistros==='function'?puxarRegistros(true):0,typeof puxarPrevisto==='function'?puxarPrevisto(true):0]);}catch(e){}}
+    const F=diaFaltas(dia);
+    if(F.length){const tx=F.slice(0,8).map(x=>`Trato ${x.t} · ${x.c}`).join(', ')+(F.length>8?` e mais ${F.length-8}`:'');
+      await (window.perg?perg('O dia ainda não foi finalizado',`Falta tratar ${F.length} curral(is): ${tx}. Os relatórios do dia só são enviados depois de todos os tratos registrados.`,'Entendi',null,false):Promise.resolve(alert('O dia ainda não foi finalizado')));return;}
+    toast(`Gerando ${sel.length} relatório(s)…`);
+    const cap=[];window.__capArq=cap;const nomes=[];
+    for(const k of sel){const n0=cap.length;try{await relDiaGerar(k,dia);}catch(e){console.error(e);}
+      for(let w=0;w<40&&cap.length===n0;w++)await new Promise(r=>setTimeout(r,150));
+      if(cap.length===n0)nomes.push((REL_DIA.find(x=>x[0]===k)||[,k])[1]);}
+    window.__capArq=null;
+    const pdfs=cap.filter(f=>/pdf/i.test(f.type)||/\.pdf$/i.test(f.name));
+    if(!pdfs.length)return toast('Nenhum relatório com dados hoje');
+    if(nomes.length)toast(`Sem dados hoje: ${nomes.join(', ')}`);
+    await salvarOuEnviar(pdfs,pdfs.map(f=>f.name),'application/pdf');
+  }finally{window.__capArq=null;relDiaRodando=false;if(bt)bt.classList.remove('girando');}}
+window.relDiaEnviar=relDiaEnviar;
+
+/* Estoque em quadros (igual à tela): vermelho < 7 dias · amarelo 7–15 · verde 15+ → PDF */
+async function estCardsPdf(dia){const I=gTodos('insumo').filter(i=>!i.inativo).sort(porNome).map(i=>({i,e:estoqueIns(i)})).filter(o=>o.e.saldo!=null);
+  if(!I.length)return toast('Nenhum produto com estoque');
+  const W=1080,M=40,PAD=32,FN='Helvetica,Arial,sans-serif',CORES={r:['#fde3e1','#c62828','#b3261e'],a:['#fff3cd','#e0a800','#8a6100'],v:['#e3f4e1','#2e7d32','#2e7d32'],'':['#f4f6f8','#cfd8dc','#11253d']};
+  const cv=document.createElement('canvas'),x=cv.getContext('2d');
+  /* monta as linhas de cada quadro (com quebra) para saber a altura */
+  const linhas=o=>{const e=o.e,cor=estCor(e),baixo=cor==='r',abMin=e.min&&e.saldo<e.min;const P=[];
+    if(baixo)P.push({t:'⚠ Estoque baixo'});else if(abMin)P.push({t:'Abaixo do mínimo'});
+    if(ok(e.dias))P.push({t:P.length?'finaliza em':'Finaliza em'},{t:`~${nf(e.dias,1)} dia${Math.round(e.dias*10)===10?'':'s'}`,badge:1});
+    P.push({t:e.cons>0?`consumo ${nf(e.cons)} kg/dia (média 7 dias)`:'sem consumo nos últimos 7 dias'});if(e.min)P.push({t:`mínimo ${nf(e.min)} kg`});
+    /* palavras com separador · */
+    const tok=[];P.forEach((p,k)=>{if(k&&!(P[k-1].t.match(/finaliza em$/i)))tok.push({t:'·',sep:1});if(p.badge)tok.push({t:p.t,badge:1});else p.t.split(' ').forEach(w=>tok.push({t:w}));});
+    x.font=`500 30px ${FN}`;const max=W-2*M-2*PAD,L=[[]];let lw=0;
+    tok.forEach(tk=>{x.font=tk.badge?`800 32px ${FN}`:`500 30px ${FN}`;const w=x.measureText(tk.t).width+(tk.badge?28:0),sp=L[L.length-1].length?8:0;
+      if(lw+sp+w>max&&L[L.length-1].length){L.push([]);lw=0;}L[L.length-1].push(Object.assign({w},tk));lw+=(L[L.length-1].length>1?8:0)+w;});return L;};
+  const blocos=I.map(o=>({o,L:linhas(o)})),hB=b=>PAD+46+14+b.L.length*52+PAD-10,TOP=150,dd=dia||hojeKey();
+  /* consumo do estoque no dia: saldo anterior, entradas, consumido e saldo atual */
+  const C=I.map(({i,e})=>{let ant=0,atu=null,ent=0,con=0;e.M.forEach(m=>{if(m.dia<dd)ant=m.saldo;if(m.dia<=dd)atu=m.saldo;if(m.dia===dd){if(m.mov==='ent')ent+=m.kg;else if(m.mov==='bat'||m.mov==='sai')con+=m.kg;}});return {n:i.nome,ant,ent,con,atu:atu==null?ant:atu};});
+  const temEnt=C.some(c=>c.ent>0),cols=temEnt?[['Produto',300,'l'],['Saldo anterior',175,'r'],['Entradas',150,'r'],['Consumido',165,'r'],['Saldo atual',170,'r']]:[['Produto',350,'l'],['Saldo anterior',210,'r'],['Consumido no dia',225,'r'],['Saldo atual',175,'r']];
+  const hT=60+56+C.length*52+60;
+  cv.width=W;cv.height=TOP+blocos.reduce((a,b)=>a+hB(b)+24,0)+30+hT+60;
+  x.fillStyle='#f6f7f2';x.fillRect(0,0,W,cv.height);
+  x.fillStyle='#2e6b31';x.fillRect(0,0,W,110);x.fillStyle='#fff';x.font=`800 40px ${FN}`;x.textBaseline='middle';x.fillText('FJK · Estoque',M,55);
+  x.font=`500 30px ${FN}`;x.textAlign='right';x.fillText(dB(dia||hojeKey()),W-M,55);x.textAlign='left';
+  const rr=(X,Y,w,h,r)=>{x.beginPath();x.moveTo(X+r,Y);x.arcTo(X+w,Y,X+w,Y+h,r);x.arcTo(X+w,Y+h,X,Y+h,r);x.arcTo(X,Y+h,X,Y,r);x.arcTo(X,Y,X+w,Y,r);x.closePath();};
+  let y=TOP;blocos.forEach(b=>{const e=b.o.e,c=CORES[estCor(e)],h=hB(b);
+    rr(M,y,W-2*M,h,22);x.fillStyle=c[0];x.fill();x.lineWidth=5;x.strokeStyle=c[1];x.stroke();
+    let yy=y+PAD+23;x.font=`800 42px ${FN}`;x.fillStyle=estCor(e)==='r'?c[2]:'#11253d';x.textAlign='left';x.fillText(b.o.i.nome,M+PAD,yy);
+    x.textAlign='right';x.fillStyle=c[2];x.fillText(nf(e.saldo)+' kg',W-M-PAD,yy);x.textAlign='left';yy+=23+14+26;
+    b.L.forEach(lin=>{let xx=M+PAD;lin.forEach((tk,k)=>{if(k)xx+=8;
+      if(tk.badge){x.font=`800 32px ${FN}`;const bw=tk.w,bh=46;rr(xx,yy-bh/2,bw,bh,23);x.fillStyle=estCor(e)==='a'?'#f2b600':c[1];x.fill();x.fillStyle=estCor(e)==='a'?'#3a2a00':'#fff';x.fillText(tk.t,xx+14,yy+1);}
+      else{x.font=`500 30px ${FN}`;x.fillStyle='#3d4a3d';x.fillText(tk.t,xx,yy);}xx+=tk.w;});yy+=52;});
+    y+=h+24;});
+  x.font=`400 22px ${FN}`;x.fillStyle='#78909c';x.fillText('Vermelho: menos de 7 dias · Amarelo: 7 a 15 dias · Verde: 15 dias ou mais',M,y+4);y+=44;
+  /* tabela: consumo do estoque no dia */
+  x.fillStyle='#2e6b31';rr(M,y,W-2*M,56,14);x.fill();x.fillStyle='#fff';x.font=`800 30px ${FN}`;x.fillText(`Consumo do estoque · ${dB(dd)}`,M+20,y+29);y+=66;
+  const cx=[];let acc=M+16;cols.forEach(c=>{cx.push(acc);acc+=c[1];});
+  const cel=(t,k,yy,bold)=>{const [,w,al]=cols[k];x.font=`${bold?800:500} 28px ${FN}`;x.textAlign=al==='l'?'left':'right';x.fillText(t,al==='l'?cx[k]:cx[k]+w-8,yy);x.textAlign='left';};
+  x.fillStyle='#e8eee0';x.fillRect(M,y,W-2*M,50);x.fillStyle='#2e6b31';cols.forEach((c,k)=>{const [,w,al]=c;x.font=`800 24px ${FN}`;x.textAlign=al==='l'?'left':'right';x.fillText(c[0],al==='l'?cx[k]:cx[k]+w-8,y+26);x.textAlign='left';});y+=50;
+  C.forEach((c,k)=>{if(k%2){x.fillStyle='#f7f9f4';x.fillRect(M,y,W-2*M,52);}x.fillStyle='#11253d';
+    const v=temEnt?[c.n,nf(c.ant),c.ent?'+'+nf(c.ent):'—',c.con?nf(c.con):'—',nf(c.atu)]:[c.n,nf(c.ant),c.con?nf(c.con):'—',nf(c.atu)];
+    v.forEach((t,j)=>{x.fillStyle=j===v.length-2&&c.con?'#b3261e':j===2&&temEnt&&c.ent?'#2e7d32':'#11253d';cel(t,j,y+27,j===v.length-1);});y+=52;});
+  const T=k=>C.reduce((a,c)=>a+c[k],0);x.fillStyle='#2e6b31';x.fillRect(M,y,W-2*M,54);x.fillStyle='#fff';
+  (temEnt?['TOTAL',nf(T('ant')),'+'+nf(T('ent')),nf(T('con')),nf(T('atu'))]:['TOTAL',nf(T('ant')),nf(T('con')),nf(T('atu'))]).forEach((t,j)=>cel(t,j,y+28,1));
+  x.font=`400 20px ${FN}`;x.fillStyle='#78909c';x.fillText('kg de matéria natural · consumido = batidas + saídas manuais do dia',M,y+86);
+  const b=await new Promise(r=>cv.toBlob(r,'image/png'));
+  return compartilharArquivo(await pngsParaPdf([b]),nomeArq(`Estoque ${dB(dia||hojeKey()).replace(/\//g,'-')}`)+'.pdf','application/pdf');}
+window.estCardsPdf=estCardsPdf;

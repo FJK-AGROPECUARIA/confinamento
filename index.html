@@ -362,6 +362,8 @@ button.grande{font-size:1.5rem;padding:26px 14px;border-radius:16px;font-weight:
 button.gExec{background:#1f8f4e;border-color:#1f8f4e;color:#fff}
 button.gVer{background:var(--accent);border-color:var(--accent);color:#fff}
 button.gGest{background:#11253d;border-color:#11253d;color:#fff}
+.gRel{background:#2c4f7c;border-color:#2c4f7c;color:#fff}#btnRelDia{font-size:1.5rem!important;padding-top:18px;padding-bottom:18px}#btnRelDia.girando{opacity:.6}
+.gRelLista{display:grid;gap:6px}.gRelIt{display:flex;gap:10px;align-items:flex-start;padding:10px;border:2px solid var(--line);border-radius:12px;text-transform:none;letter-spacing:0;font-size:.95rem;color:var(--fg);margin:0;cursor:pointer}.gRelIt input{width:24px;height:24px;flex:0 0 24px;margin-top:2px}.gRelIt small{display:block;color:var(--muted);font-size:.78rem;font-weight:400}.gRelIt:has(input:checked){border-color:var(--accent);background:#eef4e2}
 button.grande small{display:block;font-size:.8rem;font-weight:500;opacity:.9;margin-top:4px}
 /* cada entrada mostra só a sua parte: Tratos (e Visualizar) sem Gestão; Gestão sem Tratos */
 body.modoTrato #tabGrpGest,body.somenteVer #tabGrpGest,body.modoGest #tabGrpTrato,body.modoTrato .menu>.tabs,body.somenteVer .menu>.tabs,body.modoGest .menu>.tabs{display:none!important}
@@ -864,6 +866,7 @@ body.naInicio .topoTxt h1{font-size:clamp(16px,5vw,28px)!important}
     <button class="grande gExec" id="btnModoExec">🚜 Tratos</button>
     <button class="grande gVer" id="btnModoVer">👁 Visualizar</button>
     <button class="grande gGest" id="btnModoGest">📊 Gestão</button>
+    <button class="grande gRel" id="btnRelDia">📤 Relatórios do dia<small>envia os relatórios do dia pelo WhatsApp</small></button>
   </div>
   <div class="faixaVer" id="faixaVer" hidden><span>👁 Modo visualização · atualiza automaticamente</span><button class="mini" id="btnSairVer">Sair</button></div>
   <div class="menu" id="menu">
@@ -1155,7 +1158,7 @@ body.naInicio .topoTxt h1{font-size:clamp(16px,5vw,28px)!important}
 <div class="toast" id="toast" hidden></div>
 <script>
 'use strict';
-const APP_VERSAO='129';
+const APP_VERSAO='130';
 const APP_DATA='19/10/2026';
 const KEY='confinamento-completo-v1';
 const $=id=>document.getElementById(id);
@@ -2154,7 +2157,8 @@ $('btnShareExcel').onclick=()=>compartilhar(regsAtuais());
 /* ---------- Compartilhar: Imagem da tabela e Excel ---------- */
 /* todo arquivo gerado (imagem, PDF, Excel): no celular abre direto a tela do próprio aparelho (WhatsApp, Salvar imagem, Salvar em Arquivos…);
    no computador baixa direto. Se o aparelho não deixar abrir sozinho (demorou para gerar), mostra 1 botão para abrir. */
-function salvarOuEnviar(blobs,nomes,tipo){return new Promise(async res=>{
+function salvarOuEnviar(blobs,nomes,tipo){if(window.__capArq){blobs.forEach((b,i)=>window.__capArq.push(b instanceof File?b:new File([b],nomes[i],{type:tipo})));return Promise.resolve();}
+  return new Promise(async res=>{
   const fs=blobs.map((b,i)=>new File([b],nomes[i],{type:tipo}));let pode=false;try{pode=!!(navigator.canShare&&navigator.canShare({files:fs}));}catch(e){}
   const movel=/Android|iPhone|iPad|iPod/i.test(navigator.userAgent)||(navigator.platform==='MacIntel'&&navigator.maxTouchPoints>1);
   const baixarTudo=()=>{blobs.forEach((bl,i)=>setTimeout(()=>baixar(bl,nomes[i]),i*600));toast(blobs.length>1?`${blobs.length} arquivos salvos (Downloads)`:'Arquivo salvo (Downloads)');};
@@ -2255,7 +2259,12 @@ $('hPdf').onclick=()=>{expPdfHist=true;abrirEscolhaImg();};
 $('hImg').onclick=()=>{expPdfHist=false;abrirEscolhaImg();};
 function abrirEscolhaImg(){const h=$('escolhaImg').querySelector('h2');if(h)h.textContent=expPdfHist?'PDF':'Foto';if(!filtrados().length)return;if(HD.per){const b=document.querySelector('#escolhaImg button[data-img="curral"]');if(b){b.click();return;}}$('escolhaImg').hidden=false;}
 $('escolhaImg').addEventListener('click',async e=>{const b=e.target.closest('button[data-img]');if(!b){if(e.target.id==='escolhaImg')$('escolhaImg').hidden=true;return;}
-  const tipo=b.dataset.img;$('escolhaImg').hidden=true;if(tipo==='cancelar')return;
+  const tipo=b.dataset.img;$('escolhaImg').hidden=true;if(tipo==='cancelar')return;return histGerar(tipo,expPdfHist);});
+/* relatórios do dia: gera o PDF dos tratos de um dia sem mexer na tela */
+window.histPdfDia=async(dia,tipo)=>{const H0={dia:HD.dia,ini:HD.ini,fim:HD.fim,per:HD.per,t:HD.t},l0=localSel;
+  try{HD.dia=HD.ini=HD.fim=dia;HD.per=false;HD.t=0;localSel='T';return await histGerar(tipo,true);}finally{Object.assign(HD,H0);localSel=l0;}};
+window.batPdfDia=dia=>{const L=batidasLista(dia,dia,'T',0);if(!L.length)return;window.__expPdf=true;return imgBatidas(L,diaBR(dia),'juntas');};
+async function histGerar(tipo,pdfH){
   const f=filtrados();if(!f.length)return;
   const blobs=[],nomes=[];
   if(tipo==='trato'||tipo==='todos'){for(const g of secoesHist()){blobs.push(await desenharTabela([secaoTratoImg(g.cab,g.linhas)]));nomes.push(`FJK - Tratos - ${dataArq(g.dia)} (Trato ${g.trato}).png`);}}
@@ -2267,9 +2276,9 @@ $('escolhaImg').addEventListener('click',async e=>{const b=e.target.closest('but
   if(tipo==='curral'||tipo==='todos'){const t=HD.per?'':(HD.t>0?HD.t:'');
     const cab=`${t?'Trato '+t:'Todos os tratos'} - ${rotuloData()}${localSel==='C'?' · Confinamento':localSel==='P'?' · Pasto':''}`;
     blobs.push(await desenharTabela([secaoCurralImg(f,cab)]));{const [pa,pb]=intervaloHist();nomes.push(`FJK - Tratos - ${dataArq(pa)}${pa!==pb?' a '+dataArq(pb):''} (por curral).png`);}}
-  if(expPdfHist){const [pa,pb]=intervaloHist(),nm=`FJK - Tratos - ${dataArq(pa)}${pa!==pb?' a '+dataArq(pb):''}.pdf`;return compartilharArquivo(await pngsParaPdf(blobs),nm,'application/pdf');}
-  compartilharVarios(blobs,nomes);
-});
+  if(pdfH){const [pa,pb]=intervaloHist(),nm=`FJK - Tratos - ${dataArq(pa)}${pa!==pb?' a '+dataArq(pb):''}${tipo==='curral'?' (por curral)':''}.pdf`;return compartilharArquivo(await pngsParaPdf(blobs),nm,'application/pdf');}
+  return compartilharVarios(blobs,nomes);
+}
 $('hModo').addEventListener('click',e=>{const b=e.target.closest('[data-hm]');if(!b)return;hModo=b.dataset.hm;hColFechar();if(hModo==='T'&&HD.t===0)HD.t=-1;renderHist();});
 /* batidas: um relatório só (batidas com subtotal, total geral e o quadro de total dos insumos embaixo) */
 function expBat(pdf){const [pa,pb]=intervaloHist();const L=batidasLista(pa,pb,localSel,HD.per||HD.t<0?0:HD.t);if(!L.length)return toast('Nenhuma batida');
@@ -3238,7 +3247,9 @@ const SENHAS={trato:'0000',gest:'1010',acao:'1010'};let senhaRes=null;let senhaD
 /* senhas: ficam em Gestão › Config. › Senha (vazia = não pede) */
 function senhaDe(m){const d=SENHAS[m]||'';try{const x=typeof gCfg==='function'&&gCfg().senhas;if(x&&typeof x[m]==='string')return x[m];}catch(e){}return d;}
 window.senhaDe=senhaDe;
-const senhaAtual=()=>senhaDe(senhaModo);
+/* Visualizar e Relatórios do dia usam a senha dos Tratos (e o mesmo turno: manhã / tarde) */
+const SENHA_DE={trato:'trato',ver:'trato',rel:'trato',gest:'gest',acao:'acao'};
+const senhaAtual=()=>senhaDe(SENHA_DE[senhaModo]||senhaModo);
 function mostrarSenha(){$('senhaValor').textContent='●'.repeat(senhaDig.length)+'○'.repeat(Math.max(0,senhaAtual().length-senhaDig.length));}
 function verSenha(v){$('tecSenha').hidden=!v;$('senhaFundo').hidden=!v;}
 /* senha 1010 antes de editar/apagar registros e batidas */
@@ -3248,11 +3259,12 @@ const fimSenhaAcao=v=>{const r=senhaRes;senhaRes=null;if(r)r(v);};
 /* senha por turno (Config. › Senha): neste aparelho pede 1 vez de manhã (até 11:59) e 1 vez à tarde (do meio-dia em diante) */
 const turnoAtual=()=>hojeKey()+(new Date().getHours()<12?'M':'T');
 const senhaPorTurno=()=>{try{return typeof gCfg==='function'&&gCfg().senhaTurno===true;}catch(e){return false;}};
-function pedirSenha(m){if((m==='trato'||m==='gest')&&!senhaDe(m)){entrarExec(m);return;}
-  if((m==='trato'||m==='gest')&&senhaPorTurno()){let ok=false;try{ok=localStorage.getItem('senhaOk_'+m)===turnoAtual();}catch(e){}if(ok){entrarExec(m);return;}}
-  senhaModo=m;senhaDig='';$('senhaTit').textContent=m==='gest'?'Senha da Gestão':'Senha dos Tratos';mostrarSenha();verSenha(true);}
+function pedirSenha(m){const k=SENHA_DE[m]||m;if(!senhaDe(k)){entrarModo(m);return;}
+  if(senhaPorTurno()){let ok=false;try{ok=localStorage.getItem('senhaOk_'+k)===turnoAtual();}catch(e){}if(ok){entrarModo(m);return;}}
+  senhaModo=m;senhaDig='';$('senhaTit').textContent=m==='gest'?'Senha da Gestão':m==='ver'?'Senha para Visualizar':m==='rel'?'Senha para Relatórios do dia':'Senha dos Tratos';mostrarSenha();verSenha(true);}
 $('btnModoExec').onclick=()=>pedirSenha('trato');
 $('btnModoGest').onclick=()=>pedirSenha('gest');
+$('btnRelDia').onclick=()=>pedirSenha('rel');
 $('senhaFundo').onclick=()=>{verSenha(false);senhaDig='';fimSenhaAcao(false);};
 $('tecSenha').addEventListener('pointerdown',e=>e.preventDefault());
 /* no computador: dá para digitar a senha no teclado (números, ⌫, Enter, Esc) além do teclado da tela */
@@ -3265,7 +3277,7 @@ $('tecSenha').addEventListener('click',e=>{const b=e.target.closest('button[data
   else if(k!=='ok'&&senhaDig.length<sn.length)senhaDig+=k;
   mostrarSenha();
   if(k==='ok'||senhaDig.length===sn.length){
-    if(senhaDig===sn){verSenha(false);senhaDig='';if(senhaModo==='acao'){fimSenhaAcao(true);return;}try{localStorage.setItem('senhaOk_'+senhaModo,turnoAtual());}catch(e){}entrarExec(senhaModo);}
+    if(senhaDig===sn){verSenha(false);senhaDig='';if(senhaModo==='acao'){fimSenhaAcao(true);return;}try{localStorage.setItem('senhaOk_'+(SENHA_DE[senhaModo]||senhaModo),turnoAtual());}catch(e){}entrarModo(senhaModo);}
     else if(k==='ok'||senhaDig.length>=sn.length){toast('Senha errada');senhaDig='';mostrarSenha();}
   }});
 /* entra só na parte escolhida: 'trato' (padrão) ou 'gest' */
@@ -3274,11 +3286,13 @@ function entrarExec(m){m=m==='gest'?'gest':'trato';modoVer=false;try{verDestrava
   if(m==='gest'){try{GT={t:'home'};}catch(e){}window.abaAtual='';document.querySelectorAll('#subGest button[data-gt]').forEach(x=>x.setAttribute('aria-selected','false'));telaEscolha('Escolha uma opção no menu acima.');}else{try{if(escolherTratoDoDia()){$('tratoSel').value=String(S.tratoSel);}render();}catch(e){}escolherModo('auto');}
   setTimeout(()=>{try{geoTalvez();}catch(e){}},1500);
   if(window.menuCaminho)menuCaminho();}
-$('btnModoVer').onclick=()=>{verSenha(false);if(typeof fecharTeclado==='function')fecharTeclado();if(balCampo)fecharBal();
+function entrarModo(m){if(m==='ver')return entrarVer();if(m==='rel')return window.relDiaEnviar&&relDiaEnviar();entrarExec(m);}
+$('btnModoVer').onclick=()=>pedirSenha('ver');
+function entrarVer(){verSenha(false);if(typeof fecharTeclado==='function')fecharTeclado();if(balCampo)fecharBal();
   guardarExec();modoVer=true;document.body.classList.remove('naInicio','modoTrato','modoGest');document.body.classList.add('somenteVer');$('faixaVer').hidden=false;menuAberto=null;abrirMenu('trato');
   S.dataManual=null;S.ini='';S.fim='';escolherTratoDoDia();$('tratoSel').value=String(S.tratoSel);$('pvTrato').value=String(S.tratoSel);S.pvTrato=S.tratoSel;
   $('ini').value='';$('fim').value='';render();renderPrev();modoAtual=null;$('subModo').hidden=true;$('tabMan').setAttribute('aria-selected','false');$('tabModoAuto').setAttribute('aria-selected','false');escolherModo('auto');avDados=null;avErro=false;avAbriu=false;avisarVendo();renderAoVivo();if(navigator.onLine)puxarAoVivo();
-  if(navigator.onLine){puxarRegistros(true).catch(()=>{});puxarPrevisto(true).catch(()=>{});}};
+  if(navigator.onLine){puxarRegistros(true).catch(()=>{});puxarPrevisto(true).catch(()=>{});}}
 function voltarInicio(){try{geoParar();}catch(e){}
   if(typeof fecharTeclado==='function')fecharTeclado();if(typeof balCampo!=='undefined'&&balCampo)fecharBal();
   if(selModo){selModo=false;sel.clear();}
@@ -3594,7 +3608,7 @@ Promise.resolve(iniciar()).catch(()=>{})
     let t=null;try{t=JSON.parse(sessionStorage.getItem('telaApp')||'null');}catch(e){}
     if(t&&Date.now()-(+t.ts||0)>12*3600e3)t=null;
     const m=t?t.m:vp==='exec'?'trato':vp==='gest'?'gest':vp==='ver'?'ver':null;
-    if(m==='trato')entrarExec('trato');else if(m==='gest')entrarExec('gest');else if(m==='ver')$('btnModoVer').onclick();
+    if(m==='trato')entrarExec('trato');else if(m==='gest')entrarExec('gest');else if(m==='ver')entrarVer();
     if(t&&t.aba&&m){if(t.aba==='gest'){if(t.gt){try{GT=t.gt;}catch(e){}}aba('gest');}else aba(t.aba);
       setTimeout(()=>{try{if(window.menuFecha)menuFecha();}catch(e){}},200);
       if(['auto','autoc'].includes(t.aba)&&window.btAutoVoltar)btAutoVoltar();
