@@ -225,7 +225,8 @@ function ligar(){
   $('aEscolha').addEventListener('click',ev=>{const b=ev.target.closest('button[data-i]');if(!b)return;
     if(A.est==='descarregando'&&!confirm('Está fornecendo. Trocar de curral mesmo assim?'))return;
     setAtual(+b.dataset.i);save();$('aEscolha').hidden=true;novoCurral(true);render();aRender();});
-  $('aReg').onclick=()=>registrarAuto();
+  $('aReg').onclick=async()=>{const cur=curralAtual();if(cur&&window.perg){const kg=A.base!=null&&A.peso!=null?Math.max(0,A.base-A.peso):null;
+    if(!await perg(`Confirmar trato do ${cur.nome}?`,`${kg!=null?'Fornecido agora: '+fmt(kg)+' kg · ':''}previsto ${fmt(cur.prev)} kg`,'✓ Confirmar trato','Voltar',true))return;}registrarAuto();};
   $('aNaoForn').onclick=()=>{if(A.est==='descarregando'){toast('Está fornecendo neste curral: registre o trato.');return;}if(window.naoFornecer)naoFornecer();};
   $('aRecomecar').onclick=()=>{if(A.peso==null){toast('Sem leitura da balança');return;}novoCurral(true,true);A.pausa=null;aRender();toast('Peso inicial: '+fmt(A.base)+' kg');};
   $('aPular').onclick=async()=>{const L0=lista(),c0=L0[S.atual];if(c0&&window.perg&&!await perg(`Deseja realmente pular o ${c0.nome}?`,'Ele fica para depois (continua sem fornecer) e passa para o próximo curral.','Sim, pular','Não, voltar'))return;const L=lista(),regs=regsAtuais();let nx=L.findIndex((x,i)=>i>S.atual&&!feito(x.nome,regs));if(nx<0)nx=Math.min(S.atual+1,L.length);

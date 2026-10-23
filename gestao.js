@@ -1021,8 +1021,8 @@ function confBatDados(dia){const H=(typeof HIST!=='undefined'?HIST:[]).filter(r=
   B.forEach((b,i)=>{const lc=b.c.local||'',prox=B.slice(i+1).find(x=>(x.c.local||'')===lc||!lc||!(x.c.local));
     G_.push({b:b.c,ts:b.ts,regs:H.filter(r=>(!lc||loc(r.curral)===lc)&&(r.ts||0)>=b.ts&&(!prox||(r.ts||0)<prox.ts))});});
   const usados=new Set(G_.flatMap(g=>g.regs.map(r=>r.uid)));const sobra=H.filter(r=>!usados.has(r.uid));
-  if(sobra.length)G_.unshift({b:null,ts:sobra[0].ts||0,regs:sobra});
-  return G_.map(g=>{const its=(g.b&&g.b.itens||[]).map(x=>Array.isArray(x)?{nome:x[0],prev:+x[1],real:+x[2],ini:null,fim:null,hora:''}:{nome:x.nome+(x.man?' (manual)':''),prev:+x.prev,real:ok(+x.real)?+x.real:null,ini:ok(+x.ini)?+x.ini:null,fim:ok(+x.fim)?+x.fim:null,hora:x.hora&&x.hora!=='manual'?x.hora:''});
+  if(sobra.length)G_.push({b:null,ts:sobra[0].ts||0,regs:sobra});G_.sort((a,b)=>a.ts-b.ts);
+  const Z=G_.map(g=>{const its=(g.b&&g.b.itens||[]).map(x=>Array.isArray(x)?{nome:x[0],prev:+x[1],real:+x[2],ini:null,fim:null,hora:''}:{nome:x.nome+(x.man?' (manual)':''),prev:+x.prev,real:ok(+x.real)?+x.real:null,ini:ok(+x.ini)?+x.ini:null,fim:ok(+x.fim)?+x.fim:null,hora:x.hora&&x.hora!=='manual'?x.hora:''});
     its.forEach((x,i)=>{const a=its[i-1];x.salto=i&&a&&ok(a.fim)&&ok(x.ini)?x.ini-a.fim:null;});
     const fimC=[...its].reverse().find(x=>ok(x.fim)),fimCarga=fimC?fimC.fim:null;
     const rs=g.regs.map((r,i,A)=>{const a=A[i-1];const ini=ok(+r.ini)?+r.ini:null,fim=ok(+r.fim)?+r.fim:null;
@@ -1031,13 +1031,20 @@ function confBatDados(dia){const H=(typeof HIST!=='undefined'?HIST:[]).filter(r=
     const soma=(L,k)=>L.reduce((a,x)=>a+(ok(x[k])?x[k]:0),0);
     const sProd=soma(its,'salto'),s1=rs.length&&ok(rs[0].salto)?rs[0].salto:0,sCur=soma(rs.slice(1),'salto'),ult=[...rs].reverse().find(x=>ok(x.fim));
     return {b:g.b,its,rs,ini0:its[0]&&ok(its[0].ini)?its[0].ini:null,carregado:soma(its,'real'),fimCarga,ini1:rs[0]?rs[0].ini:null,s1,sProd,sCur,fornecido:soma(rs,'real'),
-      prevForn:soma(rs,'prev'),fimFinal:ult?ult.fim:null,apareceu:sProd+s1+sCur,tratos:[...new Set(rs.map(r=>r.trato))].sort()};});}
+      prevForn:soma(rs,'prev'),fimFinal:ult?ult.fim:null,apareceu:sProd+s1+sCur,tratos:[...new Set(rs.map(r=>r.trato))].sort(),lc:g.b?(g.b.local||''):(g.regs[0]?loc(g.regs[0].curral):'')};});
+  /* salto entre o fim do último curral (do vagão anterior) e o começo desta batida */
+  Z.forEach((g,i)=>{g.sAnt=null;g.antTxt='';if(!g.b||!g.its.length||!ok(g.ini0))return;
+    for(let j=i-1;j>=0;j--){const a=Z[j];if(g.lc&&a.lc&&a.lc!==g.lc)continue;const u=[...a.rs].reverse().find(x=>ok(x.fim))||(!a.rs.length?[...a.its].reverse().find(x=>ok(x.fim)):null);
+      if(u){g.sAnt=g.ini0-u.fim;g.antTxt=u.nome;g.its[0].salto=g.sAnt;g.apareceu+=g.sAnt;}break;}});
+  return Z;}
+/* divide o fornecimento em trechos seguidos do mesmo trato (ex.: Trato 2 e depois Trato 3 com a sobra) */
+const runsT=rs=>{const o=[];rs.forEach(x=>{const u=o[o.length-1];if(u&&u[0].trato===x.trato)u.push(x);else o.push([x]);});return o;};
 const sg_=v=>v==null||!ok(v)?'':(v>0?'+':'')+nf(v);
 function confBatHTML(){const dia=GT.cbDia||hojeKey(),D=confBatDados(dia);
   const tab=(cab,L,ehC)=>`<div class="tablebox"><table class="gTab gCbTab"><thead><tr><th>Hora</th><th>${ehC?'Curral':'Produto'}</th><th>Prev.</th><th>Real.</th><th>Início</th><th>Final</th><th>Salto</th></tr></thead><tbody>${L.map(x=>`<tr><td>${esc(x.hora||'')}</td><td class="c">${esc(x.nome)}${ehC&&x.trato?` <small>T${x.trato}</small>`:''}</td><td>${ok(x.prev)?nf(x.prev):''}</td><td><b>${ok(x.real)?nf(x.real):'—'}</b></td><td>${ok(x.ini)?nf(x.ini):'—'}</td><td>${ok(x.fim)?nf(x.fim):'—'}</td><td class="${x.salto>0?'gCbMais':x.salto<0?'gCbMenos':''}">${sg_(x.salto)}</td></tr>`).join('')}</tbody></table></div>`;
   const bloco=g=>{const b=g.b,t=b?`🚜 Batida ${esc(b.hora||'')} · ${esc(b.racNome||'')} · ${b.local==='P'?'Pasto':b.local==='C'?'Confinamento':''}${b.avulso?' · avulsa':''}`:'Tratos sem batida antes (vagão já carregado)';
-    const res=[['Balança antes de carregar',g.ini0],['Carregado (registrado)',b?g.carregado:null],['Balança no fim da carga',g.fimCarga],['Balança no 1º curral',g.ini1],['↳ diferença carga → 1º curral',g.s1,1],['Saltos entre produtos',g.sProd,1],['Saltos entre currais',g.sCur,1],['Fornecido (registrado)',g.fornecido],['Previsto dos currais',g.prevForn],['Balança no fim (sobra no vagão)',g.fimFinal]].filter(x=>x[1]!=null&&(x[2]?x[1]!==0||x[0].startsWith('↳'):true));
-    return `<div class="gCbBloco"><h3 class="gSubT">${t}</h3>${b&&g.its.length?tab('',g.its,false):''}${g.rs.length?`<p class="note"><b>Fornecimento depois desta batida</b>${g.tratos.length?' · Trato '+g.tratos.join(', '):''}</p>`+tab('',g.rs,true):'<p class="note">Nenhum trato registrado depois desta batida.</p>'}
+    const res=[...(g.sAnt!=null?[[`↳ salto do último (${esc(g.antTxt)}) → esta batida`,g.sAnt,1]]:[]),['Balança antes de carregar',g.ini0],['Carregado (registrado)',b?g.carregado:null],['Balança no fim da carga',g.fimCarga],['Balança no 1º curral',g.ini1],['↳ diferença carga → 1º curral',g.s1,1],['Saltos entre produtos',g.sProd,1],['Saltos entre currais',g.sCur,1],['Fornecido (registrado)',g.fornecido],['Previsto dos currais',g.prevForn],['Balança no fim (sobra no vagão)',g.fimFinal]].filter(x=>x[1]!=null&&(x[2]?x[1]!==0||x[0].startsWith('↳'):true));
+    return `<div class="gCbBloco"><h3 class="gSubT">${t}</h3>${b&&g.its.length?tab('',g.its,false):''}${g.rs.length?runsT(g.rs).map(L=>`<p class="note"><b>${L[0].hora||''} · Fornecimento · Trato ${L[0].trato}</b>${g.b?'':' (sem batida antes)'}</p>`+tab('',L,true)).join(''):'<p class="note">Nenhum trato registrado depois desta batida.</p>'}
       <div class="gCbRes">${res.map(x=>`<span>${x[0]}</span><b class="${x[2]?(x[1]>0?'gCbMais':x[1]<0?'gCbMenos':''):''}">${x[2]?sg_(x[1]):nf(x[1])}</b>`).join('')}
       <span><b>Balança “ganhou” sem carregar</b></span><b class="${g.apareceu>0?'gCbMais':g.apareceu<0?'gCbMenos':''}">${sg_(g.apareceu)||'0'} kg</b></div></div>`;};
   return `<section class="panel gCfgP"><h2>Conferência da batida</h2>
@@ -1055,9 +1062,10 @@ async function confBatExp(o){const dia=GT.cbDia||hojeKey(),D=confBatDados(dia);i
   const cols=[['Hora',90,'c'],['Produto / curral',230,'c'],['Previsto',120,'r'],['Realizado',130,'r'],['Dif.',100,'r'],['Início',130,'r'],['Final',130,'r'],['Salto',110,'r']];
   const lin=x=>{const dif=ok(x.real)&&ok(x.prev)?x.real-x.prev:null;return {v:[x.hora||'',x.nome+(x.trato?' · T'+x.trato:''),ok(x.prev)?nf(x.prev):'',ok(x.real)?nf(x.real):'—',dif==null?'':sg_(dif),ok(x.ini)?nf(x.ini):'—',ok(x.fim)?nf(x.fim):'—',sg_(x.salto)],prev:x.prev,dif,neg:[1,3]};};
   const secs=[];D.forEach(g=>{const b=g.b,cb=b?`Batida ${b.hora||''} · ${b.racNome||''}${b.local==='P'?' · Pasto':b.local==='C'?' · Confinamento':''}`:'Tratos sem batida antes';
-    if(b&&g.its.length)secs.push({cab:cb+' · carregamento',cols,linhas:g.its.map(lin),total:['CARREGADO','',nf(g.its.reduce((a,x)=>a+(x.prev||0),0)),nf(g.carregado),'','',ok(g.fimCarga)?nf(g.fimCarga):'',g.sProd?sg_(g.sProd):'']});
-    if(g.rs.length)secs.push({cab:cb+' · fornecimento'+(g.tratos.length?' (Trato '+g.tratos.join(', ')+')':''),cols,linhas:g.rs.map(lin),total:['FORNECIDO','',nf(g.prevForn),nf(g.fornecido),sg_(g.fornecido-g.prevForn),'',ok(g.fimFinal)?nf(g.fimFinal):'',sg_(g.s1+g.sCur)]});
-    secs.push({cab:cb+' · conferência',cols,linhas:[['Balança antes de carregar',g.ini0],['Balança no fim da carga',g.fimCarga],['Balança no 1º curral',g.ini1],['Diferença carga → 1º curral',g.s1,1],['Saltos entre produtos',g.sProd,1],['Saltos entre currais',g.sCur,1],['Sobra no vagão (fim)',g.fimFinal]].filter(x=>x[1]!=null).map(x=>({v:['',x[0],'','','','','',x[2]?sg_(x[1]):nf(x[1])],neg:[1]})),total:['BALANÇA GANHOU SEM CARREGAR','','','','','','',(sg_(g.apareceu)||'0')+' kg']});});
+    if(b&&g.its.length)secs.push({cab:`${b.hora||''} · Carregamento · `+cb.replace(/^Batida [^·]*· /,''),cols,linhas:g.its.map(lin),total:['CARREGADO','',nf(g.its.reduce((a,x)=>a+(x.prev||0),0)),nf(g.carregado),'','',ok(g.fimCarga)?nf(g.fimCarga):'',g.sProd?sg_(g.sProd):'']});
+    runsT(g.rs).forEach(L=>{const pv=L.reduce((a,x)=>a+(x.prev||0),0),fo=L.reduce((a,x)=>a+(x.real||0),0),sl=L.reduce((a,x)=>a+(ok(x.salto)?x.salto:0),0),uf=[...L].reverse().find(x=>ok(x.fim));
+      secs.push({cab:`${L[0].hora||''} · Fornecimento · Trato ${L[0].trato}`+(g.b?` (batida das ${g.b.hora||''})`:' (sem batida antes)'),cols,linhas:L.map(lin),total:['FORNECIDO','',nf(pv),nf(fo),sg_(fo-pv),'',uf?nf(uf.fim):'',sl?sg_(sl):'']});});
+    secs.push({cab:cb+' · conferência',cols,linhas:[...(g.sAnt!=null?[[`Salto: último (${g.antTxt}) → esta batida`,g.sAnt,1]]:[]),['Balança antes de carregar',g.ini0],['Balança no fim da carga',g.fimCarga],['Balança no 1º curral',g.ini1],['Diferença carga → 1º curral',g.s1,1],['Saltos entre produtos',g.sProd,1],['Saltos entre currais',g.sCur,1],['Sobra no vagão (fim)',g.fimFinal]].filter(x=>x[1]!=null).map(x=>({v:['',x[0],'','','','','',x[2]?sg_(x[1]):nf(x[1])],neg:[1]})),total:['BALANÇA GANHOU SEM CARREGAR','','','','','','',(sg_(g.apareceu)||'0')+' kg']});});
   const blob=await desenharTabela(secs,`FJK - Conferência da batida - ${dB(dia)}`);
   if(o==='pdf')return compartilharArquivo(await pngsParaPdf([blob]),nome+'.pdf','application/pdf');
   return compartilharVarios([blob],[nome+'.png']);}
@@ -2148,6 +2156,11 @@ function cClique(e){
   const b=e.target.closest('[data-c],[data-g]');if(!b)return;
   if(b.dataset.g==='dataPasso'||b.dataset.g==='dataHoje'){const i=cCaixa().querySelector('#'+b.dataset.alvo)||$(b.dataset.alvo);i.value=b.dataset.g==='dataHoje'?hojeKey():somaDias(i.value||hojeKey(),+b.dataset.n);CG.verDia=i.value;cSave();return cRender();}
   const a=b.dataset.c,A=cAtiva();if(!a)return;
+  /* confirmação (caixa verde) antes de registrar o produto ou passar para o próximo */
+  if((a==='registrar'||a==='prox')&&A&&!b._okConf&&window.perg){const it=A.itens[A.atual],nx=A.itens[A.atual+1];if(!it)return;
+    const q=a==='registrar'?perg(`Confirmar ${it.nome}?`,`Previsto ${nf(it.prev)} kg. Registra este produto e passa para o próximo.`,'✓ Confirmar produto','Voltar',true)
+      :perg('Passar para o próximo produto?',`${it.nome}${nx?' → '+nx.nome:''}`,'✓ Sim, próximo produto','Voltar',true);
+    q.then(v=>{if(!v)return;b._okConf=1;try{b.click();}finally{b._okConf=0;}});return;}
   if(a==='imgCarga'||a==='xlsCarga')return a==='imgCarga'?imgCarga():xlsCarga();
   if(bloqueado())return;
   if(a==='iniciar'){const r=G.it[CG.rac],tudo=itensAjust(itensCarga(CG.rac,CG.total)),its=tudo.filter(i=>i.prev>0),jaIt=tudo.filter(i=>i.ja>0).map(i=>({ins:i.ins,nome:i.nome,kg:i.ja})),manIt=tudo.filter(i=>i.man>0).map(i=>({ins:i.ins,nome:i.nome,pMN:i.pMN,kg:i.man,prec:Math.round(Math.max(0,i.prevOrig-i.ja))}));if(!tudo.length)return toast('Ração sem fórmula');

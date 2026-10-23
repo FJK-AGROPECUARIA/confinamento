@@ -1153,7 +1153,7 @@ body.naInicio .topoTxt h1{font-size:clamp(16px,5vw,28px)!important}
 <div class="toast" id="toast" hidden></div>
 <script>
 'use strict';
-const APP_VERSAO='121';
+const APP_VERSAO='122';
 const APP_DATA='19/10/2026';
 const KEY='confinamento-completo-v1';
 const $=id=>document.getElementById(id);
@@ -1649,6 +1649,7 @@ $('btnReg').onclick=async()=>{
   if(bloqueado())return;
   const L=lista(),c=L[S.atual];const ini=parseFloat(S.ini),fim=parseFloat(S.fim);
   if(!c||isNaN(ini)||isNaN(fim)||fim>=ini)return;
+  if(window.perg&&!await perg(`Confirmar trato do ${c.nome}?`,`Fornecido: ${fmt(ini-fim)} kg · previsto ${fmt(c.prev)} kg`,'✓ Confirmar trato','Voltar',true))return;
   // mesmo curral já registrado neste trato (aqui ou em outro celular): só lança de novo se confirmar
   const ja=regsAtuais().filter(x=>x.curral===c.nome);
   if(ja.length){const tot=ja.reduce((a,x)=>a+x.forn,0);
@@ -2276,12 +2277,15 @@ function compDados(){const [pa,pb]=intervaloHist(),t=HD.per||HD.t<0?0:HD.t,regs=
   const bats=(window.batidasLista?batidasLista(pa,pb,localSel,t):[]).slice().sort((a,b)=>(a.ts0||0)-(b.ts0||0));
   const dias=[...new Set(regs.map(r=>r.dia).concat(bats.map(c=>c.dia)))].sort(),out=[];
   const n_=v=>v==null||v===''||isNaN(+v)?null:+v,hr=(ts,h)=>h&&h!=='manual'?h:ts?new Date(ts).toTimeString().slice(0,5):(h||'');
-  dias.forEach(d=>{const R_=regs.filter(r=>r.dia===d),B=bats.filter(c=>c.dia===d),ks=[...new Set(R_.map(r=>+r.trato).concat(B.map(c=>+c.trato||0)))].sort((a,b)=>(a||99)-(b||99));
-    ks.forEach(k=>{B.filter(c=>(+c.trato||0)===k).forEach(c=>{const tr=(c.tratos&&c.tratos.length?c.tratos:[c.trato]).filter(x=>+x).join('+');
-        out.push({tipo:'Carregamento',dia:d,trato:k,cab:`${diaBR(d)} · Carregamento${tr?' · Trato '+tr:' · avulsa'} · ${c.racNome||''} · ${c.hora||''}`,
-          linhas:(c.itens||[]).map(x=>Array.isArray(x)?{hora:'',nome:x[0],prev:n_(x[1]),real:n_(x[2]),ini:null,fim:null}:{hora:hr(null,x.hora),nome:x.nome+(x.man?' (manual)':''),prev:n_(x.prev),real:n_(x.real),ini:n_(x.ini),fim:n_(x.fim)})});});
-      const F=R_.filter(r=>+r.trato===k);if(F.length)out.push({tipo:'Fornecimento',dia:d,trato:k,cab:`${diaBR(d)} · Fornecimento · Trato ${k}`,
-        linhas:F.map(r=>({hora:hr(r.ts,r.hora),nome:r.curral,prev:n_(r.prev),real:n_(r.forn),ini:n_(r.ini),fim:n_(r.fim)}))});});});
+  /* sempre na sequência do horário: batida → fornecimento que veio depois → próxima batida → ... (trato sem batida, ex.: sobra, entra no seu horário) */
+  const tsB=c=>{if(+c.ts0)return +c.ts0;const [x,y]=String(c.hora||'0:0').split(':').map(Number),[Y,M,D]=c.dia.split('-').map(Number);return new Date(Y,M-1,D,x||0,y||0).getTime();};
+  dias.forEach(d=>{const ev=bats.filter(c=>c.dia===d).map(c=>({t:tsB(c),b:c})).concat(regs.filter(r=>r.dia===d).map(r=>({t:+r.ts||0,r}))).sort((a,b)=>a.t-b.t||(a.b?-1:1));let run=null;
+    ev.forEach(e=>{if(e.b){const c=e.b,tr=(c.tratos&&c.tratos.length?c.tratos:[c.trato]).filter(x=>+x).join('+');run=null;
+        out.push({tipo:'Carregamento',dia:d,trato:+c.trato||0,cab:`${diaBR(d)} · ${c.hora||''} · Carregamento${tr?' · Trato '+tr:' · avulsa'} · ${c.racNome||''}`,
+          linhas:(c.itens||[]).map(x=>Array.isArray(x)?{hora:'',nome:x[0],prev:n_(x[1]),real:n_(x[2]),ini:null,fim:null}:{hora:hr(null,x.hora),nome:x.nome+(x.man?' (manual)':''),prev:n_(x.prev),real:n_(x.real),ini:n_(x.ini),fim:n_(x.fim)})});return;}
+      const r=e.r,lc=linhaDe(r.curral),L={hora:hr(r.ts,r.hora),nome:r.curral,prev:n_(r.prev),real:n_(r.forn),ini:n_(r.ini),fim:n_(r.fim)};
+      if(run&&run.trato===+r.trato&&run.lc===lc){run.linhas.push(L);return;}
+      run={tipo:'Fornecimento',dia:d,trato:+r.trato,lc,cab:`${diaBR(d)} · ${L.hora} · Fornecimento · Trato ${r.trato}${lc==='P'?' · Pasto':lc==='C'?' · Confinamento':''}`,linhas:[L]};out.push(run);});});
   return out;}
 function compSecoes(G_){return G_.map(g=>{let tp=0,tf=0,tpf=0;const L=g.linhas.map(l=>{if(l.prev!=null)tp+=l.prev;if(l.real!=null){tf+=l.real;tpf+=l.prev||0;}const dif=l.real!=null&&l.prev!=null?l.real-l.prev:null;
     return {v:[l.hora,l.nome,fx(l.prev),fx(l.real),dif==null?'':sgn(dif),fx(l.ini),fx(l.fim)],prev:l.prev,dif,neg:[1,3]};});
