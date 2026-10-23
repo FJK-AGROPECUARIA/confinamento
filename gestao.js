@@ -961,7 +961,7 @@ async function libLeitura(){const hj=hojeKey(),F=window.prevApi&&prevApi.faltaDi
   if(F.length&&!confirm(`Liberar a leitura de amanhã sem registrar:\n${F.map(x=>`• Trato ${x.trato} · ${x.curral}`).join('\n')}\n\nEsses tratos continuam podendo ser registrados depois.`))return;
   gPut({uid:'libleit_'+hj,tipo:'libleit',dia:hj,falta:F.map(x=>x.trato+'|'+x.curral),ts0:Date.now()});toast('Leitura de amanhã liberada');gRender();}
 function tCocho(t){
-  const lc=GT.coLoc||'T',dia=t.dia||hojeKey(),ont=somaDias(dia,-1),ix=gIndice(),cfg=gCfg(),CsT=cochoCurrais(dia),Cs=CsT.filter(c=>lc==='T'||linhaDe(c)===lc),hoje=dia===hojeKey(),pode=leitPode(dia),amanha=dia===somaDias(hojeKey(),1);
+  const lc=GT.coLoc||'T',dia=t.dia||hojeKey(),ont=somaDias(dia,-1),ix=gIndice(),cfg=gCfg(),CsT=cochoCurrais(dia).filter(c=>typeof curralAtivo!=='function'||curralAtivo(c)),Cs=CsT.filter(c=>lc==='T'||linhaDe(c)===lc),hoje=dia===hojeKey(),pode=leitPode(dia),amanha=dia===somaDias(hojeKey(),1);
   const notas=cfg.notas.slice().sort((a,b)=>a.n-b.n);
   GT.dia=dia;GT.sel=GT.sel||{};
   const rows=Cs.map(c=>{const L=gTodos('lote').filter(l=>curralEm(l,dia)===c&&cabPres(l,dia)>0);
@@ -992,7 +992,8 @@ function tCocho(t){
       ${bm==='dia'?`<div class="gBaseChips">${chips}</div>`:''}</div></details>`;
     if(lt&&!lt.del&&!GT.sel[c]&&!(GT.coAberto||{})[c])return `<button class="gCochoMin" data-g="coAbre" data-c="${esc(c)}">${seloCurral(c)}<span><b>${lt.nota!=null?'Nota '+notaTxt(lt.nota):''}${lt.ims>0?(lt.nota!=null?' · ':'')+'IMS '+pc(+lt.ims,2):''}</b>${ok(+lt.novo)?nf(+lt.novo)+' kg':'—'}<small>✓ feita · toque para alterar</small></span><em class="gMinBase">base<br><b>${ok(+lt.base)?nf(+lt.base)+' kg':'—'}</b><br>${lt.baseM==='prev'?'previsto dia ant.':lt.baseM==='dia'?'trato de '+(lt.baseDia?diaBR(lt.baseDia).slice(0,5):'outra data'):lt.baseM==='kg'?'digitada':'realizado dia ant.'}</em></button>`;  // feita: fica recolhida
     return `<div class="gCocho${lt&&!lt.del?' feito':''}" data-c="${esc(c)}" data-base="${base}" data-msf="${msFator}">
-      <div class="gCoTopo">${seloCurral(c)}<div><span><b>${esc(L.map(l=>l.nome).join(', '))}</b> · ${nf(cab)} cab</span><span>Ontem: <b>${ontem?nf(ontem)+' kg':'—'}</b>${ok(imsOnt)?` · ${pc(imsOnt,2)} IMS`:''}</span>${baseOp}</div>${lt&&!lt.del&&(GT.coAberto||{})[c]?`<button type="button" class="mini gCoFecha" data-g="coFecha" data-c="${esc(c)}" aria-label="Recolher">▲</button>`:''}</div>
+      <div class="gCoTopo">${seloCurral(c)}<div><span><b>${esc(L.map(l=>l.nome).join(', '))}</b> · ${nf(cab)} cab</span><span>Ontem: <b>${ontem?nf(ontem)+' kg':'—'}</b>${ok(imsOnt)?` · ${pc(imsOnt,2)} IMS`:''}</span></div>${lt&&!lt.del&&(GT.coAberto||{})[c]?`<button type="button" class="mini gCoFecha" data-g="coFecha" data-c="${esc(c)}" aria-label="Recolher">▲</button>`:''}</div>
+      ${baseOp}
       ${gradeNotas(notas,nota,c)}
       <div class="gCoNovo"><b class="gCoPct">% IMS</b><input class="cell num gCoImsIn" inputmode="decimal" data-ims="${esc(c)}" value="${sel&&sel.ims>0?String(sel.ims).replace('.',','):''}" placeholder="${(()=>{const q=ok(kg)&&window.gImsDe?gImsDe(c,dia,kg):null;return q?nf(q,2):'%';})()}"><input class="cell num" inputmode="numeric" data-kg="${esc(c)}" value="${kg!=null?kg:''}" placeholder="kg/dia">${pode.ok?`<button type="button" class="gCoSalva" data-g="salvaCocho1" data-c="${esc(c)}" aria-label="Salvar este curral">💾</button>`:''}</div></div>`;}).join('');
   return `<section class="panel"><h2 class="gH2Bt"><span>Leitura de cocho</span>${rows&&pode.ok?'<button type="button" class="gSalvaTop" data-g="salvaCocho">💾 Salvar</button>':''}</h2>
@@ -2244,7 +2245,8 @@ function tCurForm(t){const A=window.curraisApi,n=t.id||'',i=n?A.info(n):{tipo:'C
   return `${voltar()}<section class="panel"><h2>${n?'Curral '+esc(n):'Novo curral'}</h2>
     <div class="gForm">${campo({k:'cnome',l:'Nome do curral',v:n,ph:'Ex.: C-11 ou P-REPRESA-2'})}
     ${campo({k:'ctipo',l:'Tipo',t:'sel',op:[['C','🏠 Confinamento'],['P','🌿 Pasto']],v:i.tipo==='P'?'P':'C'})}
-    ${campo({k:'catv',l:'Situação',t:'sel',op:[['1','Ativo'],['0','Inativo (não usa mais)']],v:i.inativo?'0':'1'})}
+    ${campo({k:'catv',l:'Situação',t:'sel',op:[['1','Ativo'],['0','Inativo (pausado)']],v:i.inativo?'0':'1'})}
+    <p class="note gCampo"><b>Inativo</b> só tira o curral do previsto, do carregar, do fornecer e da leitura de cocho. Não apaga nada: o lote, os custos e o histórico continuam, dá para lançar a venda e tirar o relatório normalmente, e você pode voltar para <b>Ativo</b> quando quiser.</p>
     <div class="gCampo"><label for="gf_ctag">Tag do curral (leitor de tag)</label><div class="gTagLin"><input type="text" id="gf_ctag" value="${esc(i.tag||'')}" placeholder="Ex.: E28011C1200001D461D50375" autocomplete="off" autocapitalize="characters"><button type="button" class="mini lima" data-g="lerTag">🏷 Ler tag</button></div><p class="note" id="gTagMsg">Toque em Ler tag e passe o leitor na tag deste curral. Pode também digitar o código.</p></div></div>
     <button class="primary" data-g="salvaCur" data-id="${esc(n)}">Salvar curral</button></section>`;}
 document.addEventListener('click',e=>{const b=e.target.closest('#gBox [data-g="salvaCur"]');if(!b)return;if(typeof bloqueado==='function'&&bloqueado())return;
