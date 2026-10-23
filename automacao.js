@@ -55,9 +55,10 @@ const css=`
   #aBox .fColD button.fFinal{margin-top:14px!important}
 }
 :is(#aBox,#acBox,#aoVivo) .aConn.comTag{grid-template-columns:3fr 2fr 1.3fr}
-:is(#aBox,#acBox,#aoVivo) .aConn .aTagBt{font-weight:700}
-:is(#aBox,#acBox,#aoVivo) .aConn .aTagBt.tgOk{background:#2e7d32!important;border-color:#2e7d32!important;color:#fff!important}
-:is(#aBox,#acBox,#aoVivo) .aConn .aTagBt.tgErr{background:#fff4d6!important;border-color:#f2b705!important;color:#7a5a00!important}
+:is(#aBox,#acBox,#aoVivo) .aTagBt{font-weight:700}
+#aBox .tagFim{display:flex;justify-content:center;margin:4px 0 12px}#aBox .tagFim .aTagBt{width:auto!important;min-height:0!important;padding:5px 22px!important;font-size:.9rem!important;border-radius:999px!important}
+:is(#aBox,#acBox,#aoVivo) .aTagBt.tgOk{background:#2e7d32!important;border-color:#2e7d32!important;color:#fff!important}
+:is(#aBox,#acBox,#aoVivo) .aTagBt.tgErr{background:#fff4d6!important;border-color:#f2b705!important;color:#7a5a00!important}
 :is(#aBox,#acBox,#aoVivo) .aConn{display:grid;grid-template-columns:3fr 2fr;gap:6px}
 :is(#aBox,#acBox,#aoVivo) .aConn .aDescBt{border-color:var(--bad);color:var(--bad)}
 :is(#aBox,#acBox,#aoVivo) .aConn .aDescBt:disabled{opacity:.35}
@@ -88,6 +89,7 @@ const css=`
 #aBox #aFaltaBox{position:relative}
 #aBox .aPausaBt{position:absolute;top:8px;right:8px;padding:6px 10px;font-size:.9rem;width:auto!important;margin:0!important;display:block;background:#fff;color:#11253d;border:2px solid rgba(0,0,0,.15);border-radius:10px;font-weight:700;z-index:2}
 #aBox .aPausaBt[hidden]{display:none}
+#acBox .aPausaBox{box-sizing:border-box;width:100%;border-radius:18px;padding:30px 16px;text-align:center;background:#1565c0;color:#fff;display:grid;gap:8px;cursor:pointer;min-height:260px;align-content:center;border:4px solid #0d47a1}#acBox .aPausaBox[hidden]{display:none}#acBox .aPausaBox b{font-family:var(--display);font-stretch:condensed;font-size:clamp(2.4rem,11vw,4rem);line-height:1;letter-spacing:.04em}#acBox .aPausaBox .pzCur{font-family:var(--display);font-stretch:condensed;font-size:clamp(2.2rem,10vw,4.2rem);line-height:1.05;font-weight:800}#acBox .aPausaBox em{display:block;font-style:normal;font-weight:800;font-size:1.3rem;background:#fff;color:#0d47a1;border-radius:12px;padding:12px;margin-top:8px}
 #aBox .aPausaBox{box-sizing:border-box;width:100%;max-width:100%;min-width:0;overflow:hidden;border-radius:18px;padding:34px 16px;text-align:center;background:#1565c0;color:#fff;display:grid;gap:8px;cursor:pointer;min-height:300px;align-content:center;border:4px solid #0d47a1}
 #aBox .aPausaBox[hidden]{display:none}
 #aBox .aPausaBox b{font-family:var(--display);font-stretch:condensed;font-size:clamp(2.6rem,13vw,4.4rem);line-height:1;letter-spacing:.04em}
@@ -144,7 +146,6 @@ function montar(){
       <button id="aBtWs" hidden>📶 Caixinha Wi-Fi</button>
       <button id="aBtSim" hidden>🧪 Simulador</button>
       <button id="aDesc" class="aDescBt" disabled>Desconectar</button>
-      <button type="button" class="aTagBt" data-tagbt hidden title="Leitor de tag">🏷 Tag</button>
     </div>
     <div class="aSinal" id="aSinal">⚪ Balança desconectada</div>
     <div class="aTeclas" id="aTeclas" hidden><button data-tecla="43">▸0◂<br>Zero</button><button data-tecla="40">▸T◂<br>Tara</button><button data-tecla="10">Líquido/<br>Bruto</button><button data-tecla="23">🖨<br>Imprimir</button></div>
@@ -179,12 +180,11 @@ function montar(){
       <div><small>Parar com</small><b class="num" id="aAlvo">—</b></div>
     </div>
     <button class="primary" id="aReg" disabled>Registrar trato</button>
-    <button class="fFinal" data-ffinal="1" type="button">⚠ Finalizar fornecimento</button>
     </div></div>
     <button id="aTestarSom" hidden>🔊 Testar apito (amarelo, vermelho e direto)</button>
     <button id="aRecomecar" hidden>↺ Pegar peso inicial</button><button id="aPular">Pular curral ▶</button>
     <button class="naoForn" id="aNaoForn" type="button">🚫 Não fornecer neste curral</button>
-    <button class="danger fCancForn" data-fcancforn="1" type="button">✕ Cancelar fornecimento</button>
+    <button class="fFinal" data-ffinal="1" type="button">⚠ Finalizar fornecimento</button>
   </section>
 
   <section class="panel">
@@ -194,8 +194,10 @@ function montar(){
       <tbody id="aTb"></tbody>
     </table></div>
     <button id="aDesfazer">Desfazer último</button>
+    <div class="fCancFim" id="fCancA" hidden><button class="danger fCancForn" data-fcancforn="1" type="button">✕ Cancelar fornecimento</button></div>
   </section>
   <section class="panel abrirNovo" id="fNovoA" hidden></section>
+  <div class="tagFim"><button type="button" class="aTagBt" data-tagbt hidden title="Leitor de tag">🏷 Tag</button></div>
 
   <section class="panel" hidden>
     <details hidden>
@@ -230,6 +232,7 @@ function ligar(){
     setAtual(nx);save();novoCurral(true);render();aRender();};
   $('aDesfazer').onclick=async()=>{try{await $('btnDesfazer').onclick();}catch(e){}aRender();};
   $('aTestarSom').onclick=testarSom;
+  if(!window._acTravaL){window._acTravaL=1;document.addEventListener('click',e=>{if(e.target.closest&&e.target.closest('#acTravaBox')&&!bloqueado())acLiberar();});}
   $('aPausar').onclick=()=>{if(!bloqueado())aPausar();};$('aPausaBox').onclick=()=>{if(!bloqueado())aContinuarPausa();};
   $('aCopiarBruto').onclick=()=>copiar(A.bruto.join('\n')+'\n\n'+($('aBtInfo').textContent||''),'Dados copiados');
   document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible'&&A.fonte)pedirTelaLigada();});
@@ -779,7 +782,7 @@ window.aEstadoAoVivo=()=>{const L=lista(),c=L[S.atual],regs=regsAtuais();
 /* ---------- Pausar no trajeto ---------- */
 function pintarPausa(){const p=!!A.pausa;if(!$('aPausaBox'))return;$('aPausaBox').hidden=!p;$('aPausar').hidden=p||!curralAtual();
   /* travado depois de registrar: o quadro azul vira o botão "▶ FORNECER C-7" (o nome do próximo curral, grandão) */
-  const cur=curralAtual(),h=p&&A.pausa.trava?`<b>▶ FORNECER</b><strong class="pzCur">${esc(cur?cur.nome:'')}</strong><span>${cur&&cur.prev?'Previsto '+fmt(cur.prev)+' kg · ':''}a balança só começa a contar quando você tocar aqui</span><em>Toque para fornecer</em>`
+  const cur=curralAtual(),h=p&&A.pausa.trava?`<b>▶ FORNECER</b><strong class="pzCur">${esc(cur?cur.nome:'')}</strong><em>Toque para fornecer</em>`   /* o quadro azul inteiro é o botão */
     :`<b>⏸ PAUSADO</b><span>No trajeto: a balança não está contando nada.</span><em>▶ Toque aqui para continuar</em>`;
   const bx=$('aPausaBox');if(bx.dataset.h!==h){bx.dataset.h=h;bx.innerHTML=h;}bx.classList.toggle('pzTrava',!!(p&&A.pausa.trava));
   ['aFaltaBox','aReg'].forEach(i=>{const e=$(i);if(e)e.style.display=p?'none':'';});const m=document.querySelector('#aBox .aMini');if(m)m.style.display=p?'none':'';}
@@ -938,11 +941,14 @@ $('tabAuto').addEventListener('click',()=>aba('auto'));
 const AC={est:'aguardando',ancV:null,ancT:0,fpMin:null,idx:null};
 const acB=()=>(typeof CG!=='undefined'&&CG.ativa)||null;
 function acItem(){const B=acB();return B?B.itens[B.atual]:null;}
-function acNovoProduto(){AC.est='aguardando';AC.ancV=null;AC.ancT=0;AC.fpMin=null;}
+/* todo produto novo começa TRAVADO (quadro azul "▶ CARREGAR SILAGEM"): a balança só conta depois de tocar; o peso de agora vira o inicial */
+function acNovoProduto(semTravar){AC.est='aguardando';AC.ancV=null;AC.ancT=0;AC.fpMin=null;const it=acItem();AC.trava=!semTravar&&!!(it&&!ok(it.real));}
+window.acLiberar=()=>{const it=acItem();if(!it)return;AC.trava=false;const pa=pesoAgora();if(pa!=null){it.ini=pa;it.fim=null;}AC.est='aguardando';AC.ancV=null;AC.ancT=0;cSave();cRender();toast(`▶ Carregando ${it.nome}`);};
 const naCargaAuto=()=>!!($('viewAutoC')&&!$('viewAutoC').hidden);
 function maquinaCarga(){
   if(!naCargaAuto())return;const B=acB(),it=acItem(),c=cfg();if(!B||!it||A.peso==null||ok(it.real))return;
   if(AC.idx!==B.atual){AC.idx=B.atual;acNovoProduto();}
+  if(AC.trava)return;   // travado: no caminho até o próximo produto a balança não conta
   if(AC.est==='aguardando'){
     const lim=Math.min(c.minDesc,Math.max(c.tol,it.prev/2)); // produto pequeno (núcleo): começa com menos
     if(ok(it.ini)&&A.suave>it.ini+lim){AC.est='carregando';AC.ancV=A.suave;AC.ancT=Date.now();AC.fpMin=null;return;}
@@ -955,7 +961,7 @@ function maquinaCarga(){
   }
 }
 function subindoAgora(){return AC.est==='carregando'&&AC.ancT>0&&Date.now()-AC.ancT<jCaindo()&&Date.now()-A.ultDado<jVivo();}
-function zonaC(){const it=acItem();if(!naCargaAuto()||!it||!ok(it.ini)||A.peso==null||ok(it.real))return null;
+function zonaC(){const it=acItem();if(AC.trava||!naCargaAuto()||!it||!ok(it.ini)||A.peso==null||ok(it.real))return null;
   const c=cfg(),carregado=Math.max(0,A.peso-it.ini),falta=it.prev-carregado,sub=subindoAgora(),taxa=sub?taxaQueda(-1):0;
   let fp=falta;
   if(sub){fp=falta-taxa*(+c.antecipa||0);if(AC.fpMin!=null&&AC.fpMin<fp)fp=AC.fpMin;AC.fpMin=fp;}else AC.fpMin=null;
@@ -982,6 +988,7 @@ window.acTela=(nova,dia)=>{
     ${it&&ok(it.real)?`<p class="avisoJa">Este produto já foi carregado (${nf(it.real)} kg). Para refazer, toque em Desfazer último, lá embaixo.</p>`:''}
     ${window.fixoNota?fixoNota(it):''}<div class="aEtapa" id="acEtapa"></div>
     </div><div class="fColD">
+    <div class="aPausaBox acTravaBox" id="acTravaBox" hidden role="button" tabindex="0"><b>▶ CARREGAR</b><strong class="pzCur" id="acTravaNome"></strong><em>Toque para carregar</em></div>
     <div class="aFalta" id="acFaltaBox"><small id="acFaltaTit">Carregar</small><b class="num" id="acFalta">—</b><em id="acFaltaTxt">&nbsp;</em></div>
     <div class="aMini">
       <div class="caiu"><small>Carregado</small><b class="num" id="acCarr">—</b></div>
@@ -995,7 +1002,8 @@ window.acTela=(nova,dia)=>{
     <div class="row"><button data-c="ant"${i>0?'':' disabled'}>◀ Produto anterior</button><button class="lima" data-c="prox"${i<B.itens.length-1?'':' disabled'}>Próximo produto ▶</button></div>
   </section>`+tabela+dia;};
 window.acDepois=()=>{acSyncTopo();const B=acB();if(B&&AC.idx!==B.atual){AC.idx=B.atual;acNovoProduto();}pintarCarga();};
-window.acIniciou=()=>{acNovoProduto();const B=acB();AC.idx=B?B.atual:null;const it=acItem();if(it&&A.estavel){it.ini=A.valEst;cSave();}pintarCarga();
+window.acIniciou=()=>{acNovoProduto();   // o primeiro produto também começa travado (azul)
+  const B=acB();AC.idx=B?B.atual:null;const it=acItem();if(it&&A.estavel){it.ini=A.valEst;cSave();}pintarCarga();
   if(!A.fonte)toast('Conecte a balança para carregar pela Automação');};
 window.acRegistrar=async()=>{const B=acB(),it=acItem();if(!B||!it)return;if(AC.registrando)return;
   if(ok(it.real)){toast('Este produto já foi registrado. Para refazer, toque em Desfazer último.');return;}
@@ -1030,6 +1038,9 @@ function pintarCarga0(){
   const e=$('acEstTxt');e.textContent=(A.peso==null?'sem leitura':A.estavel?'● Estável':'○ Oscilando')+idadeLeitura();e.className=atrasada()?'atraso':A.estavel?'est':'';
   if(!$('acFaltaBox'))return;
   const it=acItem(),z=zonaC(),fb=$('acFaltaBox');
+  {const tv=!!(AC.trava&&it&&!ok(it.real)),bx=$('acTravaBox');if(bx){bx.hidden=!tv;if(tv&&$('acTravaNome').textContent!==it.nome)$('acTravaNome').textContent=it.nome;}
+    fb.style.display=tv?'none':'';const mi=document.querySelector('#acBox .aMini');if(mi)mi.style.display=tv?'none':'';if($('acReg'))$('acReg').style.display=tv?'none':'';
+    if(tv){$('acEtapa').textContent='⏸ Balança pausada · toque no azul quando chegar no produto';$('acEtapa').className='aEtapa pausa';$('acEtapa').hidden=false;return;}}
   $('acIni').textContent=it&&ok(it.ini)?fmt(it.ini):'—';
   $('acAlvo').textContent=it&&ok(it.ini)?fmt(it.ini+it.prev):'—';
   $('acCarr').textContent=it&&ok(it.real)?fmt(it.real):z?fmt(z.carregado):'—';
