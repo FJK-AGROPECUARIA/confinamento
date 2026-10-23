@@ -783,8 +783,8 @@ body.menuFechado .menuSeta{background:#2e6b2f;color:#fff;padding:9px 12px;font-s
 #viewPrev.pvTodos #tbPrev td.c{white-space:normal;word-break:break-word}
 
 /* Config.: botões das partes e quadros do tamanho do conteúdo */
-.gCfgAbas{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:5px;margin-bottom:10px}
-.gCfgAbas button{padding:8px 2px;font-size:.85rem;border-radius:10px}.gCfgAbas button.sel{background:var(--accent);border-color:var(--accent);color:#fff}
+.gCfgAbas{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:5px;margin-bottom:10px}
+.gCfgAbas button{padding:6px 2px;font-size:.82rem;line-height:1.15;border-radius:10px;min-height:44px}.gCfgAbas button.sel{background:var(--accent);border-color:var(--accent);color:#fff}
 .gCfgP .gForm{grid-template-columns:1fr!important}
 .gCfgP .gCampo input:not([type=checkbox]),.gCfgP .gCampo select{width:auto!important;max-width:100%;min-width:0}
 .gCfgP .gCampo input[inputmode=decimal],.gCfgP .gCampo input.gRs{width:9em!important}
@@ -1153,7 +1153,7 @@ body.naInicio .topoTxt h1{font-size:clamp(16px,5vw,28px)!important}
 <div class="toast" id="toast" hidden></div>
 <script>
 'use strict';
-const APP_VERSAO='122';
+const APP_VERSAO='123';
 const APP_DATA='19/10/2026';
 const KEY='confinamento-completo-v1';
 const $=id=>document.getElementById(id);

@@ -1050,7 +1050,7 @@ function confBatHTML(){const dia=GT.cbDia||hojeKey(),D=confBatDados(dia);
   return `<section class="panel gCfgP"><h2>Conferência da batida</h2>
     <p class="note">Cada batida e o trato feito logo depois, com o peso da balança no início e no final de cada produto e curral. <b>Salto</b> = quanto a balança mudou entre o fim de um e o começo do próximo (sem carregar nem descarregar).</p>
     ${navData('gCbDia',dia,'Data')}
-    ${D.length?`<div class="row compart fz3"><button class="verde" data-g="cbExp" data-o="pdf">📄 PDF</button><button class="verde" data-g="cbExp" data-o="img">🖼 Foto</button><button class="verde" data-g="cbExp" data-o="xls">📊 Excel</button></div>`+D.map(bloco).join(''):'<p class="note">Nenhuma batida nem trato nesse dia.</p>'}</section>`;}
+    ${D.length?`<div class="row compart fz3"><button class="verde" data-g="cbExp" data-o="pdf">📄 PDF</button><button class="verde" data-g="cbExp" data-o="img">🖼 Foto</button><button class="verde" data-g="cbExp" data-o="xls">📊 Excel</button></div><p class="note">${D.filter(g=>g.b).length} batida(s) e ${D.reduce((x,g)=>x+g.rs.length,0)} curral(is) tratados nesse dia. Os dados aparecem no PDF, na Foto e no Excel.</p>`:'<p class="note">Nenhuma batida nem trato nesse dia.</p>'}</section>`;}
 async function confBatExp(o){const dia=GT.cbDia||hojeKey(),D=confBatDados(dia);if(!D.length)return toast('Nada nesse dia');
   const nome=`FJK - Conferência da batida - ${dB(dia).replace(/\//g,'-')}`;
   if(o==='xls'){const H=t=>({v:t,s:1}),rows=[[H('Batida'),H('Tipo'),H('Hora'),H('Produto / curral'),H('Trato'),H('Previsto'),H('Realizado'),H('Balança início'),H('Balança final'),H('Salto')]];
@@ -1576,7 +1576,7 @@ function salvaIns(id){const nome=fv('nome'),ms=Math.round(fn('ms')*10)/10,preco=
 
 /* ---------- configurações ---------- */
 /* Config. da Gestão separado em botões: Custo · Notas · Raça · Tratos · Balança */
-const CFG_ABAS=[['custo','Custo/Venda'],['notas','Notas'],['raca','Animais'],['tratos','Tratos'],['balanca','Balança'],['senha','Senha'],['backup','Backup']];
+const CFG_ABAS=[['custo','Custo'],['venda','Venda'],['notas','Leitura de cocho'],['raca','Animais'],['tratos','Tratos'],['balanca','Balança'],['senha','Senha'],['backup','Backup']];
 function tCfg(){const c=gCfg(),hj=hojeKey(),tx=vig(c.taxa,hj),ab=GT.cab||'custo';
   if(!GT.racasEd)GT.racasEd=c.racas.slice().sort(alfa);if(!GT.catsEd)GT.catsEd=c.cats.slice();
   if(!GT.notasEd)GT.notasEd=c.notas.slice().sort((a,b)=>a.n-b.n).map(x=>Object.assign({},x));
@@ -1585,7 +1585,8 @@ function tCfg(){const c=gCfg(),hj=hojeKey(),tx=vig(c.taxa,hj),ab=GT.cab||'custo'
   let h='';
   if(ab==='custo')h=`<section class="panel gCfgP"><h2>Custo operacional</h2><div class="gForm">${[
     {k:'taxa',l:'Taxa operacional',suf:'por cabeça por dia',t:'rs',v:tx?tx.rs:'',meia:1},{k:'tdesde',l:'Vale a partir de',t:'dia',v:tx?hj:'2000-01-01',meia:1}].map(campo).join('')}</div>
-    ${(c.taxa||[]).length?`<p class="note">${c.taxa.map(x=>`Desde ${dB(x.desde)}: ${rs(+x.rs)}`).join(' · ')}</p>`:''}${salvar}</section>${tEstVenda()}`;
+    ${(c.taxa||[]).length?`<p class="note">${c.taxa.map(x=>`Desde ${dB(x.desde)}: ${rs(+x.rs)}`).join(' · ')}</p>`:''}${salvar}</section>`;
+  if(ab==='venda')h=tEstVenda();
   if(ab==='notas')h=`<section class="panel gCfgP"><h2>Notas da leitura de cocho</h2>
     <div class="gNotaCfg gNotaCab"><span>Nota</span><span>Descrição</span><span>Ajuste %</span><span></span></div>
     ${GT.notasEd.map((x,k)=>`<div class="gNotaCfg"><input class="cell num" inputmode="text" data-nn="${k}" value="${esc(vIn(x.n))}"><input type="text" data-nt="${k}" value="${esc(x.t)}"><input class="cell num" inputmode="text" data-np="${k}" value="${esc(vIn(x.p))}"><button class="mini danger" data-g="notaRm" data-i="${k}">✕</button></div>`).join('')}
