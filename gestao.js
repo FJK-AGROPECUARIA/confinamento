@@ -1045,7 +1045,7 @@ function tCocho(t){
     ${pode.ok?'':`<p class="aviso">${esc(pode.msg)}${pode.falta&&pode.falta.length?`<br><b>Ainda sem registro hoje:</b><br>${pode.falta.map(esc).join('<br>')}`:''}</p>
       ${pode.lib?`<p class="note">Se algum desses currais não vai ser tratado hoje (ex.: pasto, curral vazio), libere a leitura assim mesmo.</p><button class="lima" data-g="libLeit">🔓 Liberar a leitura de amanhã</button>`:''}`}
     <div class="${pode.ok?'':'gLeitTrava'}">${rows||'<p class="note">Nenhum lote ativo nesta data. Cadastre os lotes primeiro.</p>'}</div>
-    ${rows&&pode.ok?`<button class="primary" data-g="salvaCocho">${amanha?'Salvar e montar o previsto de amanhã':'Salvar e ajustar o previsto de hoje'}</button>
+    ${rows&&pode.ok?`<button class="primary" data-g="salvaCocho">${amanha?'Salvar leitura e montar previsto de amanhã':'Salvar leitura e ajustar previsto de hoje'}</button>
     <p class="note">O total do dia de cada curral (realizado de ontem ± a nota) é dividido nos tratos pela quantidade de tratos do curral e pela divisão em % do Config.${amanha?' O previsto de amanhã fica guardado e passa a valer quando virar o dia.':''}</p>`:''}
     <button class="verde" data-g="ir" data-t="cochoGraf">📈 Gráfico dos últimos 10 dias</button></section>`;
 }
@@ -1751,7 +1751,7 @@ function salvaCfg(){const c=JSON.parse(JSON.stringify(gCfg()));const t=fn('taxa'
 /* =====================================================================================
    EVENTOS
    ===================================================================================== */
-const SO_VER=new Set(['cfgGrp','perP','cfgAbaP','estInsExp','cbExp','lotLocP','loteTog','lotTodos','curGrp','coLocP','fzLocP','fzFotoVer','fzHN','fzHPdf','fzHImg','resPdf','resImg','resXls','insPdf','insImg','insXls','estPdf','estImg','estXls','estPerE','estOrd','nfVer','fzPdf','fzImgG','fzCur','fzLoc','fzImg','fzXls','fzXlsHist','cfgAba','coLoc','coAbre','coFecha','estPer','evLoc','evolN','imgDia','imgPer','imgComp','imgLote','pdfLote','imgVendas','pdfVendas','xlsVendas','pdfComp','xlsGraf','racaAdd','racaRm','grafLoc','grafCur','celGraf','imgGraf','filtroLoc','dataPasso','dataHoje','voltar','ir','lote','raiz','compRel','compDia','xlsDia','xlsPer','xlsComp','xlsLote','perAtalho','nota','racAdd','racRm','notaAdd','notaRm','notaPadrao']);
+const SO_VER=new Set(['pgN','pgP','cfgGrp','perP','cfgAbaP','estInsExp','cbExp','lotLocP','loteTog','lotTodos','curGrp','coLocP','fzLocP','fzFotoVer','fzHN','fzHPdf','fzHImg','resPdf','resImg','resXls','insPdf','insImg','insXls','estPdf','estImg','estXls','estPerE','estOrd','nfVer','fzPdf','fzImgG','fzCur','fzLoc','fzImg','fzXls','fzXlsHist','cfgAba','coLoc','coAbre','coFecha','estPer','evLoc','evolN','imgDia','imgPer','imgComp','imgLote','pdfLote','imgVendas','pdfVendas','xlsVendas','pdfComp','xlsGraf','racaAdd','racaRm','grafLoc','grafCur','celGraf','imgGraf','filtroLoc','dataPasso','dataHoje','voltar','ir','lote','raiz','compRel','compDia','xlsDia','xlsPer','xlsComp','xlsLote','perAtalho','nota','racAdd','racRm','notaAdd','notaRm','notaPadrao']);
 /* ---------- apagar: sempre com senha (1010) e só o que ainda não foi usado ---------- */
 const H_=()=>typeof HIST!=='undefined'?HIST:[];
 function racUsoTxt(id){const r=G.it[id];if(!r)return '';const L=gTodos('lote').filter(l=>(l.rac||[]).some(h=>h.r===id)),B=gTodos('carga').filter(c=>c.racao===id||(r.nome&&c.racNome===r.nome));
@@ -1927,7 +1927,9 @@ $('gBox').addEventListener('click',e=>{
   if(a==='salvaEst')return salvaEst(b.dataset.id);
   if(a==='estRm'){const m=G.it[id];if(!m)return;if(!confirm(`Apagar este lançamento (${m.mov==='ent'?'entrada':m.mov==='inv'?'contagem':'saída'} de ${nf(+m.kg)} kg em ${dB(m.dia)})?`))return;gDel(id);toast('Lançamento apagado');return gRender();}
   if(a==='estPer'){GT.per=+b.dataset.p;return gRender();}
-  if(a==='perP'){const k=b.dataset.k,O=PER_OPS.map(o=>o[0]);let i=Math.max(0,O.indexOf(perNorm(GT[k]==null?30:GT[k])));GT[k]=O[Math.max(0,Math.min(O.length-1,i+(+b.dataset.n)))];return gRender();}
+  if(a==='pgN'){const k=b.dataset.k;GT[k+'N']=+b.dataset.v;GT[k+'P']=1;return gRender();}
+  if(a==='pgP'){if(b.disabled)return;const k=b.dataset.k,y=window.scrollY;GT[k+'P']=(GT[k+'P']||1)+(+b.dataset.n);gRender();window.scrollTo({top:y});return;}
+  if(a==='perP'){GT.pgEP=GT.pgIP=1;const k=b.dataset.k,O=PER_OPS.map(o=>o[0]);let i=Math.max(0,O.indexOf(perNorm(GT[k]==null?30:GT[k])));GT[k]=O[Math.max(0,Math.min(O.length-1,i+(+b.dataset.n)))];return gRender();}
   if(a==='estPerE'){GT.perE=+b.dataset.p;return gRender();}
   if(a==='nfNova'){NF=null;NF_IMG=null;GT={t:'estNF'};gRender();window.scrollTo({top:0});return;}
   if(a==='nfOutra'){NF=null;NF_IMG=null;return gRender();}
@@ -1987,7 +1989,7 @@ $('gBox').addEventListener('change',e=>{
   if(GT.t==='racForm'&&t.matches('[data-ri]'))calcRacao();
   if(t.id==='gf_emov'&&GT.t==='estForm'){const h=document.querySelector('#gBox section h2');if(h)h.textContent=(GT.id?'Editar ':'')+{ent:'Entrada no estoque',sai:'Saída manual do estoque',inv:'Contagem do estoque'}[t.value];}
   if(t.matches&&t.matches('select[data-cfgsel]')){lerNotasEd();GT.cab=t.value;return gRender();}
-  if(t.matches&&t.matches('select[data-persel]')){GT[t.dataset.persel]=+t.value;return gRender();}
+  if(t.matches&&t.matches('select[data-persel]')){GT.pgEP=GT.pgIP=1;GT[t.dataset.persel]=+t.value;return gRender();}
   if(t.matches&&t.matches('input[data-perd]')){if(t.value){GT[t.dataset.perd]=t.value;}return gRender();}
   if(t.matches&&t.matches('select[data-lotlsel]')){gLoc=t.value;return gRender();}
   if(t.matches&&t.matches('select[data-colsel]')){document.querySelectorAll('#gBox .gCocho').forEach(el=>{const i=el.querySelector('input[data-kg]'),c=el.dataset.c;if(i&&GT.sel&&GT.sel[c]&&i.value)GT.sel[c].kg=gNum(i.value);});GT.coLoc=t.value;return gRender();}
@@ -2528,16 +2530,22 @@ function perFaixa(per,k){const hj=hojeKey();if(per===-1){const a=GT[k+'De']||som
 function perTexto(per,k){if(per===-1){const [a,b]=perFaixa(per,k);return `${dB(a)} a ${dB(b)}`;}return per>0?`últimos ${per} dias`:'tudo';}
 function perSelHTML(per,k){const i=Math.max(0,PER_OPS.findIndex(o=>o[0]===per)),[a,b]=perFaixa(per,k);
   return `<div class="gCoLocNav">${selSetas('Período',PER_OPS,i,`data-g="perP" data-k="${k}" data-n`,`data-persel="${k}"`)}</div>${per===-1?`<div class="gPerDatas"><label>De<input type="date" data-perd="${k}De" value="${a}"></label><label>Até<input type="date" data-perd="${k}Ate" value="${b}"></label></div>`:''}`;}
+/* páginas das movimentações: mostrar 20 / 50 / 100 / 200 por página */
+const PG_OPS=[20,50,100,200];
+function paginar(L,k){const n=PG_OPS.includes(GT[k+'N'])?GT[k+'N']:20,tp=Math.max(1,Math.ceil(L.length/n)),p=Math.min(Math.max(1,GT[k+'P']||1),tp);GT[k+'P']=p;
+  const sel=`<div class="gPagSel"><span>Mostrar</span>${PG_OPS.map(x=>`<button type="button" class="mini${x===n?' sel':''}" data-g="pgN" data-k="${k}" data-v="${x}">${x}</button>`).join('')}</div>`;
+  const nav=tp>1?`<div class="gPagNav"><button type="button" class="gSeta" data-g="pgP" data-k="${k}" data-n="-1"${p<=1?' disabled':''} aria-label="Página anterior">◀</button><span><em>Página <b>${p}</b> de ${tp}</em><small>${(p-1)*n+1}–${Math.min(p*n,L.length)} de ${L.length}</small></span><button type="button" class="gSeta" data-g="pgP" data-k="${k}" data-n="1"${p>=tp?' disabled':''} aria-label="Próxima página">▶</button></div>`:`<p class="note gPagTot">${L.length} movimentação(ões)</p>`;
+  return {itens:L.slice((p-1)*n,p*n),sel,nav};}
 function estMovs(){const per=perNorm(GT.perE==null?30:GT.perE),[de,ate]=perFaixa(per,'perE'),novo=GT.ordE!=='antigo';
   const L=[];gTodos('insumo').filter(i=>!i.inativo).forEach(i=>{const e=estoqueIns(i);e.M.forEach((m,k)=>{if(m.dia>=de&&m.dia<=ate)L.push(Object.assign({nome:i.nome,k},m));});});
   L.sort((a,b)=>a.dia.localeCompare(b.dia)||(a.ts||0)-(b.ts||0)||a.nome.localeCompare(b.nome)||a.k-b.k);if(novo)L.reverse();return {L,per,novo};}
 const movSinal=m=>(m.mov==='ent'?'+':m.mov==='inv'?'=':'−')+nf(m.kg);
 const movDet=m=>[m.obs||'',m.mov==='inv'&&ok(m.dif)?`acerto ${m.dif>=0?'+':''}${nf(m.dif)} kg`:'',m.mov==='ent'&&m.rs?rs(m.rs)+(m.kg?` (${rs(m.rs/m.kg)}/kg)`:''):''].filter(Boolean).join(' · ');
-function estMovHTML(){const {L,per,novo}=estMovs();
+function estMovHTML(){const {L,per,novo}=estMovs(),PGE=paginar(L,'pgE');
   return `<section class="panel"><div class="curhead"><h2>Movimentações</h2><span class="note">${L.length}</span></div>
     ${perSelHTML(per,'perE')}
     <div class="linhas gFiltro"><button data-g="estOrd" data-o="novo" class="${novo?'sel':''}">↓ Mais novo primeiro</button><button data-g="estOrd" data-o="antigo" class="${novo?'':'sel'}">↑ Mais antigo primeiro</button></div>
-    ${L.length?`<div class="tablebox"><table class="gTab gEstTab"><thead><tr><th>Dia</th><th>Produto · movimento</th><th>kg</th><th>Saldo</th></tr></thead><tbody>${L.map(m=>`<tr><td class="hora">${dB(m.dia).slice(0,5)}</td><td class="c">${esc(m.nome)}<small>${MOV_NOME[m.mov]}${movDet(m)?' · '+esc(movDet(m)):''}${m.nf&&m.nf.id?` <button class="mini" data-g="nfVer" data-id="${esc(m.nf.id)}" data-mini="${esc(m.nf.idMini||'')}">📎 NF</button>`:''}</small></td><td class="${m.mov==='ent'?'ok':m.mov==='inv'?'':'bad'}">${movSinal(m)}</td><td><b>${nf(m.saldo)}</b></td></tr>`).join('')}</tbody></table></div>`:'<p class="note">Nenhum movimento nesse período.</p>'}</section>`;}
+    ${L.length?`${PGE.sel}<div class="tablebox"><table class="gTab gEstTab"><thead><tr><th>Dia</th><th>Produto · movimento</th><th>kg</th><th>Saldo</th></tr></thead><tbody>${PGE.itens.map(m=>`<tr><td class="hora">${dB(m.dia).slice(0,5)}</td><td class="c">${esc(m.nome)}<small>${MOV_NOME[m.mov]}${movDet(m)?' · '+esc(movDet(m)):''}${m.nf&&m.nf.id?` <button class="mini" data-g="nfVer" data-id="${esc(m.nf.id)}" data-mini="${esc(m.nf.idMini||'')}">📎 NF</button>`:''}</small></td><td class="${m.mov==='ent'?'ok':m.mov==='inv'?'':'bad'}">${movSinal(m)}</td><td><b>${nf(m.saldo)}</b></td></tr>`).join('')}</tbody></table></div>${PGE.nav}`:'<p class="note">Nenhum movimento nesse período.</p>'}</section>`;}
 function estExp(tipo){const I=gTodos('insumo').filter(i=>!i.inativo).sort(porNome).map(i=>({i,e:estoqueIns(i)})),{L,per}=estMovs(),d=dB(hojeKey()),nome=`Estoque ${d.replace(/\//g,'-')}`,perTxt=perTexto(per,'perE');
   if(tipo==='xls')return gExcel(nome,[['Saldo',['Produto','Saldo (kg)','Consumo/dia 7 dias (kg)','Estoque para (dias)','Estoque mínimo (kg)'],I.map(({i,e})=>[xc(i.nome),xc(e.saldo,'int'),xc(e.cons>0?e.cons:NaN,'int'),xc(ok(e.dias)?e.dias:NaN,'dec'),xc(e.min||NaN,'int')]),[24,12,20,13,17]],
     ['Movimentações',['Data','Produto','Movimento','Quantidade (kg)','Valor total (R$)','Valor por kg (R$)','Fornecedor / observação','Acerto da contagem (kg)','Saldo (kg)'],L.map(m=>[xc(m.dia,'dia'),xc(m.nome),xc(MOV_NOME[m.mov]),xc((m.mov==='ent'||m.mov==='inv'?1:-1)*m.kg,'int'),xc(m.mov==='ent'&&m.rs?m.rs:NaN,'rs'),xc(m.mov==='ent'&&m.rs&&m.kg?m.rs/m.kg:NaN,'rs'),xc(m.obs||''),xc(m.mov==='inv'&&ok(m.dif)?m.dif:NaN,'int'),xc(m.saldo,'int')]),[11,22,14,14,15,15,34,16,11]]]);
@@ -2564,7 +2572,7 @@ function estInsExp(id,tipo){const i=G.it[id];if(!i)return;const e=estoqueIns(i),
       linhas:L.map(m=>[dB(m.dia).slice(0,5),MOV_NOME[m.mov]+(m.mov==='inv'&&ok(m.dif)?` (${m.dif>=0?'+':''}${nf(m.dif)})`:''),movSinal(m)+' kg',m.mov==='ent'&&m.rs?rs(m.rs):'—',m.mov==='ent'&&m.rs&&m.kg?rs(m.rs/m.kg):'—',det(m)||'—',nf(m.saldo)]),
       cores:L.map(m=>[null,null,m.mov==='ent'?'#2e7d32':m.mov==='inv'?null:'#b3261e'])}],nome);}
 function tEstIns(t){const i=G.it[t.id];if(!i)return voltar();const e=estoqueIns(i),per=perNorm(GT.per==null?30:GT.per),hj=hojeKey(),[de,ate]=perFaixa(per,'per');
-  const M=e.M.filter(m=>m.dia>=de&&m.dia<=ate).reverse();
+  const M=e.M.filter(m=>m.dia>=de&&m.dia<=ate).reverse(),PGI=paginar(M,'pgI');
   const tot=k=>e.M.filter(m=>m.dia>=de&&m.dia<=ate&&m.mov===k).reduce((a,m)=>a+m.kg,0);
   const lin=m=>`<tr><td class="hora">${dB(m.dia).slice(0,5)}</td><td class="c">${MOV_NOME[m.mov]}${m.nf&&m.nf.id?` <button class="mini" data-g="nfVer" data-id="${esc(m.nf.id)}" data-mini="${esc(m.nf.idMini||'')}">📎 NF</button>`:''}<small>${esc(m.obs||'')}${m.mov==='inv'&&ok(m.dif)?` · acerto ${m.dif>=0?'+':''}${nf(m.dif)} kg`:''}${m.mov==='ent'&&m.rs?` · ${rs(m.rs)}`:''}</small></td>
     <td class="${m.mov==='ent'?'ok':m.mov==='inv'?'':'bad'}">${m.mov==='ent'?'+':m.mov==='inv'?'=':'−'}${nf(m.kg)}</td><td><b>${nf(m.saldo)}</b></td><td>${m.manual?`<button class="mini" data-g="ir" data-t="estForm" data-id="${m.uid}" aria-label="Editar">✎</button> <button class="mini danger" data-g="estRm" data-id="${m.uid}" aria-label="Apagar">✕</button>`:''}</td></tr>`;
@@ -2577,7 +2585,7 @@ function tEstIns(t){const i=G.it[t.id];if(!i)return voltar();const e=estoqueIns(
     ${perSelHTML(per,'per')}
     <div class="stat gStat3">${st('Entradas',nf(tot('ent'))+' kg')}${st('Batidas',nf(tot('bat'))+' kg')}${st('Saídas manuais',nf(tot('sai'))+' kg')}</div>
     ${M.length?`<div class="row compart fz3"><button class="verde" data-g="estInsExp" data-o="pdf" data-id="${i.uid}">📄 PDF</button><button class="verde" data-g="estInsExp" data-o="img" data-id="${i.uid}">🖼 Foto</button><button class="verde" data-g="estInsExp" data-o="xls" data-id="${i.uid}">📊 Excel</button></div>`:''}
-    ${M.length?`<div class="tablebox"><table class="gTab gEstTab"><thead><tr><th>Dia</th><th>Movimento</th><th>kg</th><th>Saldo</th><th></th></tr></thead><tbody>${M.map(lin).join('')}</tbody></table></div>`:'<p class="note">Nenhum movimento nesse período.</p>'}</section>`;}
+    ${M.length?`${PGI.sel}<div class="tablebox"><table class="gTab gEstTab"><thead><tr><th>Dia</th><th>Movimento</th><th>kg</th><th>Saldo</th><th></th></tr></thead><tbody>${PGI.itens.map(lin).join('')}</tbody></table></div>${PGI.nav}`:'<p class="note">Nenhum movimento nesse período.</p>'}</section>`;}
 function tEstForm(t){const ed=t.id&&G.it[t.id]&&!G.it[t.id].del?G.it[t.id]:null,mov=ed?ed.mov:(t.mov||'ent'),I=gTodos('insumo').filter(i=>!i.inativo||(ed&&i.uid===ed.ins)).sort(porNome),tit=(ed?'Editar ':'')+{ent:'Entrada no estoque',sai:'Saída manual do estoque',inv:'Contagem do estoque'}[mov];
   const vKg=ed?+ed.kg:'',vRs=ed&&+ed.rs>0?+ed.rs:'',vPk=ed&&+ed.rs>0&&+ed.kg>0?Math.round(ed.rs/ed.kg*100)/100:'';
   return `${voltar()}<section class="panel"><h2>${tit}</h2><div class="gForm">${[
