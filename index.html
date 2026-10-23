@@ -195,7 +195,7 @@ button.fFinal{margin-top:8px!important;background:#f2b705!important;border-color
 .naoForn{margin-top:8px;border-color:#b26a00;color:#b26a00;font-weight:700}
 body.somenteVer .naoForn{display:none!important}
 .escolhaModo p{margin:6px 0;text-align:center;font-size:1.05rem;font-weight:600;color:var(--muted)}
-.stat{display:flex;gap:10px;flex-wrap:wrap}
+.stat{display:flex;gap:10px;flex-wrap:wrap}.gCbTab td,.gCbTab th{font-size:.78rem;padding:4px 5px}.gCbTab td small{color:var(--muted)}.gCbMais{color:#b26a00;font-weight:700}.gCbMenos{color:#1565c0;font-weight:700}.gCbBloco{border-top:2px solid var(--line);margin-top:10px;padding-top:6px}.gCbRes{display:grid;grid-template-columns:1fr auto;gap:2px 10px;font-size:.85rem;background:#f3f7dc;border-radius:10px;padding:8px 10px;margin-top:6px}.gCbRes>b{text-align:right}#hCompSec{padding:10px 14px!important}.hCompLin{display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap}.hCompLin>span:first-child{font-size:.8rem;font-weight:700;color:var(--muted)}.hCompBts{display:flex;gap:6px}.hCompBts button{width:auto!important;min-height:0!important;margin:0!important;padding:5px 10px!important;font-size:.78rem!important;border-radius:999px!important}.stat.st4>div{flex:1 1 40%}#hFalta.hFaltaTem{color:#b26a00}
 .stat div{flex:1 1 90px;background:var(--chip);border-radius:10px;padding:8px 12px}
 .stat small{display:block;font-size:.72rem;color:var(--muted);text-transform:uppercase;letter-spacing:.05em}
 .stat b{font-family:var(--display);font-stretch:condensed;font-size:1.4rem}
@@ -1013,10 +1013,11 @@ body.naInicio .topoTxt h1{font-size:clamp(16px,5vw,28px)!important}
     <div id="hData"></div>
     <div class="linhas hLocal" id="hLocal"><button data-loc="T" class="sel">Todos</button><button data-loc="C"><svg class="icoCurral" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 21V7.5L5.5 5 7 7.5V21M10.5 21V7.5L12 5l1.5 2.5V21M17 21V7.5L18.5 5 20 7.5V21" fill="#c9a26b" stroke="#7a4f21" stroke-width="1.3" stroke-linejoin="round"/><path d="M2.5 10.5h19M2.5 16h19" stroke="#7a4f21" stroke-width="2.2" stroke-linecap="round"/></svg> Confinamento</button><button data-loc="P">🌿 Pasto</button></div>
     <div id="hTN"></div>
-    <div class="stat">
-      <div><small>Previsto</small><b class="num" id="hPrev">—</b></div>
+    <div class="stat" id="hStat">
+      <div><small id="hPrevLbl">Previsto</small><b class="num" id="hPrev">—</b></div>
       <div><small>Realizado</small><b class="num" id="hReal">—</b></div>
-      <div><small>Diferença</small><b class="num" id="hDif">—</b></div>
+      <div id="hFaltaBox" hidden><small>Falta do dia</small><b class="num" id="hFalta">—</b></div>
+      <div><small id="hDifLbl">Diferença</small><b class="num" id="hDif">—</b></div>
     </div>
   </section>
 
@@ -1042,6 +1043,10 @@ body.naInicio .topoTxt h1{font-size:clamp(16px,5vw,28px)!important}
       <button class="wa" id="hWa">Enviar no WhatsApp</button><button id="hCopiar">Copiar lista</button>
       <button id="hExcel">Exportar Excel</button><button id="hShare" class="shareX" hidden>Compartilhar planilha</button>
     </div>
+  </section>
+  <section class="panel hCompSec" id="hCompSec">
+    <div class="hCompLin"><span title="Carregamento e fornecimento com o peso da balança no início e no final de cada produto e curral">⚖️ Relatório com dados da balança</span>
+    <span class="hCompBts"><button class="verde" id="hcPdf">📄 PDF</button><button class="verde" id="hcImg">🖼 Foto</button><button class="verde" id="hcXls">📊 Excel</button></span></div>
   </section>
 
   <section class="panel zootBox" id="zootSec" hidden></section>
@@ -1148,7 +1153,7 @@ body.naInicio .topoTxt h1{font-size:clamp(16px,5vw,28px)!important}
 <div class="toast" id="toast" hidden></div>
 <script>
 'use strict';
-const APP_VERSAO='120';
+const APP_VERSAO='121';
 const APP_DATA='19/10/2026';
 const KEY='confinamento-completo-v1';
 const $=id=>document.getElementById(id);
@@ -2265,6 +2270,34 @@ $('hBatPdf').onclick=()=>expBat(true);
 $('hBatImg').onclick=()=>expBat(false);
 $('hBatXls').onclick=()=>{const [pa,pb]=intervaloHist();const L=batidasLista(pa,pb,localSel,HD.per||HD.t<0?0:HD.t);if(!L.length)return toast('Nenhuma batida');xlsBatidas(L,pa===pb?diaBR(pa):diaBR(pa)+' a '+diaBR(pb));};
 $('hXls').onclick=()=>{const f=filtrados();if(f.length)compartilharArquivo(gerarXlsx(f),nomeArquivo(f),XT);};
+/* ---------- Relatório completo: carregamento + fornecimento com balança início/final ---------- */
+const COLS_COMP=[['Hora',90,'c'],['Curral / produto',230,'c'],['Previsto',130,'r'],['Realizado',140,'r'],['Dif.',110,'r'],['Balança início',160,'r'],['Balança final',160,'r']];
+function compDados(){const [pa,pb]=intervaloHist(),t=HD.per||HD.t<0?0:HD.t,regs=filtrados().slice().sort((a,b)=>(a.ts||0)-(b.ts||0));
+  const bats=(window.batidasLista?batidasLista(pa,pb,localSel,t):[]).slice().sort((a,b)=>(a.ts0||0)-(b.ts0||0));
+  const dias=[...new Set(regs.map(r=>r.dia).concat(bats.map(c=>c.dia)))].sort(),out=[];
+  const n_=v=>v==null||v===''||isNaN(+v)?null:+v,hr=(ts,h)=>h&&h!=='manual'?h:ts?new Date(ts).toTimeString().slice(0,5):(h||'');
+  dias.forEach(d=>{const R_=regs.filter(r=>r.dia===d),B=bats.filter(c=>c.dia===d),ks=[...new Set(R_.map(r=>+r.trato).concat(B.map(c=>+c.trato||0)))].sort((a,b)=>(a||99)-(b||99));
+    ks.forEach(k=>{B.filter(c=>(+c.trato||0)===k).forEach(c=>{const tr=(c.tratos&&c.tratos.length?c.tratos:[c.trato]).filter(x=>+x).join('+');
+        out.push({tipo:'Carregamento',dia:d,trato:k,cab:`${diaBR(d)} · Carregamento${tr?' · Trato '+tr:' · avulsa'} · ${c.racNome||''} · ${c.hora||''}`,
+          linhas:(c.itens||[]).map(x=>Array.isArray(x)?{hora:'',nome:x[0],prev:n_(x[1]),real:n_(x[2]),ini:null,fim:null}:{hora:hr(null,x.hora),nome:x.nome+(x.man?' (manual)':''),prev:n_(x.prev),real:n_(x.real),ini:n_(x.ini),fim:n_(x.fim)})});});
+      const F=R_.filter(r=>+r.trato===k);if(F.length)out.push({tipo:'Fornecimento',dia:d,trato:k,cab:`${diaBR(d)} · Fornecimento · Trato ${k}`,
+        linhas:F.map(r=>({hora:hr(r.ts,r.hora),nome:r.curral,prev:n_(r.prev),real:n_(r.forn),ini:n_(r.ini),fim:n_(r.fim)}))});});});
+  return out;}
+function compSecoes(G_){return G_.map(g=>{let tp=0,tf=0,tpf=0;const L=g.linhas.map(l=>{if(l.prev!=null)tp+=l.prev;if(l.real!=null){tf+=l.real;tpf+=l.prev||0;}const dif=l.real!=null&&l.prev!=null?l.real-l.prev:null;
+    return {v:[l.hora,l.nome,fx(l.prev),fx(l.real),dif==null?'':sgn(dif),fx(l.ini),fx(l.fim)],prev:l.prev,dif,neg:[1,3]};});
+  return {cab:g.cab,cols:COLS_COMP,linhas:L,total:['TOTAL','',fmt(tp),fmt(tf),tf?sgn(tf-tpf):'','','']};});}
+async function compExp(pdf){const G_=compDados();if(!G_.length)return toast('Nada para mostrar nesse filtro');const [pa,pb]=intervaloHist(),per=diaBR(pa)+(pa!==pb?' a '+diaBR(pb):''),arq=dataArq(pa)+(pa!==pb?' a '+dataArq(pb):'');
+  const blob=await desenharTabela(compSecoes(G_),`FJK - Relatório completo - ${per}`);
+  if(pdf)return compartilharArquivo(await pngsParaPdf([blob]),`FJK - Relatório completo - ${arq}.pdf`,'application/pdf');
+  compartilharVarios([blob],[`FJK - Relatório completo - ${arq}.png`]);}
+$('hcPdf').onclick=()=>compExp(true);
+$('hcImg').onclick=()=>compExp(false);
+$('hcXls').onclick=()=>{const G_=compDados();if(!G_.length)return toast('Nada para mostrar nesse filtro');const H=t=>({v:t,s:1});
+  const diaSerial=k=>{const [y,m,d]=k.split('-').map(Number);return (Date.UTC(y,m-1,d)-Date.UTC(1899,11,30))/86400000;};
+  const rows=[[H('Data'),H('Tipo'),H('Trato'),H('Hora'),H('Curral / produto'),H('Previsto (kg)'),H('Realizado (kg)'),H('Diferença (kg)'),H('Balança início'),H('Balança final')]];
+  G_.forEach(g=>g.linhas.forEach(l=>{const n=rows.length+1;rows.push([{v:diaSerial(g.dia),s:2},{v:g.tipo},{v:g.trato||'',s:4},{v:l.hora||''},{v:l.nome},l.prev!=null?{v:l.prev,s:4}:{v:''},l.real!=null?{v:l.real,s:4}:{v:''},
+    l.prev!=null&&l.real!=null?{f:`G${n}-F${n}`,v:l.real-l.prev,s:5}:{v:''},l.ini!=null?{v:l.ini,s:4}:{v:''},l.fim!=null?{v:l.fim,s:4}:{v:''}]);}));
+  const [pa,pb]=intervaloHist();compartilharArquivo(montarXlsx([['Relatório completo',rows,[12,15,7,8,22,13,14,14,14,14]]]),`FJK - Relatório completo - ${dataArq(pa)}${pa!==pb?' a '+dataArq(pb):''}.xlsx`,XT);};
 
 /* ---------- Abas ---------- */
 function aba(qual){const vq=qual;if(modoVer&&(qual==='auto'||qual==='autoc'||qual==='carga'))qual='trato';
@@ -2400,11 +2433,12 @@ function totHTML(p,f,dif,rot){return `<tr class="tot"><td class="hora"></td><td 
 function renderHist(){try{aplicarRenomesHist();}catch(e){}
   pintarFiltrosHist();
   document.querySelectorAll('#hModo [data-hm]').forEach(b=>b.classList.toggle('sel',b.dataset.hm===hModo));
-  $('viewHist').classList.toggle('modoRel',hModo==='R');if(hModo==='R'){pintarZoot();return;}$('zootSec').hidden=true;
+  $('viewHist').classList.toggle('modoRel',hModo==='R');if($('hCompSec'))$('hCompSec').hidden=hModo==='R';if(hModo==='R'){pintarZoot();return;}$('zootSec').hidden=true;
   document.querySelectorAll('#viewHist .hSoTratos').forEach(e=>e.hidden=hModo!=='T');$('hBatSec').hidden=hModo!=='B';
   if(hModo==='B'){document.querySelectorAll('#hLocal button[data-loc]').forEach(b=>b.classList.toggle('sel',b.dataset.loc===localSel));
     const [pa,pb]=intervaloHist(),L=window.batidasLista?batidasLista(pa,pb,localSel,HD.per||HD.t<0?0:HD.t):[];
     const tp=L.reduce((a,c)=>a+c.itens.reduce((s,x)=>s+(+x.prev||0),0),0),tr=L.reduce((a,c)=>a+c.itens.reduce((s,x)=>s+(+x.real||0),0),0);
+    $('hFaltaBox').hidden=true;$('hStat').classList.remove('st4');$('hPrevLbl').textContent='Previsto';$('hDifLbl').textContent='Diferença';
     $('hPrev').textContent=L.length?fmt(tp):'—';$('hReal').textContent=L.length?fmt(tr):'—';$('hDif').textContent=L.length?sgn(tr-tp):'—';$('hDif').className='num '+(L.length?classeDesv(tr-tp,tp):'');
     $('hBatN').textContent=L.length?`${L.length} batida(s)`:'';$('hBat').innerHTML=window.batidasHTML?batidasHTML(L,pa!==pb):'';return;}
   document.querySelectorAll('#hLocal button[data-loc]').forEach(b=>b.classList.toggle('sel',b.dataset.loc===localSel));
@@ -2412,8 +2446,21 @@ function renderHist(){try{aplicarRenomesHist();}catch(e){}
   const p=regs.reduce((a,r)=>a+r.prev,0),f=regs.reduce((a,r)=>a+r.forn,0);
   $('hPrev').textContent=regs.length?fmt(p):'—';$('hReal').textContent=regs.length?fmt(f):'—';
   $('hDif').textContent=regs.length?sgn(f-p):'—';$('hDif').className='num '+(regs.length?classeDesv(f-p,p):'');
+  /* um dia só: previsto do DIA inteiro (todos os tratos ou o trato escolhido), o que já foi feito e o que falta */
+  let PDC=null;{const um=!HD.per;$('hFaltaBox').hidden=true;$('hStat').classList.remove('st4');$('hPrevLbl').textContent=um?(HD.t>0?'Previsto do trato':'Previsto do dia'):'Previsto';$('hDifLbl').textContent='Diferença';
+   if(um){const [d]=intervaloHist(),P=prevDoDia(d)||{},t=HD.t<0?0:HD.t,feito=new Set(regs.map(r=>r.trato+'|'+r.curral));let pd=0,fa=0;
+     PDC={};const add=(c,v)=>{PDC[c]=(PDC[c]||0)+v;};
+     for(let k=1;k<=MAXT;k++){if(t&&k!==t)continue;const m=P[String(k)]||P[k]||{};Object.keys(m).forEach(c=>{const v=+m[c];if(!(v>0))return;if(localSel!=='T'&&linhaDe(c)!==localSel)return;
+       const fz=feito.has(k+'|'+c);if(!fz&&d===hojeKey()&&!curralAtivo(c))return;pd+=v;add(c,v);if(!fz)fa+=v;});}
+     regs.forEach(r=>{if(!P[String(r.trato)]||!(+((P[String(r.trato)]||{})[r.curral])>0)){pd+=r.prev||0;add(r.curral,r.prev||0);}});
+     if(pd){$('hPrev').textContent=fmt(pd);$('hDif').textContent=sgn(f-pd);$('hDif').className='num '+classeDesv(f-pd,pd);}}}
   $('hN').textContent=regs.length?`${regs.length} registro(s)`:'';
-  if(HD.per||HD.t===-1){selModo=false;const L=totaisPorCurral(regs),[pa,pb]=intervaloHist();
+  if(!HD.per&&HD.t===-1&&PDC){selModo=false;const [pa]=intervaloHist(),L=totaisPorCurral(regs),mp=new Map(L.map(x=>[x.curral,x]));
+    const ord=c=>{const i=S.cadastro.indexOf(c);return i<0?999:i;},cs=[...new Set(Object.keys(PDC).concat(L.map(x=>x.curral)))].sort((a,b)=>ord(a)-ord(b)||alfa(a,b));
+    let TP=0,TF=0;const lin=cs.map(c=>{const pv=PDC[c]||0,x=mp.get(c),fo=x?x.forn:0;TP+=pv;TF+=fo;const dif=fo-pv;
+      return `<tr><td class="hora"></td><td class="c">${esc(c)}</td><td>${fmt(pv)}</td><td><b>${x?fmt(fo):'—'}</b></td><td class="${classeDesv(dif,pv)}">${sgn(dif)}</td></tr>`;}).join('');
+    $('tbHist').innerHTML=cs.length?`<tr class="grp"><td colspan="5">${diaBR(pa)} · Dia todo (todos os tratos)</td></tr>`+totHTML(TP,TF,TF-TP)+lin:`<tr><td colspan="5" class="note" style="text-align:left">Nada previsto nem realizado nesse dia.</td></tr>`;if($('hEdFim'))$('hEdFim').innerHTML='';}
+  else if(HD.per||HD.t===-1){selModo=false;const L=totaisPorCurral(regs),[pa,pb]=intervaloHist();
     $('tbHist').innerHTML=regs.length?`<tr class="grp"><td colspan="5">${HD.per?`Total do período · ${diaBR(pa)} a ${diaBR(pb)}`:`${diaBR(pa)} · Todos os tratos`}</td></tr>`+totHTML(p,f,f-p)+
       L.map(x=>`<tr><td class="hora">${x.n}×</td><td class="c">${esc(x.curral)}</td><td>${fmt(x.prev)}</td><td><b>${fmt(x.forn)}</b></td><td class="${classeDesv(x.forn-x.prev,x.prev)}">${sgn(x.forn-x.prev)}</td></tr>`).join(''):`<tr><td colspan="5" class="note" style="text-align:left">Nenhum registro nesse período.</td></tr>`;if($('hEdFim'))$('hEdFim').innerHTML='';}
   else
