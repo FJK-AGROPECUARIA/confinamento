@@ -39,7 +39,9 @@ const css=`
 :is(#aBox,#acBox,#aoVivo) .aTeclas{display:none!important}
 .fCols,.fColE,.fColD{display:contents}
 /* tablet deitado: duas colunas (curral/trato à esquerda, o número grande e os botões à direita) e topo mais baixo */
-@media (orientation:landscape) and (min-width:760px) and (max-height:1000px){
+/* computador (mouse): uma coluna só, centralizada, igual ao tablet em pé */
+@media (hover:hover) and (pointer:fine) and (min-width:1000px){:is(#aBox,#acBox){max-width:880px;margin-left:auto;margin-right:auto}}
+@media (orientation:landscape) and (min-width:760px) and (max-height:1000px) and (pointer:coarse){
   .topo{padding-top:4px!important;padding-bottom:4px!important}
   .topo img.topoLogo{height:30px!important}
   .wrap{max-width:1180px;padding-top:8px;gap:10px}
@@ -1271,7 +1273,7 @@ function pintarTag(){if(typeof S==='undefined'||!S)return;const on=!!cfg().tagOn
   const ult=TG.ult?`<small>Última: ${esc(TG.ultCur||'')}${TG.ultCur?' · ':''}${esc(TG.ult.slice(-8))} às ${new Date(TG.ultT).toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit',second:'2-digit'})}</small>`:'';
   const opts=()=>{let h='';try{const v=(G.it.currais&&G.it.currais.v)||{};h=S.cadastro.map(n=>`<option value="${esc(n)}">${esc(n)}${v[n]&&v[n].tag?' 🏷':''}</option>`).join('');}catch(e){}return h+'<option value="__nenhum">Tag sem curral (fim de linha)</option>';};
   const sig=[on,t,ult,!!TG.dev,TG.sim,(S.cadastro||[]).length].join('|');
-  document.querySelectorAll('[data-tagbt]').forEach(b=>{const h=!on||(typeof modoVer!=='undefined'&&modoVer);b.hidden=h;if(b.parentNode)b.parentNode.classList.toggle('comTag',!h);
+  document.querySelectorAll('[data-tagbt]').forEach(b=>{const h=true||!on||(typeof modoVer!=='undefined'&&modoVer);b.hidden=h; /* botão de tag tirado por enquanto (volta trocando o true) */if(b.parentNode)b.parentNode.classList.toggle('comTag',!h);
     b.className='aTagBt'+(st==='ok'?' tgOk':st==='err'?' tgErr':'');b.textContent=TG.ok?'🏷 Tag ✓':TG.dev?'🏷 Tag …':'🏷 Tag';
     b.title=t.replace(/^\S+\s/,'');});
   /* a barrinha do leitor saiu da tela: agora é o botão 🏷 Tag dentro da setinha da balança */

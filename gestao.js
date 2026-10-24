@@ -1572,7 +1572,7 @@ function tInsMS(t){const I=gTodos('insumo').sort(porNome),H=msHistTodos(),sel=(t
   if(!GT.msAberto)return `${t&&t.t==='ms'?'':voltar()}<section class="panel"><h2>💧 Matéria seca</h2>
     <button class="primary" data-g="msAbre">💧 Alterar matéria seca</button></section>
     <section class="panel"><h2 id="gMsHTit">Últimas alterações</h2>
-    <div class="tablebox"${H.length?'':' hidden'}><table class="gTab"><thead><tr><th>Vale de</th><th>Produto</th><th>De</th><th>Para</th></tr></thead><tbody>${linhas}</tbody></table></div>
+    <div class="tablebox"${H.length?'':' hidden'}><table class="gTab"><thead><tr><th>A partir de</th><th>Produto</th><th>De</th><th>Para</th></tr></thead><tbody>${linhas}</tbody></table></div>
     <p class="note"${H.length?' hidden':''}>Nenhuma alteração de matéria seca ainda.</p></section>`;
   return `${t&&t.t==='ms'?'':voltar()}<section class="panel"><h2>💧 Alterar matéria seca</h2>
     <p class="note">Escolha o produto e digite a nova % de MS.</p>
@@ -1583,7 +1583,7 @@ function tInsMS(t){const I=gTodos('insumo').sort(porNome),H=msHistTodos(),sel=(t
     ${msAvisoHTML()}
     <button class="primary" data-g="salvaMS"${msStatus().bloq?' disabled':''}>Alterar matéria seca</button><button class="danger" data-g="msCancela">✕ Cancelar</button></section>
     <section class="panel"><h2 id="gMsHTit">${iS?'Últimas alterações · '+esc(iS.nome):'Últimas alterações'}</h2>
-    <div class="tablebox"${H.length?'':' hidden'}><table class="gTab"><thead><tr><th>Vale de</th><th>Produto</th><th>De</th><th>Para</th></tr></thead><tbody>${linhas}</tbody></table></div>
+    <div class="tablebox"${H.length?'':' hidden'}><table class="gTab"><thead><tr><th>A partir de</th><th>Produto</th><th>De</th><th>Para</th></tr></thead><tbody>${linhas}</tbody></table></div>
     <p class="note" id="gMsVazio"${H.some(x=>!sel||x.uid===sel)?' hidden':''}>Nenhuma alteração de matéria seca${iS?' desse produto':''} ainda.</p></section>`;}
 /* escolheu o produto: mostra a MS atual e só as alterações dele */
 window.msFiltrar=uid=>{const i=G.it[uid];if(GT&&(GT.t==='ms'||GT.t==='insMS'))GT.ins=uid;
@@ -1725,7 +1725,6 @@ async function retroCalc(){const box=document.getElementById('gRetro');if(box)bo
 async function retroGera(){if(!RETRO||!RETRO.length)return;
   const C=gTodos('carga').filter(c=>!c.retro),R0=gTodos('carga').filter(c=>c.retro);
   if(!await confirmaVermelho(`Apagar ${C.length} batidas e lançar ${RETRO.length}?`,'As batidas lançadas hoje e antes são trocadas por uma batida por dia por ração com o realizado dos tratos. As apagadas ficam guardadas para o Desfazer.','Sim, continuar','Não'))return;
-  if(!await confirmaVermelho('Tem certeza?','Confira se fez o backup antes (Fazer backup manual agora).','Sim, trocar as batidas','Não, voltar'))return;
   const ant=(G.it['retro-apagadas']&&!G.it['retro-apagadas'].del&&G.it['retro-apagadas'].itens)||[];
   gPut({uid:'retro-apagadas',tipo:'retroBk',ts:Date.now(),itens:ant.concat(C.map(c=>JSON.parse(JSON.stringify(c))))});
   C.forEach(c=>gDel(c.uid));R0.forEach(c=>gDel(c.uid));
@@ -2066,7 +2065,7 @@ const cCaixa=()=>$(cAuto()?'acBox':'cBox');
 function cRender(){const auto=cAuto(),b=$(auto?'acBox':'cBox'),o=$(auto?'cBox':'acBox');if(!b)return;if(o)o.innerHTML='';
   if(auto&&window.acTela){b.innerHTML=acTela(cAtiva()?null:cRemHTML()+cTelaNova(),cAtiva()?'':NOTA_BAT)+(cAtiva()?C_NOVA:'')+cBatidasHoje();if(window.acDepois)acDepois();return;}
   b.innerHTML=(cAtiva()?cTelaBatida()+C_NOVA:cRemHTML()+cTelaNova())+(cAtiva()?'':NOTA_BAT)+cBatidasHoje();}
-const C_NOVA='<section class="panel abrirNovo"><p class="note">Esta batida está em aberto. Quer começar outra no lugar dela?</p><button data-c="cancelar">＋ Abrir nova batida</button></section>';
+const C_NOVA=''; /* sem "Abrir nova batida": abre uma, finaliza (ou cancela) e só então começa outra */
 /* ---------- continuar em outro aparelho: batida aberta em outro celular/tablet (acabou bateria, travou) ---------- */
 let cRem=[];
 const cRemOk=(d,todos)=>d&&d.modo==='carga'&&d.bat&&d.bat.itens&&d.ap!==S.aparelho&&d.idade<4*3600e3
@@ -2102,7 +2101,7 @@ document.addEventListener('visibilitychange',()=>{if(document.visibilityState===
 const NOTA_BAT='<p class="note" style="text-align:center">As batidas feitas ficam no Histórico › Batidas.</p>';
 /* embaixo do Carregar: as batidas feitas hoje, produto por produto (igual os currais no Fornecer) */
 function cBatidasHoje(){try{const B=window.batidasLista?batidasLista(hojeKey(),hojeKey(),'T',0):[];
-  return `<section class="panel"><div class="curhead"><h2>Batidas de hoje</h2><span class="note">${B.length?B.length+' batida(s)':''}</span></div>${B.length?batidasHTML(B,false,true):'<p class="note">Nenhuma batida concluída hoje ainda.</p>'}</section>`;}catch(e){return '';}}
+  return `<section class="panel cBatHoje"><details class="cBatHojeD"${window.cBatHojeAb?' open':''} ontoggle="window.cBatHojeAb=this.open"><summary><h2>🚜 Batidas de hoje</h2><span class="note">${B.length?B.length+' batida(s)':''}</span><i class="hColSeta">▾</i></summary>${B.length?batidasHTML(B,false,true):'<p class="note">Nenhuma batida concluída hoje ainda.</p>'}</details></section>`;}catch(e){return '';}}
 /* ração ativa de cada curral hoje (pelo lote) e rações usadas em cada local (C = confinamento, P = pasto) */
 function racaoDoCurral(c,dia){dia=dia||hojeKey();const l=gTodos('lote').find(l=>curralEm(l,dia)===c&&cabPres(l,dia)>0);const r=l&&racaoEm(l,dia);return r?r.uid:null;}
 window.racaoDoCurral=racaoDoCurral;
@@ -2234,7 +2233,8 @@ function cConfirma(){const v=cBuf===''?null:+cBuf,A=cAtiva();
 function cClique(e){
   const lb=e.target.closest('[data-cloc]');if(lb){const loc=lb.dataset.cloc;cLimparSetup();CG.local=loc;CG.passo=2;cSave();return cRender();}
   const cp=e.target.closest('[data-cpasso]');if(cp){CG.passo=+cp.dataset.cpasso;cSave();return cRender();}
-  if(e.target.closest('[data-ccancel]')){cLimparSetup();cRender();window.scrollTo({top:0});toast('Batida cancelada');return;}
+  if(e.target.closest('[data-ccancel]')){const fz=()=>{cLimparSetup();cRender();window.scrollTo({top:0});toast('Batida cancelada');};
+    (typeof confirmaVermelho==='function'?confirmaVermelho('Deseja realmente cancelar a batida?','O que você escolheu para esta batida será descartado.','Sim, cancelar batida','Não, voltar'):Promise.resolve(confirm('Deseja realmente cancelar a batida?'))).then(sim=>{if(sim)fz();});return;}
   if(e.target.closest('[data-cjtog]')){if(CG.juntoAberto){CG.juntoAberto=false;CG.juntos=[];}else CG.juntoAberto=true;cSave();return cRender();}  // fechar = tira os tratos juntos
   if(e.target.closest('[data-cordtog]')){CG.ordAberto=!CG.ordAberto;cSave();return cRender();}
   if(e.target.closest('[data-cmantog]')){if(CG.manAberto){CG.manAberto=false;CG.man={};}else{CG.jaAberto=false;CG.ja={};CG.sobRac=null;CG.sobKg=0;CG.sobModo='rac';
@@ -2253,12 +2253,16 @@ function cClique(e){
   if(b.dataset.g==='dataPasso'||b.dataset.g==='dataHoje'){const i=cCaixa().querySelector('#'+b.dataset.alvo)||$(b.dataset.alvo);i.value=b.dataset.g==='dataHoje'?hojeKey():somaDias(i.value||hojeKey(),+b.dataset.n);CG.verDia=i.value;cSave();return cRender();}
   const a=b.dataset.c,A=cAtiva();if(!a)return;
   /* confirmação (caixa verde) antes de registrar o produto ou passar para o próximo */
-  if((a==='registrar'||a==='prox')&&A&&!b._okConf&&window.perg){const it=A.itens[A.atual],nx=A.itens[A.atual+1];if(!it)return;
-    const q=a==='registrar'?perg(`Confirmar ${it.nome}?`,`Previsto ${nf(it.prev)} kg. Registra este produto e passa para o próximo.`,'✓ Confirmar produto','Voltar',true)
+  if((a==='registrar'||a==='prox'||a==='ant')&&A&&!b._okConf&&window.perg){const it=A.itens[A.atual],nx=A.itens[A.atual+1],an=A.itens[A.atual-1];if(!it)return;
+    const q=a==='ant'?perg('Deseja voltar ao produto anterior?',`${it.nome}${an?' → '+an.nome:''}`,'✓ Sim, produto anterior','Não',true)
+      :a==='registrar'?perg(nx?`Deseja registrar ${it.nome} e ir para o próximo?`:`Deseja registrar ${it.nome}?`,`Previsto ${nf(it.prev)} kg.${nx?' Próximo: '+nx.nome+'.':' É o último produto.'}`,nx?'✓ Sim, registrar e ir':'✓ Sim, registrar','Não',true)
       :perg('Passar para o próximo produto?',`${it.nome}${nx?' → '+nx.nome:''}`,'✓ Sim, próximo produto','Voltar',true);
     q.then(v=>{if(!v)return;b._okConf=1;try{b.click();}finally{b._okConf=0;}});return;}
   if(a==='imgCarga'||a==='xlsCarga')return a==='imgCarga'?imgCarga():xlsCarga();
   if(bloqueado())return;
+  if(a==='iniciar'&&!b._okIni&&!CG.avulso&&CG.local&&typeof fornCurrais==='function'&&typeof fornPendentes==='function'){
+    const trs=[+CG.trato].concat((CG.juntos||[]).map(Number).filter(k=>k!==+CG.trato)).filter(k=>k>0),fe=trs.filter(k=>fornCurrais(CG.local,CG.rac,k).length&&!fornPendentes(CG.local,CG.rac,k).length);
+    if(fe.length){confirmaVermelho('Deseja realmente iniciar a batida?',`${fe.length>1?'Os Tratos '+fe.join(' e '):'O Trato '+fe[0]} (${NOMELOC[CG.local]}) já ${fe.length>1?'foram realizados':'foi realizado'} hoje: todos os currais já foram tratados.`,'Sim, iniciar mesmo assim','Não, voltar').then(v=>{if(!v)return;b._okIni=1;try{b.click();}finally{b._okIni=0;}});return;}}
   if(a==='iniciar'){const r=G.it[CG.rac],tudo=itensAjust(itensCarga(CG.rac,CG.total)),its=tudo.filter(i=>i.prev>0),jaIt=tudo.filter(i=>i.ja>0).map(i=>({ins:i.ins,nome:i.nome,kg:i.ja})),manIt=tudo.filter(i=>i.man>0).map(i=>({ins:i.ins,nome:i.nome,pMN:i.pMN,kg:i.man,prec:Math.round(Math.max(0,i.prevOrig-i.ja))}));if(!tudo.length)return toast('Ração sem fórmula');
     if(!its.length&&manIt.length){if(!confirm('Tudo foi lançado no manual: nada para a balança. Salvar a batida assim?'))return;   // só manual: salva direto
       const now=Date.now();gPut({uid:novoId('carga'),tipo:'carga',dia:hojeKey(),local:CG.local||'',avulso:!!CG.avulso,trato:CG.avulso?0:+CG.trato,tratos:CG.avulso?[]:[+CG.trato].concat(CG.juntos||[]).sort((a,b)=>a-b),racao:CG.rac,racNome:r.nome,total:manIt.reduce((a,m)=>a+m.kg,0),ts0:now,hora:new Date(now).toTimeString().slice(0,5),
@@ -2283,8 +2287,7 @@ function cClique(e){
   if(a==='desfazer'){(async()=>{const ult=A.itens.filter(x=>ok(x.real)).sort((p,q)=>(q.tsReg||0)-(p.tsReg||0)||(q.hora||'').localeCompare(p.hora||''))[0];if(!ult)return;if(!await confirmaVermelho('Deseja realmente desfazer o último produto?',`${ult.nome} (${nf(ult.real)} kg) volta a ficar para carregar.`,'Sim, desfazer','Não, manter'))return;if(CG.ativa!==A)return;const feitos=A.itens.map((x,j)=>[x,j]).filter(([x])=>ok(x.real)).sort((p,q)=>((q[0].tsReg||0)-(p[0].tsReg||0))||(q[0].hora||'').localeCompare(p[0].hora||'')||(q[1]-p[1]));if(!feitos.length)return;
     const [x,j]=feitos[0];x.real=null;x.fim=null;A.atual=j;cSave();cRender();})();return;}
   if(a==='cancelar'){const feitos=A.itens.filter(x=>ok(x.real)).length;
-    confirmaVermelho('Deseja realmente cancelar a batida?',`${feitos?`Os ${feitos} produto(s) já carregado(s) nesta batida serão perdidos.`:'Esta batida será descartada.'} Nada dela será salvo e não dá para desfazer.`,'Sim, cancelar batida','Não, continuar carregando')
-      .then(sim=>sim&&confirmaVermelho('Tem certeza?','A batida será cancelada agora.','Sim, cancelar a batida','Não, voltar')).then(sim=>{if(!sim)return;if(CG.ativa!==A)return;CG.passo=1;CG.local=null;CG.juntos=[];CG.avulso=false;CG.juntoAberto=false;try{window.diagLog&&diagLog('batida_cancelada',{trato:A.trato,itens:A.itens.map(x=>[x.nome,x.prev,x.real])});}catch(e){}CG.ativa=null;cLimparSetup();cRender();toast('Batida cancelada');window.scrollTo({top:0});});return;}
+    confirmaVermelho('Deseja realmente cancelar a batida?',`${feitos?`Os ${feitos} produto(s) já carregado(s) nesta batida serão perdidos.`:'Esta batida será descartada.'} Nada dela será salvo e não dá para desfazer.`,'Sim, cancelar batida','Não, continuar carregando').then(sim=>{if(!sim)return;if(CG.ativa!==A)return;CG.passo=1;CG.local=null;CG.juntos=[];CG.avulso=false;CG.juntoAberto=false;try{window.diagLog&&diagLog('batida_cancelada',{trato:A.trato,itens:A.itens.map(x=>[x.nome,x.prev,x.real])});}catch(e){}CG.ativa=null;cLimparSetup();cRender();toast('Batida cancelada');window.scrollTo({top:0});});return;}
   if(a==='concluir'){(async()=>{if(CG.conclAberto)return;CG.conclAberto=true;
     /* igual ao Finalizar fornecimento: tudo carregado → caixa verde; faltando produto → caixa vermelha (alerta) */
     let sim;try{A.itens.forEach(x=>regFixo(A,x,null));const F=A.itens.filter(x=>!ok(x.real)),n=A.itens.length-F.length;
