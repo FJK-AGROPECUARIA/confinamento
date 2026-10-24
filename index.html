@@ -1209,7 +1209,7 @@ body.naInicio .topoTxt h1{font-size:clamp(16px,5vw,28px)!important}
 <div class="toast" id="toast" hidden></div>
 <script>
 'use strict';
-const APP_VERSAO='152';
+const APP_VERSAO='153';
 const APP_DATA='19/10/2026';
 const KEY='confinamento-completo-v1';
 const $=id=>document.getElementById(id);
@@ -1523,16 +1523,22 @@ async function juntarTratosForn(){const js=(FS.juntos||[]).map(Number).filter(k=
   const todos=[+FS.trato].concat(js),alvo=Math.max(...todos),hj=diaAtivo(),feitoEm=(k,c)=>HIST.some(r=>r.dia===hj&&+r.trato===k&&r.curral===c);
   const mov=[];todos.filter(k=>k!==alvo).forEach(k=>fornPendentes(FS.local,FS.rac,k).forEach(x=>{if(!feitoEm(alvo,x.nome))mov.push({k,c:x.nome,kg:x.prev});}));
   if(!mov.length){FS.trato=alvo;return true;}
-  const ok=await perg(`Juntar Tratos ${todos.slice().sort((a,b)=>a-b).join(' + ')}?`,`O previsto de ${new Set(mov.map(m=>m.c)).size} curral(is) passa para o Trato ${alvo} (somado) e o fornecimento fica registrado no Trato ${alvo}.`,'Sim, juntar','Não, voltar',true);if(!ok)return false;
-  mov.forEach(m=>{const de=S.prev[String(m.k)],pa=S.prev[String(alvo)]=S.prev[String(alvo)]||{};pa[m.c]=(+pa[m.c]||0)+(+de[m.c]||0);delete de[m.c];});
-  try{diagLog&&diagLog('tratos_juntos',{local:FS.local,tratos:todos,alvo,currais:mov.map(m=>m.c+':'+m.kg)});}catch(e){}
-  FS.trato=alvo;FS.juntos=[];FS.juntoAb=false;marcarPrev();toast(`Tratos juntos no Trato ${alvo}`);return true;}
-async function iniciarFornecimentoChecado(){if(!await juntarTratosForn())return;const pend=fornPendentes(FS.local,FS.rac,FS.trato),prec=pend.reduce((a,x)=>a+x.prev,0);
+  const ok=await perg(`Juntar Tratos ${todos.slice().sort((a,b)=>a-b).join(' + ')}?`,`O previsto de ${new Set(mov.map(m=>m.c)).size} curral(is) passa para o Trato ${alvo} (somado) e o fornecimento fica registrado no Trato ${alvo}. Se cancelar o fornecimento, volta como estava.`,'Sim, juntar','Não, voltar',true);if(!ok)return false;
+  FS.juntoPlano={alvo,tratos:todos,mov};return true;}   // só junta de verdade ao iniciar (iniciarFornecimento)
+function aplicarJunto(pl){pl.mov.forEach(m=>{const de=S.prev[String(m.k)]||{},pa=S.prev[String(pl.alvo)]=S.prev[String(pl.alvo)]||{};pa[m.c]=(+pa[m.c]||0)+(+de[m.c]||0);delete de[m.c];});
+  try{diagLog&&diagLog('tratos_juntos',{local:FS.local,tratos:pl.tratos,alvo:pl.alvo,currais:pl.mov.map(m=>m.c+':'+m.kg)});}catch(e){}marcarPrev();}
+/* cancelou o fornecimento: o que foi juntado e ainda não foi fornecido volta para o trato de origem */
+function desfazerJunto(j){if(!j||!j.mov||!j.mov.length)return 0;const hj=diaAtivo();let n=0;
+  j.mov.forEach(m=>{if(HIST.some(r=>r.dia===hj&&+r.trato===+j.alvo&&r.curral===m.c))return;const pa=S.prev[String(j.alvo)]||{},de=S.prev[String(m.k)]=S.prev[String(m.k)]||{};
+    const resto=Math.round((+pa[m.c]||0)-(+m.kg||0));if(resto>0)pa[m.c]=resto;else delete pa[m.c];de[m.c]=+m.kg;n++;});
+  if(n){try{diagLog&&diagLog('tratos_separados',{alvo:j.alvo,n});}catch(e){}marcarPrev();}return n;}
+async function iniciarFornecimentoChecado(){FS.juntoPlano=null;if(!await juntarTratosForn())return;const trs=FS.juntoPlano?FS.juntoPlano.tratos:[+FS.trato],pend=[].concat(...trs.map(k=>fornPendentes(FS.local,FS.rac,k))),prec=pend.reduce((a,x)=>a+x.prev,0);
   if(!pend.length&&fornCurrais(FS.local,FS.rac,FS.trato).length&&!await perg('Deseja realmente iniciar o fornecimento?',`O Trato ${FS.trato} (${FS.local==='C'?'Confinamento':'Pasto'}) já foi realizado hoje: todos os currais já foram tratados.`,'Sim, iniciar mesmo assim','Não, voltar'))return;
   const peso=window.pesoBalanca?pesoBalanca():null;
   if(peso!=null&&prec>0&&peso<prec){const ok=window.confirmaVermelho?await confirmaVermelho('Pouca ração no vagão',`A balança mostra ${fmt(peso)} kg e o fornecimento precisa de ${fmt(prec)} kg (${pend.length} curral(is)). Faltam ${fmt(prec-peso)} kg.`,'Iniciar mesmo assim','Voltar para carregar mais'):confirm('Pouca ração no vagão. Iniciar mesmo assim?');if(!ok)return;}
   iniciarFornecimento();}
-function iniciarFornecimento(){FS.fim='';S.forn={ativo:true,ts0:Date.now(),dia:hojeKey(),local:FS.local,rac:FS.rac||'',trato:+FS.trato};S.ini='';S.fim='';
+function iniciarFornecimento(){FS.fim='';let junto=null;if(FS.juntoPlano){const pl=FS.juntoPlano;aplicarJunto(pl);FS.trato=pl.alvo;junto={alvo:pl.alvo,mov:pl.mov};FS.juntoPlano=null;FS.juntos=[];FS.juntoAb=false;toast(`Tratos juntos no Trato ${pl.alvo}`);}
+  S.forn={ativo:true,ts0:Date.now(),dia:hojeKey(),local:FS.local,rac:FS.rac||'',trato:+FS.trato,junto};S.ini='';S.fim='';
   if(+S.tratoSel!==+FS.trato){S.tratoSel=+FS.trato;$('tratoSel').value=String(S.tratoSel);if($('aTrato'))$('aTrato').value=String(S.tratoSel);}
   const L=lista(),regs=regsAtuais();setAtual(Math.max(0,L.findIndex(x=>!feito(x.nome,regs))));save();
   if(window.aRenderFora)aRenderFora();render();mostrarFornecimento();window.scrollTo({top:0});}
@@ -1556,8 +1562,9 @@ document.addEventListener('click',e=>{const lb=e.target.closest('[data-floc]');i
     if(!await perg('Deseja realmente cancelar o fornecimento?',`Trato ${S.tratoSel}: ${feitos} de ${L.length} currais feitos, ${falta} ainda sem fornecer.${feitos?' Os currais já registrados continuam salvos.':''}${meio?' O curral que está em andamento NÃO é registrado.':''}`,'Sim, cancelar','Não, continuar fornecendo'))return;
     if(!filtroForn())return;try{window.diagLog&&diagLog('forn_cancelado',{local:f.local,trato:S.tratoSel,falta});}catch(e){}
     if(window.AUTO)AUTO.pausa=null;
-    FS.local=null;FS.rac=null;FS.trato=null;FS.passo=1;FS.fim='';S.forn=Object.assign({},S.forn||{},{ativo:false});save();render();mostrarFornecimento();if(window.aRenderFora)aRenderFora();try{window.recolherBal&&recolherBal();}catch(e){}window.scrollTo({top:0});toast('Fornecimento cancelado');})();return;}
-  if(e.target.closest('[data-ftrocar]')){if(window.autoDescarregando&&autoDescarregando()){toast('Está fornecendo num curral: registre antes de trocar.');return;}(async()=>{if(window.perg&&!await perg('Deseja abrir um novo fornecimento?','Este fornecimento sai da tela; os currais já registrados continuam salvos.','✓ Sim, abrir novo','Não, continuar este',true))return;const f=S.forn||{};FS.local=null;FS.rac=null;FS.trato=null;FS.passo=1;FS.fim='';S.forn=Object.assign({},f,{ativo:false});save();mostrarFornecimento();window.scrollTo({top:0});})();}});
+    const nVolta=desfazerJunto(S.forn&&S.forn.junto);
+    FS.local=null;FS.rac=null;FS.trato=null;FS.passo=1;FS.fim='';S.forn=Object.assign({},S.forn||{},{ativo:false,junto:null});save();render();mostrarFornecimento();if(window.aRenderFora)aRenderFora();try{window.recolherBal&&recolherBal();}catch(e){}window.scrollTo({top:0});toast(nVolta?`Fornecimento cancelado · previsto de ${nVolta} curral(is) voltou para os tratos de antes`:'Fornecimento cancelado');})();return;}
+  if(e.target.closest('[data-ftrocar]')){if(window.autoDescarregando&&autoDescarregando()){toast('Está fornecendo num curral: registre antes de trocar.');return;}(async()=>{if(window.perg&&!await perg('Deseja abrir um novo fornecimento?','Este fornecimento sai da tela; os currais já registrados continuam salvos.','✓ Sim, abrir novo','Não, continuar este',true))return;const f=S.forn||{};desfazerJunto(f.junto);FS.local=null;FS.rac=null;FS.trato=null;FS.passo=1;FS.fim='';S.forn=Object.assign({},f,{ativo:false,junto:null});save();mostrarFornecimento();window.scrollTo({top:0});})();}});
 document.addEventListener('change',e=>{if(e.target.id==='fRac'){FS.rac=e.target.value==='-'?null:e.target.value;FS.trato=null;if(FS.rac!=null)FS.passo=Math.max(FS.passo,3);mostrarFornecimento();}if(e.target.id==='fTrato'){FS.trato=+e.target.value;FS.tAuto=false;mostrarFornecimento();}});
 /* terminou todos os currais do trato (fornecidos ou "não fornecer"): já passa para o próximo trato */
 function proximoTratoSeCompleto(){try{const f=filtroForn();
@@ -3766,19 +3773,23 @@ window.addEventListener('focusin',e=>{if(typeof modoVer==='undefined'||!modoVer)
   if((el.tagName==='INPUT'||el.tagName==='TEXTAREA'||el.tagName==='SELECT')&&!verPermite(el)&&!(el.type==='date'&&el.closest('.gDataBox')))el.blur();},true);
 {let pv=0;new MutationObserver(()=>{if(pv||typeof modoVer==='undefined'||!modoVer)return;pv=1;requestAnimationFrame(()=>{pv=0;verTravar();});}).observe(document.documentElement,{childList:true,subtree:true});}
 /* rascunho: o que está digitado na tela não se perde quando o app atualiza */
-function camposVisiveis(){return [...document.querySelectorAll('input,select,textarea')].filter(el=>el.id&&el.offsetParent!==null&&!el.disabled&&!['hidden','button','submit','file','password'].includes(el.type)&&!el.closest('#tecSenha,.cvCaixa'));}
+/* chave de cada campo: o id, ou (nas telas da Gestão/Leitura) os data-* + posição — assim campos sem id também contam como "preenchendo" e voltam depois de atualizar */
+function campoChave(el){if(el.id)return el.id;try{if(el.closest('#gBox')&&typeof gChaveCampo==='function'&&el.type!=='checkbox'&&el.type!=='radio'){const k=gChaveCampo(el);return k?'g§'+k:null;}}catch(e){}return null;}
+function campoPorChave(k){if(!k.startsWith('g§'))return document.getElementById(k);const [d,i]=k.slice(2).split('#'),box=$('gBox');if(!box)return null;
+  return [...box.querySelectorAll('input,select,textarea')].filter(x=>Object.entries(x.dataset||{}).map(([a,b])=>a+'='+b).join('&')===d)[+i]||null;}
+function camposVisiveis(){return [...document.querySelectorAll('input,select,textarea')].filter(el=>campoChave(el)&&el.offsetParent!==null&&!el.disabled&&!['hidden','button','submit','file','password'].includes(el.type)&&!el.closest('#tecSenha,.cvCaixa'));}
 function telaSuja(){return camposVisiveis().some(el=>el.tagName==='SELECT'?[...el.options].some(o=>o.selected!==o.defaultSelected):(el.type==='checkbox'||el.type==='radio')?el.checked!==el.defaultChecked:el.value!==el.defaultValue);}
 window.telaSuja=telaSuja;
-function guardarRascunho(){try{const v={};camposVisiveis().forEach(el=>{v[el.id]=(el.type==='checkbox'||el.type==='radio')?(el.checked?'1':''):el.value;});
+function guardarRascunho(){try{const v={};camposVisiveis().forEach(el=>{v[campoChave(el)]=(el.type==='checkbox'||el.type==='radio')?(el.checked?'1':''):el.value;});
   if(!Object.keys(v).length||!telaSuja()){sessionStorage.removeItem('rascunhoTela');return;}
   sessionStorage.setItem('rascunhoTela',JSON.stringify({v,gt:(typeof GT!=='undefined'&&GT&&GT.t)?GT:null,aba:window.abaAtual||'',y:window.scrollY,ts:Date.now()}));}catch(e){}}
 function restaurarRascunho(){let r=null;try{r=JSON.parse(sessionStorage.getItem('rascunhoTela')||'null');sessionStorage.removeItem('rascunhoTela');}catch(e){}
   if(!r||Date.now()-(+r.ts||0)>12*3600e3||(r.aba&&r.aba!==window.abaAtual)||(r.gt&&typeof GT!=='undefined'&&GT&&GT.t!==r.gt.t))return;let n=0;
-  Object.entries(r.v).forEach(([id,val])=>{const el=document.getElementById(id);if(!el||el.offsetParent===null)return;
+  Object.entries(r.v).forEach(([id,val])=>{const el=campoPorChave(id);if(!el||(el.offsetParent===null&&!id.startsWith('g§')))return;
     if(el.type==='checkbox'||el.type==='radio'){if(el.checked!==!!val){el.checked=!!val;n++;}return;}
     if(el.value===val)return;el.value=val;n++;if(el.tagName==='SELECT'){if(window.selSync)selSync(el);el.dispatchEvent(new Event('change',{bubbles:true}));}else el.dispatchEvent(new Event('input',{bubbles:true}));});
   /* se alguma escolha redesenhou a tela, coloca de novo o que faltou */
-  setTimeout(()=>Object.entries(r.v).forEach(([id,val])=>{const el=document.getElementById(id);if(!el||el.offsetParent===null||el.type==='checkbox'||el.type==='radio'||el.value===val)return;el.value=val;if(el.tagName==='SELECT'){if(window.selSync)selSync(el);}else el.dispatchEvent(new Event('input',{bubbles:true}));}),80);
+  setTimeout(()=>Object.entries(r.v).forEach(([id,val])=>{const el=campoPorChave(id);if(!el||(el.offsetParent===null&&!id.startsWith('g§'))||el.type==='checkbox'||el.type==='radio'||el.value===val)return;el.value=val;if(el.tagName==='SELECT'){if(window.selSync)selSync(el);}else el.dispatchEvent(new Event('input',{bubbles:true}));}),80);
   if(r.y)window.scrollTo({top:r.y});if(n)toast('App atualizado · o que você estava digitando foi mantido');}
 window.addEventListener('pagehide',guardarRascunho);
 function recarregarQuandoPuder(){
