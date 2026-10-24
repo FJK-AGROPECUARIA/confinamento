@@ -656,7 +656,8 @@ async function registrarAuto(){
   if(!cur){toast(L.length?'Trato completo':'Sem previsto neste trato');return;}
   if(A.base==null){toast('Sem peso inicial ainda');return;}
   if(A.peso==null){toast('Sem leitura da balança');return;}
-  registrando=true;let fim;try{fim=await pesoParaRegistrar(A.ancT);}finally{registrando=false;}if(fim==null){toast('Sem leitura da balança');return;}
+  /* peso final = a balança EXATA no momento do toque (tomada de força desligada: igual ao visor do vagão) */
+  let fim=pesoVisor();if(fim==null){toast('Sem leitura da balança');return;}
   const ini=A.base;
   if(!(fim<ini)){toast('O peso não caiu desde o início');return;}
   const ja=regsAtuais().filter(x=>x.curral===cur.nome);
@@ -816,10 +817,10 @@ function aContinuarPausa(){const P=A.pausa;if(!P)return;A.pausa=null;
 window.aPausar=aPausar;window.aContinuarPausa=aContinuarPausa;
 /* peso na tela entre uma leitura e outra: enquanto está carregando/fornecendo, segue a velocidade (kg/s) por até "prever" segundos,
    para o número andar junto com o vagão em vez de pular. Só na tela: registro, apito e peso firme usam a leitura real. */
-function pesoTela(){if(A.peso!=null&&naCargaAuto())return A.peso;   // carregar: sempre a balança de verdade (varia, sobe e desce)
-  if(A.peso!=null&&!A.pausa&&A.estavel&&A.valEst!=null)return A.valEst;  // firme: o número para (média sem os picos)
-  if(A.peso==null||A.pausa||naCargaAuto())return A.peso;  // carregar: mostra a leitura da balança direto (a pazada aparece na hora; pico sobe e volta), sem prever
-  if(fornInst()&&A.est==='descarregando')return A.peso;   // instantâneo: igual ao visor da balança, sem prever nem filtrar
+function pesoTela(){if(A.peso!=null&&naCargaAuto())return pesoVisor();   // carregar: sempre a balança de verdade (varia, sobe e desce)
+  if(A.peso!=null&&!A.pausa&&A.estavel)return pesoVisor();  // parado: mostra o mesmo número do visor do vagão  // firme: o número para (média sem os picos)
+  if(A.peso==null||A.pausa||naCargaAuto())return A.peso==null?null:pesoVisor();  // carregar: mostra a leitura da balança direto (a pazada aparece na hora; pico sobe e volta), sem prever
+  if(fornInst()&&A.est==='descarregando')return pesoVisor();   // instantâneo: igual ao visor da balança, sem prever nem filtrar
   if(A.descFit&&!naCargaAuto()&&A.est==='descarregando'&&!A.estavel)return pesoDescRef();const p0=A.peso,lim=Math.max(0,Math.min(2,+cfg().prever||0))*1000;if(!lim||!A.tUlt)return p0;
   let dir=0,tx=0;if(caindoAgora()){dir=-1;tx=taxaQueda();}else if(typeof subindoAgora==='function'&&subindoAgora()){dir=1;tx=taxaQueda(-1);}
   if(!dir||!(tx>0))return p0;const dt=Math.min(Date.now()-A.tUlt,lim,(A.dtMed||700)*1.5);return p0+dir*tx*dt/1000;}

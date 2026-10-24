@@ -256,8 +256,8 @@ function cfgMinimizar(){document.querySelectorAll('#gBox section.panel').forEach
   const k=(cab.querySelector('h2')||cab).textContent.trim();sec.classList.add('gMinz');sec.dataset.minK=k;cab.classList.add('gMinzCab');sec.classList.toggle('aberto',gMinAb.has(k));});}
 document.addEventListener('click',e=>{const c=e.target.closest('#gBox .gMinz>.gMinzCab');if(!c)return;const sec=c.parentNode,k=sec.dataset.minK;
   gMinAb.has(k)?gMinAb.delete(k):gMinAb.add(k);sec.classList.toggle('aberto',gMinAb.has(k));const d=c.querySelector('.gGrpDica');if(d)d.textContent=gMinAb.has(k)?'clique para fechar':'clique para abrir';});
-const SEN_TIPOS=[['trato','Senha para tratar','entrar nos Tratos (Carregar, Fornecer, Automação)'],['gest','Senha da Gestão / Configurações','entrar na Gestão e nas Configurações'],['acao','Senha para alterar e excluir','editar e apagar registros, batidas e cadastros, e restaurar cópia']];
-function senhaGrava(k,v){const c=JSON.parse(JSON.stringify(gCfg())),s={trato:senhaDe('trato'),gest:senhaDe('gest'),acao:senhaDe('acao')};s[k]=v;c.senhas=s;gPut(c);}
+const SEN_TIPOS=[['trato','🚜 Senha dos Tratos','entrar nos Tratos (Leitura, Previsto, Carregar, Fornecer, Automação)'],['ver','👁 Senha do Visualizar','entrar no Visualizar'],['rel','📤 Senha dos Relatórios do dia','enviar os Relatórios do dia da tela inicial'],['gest','📊 Senha da Gestão / Configurações','entrar na Gestão e nas Configurações'],['acao','✏️ Senha de edição e exclusão','editar e apagar registros, batidas e cadastros, e restaurar cópia']];
+function senhaGrava(k,v){const c=JSON.parse(JSON.stringify(gCfg())),s={trato:senhaDe('trato'),ver:senhaDe('ver'),rel:senhaDe('rel'),gest:senhaDe('gest'),acao:senhaDe('acao')};s[k]=v;c.senhas=s;gPut(c);}
 let gLoc='T'; // filtro dos lotes: T todos, C confinamento, P pasto
 const gLotAb=new Set(),gCurAb=new Set(); // lotes abertos (vários ao mesmo tempo) e grupos de currais abertos
 /* barra de data com setas: ◀ dia anterior | data | dia seguinte ▶ */
@@ -1676,12 +1676,15 @@ function salvaIns(id){const nome=fv('nome'),ms=Math.round(fn('ms')*10)/10,preco=
 /* ---------- configurações ---------- */
 /* Config. da Gestão separado em botões: Custo · Notas · Raça · Tratos · Balança */
 const gCfgGrpAb=new Set(),CFG_ICO={rels:'📤',custo:'💲',venda:'🏷',notas:'📝',raca:'🐂',tratos:'🌾',balanca:'⚖️',senha:'🔑',backup:'💾'};
+/* ordem e cor dos quadrados: pelo tipo do menu */
+const CFG_TILES=['notas','tratos','balanca','custo','venda','raca','rels','senha','backup'];
+const CFG_TIPO={notas:['Tratos','#4f9a52'],tratos:['Tratos','#3d8442'],balanca:['Tratos','#2e7d32'],custo:['Gestão','#b8860b'],venda:['Gestão','#946a0c'],raca:['Gestão','#8a6a4a'],rels:['Relatórios','#3f80c4'],senha:['Sistema','#5f6b73'],backup:['Sistema','#455a64']};
 const CFG_ABAS=[['custo','Custo'],['venda','Venda'],['notas','Leitura de cocho'],['raca','Animais'],['tratos','Tratos'],['balanca','Balança'],['senha','Senha'],['rels','Relatórios'],['backup','Backup']];
 function tCfg(){const c=gCfg(),hj=hojeKey(),tx=vig(c.taxa,hj),ab=GT.cab||'custo';
   if(!GT.racasEd)GT.racasEd=c.racas.slice().sort(alfa);if(!GT.catsEd)GT.catsEd=c.cats.slice();
   if(!GT.notasEd)GT.notasEd=c.notas.slice().sort((a,b)=>a.n-b.n).map(x=>Object.assign({},x));
   const salvar='<button class="primary" data-g="salvaCfg">Salvar</button>';
-  let tudo='';for(const [ab,titAba] of CFG_ABAS){let h='';
+  let tudo='';for(const [ab,titAba] of CFG_ABAS){if(ab!==GT.cfgSel)continue;let h='';
   if(ab==='custo')h=`<section class="panel gCfgP"><h2>Custo operacional</h2><div class="gForm">${[
     {k:'taxa',l:'Taxa operacional',suf:'por cabeça por dia',t:'rs',v:tx?tx.rs:'',meia:1},{k:'tdesde',l:'Vale a partir de',t:'dia',v:tx?hj:'2000-01-01',meia:1}].map(campo).join('')}</div>
     ${(c.taxa||[]).length?`<p class="note">${c.taxa.map(x=>`Desde ${dB(x.desde)}: ${rs(+x.rs)}`).join(' · ')}</p>`:''}${salvar}</section>`;
@@ -1722,7 +1725,7 @@ function tCfg(){const c=gCfg(),hj=hojeKey(),tx=vig(c.taxa,hj),ab=GT.cab||'custo'
   if(ab==='senha'){const tu=c.senhaTurno===true;
     h=`<section class="panel gCfgP"><h2>Senha para entrar</h2>
     <div class="linhas gFiltro"><button data-g="senhaTurno" data-v="0" class="${tu?'':'sel'}">Pedir sempre</button><button data-g="senhaTurno" data-v="1" class="${tu?'sel':''}">1 vez de manhã e 1 vez à tarde</button></div>
-    <p class="note"><b>1 vez de manhã e 1 vez à tarde:</b> em cada celular, a senha é pedida na primeira entrada da manhã (até 11:59) e na primeira entrada depois do meio-dia. Nas outras vezes do mesmo turno, entra direto. Vale para os Tratos e para a Gestão, cada um com a sua senha. Um celular que ainda não colocou a senha naquele turno não entra.<br>Editar e apagar registros e batidas continuam pedindo a senha de alterar e excluir toda vez.</p></section>
+    <p class="note"><b>1 vez de manhã e 1 vez à tarde:</b> em cada celular, a senha é pedida na primeira entrada da manhã (até 11:59) e na primeira entrada depois do meio-dia. Nas outras vezes do mesmo turno, entra direto. Vale para cada botão da tela inicial (Tratos, Visualizar, Relatórios do dia e Gestão), cada um com a sua senha. Um celular que ainda não colocou a senha naquele turno não entra.<br>Editar e apagar registros e batidas continuam pedindo a senha de alterar e excluir toda vez.</p></section>
     ${modoVer?'':`<section class="panel gCfgP gMinzSim"><h2>🔑 Alterar senhas</h2>
     <p class="note">Só números, de 4 a 8. Quem está aqui nas configurações pode cadastrar, alterar ou tirar. <b>Sem senha</b> = entra ou altera direto, sem pedir.</p>
     ${SEN_TIPOS.map(([k,t,aj])=>{const v=senhaDe(k),ed=GT.snEd===k,ver=GT.snVer===k;
@@ -1744,8 +1747,12 @@ function tCfg(){const c=gCfg(),hj=hojeKey(),tx=vig(c.taxa,hj),ab=GT.cab||'custo'
     <button data-g="bkRest">↩ Restaurar cópia</button></section>
     <section class="panel gCfgP"><h2>Cópias guardadas</h2><div id="gBkLista"><p class="note">Buscando…</p></div></section>`;
     setTimeout(gBkLista,0);}
-  const ab_=gCfgGrpAb.has(ab);tudo+=`<div class="gCfgGrp${ab_?' aberto':''}"><button type="button" class="gCfgGrpCab" data-g="cfgGrp" data-k="${ab}"><span>${CFG_ICO[ab]||''} ${titAba}</span><span class="hColSeta">▼</span></button><div class="gCfgGrpCorpo">${h}</div></div>`;}
-  return `<div class="gCfgTit">⚙ Configurações</div>`+tudo;}
+  if(ab===GT.cfgSel)tudo+=h;}
+  /* quadrados por tipo (Tratos · Gestão · Relatórios · Sistema); tocou num, abre só ele */
+  const sel=CFG_ABAS.find(o=>o[0]===GT.cfgSel);
+  if(!sel)return `<div class="gCfgTit">⚙ Configurações</div><div class="gCfgTiles">${CFG_TILES.map(k=>{const [,t]=CFG_ABAS.find(o=>o[0]===k),[g,cor]=CFG_TIPO[k];
+    return `<button type="button" data-g="cfgSel" data-k="${k}" style="--c:${cor}"><small>${g}</small><span class="gIc">${CFG_ICO[k]||''}</span><span>${k==='senha'?'Senhas':t}</span></button>`;}).join('')}</div>`;
+  return `<button type="button" class="gCfgVolta" data-g="cfgSel" data-k=""><span>◀ Configurações</span><span>${CFG_ICO[sel[0]]||''} ${sel[0]==='senha'?'Senhas':sel[1]}</span></button>`+tudo;}
 /* ---------- batidas retroativas: uma batida por dia × trato × ração com o realizado dos tratos ---------- */
 let RETRO=null;
 async function retroCalc(){const box=document.getElementById('gRetro');if(box)box.innerHTML='<p class="note">Buscando os tratos na nuvem…</p>';
@@ -1801,7 +1808,7 @@ function salvaCfg(){const c=JSON.parse(JSON.stringify(gCfg()));const t=fn('taxa'
 /* =====================================================================================
    EVENTOS
    ===================================================================================== */
-const SO_VER=new Set(['relExp','relSel','relVer','relModo','relAtalho','estFilP','estFilLimpa','estIrRel','estVerMov','fornec','pgN','pgP','cfgGrp','perP','cfgAbaP','estInsExp','cbExp','lotLocP','loteTog','lotTodos','curGrp','coLocP','fzLocP','fzFotoVer','fzHN','fzHPdf','fzHImg','resPdf','resImg','resXls','insPdf','insImg','insXls','estPdf','estImg','estXls','estPerE','estOrd','nfVer','fzPdf','fzImgG','fzCur','fzLoc','fzImg','fzXls','fzXlsHist','cfgAba','coLoc','coAbre','coFecha','estPer','evLoc','evolN','imgDia','imgPer','imgComp','imgLote','pdfLote','imgVendas','pdfVendas','xlsVendas','pdfComp','xlsGraf','pdfGraf','racaAdd','racaRm','grafLoc','grafCur','celGraf','imgGraf','filtroLoc','dataPasso','dataHoje','voltar','ir','lote','raiz','compRel','compDia','xlsDia','xlsPer','xlsComp','xlsLote','perAtalho','nota','racAdd','racRm','notaAdd','notaRm','notaPadrao']);
+const SO_VER=new Set(['cfgSel','relExp','relSel','relVer','relModo','relAtalho','estFilP','estFilLimpa','estIrRel','estVerMov','fornec','pgN','pgP','cfgGrp','perP','cfgAbaP','estInsExp','cbExp','lotLocP','loteTog','lotTodos','curGrp','coLocP','fzLocP','fzFotoVer','fzHN','fzHPdf','fzHImg','resPdf','resImg','resXls','insPdf','insImg','insXls','estPdf','estImg','estXls','estPerE','estOrd','nfVer','fzPdf','fzImgG','fzCur','fzLoc','fzImg','fzXls','fzXlsHist','cfgAba','coLoc','coAbre','coFecha','estPer','evLoc','evolN','imgDia','imgPer','imgComp','imgLote','pdfLote','imgVendas','pdfVendas','xlsVendas','pdfComp','xlsGraf','pdfGraf','racaAdd','racaRm','grafLoc','grafCur','celGraf','imgGraf','filtroLoc','dataPasso','dataHoje','voltar','ir','lote','raiz','compRel','compDia','xlsDia','xlsPer','xlsComp','xlsLote','perAtalho','nota','racAdd','racRm','notaAdd','notaRm','notaPadrao']);
 /* ---------- apagar: sempre com senha (1010) e só o que ainda não foi usado ---------- */
 const H_=()=>typeof HIST!=='undefined'?HIST:[];
 function racUsoTxt(id){const r=G.it[id];if(!r)return '';const L=gTodos('lote').filter(l=>(l.rac||[]).some(h=>h.r===id)),B=gTodos('carga').filter(c=>c.racao===id||(r.nome&&c.racNome===r.nome));
@@ -2018,6 +2025,7 @@ $('gBox').addEventListener('click',e=>{
   if(a==='salvaCfg')return salvaCfg();
   if(a==='senhaTurno'){const c=JSON.parse(JSON.stringify(gCfg()));c.senhaTurno=b.dataset.v==='1';gPut(c);toast(c.senhaTurno?'Senha: 1 vez de manhã e 1 vez à tarde':'Senha: pedir sempre');return gRender();}
   if(a==='salvaDiv')return salvaDiv();
+  if(a==='cfgSel'){lerNotasEd();GT.cfgSel=b.dataset.k||null;gRender();window.scrollTo({top:0});return;}
   if(a==='cfgGrp'){const k=b.dataset.k;gCfgGrpAb.has(k)?gCfgGrpAb.delete(k):gCfgGrpAb.add(k);b.parentNode.classList.toggle('aberto',gCfgGrpAb.has(k));return;}
   if(a==='cfgAba'){lerNotasEd();GT.cab=b.dataset.k;gRender();window.scrollTo({top:0});return;}
   if(a==='cfgAbaP'){lerNotasEd();const O=CFG_ABAS.map(o=>o[0]);let i=Math.max(0,O.indexOf(GT.cab||O[0]));GT.cab=O[Math.max(0,Math.min(O.length-1,i+(+b.dataset.n)))];gRender();return;}

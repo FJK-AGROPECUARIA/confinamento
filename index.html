@@ -762,6 +762,10 @@ button.primary{background:#2e6b2f;border-color:#2e6b2f}
 #tratoTiles button.sel{outline:3px solid #9bc31c;outline-offset:2px}
 #subModo.soAuto{display:none!important}
 body.modoTrato:not(.menuFechado):not(.naInicio) #viewPrev,body.modoTrato:not(.menuFechado):not(.naInicio) #viewTrato,body.modoTrato:not(.menuFechado):not(.naInicio) #viewHist,body.modoTrato:not(.menuFechado):not(.naInicio) #viewGest,body.modoTrato:not(.menuFechado):not(.naInicio) #viewCarga,body.modoTrato:not(.menuFechado):not(.naInicio) #viewAuto,body.modoTrato:not(.menuFechado):not(.naInicio) #viewAutoC,body.modoTrato:not(.menuFechado):not(.naInicio) #viewEscolha,body.modoTrato:not(.menuFechado):not(.naInicio) .menuSeta{display:none!important}
+.gCfgTiles{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.gCfgTiles button{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;min-height:108px;padding:10px 6px;border-radius:18px;border:0;background:var(--c);color:#fff;font-size:1.15rem;font-weight:800;box-shadow:0 2px 6px rgba(0,0,0,.12)}
+.gCfgTiles small{font-size:.62rem;letter-spacing:.12em;font-weight:800;opacity:.9;text-transform:uppercase}.gCfgTiles .gIc{font-size:2rem;line-height:1}
+.gCfgVolta{width:100%;display:flex;justify-content:space-between;gap:8px;background:#455a64;color:#fff;border:0;border-radius:12px;padding:10px 12px;font-weight:800;margin:0 0 10px}
 /* menu da Gestão em quadrados grandes (2 por linha); com o menu aberto só aparecem os quadrados */
 #subGest.gTiles{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}#subGest.gTiles[hidden]{display:none}
 #subGest.gTiles button{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;min-height:118px;padding:14px 8px;border-radius:18px;border:0;background:var(--c);color:#fff;font-size:1.3rem;font-weight:800;box-shadow:0 2px 6px rgba(0,0,0,.12)}
@@ -1195,7 +1199,7 @@ body.naInicio .topoTxt h1{font-size:clamp(16px,5vw,28px)!important}
 <div class="toast" id="toast" hidden></div>
 <script>
 'use strict';
-const APP_VERSAO='148';
+const APP_VERSAO='149';
 const APP_DATA='19/10/2026';
 const KEY='confinamento-completo-v1';
 const $=id=>document.getElementById(id);
@@ -3322,12 +3326,12 @@ document.addEventListener('touchmove',e=>{if(e.scale!==undefined&&e.scale!==1)e.
 /* ---------- Tela inicial: Executar trato ou só Visualizar ---------- */
 document.body.classList.add('naInicio');
 /* Senha para entrar em Executar tratos */
-const SENHAS={trato:'0000',gest:'1010',acao:'1010'};let senhaRes=null;let senhaDig='',senhaModo='trato';const SENHA_EXEC=SENHAS.trato;
+const SENHAS={trato:'0000',ver:'0000',rel:'0000',gest:'1010',acao:'1010'};let senhaRes=null;let senhaDig='',senhaModo='trato';const SENHA_EXEC=SENHAS.trato;
 /* senhas: ficam em Gestão › Config. › Senha (vazia = não pede) */
 function senhaDe(m){const d=SENHAS[m]||'';try{const x=typeof gCfg==='function'&&gCfg().senhas;if(x&&typeof x[m]==='string')return x[m];}catch(e){}return d;}
 window.senhaDe=senhaDe;
-/* Visualizar e Relatórios do dia usam a senha dos Tratos (e o mesmo turno: manhã / tarde) */
-const SENHA_DE={trato:'trato',ver:'trato',rel:'trato',gest:'gest',acao:'acao'};
+/* cada botão da tela inicial tem a sua senha (Config. › Senha); editar e excluir têm outra */
+const SENHA_DE={trato:'trato',ver:'ver',rel:'rel',gest:'gest',acao:'acao'};
 const senhaAtual=()=>senhaDe(SENHA_DE[senhaModo]||senhaModo);
 function mostrarSenha(){$('senhaValor').textContent='●'.repeat(senhaDig.length)+'○'.repeat(Math.max(0,senhaAtual().length-senhaDig.length));}
 function verSenha(v){$('tecSenha').hidden=!v;$('senhaFundo').hidden=!v;}
