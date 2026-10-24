@@ -199,9 +199,13 @@ function fornecedores(){const m=new Map();
   return [...m.values()].sort((a,b)=>a.localeCompare(b,'pt'));}
 window.entForn=entForn;window.entNota=entNota;
 window.fornecedores=fornecedores;
-function sugMostrar(inp){const box=inp.parentNode.querySelector('.gSug');if(!box)return;const q=fSem(inp.value),L=fornecedores().filter(n=>!q||fSem(n).includes(q));
-  const igual=L.length===1&&fSem(L[0])===q;if(!L.length||igual){box.hidden=true;box.innerHTML='';return;}
-  box.innerHTML=`<small>${q?'Já cadastrados com esse nome':'Fornecedores já cadastrados'} · toque para escolher</small>`+L.slice(0,8).map(n=>`<button type="button" data-sugv="${esc(n)}">${esc(n)}</button>`).join('')+(L.length>8?`<small>+${L.length-8}: continue digitando para filtrar</small>`:'');box.hidden=false;}
+function sugMostrar(inp){const box=inp.parentNode.querySelector('.gSug');if(!box)return;const tp=inp.dataset.sug,q=fSem(inp.value);
+  const base=tp==='prodF'?gTodos('insumo').sort(porNome).map(i=>i.nome):fornecedores(),filtro=tp==='prodF'||tp==='fornF';
+  const L=base.filter(n=>!q||fSem(n).includes(q)),igual=L.length===1&&fSem(L[0])===q;
+  if(!filtro&&(!L.length||igual)){box.hidden=true;box.innerHTML='';return;}
+  const todos=filtro?`<button type="button" data-sugv="" class="gSugTodos">${tp==='prodF'?'Todos os produtos':'Todos os fornecedores'}</button>`:'';
+  box.innerHTML=(filtro?'':`<small>${q?'Já cadastrados com esse nome':'Fornecedores já cadastrados'} · toque para escolher</small>`)+todos+L.slice(0,filtro?30:8).map(n=>`<button type="button" data-sugv="${esc(n)}">${esc(n)}</button>`).join('')
+    +(!L.length&&filtro?'<small>Nenhum com esse nome</small>':'')+(L.length>(filtro?30:8)?`<small>+${L.length-(filtro?30:8)}: continue digitando para filtrar</small>`:'');box.hidden=false;}
 document.addEventListener('input',e=>{if(e.target.matches&&e.target.matches('input[data-sug]'))sugMostrar(e.target);});
 document.addEventListener('focusin',e=>{if(e.target.matches&&e.target.matches('input[data-sug]'))sugMostrar(e.target);});
 document.addEventListener('focusout',e=>{if(e.target.matches&&e.target.matches('input[data-sug]')){const box=e.target.parentNode.querySelector('.gSug');setTimeout(()=>{if(box&&!box.contains(document.activeElement))box.hidden=true;},200);}});
@@ -217,7 +221,7 @@ const UNID_C=[['arroba','R$ por @ (peso vivo ÷ 30)'],['cab','R$ por cabeça'],[
 const UNID_V=[['arroba','R$ por @ (carcaça ÷ 15)'],['cab','R$ por cabeça'],['kg','R$ por kg vivo']];
 
 const RAIZ={home:'home',estoque:'estoque',estIns:'estoque',estForm:'estoque',estNF:'estoque',fornec:'estoque',fornForm:'estoque',entRel:'estoque',currais:'currais',curForm:'currais',lotes:'lotes',lote:'lotes',loteForm:'lotes',pesForm:'lotes',entForm:'lotes',apartForm:'lotes',transfForm:'lotes',fechaForm:'lotes',achouForm:'lotes',saiForm:'lotes',mudForm:'lotes',rel:'lotes',custoForm:'lotes',
-  cocho:'cocho',cochoGraf:'cocho',fezes:'cocho',rels:'rels',dia:'rels',indices:'rels',confBal:'rels',periodo:'rels',comp:'rels',vendas:'rels',compradores:'rels',cprForm:'rels',racoes:'racoes',racForm:'racoes',insumos:'insumos',insForm:'insumos',insMS:'insumos',ms:'cocho',cfg:'cfg'};
+  cocho:'cocho',cochoGraf:'cocho',fezes:'cocho',rels:'rels',dia:'rels',indices:'rels',confBal:'rels',periodo:'rels',comp:'rels',vendas:'rels',compradores:'rels',cprForm:'rels',racoes:'racoes',racForm:'racoes',insumos:'estoque',insForm:'estoque',insMS:'insumos',ms:'cocho',cfg:'cfg'};
 /* Leitura de cocho fica no menu Tratos (aba 'leit'); o resto da Gestão na aba 'gest' — as duas usam a mesma tela */
 function gRaiz(t){GT={t};gPilha.length=0;const alvo=RAIZ[t]==='cocho'&&!document.body.classList.contains('modoGest')?'leit':'gest';if(window.abaAtual!==alvo)aba(alvo);else gRender();window.scrollTo({top:0});}
 window.gAbrir=modo=>{const leit=RAIZ[GT.t]==='cocho';if(modo==='leit'&&!leit)GT={t:'cocho'};if(modo==='gest'&&leit&&!document.body.classList.contains('modoGest'))GT={t:'home'};gRender();if(navigator.onLine)gSync(true).catch(()=>{});};
@@ -1179,17 +1183,17 @@ function tCochoGraf(t){const fim=t.dia||GT.dia||hojeKey();GT.dia=fim;const D=dad
     return `<tr><th class="gHc${/^P-/.test(o.c)?' p':''}" title="${esc(o.c)}">${esc(o.c.replace(/^P-/,''))}</th>${o.cel.map((x,i)=>{if(!x)return `<td class="vazio" data-g="celGraf" data-c="${esc(o.c)}" data-d="${D.dias[i]}">·</td>`;const [bg,fg]=corNota(x.pct);
       return `<td style="background:${bg};color:${fg}" data-g="celGraf" data-c="${esc(o.c)}" data-d="${D.dias[i]}">${notaTxt(x.nota)}</td>`;}).join('')}<td class="gHm">${ok(med)?(med>0?'+':'')+nf(med,1):'—'}</td></tr>`;}).join('');
   const notas=gCfg().notas.slice().sort((a,b)=>a.n-b.n);
+  const cw=Math.max(5,Math.min(18,Math.max(...D.linhas.map(o=>o.c.replace(/^P-/,'').length),4)+1));
   return `${voltar('Leitura')}<section class="panel"><h2>Leitura de cocho · 10 dias</h2>
     ${navData('gGrafDia',fim,'Até o dia')}
-    ${(()=>{const set=new Set();D.dias.forEach(d=>cochoCurrais(d).forEach(c=>set.add(c)));gTodos('leitura').forEach(x=>{if(x.dia>=D.dias[0]&&x.dia<=fim)set.add(x.curral);});const A=[...set];return locBotoes('grafLoc',gLocG,k=>A.filter(c=>doLocal(k,c)).length);})()}
+    <div class="gForm gGrafFil">${campo({k:'grafLocF',l:'Local',t:'sel',op:[['T','Todos'],['C','Confinamento'],['P','Pasto']],v:gLocG,meia:1})}</div>
+    ${rows?`<div class="row compart fz3"><button class="verde" data-g="pdfGraf">📄 PDF</button><button class="verde" data-g="imgGraf">🖼 Foto</button><button class="verde" data-g="xlsGraf">📊 Excel</button></div>`:''}
     <div class="gChips">${D.todos.map(c=>`<button data-g="grafCur" data-c="${esc(c)}" class="${gGrafOff.has(c)?'':'sel'}">${esc(c)}</button>`).join('')}</div>
-    ${rows?`<div class="tablebox"><table class="gHeat"><colgroup><col class="cC">${D.dias.map(()=>'<col>').join('')}<col class="cM"></colgroup><thead><tr><th class="gHc">Local</th>${cab}<th class="gHm">Méd.</th></tr></thead><tbody>${rows}</tbody></table></div>
+    ${rows?`<div class="tablebox"><table class="gHeat" style="--cw:${cw}ch"><colgroup><col class="cC">${D.dias.map(()=>'<col class="cD">').join('')}<col class="cM"></colgroup><thead><tr><th class="gHc">Local</th>${cab}<th class="gHm">Méd.</th></tr></thead><tbody>${rows}</tbody></table></div>
     <div class="gLegNota">${notas.map(x=>{const [bg,fg]=corNota(x.p);return `<span style="background:${bg};color:${fg}">${notaTxt(x.n)}<small>${x.p>0?'+':''}${nf(x.p,0)}%</small></span>`;}).join('')}</div>
-    <p class="note">Azul = aumentou o trato · vermelho = diminuiu · cinza = manteve · ponto = sem leitura. Toque num quadro para ver os kg.</p>
-    <div class="row compart"><button class="verde" data-g="imgGraf">🖼 Foto</button><button class="verde" data-g="xlsGraf">📊 Excel</button></div>`:'<p class="note">Nenhuma leitura nesse período.</p>'}
-    <button class="gVoltarFim" data-g="voltar">❮ Voltar para a leitura</button></section>`;}
-function imagemGraf(){const fim=GT.dia,D=dadosGraf(fim);if(!D.linhas.length)return toast('Nada para mostrar');
-  const esq=120,cw=46,ch=34,top=112,W=esq+cw*10+70+20,H=top+ch*D.linhas.length+110,cv=document.createElement('canvas'),s=2;cv.width=W*s;cv.height=H*s;
+    <p class="note">Azul = aumentou o trato · vermelho = diminuiu · cinza = manteve · ponto = sem leitura. Toque num quadro para ver os kg.</p>`:'<p class="note">Nenhuma leitura nesse período.</p>'}</section>`;}
+function imagemGraf(pdf){const fim=GT.dia,D=dadosGraf(fim);if(!D.linhas.length)return toast('Nada para mostrar');
+  const mc=document.createElement('canvas').getContext('2d');mc.font='bold 15px Arial';const esq=Math.max(120,Math.ceil(Math.max(...D.linhas.map(o=>mc.measureText(o.c).width)))+30),cw=46,ch=34,top=112,W=esq+cw*10+70+20,H=top+ch*D.linhas.length+110,cv=document.createElement('canvas'),s=2;cv.width=W*s;cv.height=H*s;
   const x=cv.getContext('2d');x.scale(s,s);x.fillStyle='#fff';x.fillRect(0,0,W,H);x.fillStyle='#11253d';x.fillRect(0,0,W,72);x.fillStyle='#a7bc09';x.fillRect(0,72,W,5);
   x.fillStyle='#fff';x.font='bold 22px Arial';x.fillText('Leitura de cocho · 10 dias',16,32);x.font='bold 13px Arial';x.fillStyle='#c8dd1e';x.fillText(`${dB(D.dias[0])} a ${dB(fim)} · Gestão de Tratos · FJK`,16,56);
   x.textAlign='center';x.font='bold 13px Arial';D.dias.forEach((d,i)=>{x.fillStyle='#5d6b7a';x.fillText(d.slice(8)+'/'+d.slice(5,7),esq+cw*i+cw/2,top-10);});x.fillText('Média',esq+cw*10+35,top-10);
@@ -1200,7 +1204,7 @@ function imagemGraf(){const fim=GT.dia,D=dadosGraf(fim);if(!D.linhas.length)retu
   const ns=gCfg().notas.slice().sort((a,b)=>a.n-b.n),ly=top+ch*D.linhas.length+30,lw=Math.min(54,(W-32)/ns.length);
   ns.forEach((n,i)=>{const [bg,fg]=corNota(n.p),lx=16+lw*i;x.fillStyle=bg;x.fillRect(lx,ly,lw-3,30);x.fillStyle=fg;x.textAlign='center';x.font='bold 13px Arial';x.fillText(notaTxt(n.n),lx+lw/2-1,ly+14);x.font='10px Arial';x.fillText((n.p>0?'+':'')+nf(n.p,0)+'%',lx+lw/2-1,ly+26);});
   x.textAlign='left';x.fillStyle='#5d6b7a';x.font='12px Arial';x.fillText('Azul = aumentou o trato · vermelho = diminuiu · cinza = manteve · ponto = sem leitura',16,ly+52);
-  cv.toBlob(b=>compartilharArquivo(b,`Leitura de cocho ${dB(fim).replace(/\//g,'-')}.png`,'image/png'),'image/png');}
+  cv.toBlob(async b=>{const n=`Leitura de cocho ${dB(fim).replace(/\//g,'-')}`;try{if(pdf)return await compartilharArquivo(await pngsParaPdf([b]),n+'.pdf','application/pdf');await compartilharArquivo(b,n+'.png','image/png');}catch(e){toast(pdf?'Não consegui gerar o PDF':'Não consegui gerar a imagem');}},'image/png');}
 
 /* ---------- Excel ---------- */
 const XS={int:4,dec:11,rs:12,pct:14,dia:2};
@@ -1764,7 +1768,7 @@ function salvaCfg(){const c=JSON.parse(JSON.stringify(gCfg()));const t=fn('taxa'
 /* =====================================================================================
    EVENTOS
    ===================================================================================== */
-const SO_VER=new Set(['estFilP','estFilLimpa','estIrRel','estVerMov','fornec','pgN','pgP','cfgGrp','perP','cfgAbaP','estInsExp','cbExp','lotLocP','loteTog','lotTodos','curGrp','coLocP','fzLocP','fzFotoVer','fzHN','fzHPdf','fzHImg','resPdf','resImg','resXls','insPdf','insImg','insXls','estPdf','estImg','estXls','estPerE','estOrd','nfVer','fzPdf','fzImgG','fzCur','fzLoc','fzImg','fzXls','fzXlsHist','cfgAba','coLoc','coAbre','coFecha','estPer','evLoc','evolN','imgDia','imgPer','imgComp','imgLote','pdfLote','imgVendas','pdfVendas','xlsVendas','pdfComp','xlsGraf','racaAdd','racaRm','grafLoc','grafCur','celGraf','imgGraf','filtroLoc','dataPasso','dataHoje','voltar','ir','lote','raiz','compRel','compDia','xlsDia','xlsPer','xlsComp','xlsLote','perAtalho','nota','racAdd','racRm','notaAdd','notaRm','notaPadrao']);
+const SO_VER=new Set(['estFilP','estFilLimpa','estIrRel','estVerMov','fornec','pgN','pgP','cfgGrp','perP','cfgAbaP','estInsExp','cbExp','lotLocP','loteTog','lotTodos','curGrp','coLocP','fzLocP','fzFotoVer','fzHN','fzHPdf','fzHImg','resPdf','resImg','resXls','insPdf','insImg','insXls','estPdf','estImg','estXls','estPerE','estOrd','nfVer','fzPdf','fzImgG','fzCur','fzLoc','fzImg','fzXls','fzXlsHist','cfgAba','coLoc','coAbre','coFecha','estPer','evLoc','evolN','imgDia','imgPer','imgComp','imgLote','pdfLote','imgVendas','pdfVendas','xlsVendas','pdfComp','xlsGraf','pdfGraf','racaAdd','racaRm','grafLoc','grafCur','celGraf','imgGraf','filtroLoc','dataPasso','dataHoje','voltar','ir','lote','raiz','compRel','compDia','xlsDia','xlsPer','xlsComp','xlsLote','perAtalho','nota','racAdd','racRm','notaAdd','notaRm','notaPadrao']);
 /* ---------- apagar: sempre com senha (1010) e só o que ainda não foi usado ---------- */
 const H_=()=>typeof HIST!=='undefined'?HIST:[];
 function racUsoTxt(id){const r=G.it[id];if(!r)return '';const L=gTodos('lote').filter(l=>(l.rac||[]).some(h=>h.r===id)),B=gTodos('carga').filter(c=>c.racao===id||(r.nome&&c.racNome===r.nome));
@@ -1842,6 +1846,7 @@ $('gBox').addEventListener('click',e=>{
   if(a==='grafLoc'){gLocG=b.dataset.l;return gRender();}
   if(a==='grafCur'){const c=b.dataset.c;if(gGrafOff.has(c))gGrafOff.delete(c);else gGrafOff.add(c);return gRender();}
   if(a==='imgGraf')return imagemGraf();
+  if(a==='pdfGraf')return imagemGraf(true);
   if(a==='celGraf'){const x=G.it[idLeit(b.dataset.d,b.dataset.c)];return toast(x&&!x.del?`${b.dataset.c} · ${dB(b.dataset.d).slice(0,5)}: nota ${notaTxt(x.nota)} (${x.pct>0?'+':''}${nf(x.pct,0)}%) · ${nf(x.novo)} kg (base ${nf(x.base)})`:`${b.dataset.c} · ${dB(b.dataset.d).slice(0,5)}: sem leitura`);}
   if(a==='dataPasso'||a==='dataHoje'){const inp=$(b.dataset.alvo);if(!inp)return;inp.value=a==='dataHoje'?hojeKey():somaDias(inp.value||hojeKey(),+b.dataset.n);inp.dispatchEvent(new Event('change',{bubbles:true}));return;}
   if(a==='salvaCusto'){const dia=fv('dia'),v=fn('rs');if(!dia||!(v>0))return toast('Coloque a data e o valor');
@@ -1944,10 +1949,9 @@ $('gBox').addEventListener('click',e=>{
   if(a==='fornExc'){const f=G.it[id];if(!f)return;if(fornEntradas(f.nome).length)return toast('Tem entradas com este fornecedor: não dá para excluir');
     (window.perg?perg(`Excluir o fornecedor ${f.nome}?`,'Ele sai da lista de fornecedores.','Sim, excluir','Não',false):Promise.resolve(confirm('Excluir?'))).then(v=>{if(!v)return;gDel(id);toast('Fornecedor excluído');gRender();});return;}
   if(a==='entRelExp')return entRelExp(b.dataset.o);
-  if(a==='estFilP'){const k=b.dataset.k,O=estOps(k),v=GT[k]||'';let i=Math.max(0,O.findIndex(o=>o[0]===v));GT[k]=O[Math.max(0,Math.min(O.length-1,i+(+b.dataset.n)))][0];GT.pgEP=1;return gRender();}
-  if(a==='estFilLimpa'){GT.tipoE=GT.insE=GT.fornE='';GT.pgEP=1;return gRender();}
+  if(a==='estFilLimpa'){GT.tipoE=GT.prodE=GT.fornE='';GT.pgEP=1;return gRender();}
   if(a==='estIrRel'){gMinAb.add('estRel');gRender();const el=document.querySelector('.gEstRel');if(el)el.scrollIntoView({behavior:'smooth',block:'start'});return;}
-  if(a==='estVerMov'){gMinAb.add('estRel');gPilha.length=0;GT={t:'estoque',insE:id,tipoE:'',fornE:''};gRender();setTimeout(()=>{const el=document.querySelector('.gEstRel');if(el)el.scrollIntoView({block:'start'});},60);return;}
+  if(a==='estVerMov'){gMinAb.add('estRel');gPilha.length=0;GT={t:'estoque',prodE:(G.it[id]&&G.it[id].nome)||'',tipoE:'',fornE:''};gRender();setTimeout(()=>{const el=document.querySelector('.gEstRel');if(el)el.scrollIntoView({block:'start'});},60);return;}
   if(a==='pgN'){const k=b.dataset.k;GT[k+'N']=+b.dataset.v;GT[k+'P']=1;return gRender();}
   if(a==='pgP'){if(b.disabled)return;const k=b.dataset.k,y=window.scrollY;GT[k+'P']=(GT[k+'P']||1)+(+b.dataset.n);gRender();window.scrollTo({top:y});return;}
   if(a==='perP'){GT.pgEP=GT.pgIP=1;const k=b.dataset.k,O=PER_OPS.map(o=>o[0]);let i=Math.max(0,O.indexOf(perNorm(GT[k]==null?30:GT[k])));GT[k]=O[Math.max(0,Math.min(O.length-1,i+(+b.dataset.n)))];return gRender();}
@@ -2011,6 +2015,8 @@ $('gBox').addEventListener('change',e=>{
   if(t.id==='gf_emov'&&GT.t==='estForm'){const h=document.querySelector('#gBox section h2');if(h)h.textContent=(GT.id?'Editar ':'')+{ent:'Entrada no estoque',sai:'Saída manual do estoque',inv:'Contagem do estoque'}[t.value];}
   if(t.matches&&t.matches('select[data-cfgsel]')){lerNotasEd();GT.cab=t.value;return gRender();}
   if(t.matches&&t.matches('select[data-estf]')){GT[t.dataset.estf]=t.value;GT.pgEP=1;return gRender();}
+  if(['gf_perF','gf_tipoF','gf_prodF','gf_fornF'].includes(t.id)){const k={gf_perF:'perE',gf_tipoF:'tipoE',gf_prodF:'prodE',gf_fornF:'fornE'}[t.id];const v=k==='perE'?+t.value:t.value.trim();if(GT[k]===v)return;GT[k]=v;GT.pgEP=1;gMinAb.add('estRel');return gRender();}
+  if(t.id==='gf_grafLocF'){gLocG=t.value;return gRender();}
   if(t.id==='gf_rForn'||t.id==='gf_rIns'){GT[t.id==='gf_rForn'?'rForn':'rIns']=t.value;GT.pgRP=1;return gRender();}
   if(t.matches&&t.matches('select[data-persel]')){GT.pgEP=GT.pgIP=GT.pgRP=1;GT[t.dataset.persel]=+t.value;return gRender();}
   if(t.matches&&t.matches('input[data-perd]')){if(t.value){GT[t.dataset.perd]=t.value;}return gRender();}
@@ -2543,10 +2549,10 @@ function tEstoque(){const I=gTodos('insumo').filter(i=>!i.inativo).sort(porNome)
   const L=I.map(i=>({i,e:estoqueIns(i)}));
   const item=({i,e})=>{const cor=estCor(e),baixo=cor==='r',abMin=e.saldo!=null&&e.min&&e.saldo<e.min;
     return `<button class="gItem gEstIt${cor?' gEstC'+cor:''}" data-g="ir" data-t="estIns" data-id="${i.uid}"><div class="gItemTopo"><b>${esc(i.nome)}</b><span class="gEstSaldo">${e.saldo==null?'sem lançamento':'<small class="gEstSL">saldo</small>'+nf(e.saldo)+' kg'}</span></div>
-      <small>${e.saldo==null?'Lance uma entrada ou uma contagem para começar o controle.':((x)=>x.replace(/^(⚠ )?([a-zà-ú])/,(m,w,c)=>(w||'')+c.toUpperCase()))([baixo?'⚠ estoque baixo':'',abMin&&!baixo?'abaixo do mínimo':'',ok(e.dias)?`finaliza em <span class="gEstDias">~${nf(e.dias,1)} dia${Math.round(e.dias*10)===10?'':'s'}</span>`:'',e.cons>0?`consumo ${nf(e.cons)} kg/dia (média 7 dias)`:'sem consumo nos últimos 7 dias',e.min?`mínimo ${nf(e.min)} kg`:''].filter(Boolean).join(' · '))}</small></button>`;};
+      <small class="gEstLin">${e.saldo==null?'Lance uma entrada ou uma contagem para começar o controle.':`<span class="gEstSt">${cor==='r'?'⚠ Estoque baixo':cor==='a'?'⚠ Estoque atenção':'✓ Estoque ok'}</span><span class="gEstFz">finaliza em</span><span class="gEstDias">${ok(e.dias)?`~${nf(e.dias,1)} dia${Math.round(e.dias*10)===10?'':'s'}`:'—'}</span><span class="gEstRest">${[abMin&&!baixo?'abaixo do mínimo':'',e.cons>0?`consumo ${nf(e.cons)} kg/dia (média 7 dias)`:'sem consumo nos últimos 7 dias',e.min?`mínimo ${nf(e.min)} kg`:''].filter(Boolean).join(' · ')}</span>`}</small></button>`;};
   return `<section class="panel"><div class="curhead"><h2>Estoque</h2><span class="note">${dB(hj)}</span></div>
-    <div class="gEstBtns gEst4"><button class="lima" data-g="ir" data-t="estForm" data-mov="ent">＋ Entrada</button><button class="lima" data-g="nfNova">📎 ＋ NF</button><button data-g="ir" data-t="estForm" data-mov="sai">－ Saída</button><button data-g="ir" data-t="estForm" data-mov="inv">Contagem</button></div>
-    <div class="gEstBtns gEst2"><button data-g="ir" data-t="fornec">🏢 Fornecedores</button><button data-g="estIrRel">📋 Relatório</button></div>
+    <div class="gEstBtns gEst4"><button class="gBtV" data-g="ir" data-t="estForm" data-mov="ent">＋ Entrada</button><button class="gBtV" data-g="nfNova">📎 ＋ NF</button><button class="gBtR" data-g="ir" data-t="estForm" data-mov="sai">－ Saída</button><button class="gBtA" data-g="ir" data-t="estForm" data-mov="inv">Contagem</button></div>
+    <div class="gEstBtns gEst3"><button data-g="ir" data-t="insumos">🌽 Insumos</button><button data-g="ir" data-t="fornec">🏢 Fornecedores</button><button class="gBtA" data-g="estIrRel">📋 Relatório</button></div>
     ${L.map(item).join('')||'<p class="note">Cadastre os insumos primeiro (Gestão › Insumos).</p>'}
     <p class="note">As batidas salvas tiram do estoque automaticamente o realizado de cada produto (ou o previsto, se não tiver realizado). Contagem: o saldo do dia passa a ser o que foi contado (acerto). Toque no produto para ver o saldo, o consumo e o estoque mínimo.</p></section>
   ${L.length?estMovHTML():''}`;}
@@ -2565,30 +2571,32 @@ function paginar(L,k){const n=PG_OPS.includes(GT[k+'N'])?GT[k+'N']:20,tp=Math.ma
   const nav=tp>1?`<div class="gPagNav"><button type="button" class="gSeta" data-g="pgP" data-k="${k}" data-n="-1"${p<=1?' disabled':''} aria-label="Página anterior">◀</button><span><em>Página <b>${p}</b> de ${tp}</em><small>${(p-1)*n+1}–${Math.min(p*n,L.length)} de ${L.length}</small></span><button type="button" class="gSeta" data-g="pgP" data-k="${k}" data-n="1"${p>=tp?' disabled':''} aria-label="Próxima página">▶</button></div>`:`<p class="note gPagTot">${L.length} movimentação(ões)</p>`;
   return {itens:L.slice((p-1)*n,p*n),sel,nav};}
 /* relatório do Estoque: filtros de período, tipo (entrada/saída), produto e fornecedor */
-const EST_TIPO=[['','Entradas e saídas'],['ent','Só entradas'],['sai','Só saídas (batidas + manuais)'],['bat','Só batidas'],['man','Só saídas manuais'],['inv','Só contagens']];
-function estOps(k){if(k==='tipoE')return EST_TIPO;if(k==='insE')return [['','Todos os produtos']].concat(gTodos('insumo').filter(i=>!i.inativo||i.uid===GT.insE).sort(porNome).map(i=>[i.uid,i.nome]));
-  return [['','Todos os fornecedores']].concat(fornecedores().map(n=>[n,n]));}
-function estFiltros(){return {tipo:EST_TIPO.some(o=>o[0]===GT.tipoE)?GT.tipoE:'',ins:GT.insE&&G.it[GT.insE]?GT.insE:'',fo:GT.fornE||''};}
-function estMovs(){const per=perNorm(GT.perE==null?30:GT.perE),[de,ate]=perFaixa(per,'perE'),novo=GT.ordE!=='antigo',{tipo,ins,fo}=estFiltros();
-  const passa=m=>(!tipo||(tipo==='ent'&&m.mov==='ent')||(tipo==='sai'&&(m.mov==='bat'||m.mov==='sai'))||(tipo==='bat'&&m.mov==='bat')||(tipo==='man'&&m.mov==='sai')||(tipo==='inv'&&m.mov==='inv'))
-    &&(!fo||(m.mov==='ent'&&fSem(m.forn)===fSem(fo)));
-  const L=[],P=[];gTodos('insumo').filter(i=>ins?i.uid===ins:!i.inativo).forEach(i=>{const e=estoqueIns(i);
+const EST_TIPO=[['','Todas'],['ent','Entradas'],['sai','Saídas']];
+/* filtros do relatório do estoque: tipo (caixa), produto e fornecedor (digita e escolhe na lista) */
+function estFiltros(){const tipo=EST_TIPO.some(o=>o[0]===GT.tipoE)?GT.tipoE:'',fo=String(GT.fornE||'').trim(),pq=String(GT.prodE||'').trim();
+  const todos=gTodos('insumo').sort(porNome),exato=pq&&todos.find(i=>fSem(i.nome)===fSem(pq));
+  const I=exato?[exato]:todos.filter(i=>pq?fSem(i.nome).includes(fSem(pq)):!i.inativo);return {tipo,fo,pq,I,ins:exato?exato.uid:''};}
+function estMovs(){const per=perNorm(GT.perE==null?30:GT.perE),[de,ate]=perFaixa(per,'perE'),novo=GT.ordE!=='antigo',{tipo,fo,pq,I,ins}=estFiltros();
+  const passa=m=>(!tipo||(tipo==='ent'&&m.mov==='ent')||(tipo==='sai'&&(m.mov==='bat'||m.mov==='sai')))
+    &&(!fo||(m.mov==='ent'&&fSem(m.forn).includes(fSem(fo))));
+  const L=[],P=[];I.forEach(i=>{const e=estoqueIns(i);
     const ant=e.M.filter(m=>m.dia<de),fim=e.M.filter(m=>m.dia<=ate);P.push({i,ini:ant.length?ant[ant.length-1].saldo:0,fim:fim.length?fim[fim.length-1].saldo:null});
     e.M.forEach((m,k)=>{if(m.dia>=de&&m.dia<=ate&&passa(m))L.push(Object.assign({nome:i.nome,k},m));});});
   L.sort((a,b)=>a.dia.localeCompare(b.dia)||(a.ts||0)-(b.ts||0)||a.nome.localeCompare(b.nome)||a.k-b.k);if(novo)L.reverse();
   const kg=k=>L.filter(m=>k.includes(m.mov)).reduce((a,m)=>a+m.kg,0),vEnt=L.filter(m=>m.mov==='ent').reduce((a,m)=>a+(+m.rs||0),0),kgV=L.filter(m=>m.mov==='ent'&&m.rs>0).reduce((a,m)=>a+m.kg,0);
-  const filtro=[perTexto(per,'perE'),tipo?EST_TIPO.find(o=>o[0]===tipo)[1].toLowerCase():'',ins?G.it[ins].nome:'',fo?'fornecedor '+fo:''].filter(Boolean).join(' · ');
-  return {L,per,novo,tipo,ins,fo,de,ate,P,filtro,tot:{ent:kg(['ent']),bat:kg(['bat']),sai:kg(['sai']),vEnt,pm:kgV>0?vEnt/kgV:NaN,nInv:L.filter(m=>m.mov==='inv').length}};}
+  const filtro=[perTexto(per,'perE'),tipo?EST_TIPO.find(o=>o[0]===tipo)[1].toLowerCase():'',pq?(ins?G.it[ins].nome:'produto "'+pq+'"'):'',fo?'fornecedor '+fo:''].filter(Boolean).join(' · ');
+  return {L,per,novo,tipo,ins,fo,pq,de,ate,P,filtro,tot:{ent:kg(['ent']),bat:kg(['bat']),sai:kg(['sai']),vEnt,pm:kgV>0?vEnt/kgV:NaN,nInv:L.filter(m=>m.mov==='inv').length}};}
 const movSinal=m=>(m.mov==='ent'?'+':m.mov==='inv'?'=':'−')+nf(m.kg);
 const movDet=m=>[m.obs||'',m.mov==='inv'&&ok(m.dif)?`acerto ${m.dif>=0?'+':''}${nf(m.dif)} kg`:'',m.mov==='ent'&&m.rs?rs(m.rs)+(m.kg?` (${rs(m.rs/m.kg)}/kg)`:''):''].filter(Boolean).join(' · ');
-function estMovHTML(){const D=estMovs(),{L,per,novo,tipo,ins,fo,tot}=D,PGE=paginar(L,'pgE'),ix=k=>{const O=estOps(k),v=k==='tipoE'?tipo:k==='insE'?ins:fo;return Math.max(0,O.findIndex(o=>o[0]===v));};
-  const nav=(lbl,k)=>`<div class="gCoLocNav">${selSetas(lbl,estOps(k),ix(k),`data-g="estFilP" data-k="${k}" data-n`,`data-estf="${k}"`)}</div>`;
-  const P1=ins?D.P[0]:null,mostraSai=tipo!=='ent'&&tipo!=='inv'&&!fo,mostraEnt=!tipo||tipo==='ent';
+function estMovHTML(){const D=estMovs(),{L,per,novo,tipo,ins,fo,pq,tot}=D,PGE=paginar(L,'pgE'),[pa,pb]=perFaixa(per,'perE');
+  const P1=ins?D.P[0]:null,mostraSai=tipo!=='ent'&&!fo,mostraEnt=!tipo||tipo==='ent';
   const ed=m=>m.manual?` <button class="mini" data-g="ir" data-t="estForm" data-id="${m.uid}" aria-label="Editar">✎</button> <button class="mini danger" data-g="estRm" data-id="${m.uid}" aria-label="Apagar">✕</button>`:'';
   const ab=gMinAb.has('estRel');
   return `<section class="panel gEstRel gMinz${ab?' aberto':''}" data-min-k="estRel"><div class="curhead gMinzCab"><h2>📋 Movimentações</h2><span class="note">${L.length}</span><em class="gGrpDica">${ab?'clique para fechar':'clique para abrir'}</em></div>
-    ${perSelHTML(per,'perE')}${nav('Tipo','tipoE')}${nav('Produto','insE')}${nav('Forne-<br>cedor','fornE')}
-    ${tipo||ins||fo?`<button type="button" class="mini gEstLimpa" data-g="estFilLimpa">✕ Limpar filtros</button>`:''}
+    <div class="gForm gEstFil">${campo({k:'perF',l:'Período',t:'sel',op:PER_OPS,v:per,meia:1})}${campo({k:'tipoF',l:'Tipo',t:'sel',op:EST_TIPO,v:tipo,meia:1})}
+      ${per===-1?`<div class="gPerDatas"><label>De<input type="date" data-perd="perEDe" value="${pa}"></label><label>Até<input type="date" data-perd="perEAte" value="${pb}"></label></div>`:''}
+      ${campo({k:'prodF',l:'Produto',v:pq,sug:'prodF',ph:'Todos · digite para procurar'})}${campo({k:'fornF',l:'Fornecedor',v:fo,sug:'fornF',ph:'Todos · digite para procurar'})}</div>
+    ${tipo||pq||fo?`<button type="button" class="mini gEstLimpa" data-g="estFilLimpa">✕ Limpar filtros</button>`:''}
     <div class="stat gStat3">${mostraEnt?st('Entradas',nf(tot.ent)+' kg'+(tot.vEnt?`<small>${rs(tot.vEnt)}${ok(tot.pm)?' · '+rs(tot.pm)+'/kg':''}</small>`:'')):''}${mostraSai?st('Batidas',nf(tot.bat)+' kg')+st('Saídas manuais',nf(tot.sai)+' kg'):''}${P1?st('Saldo no início',nf(P1.ini)+' kg')+st('Saldo no fim',P1.fim==null?'—':nf(P1.fim)+' kg'):''}</div>
     <div class="row compart fz3"><button class="verde" data-g="estPdf">📄 PDF</button><button class="verde" data-g="estImg">🖼 Foto</button><button class="verde" data-g="estXls">📊 Excel</button></div>
     <div class="linhas gFiltro"><button data-g="estOrd" data-o="novo" class="${novo?'sel':''}">↓ Mais novo primeiro</button><button data-g="estOrd" data-o="antigo" class="${novo?'':'sel'}">↑ Mais antigo primeiro</button></div>
