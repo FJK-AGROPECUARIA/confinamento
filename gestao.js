@@ -1044,11 +1044,15 @@ function tCocho(t){
       ${opB('ontem','Realizado do dia anterior')}${opB('prev','Previsto do dia anterior')}${opB('dia','Igual ao trato de uma data')}
       ${bm==='dia'?`<div class="gBaseChips">${chips}</div>`:''}</div></details>`;
     const trv=leitTravada(dia,c);if(trv&&GT.sel)delete GT.sel[c];
+    /* últimos 3 dias: leitura, kg/dia e % IMS de cada dia · tocar repete a matéria seca daquele dia */
+    const podeRep=pode.ok&&!trv,repD=sel&&sel.rep;
+    const ult3=`<div class="gUlt3">${[3,2,1].map(i=>{const d=somaDias(dia,-i),x=G.it[idLeit(d,c)],lx=x&&!x.del?x:null,kgd=ix.get(d+'|'+c)||0,bi=baseIms(c,d),im=kgd&&bi?kgd/bi:NaN;
+      const cn_=lx&&lx.nota!=null?notas.find(o=>o.n===+lx.nota):null,[bg,fg]=lx&&lx.nota!=null?corNota(cn_?cn_.p:0):['#f1f3f5','#11253d'];
+      return `<button type="button" class="gU3${repD===d?' sel':''}" style="background:${bg};color:${fg}"${podeRep&&kgd?` data-g="repDia" data-c="${esc(c)}" data-d="${d}"`:' disabled'}><small>${diaBR(d).slice(0,5)}</small><b>${lx&&lx.nota!=null?notaTxt(+lx.nota):'·'}</b><i>${kgd?nf(kgd)+' kg':'sem trato'}</i><em>${ok(im)?pc(im,2)+' IMS':'—'}</em></button>`;}).join('')}</div>`;
     if(trv&&!(lt&&!lt.del))return `<div class="gCochoMin gCoTrav">${seloCurral(c)}<span><b>Sem leitura</b><small>🔒 já teve trato neste dia · a leitura não pode ser feita</small></span></div>`;
     if(lt&&!lt.del&&!GT.sel[c]&&!(GT.coAberto||{})[c])return `<button class="gCochoMin${trv?' gCoTrav':''}" data-g="coAbre" data-c="${esc(c)}">${seloCurral(c)}<span><b>${lt.nota!=null?'Nota '+notaTxt(lt.nota):''}${lt.ims>0?(lt.nota!=null?' · ':'')+'IMS '+pc(+lt.ims,2):''}</b>${ok(+lt.novo)?nf(+lt.novo)+' kg':'—'}<small>${trv?'✓ feita · 🔒 já teve trato · toque para ver':'✓ feita · toque para alterar'}</small></span><em class="gMinBase">${(()=>{const h=lt.hora||(lt.ts?new Date(+lt.ts).toTimeString().slice(0,5):'');return h?`<i class="gMinHora">🕒 ${esc(h)}</i>`:'';})()}base<br><b>${ok(+lt.base)?nf(+lt.base)+' kg':'—'}</b><br>${lt.baseM==='prev'?'previsto dia ant.':lt.baseM==='dia'?'trato de '+(lt.baseDia?diaBR(lt.baseDia).slice(0,5):'outra data'):lt.baseM==='kg'?'digitada':'realizado dia ant.'}</em></button>`;  // feita: fica recolhida
     return `<div class="gCocho${lt&&!lt.del?' feito':''}${trv?' gCoRO':''}" data-c="${esc(c)}" data-base="${base}" data-msf="${msFator}">
-      <div class="gCoTopo">${seloCurral(c)}<div><span><b>${esc(L.map(l=>l.nome).join(', '))}</b> · ${nf(cab)} cab</span><span>Ontem: <b>${ontem?nf(ontem)+' kg':'—'}</b>${ok(imsOnt)?` · ${pc(imsOnt,2)} IMS`:''}</span></div>${lt&&!lt.del&&(GT.coAberto||{})[c]?`<button type="button" class="mini gCoFecha" data-g="coFecha" data-c="${esc(c)}" aria-label="Recolher">▲</button>`:''}</div>
-      ${baseOp}
+      <div class="gCoTopo">${seloCurral(c)}<div><span><b>${esc([...new Set(L.map(l=>catNorm(l.cat)||l.nome))].join(', '))}</b> · ${nf(cab)} cab</span>${ult3}</div>${lt&&!lt.del&&(GT.coAberto||{})[c]?`<button type="button" class="mini gCoFecha" data-g="coFecha" data-c="${esc(c)}" aria-label="Recolher">▲</button>`:''}</div>
       ${trv?'<p class="gCoROtxt">🔒 Trato feito neste dia: não pode alterar.</p>':''}
       ${gradeNotas(notas,nota,c)}
       <div class="gCoNovo"><b class="gCoPct">% IMS</b><input class="cell num gCoImsIn" inputmode="decimal" data-ims="${esc(c)}"${trv?' readonly':''} value="${sel&&sel.ims>0?String(sel.ims).replace('.',','):''}" placeholder="${(()=>{const q=ok(kg)&&window.gImsDe?gImsDe(c,dia,kg):null;return q?nf(q,2):'%';})()}"><input class="cell num" inputmode="numeric" data-kg="${esc(c)}" value="${kg!=null?kg:''}" placeholder="kg/dia"${trv?' readonly':''}>${pode.ok&&!trv?`<button type="button" class="gCoSalva" data-g="salvaCocho1" data-c="${esc(c)}" aria-label="Salvar este curral">💾</button>`:''}</div></div>`;}).join('');
@@ -1922,6 +1926,12 @@ $('gBox').addEventListener('click',e=>{
   if(a==='compRel')return enviarTexto(textoRel());
   if(a==='compDia')return enviarTexto(textoDia());
   if(a==='baseDia'){GT.base=GT.base||{};GT.base[b.dataset.c]={m:'dia',d:b.dataset.d};if(GT.sel&&GT.sel[b.dataset.c])delete GT.sel[b.dataset.c].kg;const y=window.scrollY;gRender();window.scrollTo({top:y});return;}
+  if(a==='repDia'){const c=b.dataset.c,d=b.dataset.d,dia=GT.dia||hojeKey();if(leitTravada(dia,c))return;const ix=gIndice(),kgd=ix.get(d+'|'+c)||0;if(!kgd)return;
+    /* mesma matéria seca daquele dia, convertida para a MS da ração de hoje */
+    const fx=fatorMS(c,d,dia),kg=Math.round(kgd*(ok(fx)?fx:1)),card=b.closest('.gCocho'),base=card?+card.dataset.base:0,N=gCfg().notas;
+    let best=null;if(base>0)N.forEach(o=>{const v=base*(1+o.p/100);if(!best||Math.abs(v-kg)<Math.abs(best.v-kg))best={n:o.n,v};});
+    GT.sel=GT.sel||{};if(GT.sel[c]&&GT.sel[c].rep===d){delete GT.sel[c];}else GT.sel[c]={n:best?best.n:null,kg,ims:null,rep:d};
+    const y=window.scrollY;gRender();window.scrollTo({top:y});return;}
   if(a==='nota'){const c=b.dataset.c,n=+b.dataset.n;if(leitTravada(GT.dia||hojeKey(),c))return;GT.sel=GT.sel||{};GT.sel[c]=b.classList.contains('sel')?{n:null}:{n};const y=window.scrollY;gRender();window.scrollTo({top:y});return;}  // tocou de novo na mesma nota: desmarca
   if(a==='salvaCocho')return salvaCocho();
   if(a==='salvaCocho1')return salvaCocho(b.dataset.c);
