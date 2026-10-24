@@ -1395,25 +1395,37 @@ function xlsGraf(){const D=dadosGraf(GT.dia);const cab=['Curral'].concat(D.dias.
     ['Kg do dia',cab.slice(0,-1),D.linhas.map(o=>[xc(o.c)].concat(o.cel.map(x=>x&&ok(x.novo)?xc(x.novo,'int'):xc('')))),[16].concat(D.dias.map(()=>9))]]);}
 
 /* ---------- relatórios ---------- */
-const REL_ABRE={relDia:'dia',indices:'indices',confBal:'confBal'};
-function relExpSel(){if(window.__relExpVer)return window.__relExpVer;const c=gCfg();return Array.isArray(c.relExp)?c.relExp:['tratosC','indices','estoque'];}
-function tRels(t){const dia=(t&&t.dia)||hojeKey(),sel=relExpSel(),selM=!!(t&&t.relSel),ab=t&&t.relAb;
-  if(ab&&!selM&&relVerCache.k!==ab+'|'+dia)setTimeout(relVerCarregar,60);
-  const lista=selM?REL_DIA.map(([k,tt,d])=>`<label class="gRelIt"><input type="checkbox" data-relx="${k}"${sel.includes(k)?' checked':''}><span><b>${tt}</b><small>${d}</small></span></label>`).join('')
-    :REL_DIA.map(([k,tt,d])=>`<div class="gRelBloco${ab===k?' ab':''}"><button type="button" class="gRelIt gRelVerBt" data-g="relVer" data-k="${k}"><span><b>${tt}</b><small>${ab===k?'toque para fechar':d}</small></span><i>${ab===k?'▲':'▼'}</i></button>
-      ${ab===k?`<div class="gRelVer" id="gRelVer">${relVerCache.k===k+'|'+dia?relVerCache.h:'<p class="note">Carregando o relatório…</p>'}</div>${REL_ABRE[k]?`<button type="button" class="mini gRelAbre" data-g="ir" data-t="${REL_ABRE[k]}" data-dia="${dia}">abrir a tela completa ›</button>`:''}`:''}</div>`).join('');
+const REL_ABRE={relDia:'dia',indices:'indices',confBal:'confBal',perLote:'periodo',vendas:'vendas',comp:'comp'};
+/* relatórios por período (De … Até) */
+const REL_PER=[
+  ['tratosPC','Tratos do período por curral','soma de cada curral no período (previsto, realizado e diferença)'],
+  ['tratosPJ','Tratos do período dia a dia','todos os tratos de cada dia do período'],
+  ['batidasP','Batidas do vagão','batidas do período com os insumos e o total'],
+  ['perLote','Consumo e custo por lote','MN, MS/cab/dia, % IMS e custo de cada lote; insumos usados'],
+  ['estMov','Estoque · movimentações','entradas, saídas e consumo de cada produto no período'],
+  ['vendas','Vendas por comprador','vendas do período: preço, rendimento e R$/cab'],
+  ['comp','Comparativo de lotes','todos os lotes lado a lado (não depende da data)']];
+function relModo(){return GT&&GT.relModo==='per'?'per':'dia';}
+function relLista(){return relModo()==='per'?REL_PER:REL_DIA;}
+function relFaixa(){const hj=hojeKey(),b=GT.rFim||hj,a=GT.rIni||somaDias(b,-6);return a<=b?[a,b]:[b,a];}
+function relExpSel(){const per=relModo()==='per',k=per?'relExpP':'relExp';if(window.__relExpVer&&window.__relExpVer[k])return window.__relExpVer[k];const c=gCfg();return Array.isArray(c[k])?c[k]:(per?['tratosPC','perLote']:['tratosC','indices','estoque']);}
+function tRels(t){const per=relModo()==='per',dia=(t&&t.dia)||hojeKey(),[ini,fim]=relFaixa(),sel=relExpSel(),selM=!!(t&&t.relSel),ab=t&&t.relAb,LST=relLista(),ck=per?ini+'|'+fim:dia;
+  if(ab&&!selM&&relVerCache.k!==ab+'|'+ck)setTimeout(relVerCarregar,60);
+  const abre=k=>REL_ABRE[k]?`<button type="button" class="mini gRelAbre" data-g="ir" data-t="${REL_ABRE[k]}"${per?` data-ini="${ini}" data-fim="${fim}"`:` data-dia="${dia}"`}>abrir a tela completa ›</button>`:'';
+  const lista=selM?LST.map(([k,tt,d])=>`<label class="gRelIt"><input type="checkbox" data-relx="${k}"${sel.includes(k)?' checked':''}><span><b>${tt}</b><small>${d}</small></span></label>`).join('')
+    :LST.map(([k,tt,d])=>`<div class="gRelBloco${ab===k?' ab':''}"><button type="button" class="gRelIt gRelVerBt" data-g="relVer" data-k="${k}"><span><b>${tt}</b><small>${ab===k?'toque para fechar':d}</small></span><i>${ab===k?'▲':'▼'}</i></button>
+      ${ab===k?`<div class="gRelVer" id="gRelVer">${relVerCache.k===k+'|'+ck?relVerCache.h:'<p class="note">Carregando o relatório…</p>'}</div>${abre(k)}`:''}</div>`).join('');
+  const atalho=(n,r)=>`<button type="button" class="mini" data-g="relAtalho" data-n="${n}">${r}</button>`;
   return `<section class="panel"><h2>Relatórios</h2>
-  ${navData('gRelDia',dia,'Data')}
+  <div class="gRelModo"><button type="button" class="${per?'':'on'}" data-g="relModo" data-m="dia">📅 Por dia</button><button type="button" class="${per?'on':''}" data-g="relModo" data-m="per">📆 Por período</button></div>
+  ${per?`<div class="gPerDatas gRelDatas"><label>De<input type="date" id="gRelIni" value="${ini}"></label><label>Até<input type="date" id="gRelFim" value="${fim}"></label></div>
+    <div class="row gRelAtalhos">${atalho(7,'7 dias')}${atalho(15,'15 dias')}${atalho(30,'30 dias')}${atalho('mes','Este mês')}</div>`:navData('gRelDia',dia,'Data')}
   <button type="button" class="gRelSelBt${selM?' on':''}" data-g="relSel">${selM?'✕ Cancelar seleção':'☑ Selecionar para exportar'}</button>
   ${selM?`<div class="row compart fz3 expTopo gRelExpBts"><button class="verde" data-g="relExp" data-o="pdf">📄 PDF</button><button class="verde" data-g="relExp" data-o="img">🖼 Foto</button><button class="verde" data-g="relExp" data-o="xls">📊 Excel</button></div>
-  <p class="note">Marque os relatórios e toque em <b>PDF</b>, <b>Foto</b> ou <b>Excel</b>: sai tudo junto, da data escolhida. <b id="gRelN">${sel.length} marcado(s)</b></p>`
+  <p class="note">Marque os relatórios e toque em <b>PDF</b>, <b>Foto</b> ou <b>Excel</b>: sai tudo junto, ${per?'do período escolhido':'da data escolhida'}. <b id="gRelN">${sel.length} marcado(s)</b></p>`
   :`<p class="note">Toque num relatório para ver aqui embaixo. Para enviar, use <b>Selecionar para exportar</b>.</p>`}
-  <div class="gRelLista gRelExpL">${lista}</div></section>
-  <section class="panel"><h2>Outros relatórios</h2><div class="gGrade">
-  <button class="gBig" data-g="ir" data-t="periodo">📆<b>Por período</b><small>semana, mês ou datas escolhidas</small></button>
-  <button class="gBig" data-g="ir" data-t="comp">📊<b>Comparativo de lotes</b><small>desempenho e resultado lado a lado</small></button>
-  <button class="gBig" data-g="ir" data-t="vendas">💲<b>Vendas por comprador</b><small>preço, rendimento e R$/cab por comprador ou tipo</small></button>
-  <button class="gBig" data-g="ir" data-t="compradores">🤝<b>Compradores</b><small>cadastro de frigoríficos e compradores</small></button></div>
+  <div class="gRelLista gRelExpL">${lista}</div>
+  <button type="button" class="mini gRelCpr" data-g="ir" data-t="compradores">🤝 Cadastro de compradores</button>
   <p class="note">O relatório de um lote fica dentro do lote: Lotes → escolha o lote → Resultado.</p></section>`;}
 function linhasDia(dia){const X=gCtx();return X.L.map(l=>({l,x:diaLote(l,dia,X)})).filter(o=>o.x).sort((a,b)=>porCurral(a.l,b.l));}
 function tDia(t){
@@ -1789,7 +1801,7 @@ function salvaCfg(){const c=JSON.parse(JSON.stringify(gCfg()));const t=fn('taxa'
 /* =====================================================================================
    EVENTOS
    ===================================================================================== */
-const SO_VER=new Set(['relExp','relSel','relVer','estFilP','estFilLimpa','estIrRel','estVerMov','fornec','pgN','pgP','cfgGrp','perP','cfgAbaP','estInsExp','cbExp','lotLocP','loteTog','lotTodos','curGrp','coLocP','fzLocP','fzFotoVer','fzHN','fzHPdf','fzHImg','resPdf','resImg','resXls','insPdf','insImg','insXls','estPdf','estImg','estXls','estPerE','estOrd','nfVer','fzPdf','fzImgG','fzCur','fzLoc','fzImg','fzXls','fzXlsHist','cfgAba','coLoc','coAbre','coFecha','estPer','evLoc','evolN','imgDia','imgPer','imgComp','imgLote','pdfLote','imgVendas','pdfVendas','xlsVendas','pdfComp','xlsGraf','pdfGraf','racaAdd','racaRm','grafLoc','grafCur','celGraf','imgGraf','filtroLoc','dataPasso','dataHoje','voltar','ir','lote','raiz','compRel','compDia','xlsDia','xlsPer','xlsComp','xlsLote','perAtalho','nota','racAdd','racRm','notaAdd','notaRm','notaPadrao']);
+const SO_VER=new Set(['relExp','relSel','relVer','relModo','relAtalho','estFilP','estFilLimpa','estIrRel','estVerMov','fornec','pgN','pgP','cfgGrp','perP','cfgAbaP','estInsExp','cbExp','lotLocP','loteTog','lotTodos','curGrp','coLocP','fzLocP','fzFotoVer','fzHN','fzHPdf','fzHImg','resPdf','resImg','resXls','insPdf','insImg','insXls','estPdf','estImg','estXls','estPerE','estOrd','nfVer','fzPdf','fzImgG','fzCur','fzLoc','fzImg','fzXls','fzXlsHist','cfgAba','coLoc','coAbre','coFecha','estPer','evLoc','evolN','imgDia','imgPer','imgComp','imgLote','pdfLote','imgVendas','pdfVendas','xlsVendas','pdfComp','xlsGraf','pdfGraf','racaAdd','racaRm','grafLoc','grafCur','celGraf','imgGraf','filtroLoc','dataPasso','dataHoje','voltar','ir','lote','raiz','compRel','compDia','xlsDia','xlsPer','xlsComp','xlsLote','perAtalho','nota','racAdd','racRm','notaAdd','notaRm','notaPadrao']);
 /* ---------- apagar: sempre com senha (1010) e só o que ainda não foi usado ---------- */
 const H_=()=>typeof HIST!=='undefined'?HIST:[];
 function racUsoTxt(id){const r=G.it[id];if(!r)return '';const L=gTodos('lote').filter(l=>(l.rac||[]).some(h=>h.r===id)),B=gTodos('carga').filter(c=>c.racao===id||(r.nome&&c.racNome===r.nome));
@@ -1811,7 +1823,7 @@ $('gBox').addEventListener('click',e=>{
   const b=e.target.closest('[data-g]');if(!b)return;const a=b.dataset.g,id=b.dataset.id;
   if(!SO_VER.has(a)&&bloqueado())return;
   if(a==='voltar')return gVoltar();
-  if(a==='ir'){const t={t:b.dataset.t,id,o:b.dataset.o,enc:b.dataset.enc==='1'};if(b.dataset.mov)t.mov=b.dataset.mov;if(b.dataset.ins)t.ins=b.dataset.ins;if(b.dataset.sid)t.sid=b.dataset.sid;if(b.dataset.nome)t.nome=b.dataset.nome;if(b.dataset.dia){t.dia=b.dataset.dia;t.cbDia=b.dataset.dia;}
+  if(a==='ir'){const t={t:b.dataset.t,id,o:b.dataset.o,enc:b.dataset.enc==='1'};if(b.dataset.mov)t.mov=b.dataset.mov;if(b.dataset.ins)t.ins=b.dataset.ins;if(b.dataset.sid)t.sid=b.dataset.sid;if(b.dataset.nome)t.nome=b.dataset.nome;if(b.dataset.dia){t.dia=b.dataset.dia;t.cbDia=b.dataset.dia;}if(b.dataset.ini){t.ini=b.dataset.ini;t.fim=b.dataset.fim;}
     if(GT.t==='lotes'&&t.t==='lotes'){GT=t;return gRender();}return gIr(t);}
   if(a==='lote')return gIr({t:'lote',id});
   if(a==='raiz')return gRaiz(b.dataset.t);
@@ -1967,6 +1979,8 @@ $('gBox').addEventListener('click',e=>{
     (mud&&window.perg?perg('Cancelar a alteração de matéria seca?','O que foi escolhido não vai ser salvo.','Sim, cancelar','Não, continuar',false):Promise.resolve(true)).then(v=>{if(!v)return;GT.msAberto=false;GT.ins='';gRender();});return;}
   if(a==='relExp')return relExpEnviar(b.dataset.o);
   if(a==='relSel'){GT.relSel=!GT.relSel;GT.relAb=null;return gRender();}
+  if(a==='relModo'){GT.relModo=b.dataset.m==='per'?'per':'dia';GT.relAb=null;relVerCache={k:'',h:''};return gRender();}
+  if(a==='relAtalho'){const hj=hojeKey(),n=b.dataset.n;GT.rFim=hj;GT.rIni=n==='mes'?hj.slice(0,8)+'01':somaDias(hj,-(+n-1));relVerCache={k:'',h:''};return gRender();}
   if(a==='relVer'){GT.relAb=GT.relAb===b.dataset.k?null:b.dataset.k;relVerCache={k:'',h:''};const k=GT.relAb;gRender();
     if(k){const el=document.querySelector(`.gRelVerBt[data-k="${k}"]`);if(el)window.scrollTo({top:Math.max(0,el.getBoundingClientRect().top+scrollY-90),behavior:'smooth'});}return;}
   if(a==='resPdf')return resPdf();
@@ -2062,6 +2076,7 @@ $('gBox').addEventListener('change',e=>{
   if(t.id==='gCoDia'){GT.sel={};GT.base={};GT.dia=t.value||hojeKey();gRenderCom({dia:GT.dia});}
   if(t.id==='gDiaDia'){gRenderCom({dia:t.value||hojeKey()});}
   if(t.id==='gRelDia'){gRenderCom({dia:t.value||hojeKey()});}
+  if(t.id==='gRelIni'||t.id==='gRelFim'){if(!t.value)return;GT[t.id==='gRelIni'?'rIni':'rFim']=t.value;relVerCache={k:'',h:''};return gRender();}
   if(t.id==='gResDia'){gRenderCom({dia:t.value||hojeKey()});}
   if(t.id==='gRefDia'||t.id==='gGrafDia'){gRenderCom({dia:t.value||hojeKey()});}
   if(GT.t==='apartForm'&&(t.matches('[data-ap]')||/^gAp/.test(t.id))){apLer();apPrevia();}
@@ -2384,18 +2399,19 @@ $('tabCarga').addEventListener('click',()=>aba('carga'));
 window.cAoAbrir=()=>{cLimparSetup();cRender();cBuscarRemoto();};window.cLimparSetup=cLimparSetup;window.cFecha=cFecha;
 
 /* confirmação com aviso em vermelho (ex.: cancelar batida) */
-function confirmaVermelho(tit,txt,sim,nao,verde,extra){   // extra: HTML já montado (escapado) que vai logo abaixo do texto
+function confirmaVermelho(tit,txt,sim,nao,verde,extra,terc){   // terc: 3º botão (devolve 'x')
+   // extra: HTML já montado (escapado) que vai logo abaixo do texto
 return new Promise(res=>{   // verde=true: tudo certo (caixa verde em vez do alerta vermelho)
   if(!document.getElementById('cvEstilo')){const st=document.createElement('style');st.id='cvEstilo';st.textContent=`.cvFundo{position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:9999;display:flex;align-items:center;justify-content:center;padding:16px}
 .cvCaixa{background:var(--card,#fff);border-radius:16px;max-width:420px;width:100%;padding:20px;border:3px solid #d32f2f;box-shadow:0 10px 40px rgba(0,0,0,.35)}
 .cvCaixa h3{margin:0 0 10px;color:#d32f2f;font-size:1.25rem}.cvCaixa p{white-space:pre-line;margin:0 0 18px;color:#d32f2f;font-weight:600;line-height:1.35}
 .cvCaixa.verde{border-color:#2e7d32}.cvCaixa.verde h3,.cvCaixa.verde p{color:#2e7d32}.cvCaixa.verde .cvSim{background:#2e7d32;border-color:#2e7d32}
 .cvFaltas{display:flex;flex-wrap:wrap;gap:6px 18px;margin:-10px 0 14px;font-size:.8rem;line-height:1.3;color:#33475b}.cvFaltas>div{display:flex;flex-direction:column;min-width:64px}.cvFaltas b{font-size:.82rem;color:#b3261e;margin-bottom:2px}.cvCaixa p.cvPerg{margin-top:0}
-.cvCaixa .cvBt{display:grid;gap:10px}.cvCaixa button{padding:14px;font-size:1rem;border-radius:12px}.cvCaixa .cvSim{background:#d32f2f;color:#fff;border-color:#d32f2f}`;document.head.appendChild(st);}
+.cvCaixa .cvBt{display:grid;gap:10px}.cvCaixa .cvTerc{background:#fff;color:#b3261e;border:2px dashed #d32f2f;font-size:.92rem;padding:11px}.cvCaixa button{padding:14px;font-size:1rem;border-radius:12px}.cvCaixa .cvSim{background:#d32f2f;color:#fff;border-color:#d32f2f}`;document.head.appendChild(st);}
   const f=document.createElement('div');f.className='cvFundo';
-  f.innerHTML=`<div class="cvCaixa${verde?' verde':''}" role="alertdialog"><h3>${verde?'✅':'⚠️'} ${esc(tit)}</h3><p>${esc(txt)}</p>${extra||''}<div class="cvBt"><button class="cvSim">${esc(sim)}</button><button class="cvNao">${esc(nao)}</button></div></div>`;
+  f.innerHTML=`<div class="cvCaixa${verde?' verde':''}" role="alertdialog"><h3>${verde?'✅':'⚠️'} ${esc(tit)}</h3><p>${esc(txt)}</p>${extra||''}<div class="cvBt"><button class="cvSim">${esc(sim)}</button><button class="cvNao">${esc(nao)}</button>${terc?`<button class="cvTerc">${esc(terc)}</button>`:''}</div></div>`;
   const fim=v=>{f.remove();res(v);};
-  f.querySelector('.cvSim').onclick=()=>fim(true);f.querySelector('.cvNao').onclick=()=>fim(false);
+  f.querySelector('.cvSim').onclick=()=>fim(true);f.querySelector('.cvNao').onclick=()=>fim(false);if(terc)f.querySelector('.cvTerc').onclick=()=>fim('x');
   f.addEventListener('click',e=>{if(e.target===f)fim(false);});document.body.appendChild(f);});}
 window.confirmaVermelho=confirmaVermelho;
 
@@ -3317,9 +3333,16 @@ async function relDiaGerar(k,dia){const GT0=GT,gL=gLoc;
     case 'insumos':return await insExp('pdf');}}
   finally{GT=GT0;gLoc=gL;window.__expPdf=false;}}
 /* Gestão › Relatórios: gera um relatório marcado no formato escolhido (pdf, img ou xls) e espera o arquivo sair */
-async function relExpGerar(k,dia,fmt){const GT0=GT,gL=gLoc,cap=window.__capArq,n0=cap.length,pdf=fmt==='pdf',img=fmt==='img',xls=fmt==='xls';
+async function relExpGerar(k,dia,fmt,ini,fim){const GT0=GT,gL=gLoc,cap=window.__capArq,n0=cap.length,pdf=fmt==='pdf',img=fmt==='img',xls=fmt==='xls';
   const espera=async()=>{for(let w=0;w<40&&cap.length===n0;w++)await new Promise(r=>setTimeout(r,150));};
   try{switch(k){
+    case 'tratosPC':await window.histExpPer(ini,fim,'curral',fmt);break;
+    case 'tratosPJ':await window.histExpPer(ini,fim,'juntos',fmt);break;
+    case 'batidasP':{const L=batidasLista(ini,fim,'T',0);if(!L.length)break;const rot=ini===fim?diaBR(ini):diaBR(ini)+' a '+diaBR(fim);if(xls){await window.xlsBatidas(L,rot);break;}window.__expPdf=pdf;await window.imgBatidas(L,rot,'juntas');break;}
+    case 'perLote':GT={t:'periodo',ini,fim};if(!periodoDados(ini,fim).lotes.length)break;if(xls){await xlsPer();break;}window.__expPdf=pdf;await imgPer();break;
+    case 'estMov':GT={t:'estoque',perE:-1,perEDe:ini,perEAte:fim,tipoE:'',prodE:'',fornE:''};await estExp(fmt);break;
+    case 'vendas':GT={t:'vendas',vF:{ini,fim,por:'cpr'}};if(!vendasFiltradas(GT.vF).length)break;if(xls){await xlsVendas();break;}window.__expPdf=pdf;await imgVendas();break;
+    case 'comp':GT={t:'comp',compEnc:false};if(xls){await xlsComp();break;}window.__expPdf=pdf;await imgComp();break;
     case 'tratosJ':await window.histExpDia(dia,'juntos',fmt);break;
     case 'tratosC':await window.histExpDia(dia,'curral',fmt);break;
     case 'batidas':{const L=batidasLista(dia,dia,'T',0);if(!L.length)break;if(xls){await window.xlsBatidas(L,diaBR(dia));break;}window.__expPdf=pdf;await window.imgBatidas(L,diaBR(dia),'juntas');break;}
@@ -3338,31 +3361,31 @@ async function relExpGerar(k,dia,fmt){const GT0=GT,gL=gLoc,cap=window.__capArq,n
 /* ver o relatório na tela: gera a imagem (igual à exportada) e mostra embaixo do nome */
 var relVerSeq=0,relVerCache={k:"",h:""};
 async function relVerCarregar(){const box=document.getElementById('gRelVer');if(!box||!GT||GT.t!=='rels'||!GT.relAb)return;
-  const k=GT.relAb,dia=GT.dia||hojeKey(),seq=++relVerSeq;
+  const k=GT.relAb,dia=GT.dia||hojeKey(),per=relModo()==='per',[ini,fim]=relFaixa(),ck=per?ini+'|'+fim:dia,seq=++relVerSeq;
   while(window.__capArq)await new Promise(r=>setTimeout(r,200));
   const cap=[];window.__capArq=cap;const t0=window.toast;window.toast=()=>{};let F=[];
-  try{await relExpGerar(k,dia,'img');F=cap.slice();}finally{window.__capArq=null;window.toast=t0;}
+  try{await relExpGerar(k,dia,'img',ini,fim);F=cap.slice();}finally{window.__capArq=null;window.toast=t0;}
   const b2=document.getElementById('gRelVer');if(!b2||seq!==relVerSeq||GT.relAb!==k)return;
-  const h=F.length?F.map(f=>`<img src="${URL.createObjectURL(f)}" alt="${esc(f.name)}">`).join(''):'<p class="note">Sem dados nessa data.</p>';
-  relVerCache={k:k+'|'+dia,h};b2.innerHTML=h;}
+  const h=F.length?F.map(f=>`<img src="${URL.createObjectURL(f)}" alt="${esc(f.name)}">`).join(''):(per?'<p class="note">Sem dados nesse período.</p>':'<p class="note">Sem dados nessa data.</p>');
+  relVerCache={k:k+'|'+ck,h};b2.innerHTML=h;}
 window.relVerCarregar=relVerCarregar;
 let relExpRodando=false;
-async function relExpEnviar(fmt){if(relExpRodando)return;const dia=GT.dia||hojeKey(),sel=relExpSel();
+async function relExpEnviar(fmt){if(relExpRodando)return;const dia=GT.dia||hojeKey(),sel=relExpSel(),[ini,fim]=relFaixa(),LST=relLista();
   if(!sel.length)return toast('Marque pelo menos um relatório');
   relExpRodando=true;const toast0=window.toast;
   try{toast(`Gerando ${sel.length} relatório(s)…`);const cap=[];window.__capArq=cap;const sem=[];
     window.toast=()=>{};
-    for(const k of sel){const ok_=await relExpGerar(k,dia,fmt);if(!ok_)sem.push((REL_DIA.find(x=>x[0]===k)||[,k])[1]);}
+    for(const k of sel){const ok_=await relExpGerar(k,dia,fmt,ini,fim);if(!ok_)sem.push((LST.find(x=>x[0]===k)||[,k])[1]);}
     window.toast=toast0;window.__capArq=null;
     const vistos=new Set(),F=cap.filter(f=>{if(vistos.has(f.name))return false;vistos.add(f.name);return true;});
-    if(!F.length)return toast('Nenhum relatório com dados nessa data');
+    if(!F.length)return toast(relModo()==='per'?'Nenhum relatório com dados nesse período':'Nenhum relatório com dados nessa data');
     if(sem.length)toast(`Sem ${fmt==='xls'?'Excel ou sem dados':fmt==='img'?'dados':'dados'}: ${sem.join(', ')}`);
     await salvarOuEnviar(F,F.map(f=>f.name),fmt==='pdf'?'application/pdf':fmt==='img'?'image/png':XT);
   }finally{window.toast=toast0;window.__capArq=null;relExpRodando=false;}}
 window.relExpEnviar=relExpEnviar;
 $('gBox').addEventListener('change',e=>{const t=e.target;if(!t.matches||!t.matches('input[data-relx]'))return;
-  const c=JSON.parse(JSON.stringify(gCfg())),v=new Set(relExpSel());t.checked?v.add(t.dataset.relx):v.delete(t.dataset.relx);c.relExp=REL_DIA.map(x=>x[0]).filter(k=>v.has(k));
-  if(typeof modoVer!=='undefined'&&modoVer){window.__relExpVer=c.relExp;}else gPut(c);const n=document.getElementById('gRelN');if(n)n.textContent=c.relExp.length+' marcado(s)';});
+  const ck=relModo()==='per'?'relExpP':'relExp',c=JSON.parse(JSON.stringify(gCfg())),v=new Set(relExpSel());t.checked?v.add(t.dataset.relx):v.delete(t.dataset.relx);c[ck]=relLista().map(x=>x[0]).filter(k=>v.has(k));
+  if(typeof modoVer!=='undefined'&&modoVer){window.__relExpVer=Object.assign(window.__relExpVer||{},{[ck]:c[ck]});}else gPut(c);const n=document.getElementById('gRelN');if(n)n.textContent=c[ck].length+' marcado(s)';});
 let relDiaRodando=false;
 async function relDiaEnviar(){if(relDiaRodando)return;let dia=hojeKey();const sel=relDiaSel();
   if(!sel.length)return toast('Nenhum relatório marcado (Gestão › Config. › Relatórios)');
@@ -3376,8 +3399,8 @@ async function relDiaEnviar(){if(relDiaRodando)return;let dia=hojeKey();const se
     if(F.length){const tx=F.slice(0,8).map(x=>`Trato ${x.t} · ${x.c}`).join(', ')+(F.length>8?` e mais ${F.length-8}`:'');
       const ontem=somaDias(dia,-1),porT={};F.forEach(x=>(porT[x.t]=porT[x.t]||[]).push(x.c));
       const col=`<div class="cvFaltas">${Object.keys(porT).sort((a,b)=>a-b).map(t=>`<div><b>Trato ${t}</b>${porT[t].map(c=>`<span>${esc(c)}</span>`).join('')}</div>`).join('')}</div><p class="cvPerg">Deseja o relatório do dia anterior (${dB(ontem)}) completo?</p>`;
-      const v=await (typeof confirmaVermelho==='function'?confirmaVermelho('Relatório do dia não finalizado','Hoje ainda faltam tratos:','Sim, enviar o dia anterior','Não',false,col):Promise.resolve(confirm('Relatório do dia não finalizado. Deseja o relatório do dia anterior?')));
-      if(!v)return;dia=ontem;}
+      const v=await (typeof confirmaVermelho==='function'?confirmaVermelho('Relatório do dia não finalizado','Hoje ainda faltam tratos:','Sim, enviar o dia anterior','Não',false,col,'📤 Enviar o relatório incompleto de hoje'):Promise.resolve(confirm('Relatório do dia não finalizado. Deseja o relatório do dia anterior?')));
+      if(!v)return;if(v!=='x')dia=ontem;}
     toast(`Gerando ${sel.length} relatório(s)…`);await ate(6000);
     const cap=[];window.__capArq=cap;const nomes=[];
     for(const k of sel){const n0=cap.length;try{await relDiaGerar(k,dia);}catch(e){console.error(e);}

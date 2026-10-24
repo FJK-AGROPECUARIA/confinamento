@@ -13,7 +13,7 @@ const A={fonte:null,status:'Desconectado',peso:null,amostras:[],estavel:false,va
   est:'aguardando',base:null,menor:null,avisou1:false,avisou2:false,bruto:[],buf:'',
   bt:null,btChars:[],ws:null,sim:null,wake:null,ultDado:0};
 window.AUTO=A;
-const CFG_PADRAO={bleUuid:'',bleCmd:'',tol:10,tempo:4,minDesc:30,amarelo:100,vermelho:50,continuo:20,antecipa:1,ws:'ws://10.10.100.254:6432',som:true,tagOn:1,filtro:3,enq:1,prever:1,fornInst:1};
+const CFG_PADRAO={bleUuid:'',bleCmd:'',tol:10,tempo:4,minDesc:30,amarelo:100,vermelho:50,continuo:20,antecipa:1,ws:'ws://10.10.100.254:6432',som:true,tagOn:1,filtro:3,enq:1,prever:1,fornInst:1,passo:5};
 /* Ajustes da balança: ficam na nuvem (item 'cfgBalanca' da Gestão), então mudar num aparelho muda em todos */
 function cfgNuvem(){try{return (typeof G!=='undefined'&&G.it&&G.it.cfgBalanca)||null;}catch(e){return null;}}
 function cfg(){if(!S.auto)S.auto={};
@@ -94,9 +94,14 @@ const css=`
 #acBox .aPausaBox{box-sizing:border-box;width:100%;border-radius:18px;padding:30px 16px;text-align:center;background:#1565c0;color:#fff;display:grid;gap:8px;cursor:pointer;min-height:260px;align-content:center;border:4px solid #0d47a1}#acBox .aPausaBox[hidden]{display:none}#acBox .aPausaBox b{font-family:var(--display);font-stretch:condensed;font-size:clamp(2.4rem,11vw,4rem);line-height:1;letter-spacing:.04em}#acBox .aPausaBox .pzCur{font-family:var(--display);font-stretch:condensed;font-size:clamp(2.2rem,10vw,4.2rem);line-height:1.05;font-weight:800}#acBox .aPausaBox em{display:block;font-style:normal;font-weight:800;font-size:1.3rem;background:#fff;color:#0d47a1;border-radius:12px;padding:12px;margin-top:8px}
 #aBox .aPausaBox{box-sizing:border-box;width:100%;max-width:100%;min-width:0;overflow:hidden;border-radius:18px;padding:34px 16px;text-align:center;background:#1565c0;color:#fff;display:grid;gap:8px;cursor:pointer;min-height:300px;align-content:center;border:4px solid #0d47a1}
 #aBox .aPausaBox[hidden]{display:none}
+/* o texto do quadro azul sempre cabe: tamanho pela largura do próprio quadro, sem quebrar e sem passar da borda */
+#aBox .aPausaBox,#acBox .aPausaBox{container-type:inline-size;min-width:0;max-width:100%;overflow:hidden}
+#aBox .aPausaBox>*,#acBox .aPausaBox>*{min-width:0;max-width:100%;white-space:nowrap;overflow:hidden;text-overflow:clip}
+#aBox .aPausaBox span,#aBox .aPausaBox em,#acBox .aPausaBox em{white-space:normal}
 #aBox .aPausaBox b{font-family:var(--display);font-stretch:condensed;font-size:clamp(2.6rem,13vw,4.4rem);line-height:1;letter-spacing:.04em}
 #aBox .aPausaBox span{font-size:1.05rem;font-weight:600;opacity:.95}
 #aBox .aPausaBox .pzCur{font-family:var(--display);font-stretch:condensed;font-size:clamp(3.4rem,18vw,6.2rem);line-height:1;font-weight:800}
+#aBox .aPausaBox b,#acBox .aPausaBox b{font-size:clamp(1.6rem,11cqi,4.4rem)}#aBox .aPausaBox .pzCur,#acBox .aPausaBox .pzCur{font-size:clamp(1.6rem,15cqi,6.2rem)}
 #aBox .aPausaBox em{display:block;font-style:normal;font-weight:800;font-size:1.3rem;background:#fff;color:#0d47a1;border-radius:12px;padding:12px;margin-top:8px}
 :is(#aBox,#acBox,#aoVivo) .aEtapa.pausa{background:#e3f0ff;color:#0d47a1}
 #cfgTBox .aCores{margin:10px 0 4px;padding:10px;border:1px solid var(--line);border-radius:10px;display:grid;gap:6px;font-size:.88rem}
@@ -513,7 +518,7 @@ function numeroDaLinha(l){
 }
 const med=a=>a.length?a.reduce((x,y)=>x+y,0)/a.length:NaN;
 /* média sem os picos: tira 20% das leituras mais altas e 20% das mais baixas */
-function mediaSemPicos(vs){const v=vs.slice().sort((x,y)=>x-y),k=Math.floor(v.length*0.2),m=v.slice(k,v.length-k);return Math.round(med(m.length?m:v));}
+function mediaSemPicos(vs){const v=vs.slice().sort((x,y)=>x-y),k=Math.floor(v.length*0.2),m=v.slice(k,v.length-k);return rP(med(m.length?m:v));}
 /* inclinação (kg/ms) à prova de pico: mediana das inclinações entre pares de leituras */
 function tendencia(P){const sl=[];for(let i=0;i<P.length;i++)for(let k=i+1;k<P.length;k++){const dt=P[k].t-P[i].t;if(dt>300)sl.push((P[k].v-P[i].v)/dt);}
   sl.sort((x,y)=>x-y);return {b:sl.length?sl[Math.floor((sl.length-1)/2)]:0};}
@@ -526,16 +531,19 @@ async function pesoParaRegistrar(desdeT){if(A.estavel&&A.valEst!=null)return A.v
 /* peso de referência quando a balança ainda não firmou: menor/maior dos últimos 3 s, ou a média se estiver sem subir nem descer */
 function refProvisoria(sinal){const c=cfg(),agora=Date.now(),ss=(A.suaves||[]).filter(a=>a.t>=agora-3000);if(ss.length<4||A.amostras.length<4||agora-A.amostras[0].t<2500)return null;
   const vs=ss.map(a=>a.v),ext=sinal>0?Math.min(...vs):Math.max(...vs);
-  if(sinal>0?A.suave>ext+c.minDesc:A.suave<ext-c.minDesc)return {v:Math.round(ext),mexendo:true};
-  const k=Math.max(1,Math.floor(vs.length/3));if(Math.abs(med(vs.slice(-k))-med(vs.slice(0,k)))<=c.tol)return {v:Math.round(med(vs.slice(-k))),mexendo:false};
+  if(sinal>0?A.suave>ext+c.minDesc:A.suave<ext-c.minDesc)return {v:rP(ext),mexendo:true};
+  const k=Math.max(1,Math.floor(vs.length/3));if(Math.abs(med(vs.slice(-k))-med(vs.slice(0,k)))<=c.tol)return {v:rP(med(vs.slice(-k))),mexendo:false};
   return null;}
 /* mostra se a leitura está chegando em dia: "ao vivo" ou "sem leitura há X s" (em vermelho) */
 const atrasada=()=>!!(A.fonte&&A.ultDado&&Date.now()-A.ultDado>2000);
 function idadeLeitura(){if(!A.fonte||!A.ultDado)return '';const s=(Date.now()-A.ultDado)/1000;return s<=2?'':` · ⚠ sem leitura há ${Math.round(s)} s`;}
 setInterval(()=>{if(!atrasada())return;[['aEstTxt','aPeso'],['acEstTxt','acPeso']].forEach(([i,p])=>{const e=$(i);if(!e)return;
   e.textContent=(A.estavel?'● Estável':'○ Oscilando')+idadeLeitura();e.className='atraso';const b=$(p);if(b)b.style.opacity='.45';});},1000);
+/* a balança do vagão anda de 5 em 5 kg: o app usa o mesmo passo em tudo (leitura, peso firme, médias e tela) */
+function rP(v){if(v==null||isNaN(v))return v;const p=Math.max(1,+cfg().passo||5);return Math.round(v/p)*p;}
+window.rP=rP;
 function novoPeso(n){
-  const c=cfg(),agora=Date.now(),nCru=n;
+  n=rP(n);const c=cfg(),agora=Date.now(),nCru=n;
   /* ajuste fino: mediana das últimas leituras (1 = sem filtro, 3 normal, 5 forte) — tira o "pula pra cima e pra baixo"
      de uma leitura isolada sem atrasar muito (a Digi-Star manda ~1,6 leitura por segundo) */
   A.brutos=(A.brutos||[]).concat(n).slice(-9);const kf=Math.max(1,Math.min(9,Math.round(+c.filtro||1)));
@@ -557,7 +565,7 @@ function novoPeso(n){
     // parado: ou varia menos que o aceito, ou (com balança tremendo) não sobe/desce e a média fica firme
     A.estavel=(mx-mn)<=c.tol||(deriva<=c.tol&&(Math.max(...ss)-Math.min(...ss))<=c.tol*2);
     A.estrito=A.estavel;   // parado de verdade (sem a regra da tomada de força): é o único que pode mexer no peso inicial
-    A.valEst=A.estavel?Math.round(med(vs)):null;
+    A.valEst=A.estavel?rP(med(vs)):null;
     /* tomada de força girando: a balança nunca fica parada (oscila 50–150 kg), mas a MÉDIA não sobe nem desce.
        Firme pela tendência: reta das leituras cruas da janela quase sem inclinação (menos de ~10 kg na janela toda)
        → Estável, e o peso firme é a média sem os picos (tira 20% de cima e 20% de baixo). */
@@ -597,11 +605,13 @@ function novoPeso(n){
    parou de cair → registra (inicial − final) e passa para o próximo curral */
 function curralAtual(){try{return (S&&lista()[S.atual])||null;}catch(e){return null;}}
 /* troca de curral: o peso de agora vira o inicial */
-function novoCurral(manterPeso,semTravar){A.posPausa=false;A.est='aguardando';A.ancV=null;A.ancT=0;A.fpMin=null;A.menor=null;A.base=manterPeso&&A.peso!=null?(A.estavel?A.valEst:A.peso):null;
+function novoCurral(manterPeso,semTravar){A.posPausa=false;A.baseFix=false;A.est='aguardando';A.ancV=null;A.ancT=0;A.fpMin=null;A.menor=null;A.base=manterPeso&&A.peso!=null?(A.estavel?A.valEst:A.peso):null;
   if(!semTravar)travarCurral();}
 /* todo curral começa TRAVADO: quadro azul "▶ FORNECER C-x"; a balança só conta depois de tocar nele (no trajeto nada conta) */
 /* peso da balança AGORA (mediana do último 1,5 s de leituras: tira um pico solto, sem o atraso da média do "Estável") */
-function pesoAgora(){const t=Date.now(),v=(A.crus||[]).filter(q=>q.t>=t-1500).map(q=>q.v).sort((x,y)=>x-y);return v.length?v[Math.floor((v.length-1)/2)]:A.peso;}
+/* leitura EXATA da balança agora: o último número que chegou do indicador (o mesmo do visor do vagão) */
+function pesoVisor(){const c=A.crus||[];return rP(c.length?c[c.length-1].v:A.peso);}
+function pesoAgora(){const t=Date.now(),v=(A.crus||[]).filter(q=>q.t>=t-1500).map(q=>q.v).sort((x,y)=>x-y);return rP(v.length?v[Math.floor((v.length-1)/2)]:A.peso);}
 function travarCurral(){try{if(!window.filtroForn||!filtroForn()||naCargaAuto()){if(A.pausa&&A.pausa.trava)A.pausa=null;return;}const cur=curralAtual();if(!cur){A.pausa=null;return;}
   A.pausa={est:'aguardando',base:null,ts:Date.now(),falta:cur.prev,caiu:0,trava:true};}catch(e){}}
 window.travarCurral=travarCurral;
@@ -612,10 +622,10 @@ function maquina(){
   if(A.est==='aguardando'){
     const lim=cur&&cur.prev>0?Math.min(c.minDesc,Math.max(c.tol,cur.prev/2)):c.minDesc; // curral pequeno: começa com menos
     const limP=A.posPausa?Math.max(lim,120):lim;  // acabou de despausar e o vagão ainda não parou de verdade: o balanço do trajeto não pode virar fornecido
-    if(A.base!=null&&cur&&A.suave<A.base-limP){A.posPausa=false;A.est='descarregando';A.menor=A.peso;A.avisou1=false;A.avisou2=false;A.ancV=A.suave;A.ancT=Date.now();A.fpMin=null;return;}
+    if(A.base!=null&&cur&&A.suave<A.base-limP){A.posPausa=false;A.baseFix=false;A.est='descarregando';A.menor=A.peso;A.avisou1=false;A.avisou2=false;A.ancV=A.suave;A.ancT=Date.now();A.fpMin=null;return;}
     /* parado: o peso inicial é sempre o peso real da balança agora (não o final do curral anterior, que pode variar) */
-    if(A.estavel&&(A.base==null||(A.valEst!==A.base&&(A.valEst>A.base||A.posPausa||(A.estrito&&A.base-A.valEst<=Math.max(+c.tol||0,10)))))){if(A.base!=null&&A.baseConf===false&&Math.abs(A.valEst-A.base)>=5)diagLog('ini_ajustado',{curral:cur?cur.nome:'',de:A.base,para:A.valEst});A.base=A.valEst;A.baseConf=true;}
-    if(A.posPausa&&A.estrito&&A.base===A.valEst)A.posPausa=false;  // parou de verdade: daqui pra frente vale a regra normal
+    if(A.estavel&&(A.base==null||(A.valEst!==A.base&&!A.baseFix&&(A.valEst>A.base||A.posPausa||(A.estrito&&A.base-A.valEst<=Math.max(+c.tol||0,10)))))){if(A.base!=null&&A.baseConf===false&&Math.abs(A.valEst-A.base)>=5)diagLog('ini_ajustado',{curral:cur?cur.nome:'',de:A.base,para:A.valEst});A.base=A.valEst;A.baseConf=true;}
+    if(A.posPausa&&A.estrito&&(A.base===A.valEst||A.baseFix))A.posPausa=false;  // parou de verdade: daqui pra frente vale a regra normal
     if(A.base==null){const r=refProvisoria(-1);if(r)A.base=r.v;}  // balança tremendo ou já começou a descer: não fica esperando
     return;
   }
@@ -783,19 +793,23 @@ window.aEstadoAoVivo=()=>{const L=lista(),c=L[S.atual],regs=regsAtuais();
   const ff=window.filtroForn?filtroForn():null;return {pausa:!!A.pausa,tela:$('viewAuto')&&!$('viewAuto').hidden&&ff?telaAuto('a'):null,modo:'trato',origem:'auto',local:ff?ff.local:'',rac:ff?ff.rac:'',fimForn:!ff,deAp:ff&&ff.deAp||'',contTs:ff&&ff.contTs||0,fts0:ff&&ff.ts0||0,dia:diaAtivo(),trato:S.tratoSel,curral:c?c.nome:'',prev:c?c.prev:null,ini:A.base!=null?Math.round(A.base):'',fim:A.peso!=null?Math.round(A.peso):'',
     ...contaLocalTrato(L,regs)};};
 /* ---------- Pausar no trajeto ---------- */
+/* diminui a letra até o texto caber na largura do quadro (nome de curral comprido, tela estreita) */
+function caberTexto(bx){try{if(!bx||bx.hidden)return;bx.querySelectorAll('b,.pzCur').forEach(e=>{e.style.fontSize='';let f=parseFloat(getComputedStyle(e).fontSize)||40,n=0;
+  while(e.scrollWidth>e.clientWidth+1&&f>14&&n++<40){f*=0.92;e.style.fontSize=f+'px';}});}catch(x){}}
+window.caberTexto=caberTexto;window.addEventListener('resize',()=>{caberTexto($('aPausaBox'));caberTexto($('acTravaBox'));});
 function pintarPausa(){const p=!!A.pausa;if(!$('aPausaBox'))return;$('aPausaBox').hidden=!p;$('aPausar').hidden=p||!curralAtual();
   /* travado depois de registrar: o quadro azul vira o botão "▶ FORNECER C-7" (o nome do próximo curral, grandão) */
   const cur=curralAtual(),h=p&&A.pausa.trava?`<b>▶ FORNECER</b><strong class="pzCur">${esc(cur?cur.nome:'')}</strong><em>Toque para fornecer</em>`   /* o quadro azul inteiro é o botão */
     :`<b>⏸ PAUSADO</b><span>No trajeto: a balança não está contando nada.</span><em>▶ Toque aqui para continuar</em>`;
-  const bx=$('aPausaBox');if(bx.dataset.h!==h){bx.dataset.h=h;bx.innerHTML=h;}bx.classList.toggle('pzTrava',!!(p&&A.pausa.trava));
+  const bx=$('aPausaBox');if(bx.dataset.h!==h){bx.dataset.h=h;bx.innerHTML=h;}requestAnimationFrame(()=>caberTexto(bx));bx.classList.toggle('pzTrava',!!(p&&A.pausa.trava));
   ['aFaltaBox','aReg'].forEach(i=>{const e=$(i);if(e)e.style.display=p?'none':'';});const m=document.querySelector('#aBox .aMini');if(m)m.style.display=p?'none':'';}
 function aPausar(){if(A.pausa)return;const z0=zona(),cur0=curralAtual();A.pausa={est:A.est,base:A.base,ts:Date.now(),
     falta:A.est==='descarregando'&&z0?Math.max(0,z0.falta):(cur0?cur0.prev:null),caiu:A.est==='descarregando'&&A.base!=null&&A.peso!=null?Math.max(0,A.base-A.peso):0};pararSom();diagLog('pausou',{est:A.est,base:A.base,peso:A.peso});
   toast('⏸ Pausado: a balança não conta até você continuar');pintarPeso();if(typeof agendarAoVivo==='function')agendarAoVivo();}
 function aContinuarPausa(){const P=A.pausa;if(!P)return;A.pausa=null;
   /* estava no meio do curral: o que já caiu fica guardado; a conta recomeça pela balança de AGORA (o que mudou no trajeto não conta) */
-  if(P.est==='descarregando'){const atual=pesoAgora();A.est='descarregando';A.base=(atual!=null?atual:P.base)+(+P.caiu||0);A.baseConf=true;A.ancV=null;A.ancT=Date.now();A.fpMin=null;A.menor=A.peso;}
-  else{novoCurral(true,true);const pa=pesoAgora();if(pa!=null)A.base=pa;A.baseConf=false;A.posPausa=true;}  // liberou o curral: o peso de agora vira o inicial  // ainda não tinha começado: o peso de agora vira o inicial (e acerta quando a balança firmar)
+  if(P.est==='descarregando'){const atual=pesoVisor();A.est='descarregando';A.base=(atual!=null?atual:P.base)+(+P.caiu||0);A.baseConf=true;A.ancV=null;A.ancT=Date.now();A.fpMin=null;A.menor=A.peso;}
+  else{novoCurral(true,true);const pa=pesoVisor();if(pa!=null){A.base=pa;A.baseConf=true;A.baseFix=true;}else A.baseConf=false;A.posPausa=true;}  // liberou o curral: a balança EXATA do momento do toque vira o peso inicial (não troca depois pela média)  // liberou o curral: o peso de agora vira o inicial  // ainda não tinha começado: o peso de agora vira o inicial (e acerta quando a balança firmar)
   diagLog('despausou',{est:A.est,base:A.base,peso:A.peso,seg:Math.round((Date.now()-P.ts)/1000)});
   const cN=curralAtual();toast(P.trava?`▶ Fornecendo no ${cN?cN.nome:''}`:P.est==='descarregando'?'▶ Continuando o mesmo curral':'▶ Continuando: deixe o vagão parado para pegar o peso inicial');pintarPeso();aRender();
   if(typeof agendarAoVivo==='function')agendarAoVivo();}
@@ -809,7 +823,7 @@ function pesoTela(){if(A.peso!=null&&naCargaAuto())return A.peso;   // carregar:
   if(A.descFit&&!naCargaAuto()&&A.est==='descarregando'&&!A.estavel)return pesoDescRef();const p0=A.peso,lim=Math.max(0,Math.min(2,+cfg().prever||0))*1000;if(!lim||!A.tUlt)return p0;
   let dir=0,tx=0;if(caindoAgora()){dir=-1;tx=taxaQueda();}else if(typeof subindoAgora==='function'&&subindoAgora()){dir=1;tx=taxaQueda(-1);}
   if(!dir||!(tx>0))return p0;const dt=Math.min(Date.now()-A.tUlt,lim,(A.dtMed||700)*1.5);return p0+dir*tx*dt/1000;}
-function comPesoTela(f){const r=A.peso;try{A._pesoReal=r;A.peso=pesoTela();A._tela=true;f();}finally{A.peso=r;A._tela=false;}}
+function comPesoTela(f){const r=A.peso;try{A._pesoReal=r;A.peso=rP(pesoTela());A._tela=true;f();}finally{A.peso=r;A._tela=false;}}
 setInterval(()=>{if(document.visibilityState!=='visible'||A.peso==null)return;if(caindoAgora()||(A.est==='descarregando'&&A.descFit&&A.descFit.b<0&&!naCargaAuto()))comPesoTela(pintarPeso0);else if((typeof subindoAgora==='function'&&subindoAgora()))comPesoTela(pintarCarga0);},150);
 function pintarPeso(){comPesoTela(pintarPeso0);}
 function pintarPeso0(){
@@ -1041,7 +1055,7 @@ function pintarCarga0(){
   const e=$('acEstTxt');e.textContent=(A.peso==null?'sem leitura':A.estavel?'● Estável':'○ Oscilando')+idadeLeitura();e.className=atrasada()?'atraso':A.estavel?'est':'';
   if(!$('acFaltaBox'))return;
   const it=acItem(),z=zonaC(),fb=$('acFaltaBox');
-  {const tv=!!(AC.trava&&it&&!ok(it.real)),bx=$('acTravaBox');if(bx){bx.hidden=!tv;if(tv&&$('acTravaNome').textContent!==it.nome)$('acTravaNome').textContent=it.nome;}
+  {const tv=!!(AC.trava&&it&&!ok(it.real)),bx=$('acTravaBox');if(bx){bx.hidden=!tv;if(tv&&$('acTravaNome').textContent!==it.nome){$('acTravaNome').textContent=it.nome;requestAnimationFrame(()=>caberTexto(bx));}}
     fb.style.display=tv?'none':'';const mi=document.querySelector('#acBox .aMini');if(mi)mi.style.display=tv?'none':'';if($('acReg'))$('acReg').style.display=tv?'none':'';
     if(tv){$('acEtapa').textContent='⏸ Balança pausada · toque no azul quando chegar no produto';$('acEtapa').className='aEtapa pausa';$('acEtapa').hidden=false;return;}}
   $('acIni').textContent=it&&ok(it.ini)?fmt(it.ini):'—';
