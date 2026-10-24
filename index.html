@@ -373,7 +373,8 @@ button.gExec{background:#1f8f4e;border-color:#1f8f4e;color:#fff}
 button.gVer{background:#5f6b73;border-color:#5f6b73;color:#fff}
 button.gGest{background:#11253d;border-color:#11253d;color:#fff}
 .gRel{background:#2c4f7c;border-color:#2c4f7c;color:#fff}#btnRelDia.girando{opacity:.6}
-.gRelLista{display:grid;gap:6px}.gRelIt{display:flex;gap:10px;align-items:flex-start;padding:10px;border:2px solid var(--line);border-radius:12px;text-transform:none;letter-spacing:0;font-size:.95rem;color:var(--fg);margin:0;cursor:pointer}.gRelIt input{width:24px;height:24px;flex:0 0 24px;margin-top:2px}.gRelIt small{display:block;color:var(--muted);font-size:.78rem;font-weight:400}.gRelIt:has(input:checked){border-color:var(--accent);background:#eef4e2}
+.gRelLista{display:grid;gap:6px}.gRelSelBt{width:100%;margin:10px 0 0;background:#fff;border:2px solid #2e7d32;color:#2e7d32;font-weight:800}.gRelSelBt.on{background:#2e7d32;color:#fff}.gRelVerBt{width:100%;text-align:left;background:#fff;align-items:center}.gRelVerBt i{margin-left:auto;font-style:normal;color:#2e7d32;font-weight:800}.gRelBloco.ab .gRelVerBt{border-color:#2e7d32;background:#eef6e9}.gRelVer{margin:6px 0 4px}.gRelVer img{display:block;width:100%;height:auto;border:1px solid var(--line);border-radius:8px;margin-bottom:6px}.gRelBloco .gRelAbre{display:block;margin:0 0 6px auto}
+.gRelIt .gRelAbre{margin:0 0 0 auto;align-self:center;flex:0 0 auto;white-space:nowrap}.gRelExpBts{margin-top:10px}.gRelIt{display:flex;gap:10px;align-items:flex-start;padding:10px;border:2px solid var(--line);border-radius:12px;text-transform:none;letter-spacing:0;font-size:.95rem;color:var(--fg);margin:0;cursor:pointer}.gRelIt input{width:24px;height:24px;flex:0 0 24px;margin-top:2px}.gRelIt small{display:block;color:var(--muted);font-size:.78rem;font-weight:400}.gRelIt:has(input:checked){border-color:var(--accent);background:#eef4e2}
 button.grande small{display:block;font-size:.8rem;font-weight:500;opacity:.9;margin-top:4px}
 /* cada entrada mostra só a sua parte: Tratos (e Visualizar) sem Gestão; Gestão sem Tratos */
 body.modoTrato #tabGrpGest,body.somenteVer #tabGrpGest,body.modoGest #tabGrpTrato,body.modoTrato .menu>.tabs,body.somenteVer .menu>.tabs,body.modoGest .menu>.tabs{display:none!important}
@@ -1173,7 +1174,7 @@ body.naInicio .topoTxt h1{font-size:clamp(16px,5vw,28px)!important}
 <div class="toast" id="toast" hidden></div>
 <script>
 'use strict';
-const APP_VERSAO='146';
+const APP_VERSAO='147';
 const APP_DATA='19/10/2026';
 const KEY='confinamento-completo-v1';
 const $=id=>document.getElementById(id);
@@ -2278,6 +2279,11 @@ $('escolhaImg').addEventListener('click',async e=>{const b=e.target.closest('but
 /* relatórios do dia: gera o PDF dos tratos de um dia sem mexer na tela */
 window.histPdfDia=async(dia,tipo)=>{const H0={dia:HD.dia,ini:HD.ini,fim:HD.fim,per:HD.per,t:HD.t},l0=localSel;
   try{HD.dia=HD.ini=HD.fim=dia;HD.per=false;HD.t=0;localSel='T';return await histGerar(tipo,true);}finally{Object.assign(HD,H0);localSel=l0;}};
+/* Gestão › Relatórios: tratos de um dia em PDF, foto ou Excel (sem mexer na tela do Histórico) */
+window.histExpDia=async(dia,tipo,fmt)=>{const H0={dia:HD.dia,ini:HD.ini,fim:HD.fim,per:HD.per,t:HD.t},l0=localSel;
+  try{HD.dia=HD.ini=HD.fim=dia;HD.per=false;HD.t=0;localSel='T';
+    if(fmt==='xls'){const f=filtrados();if(!f.length)return;return compartilharArquivo(gerarXlsx(f),nomeArquivo(f),XT);}
+    return await histGerar(tipo,fmt==='pdf');}finally{Object.assign(HD,H0);localSel=l0;}};
 window.batPdfDia=dia=>{const L=batidasLista(dia,dia,'T',0);if(!L.length)return;window.__expPdf=true;return imgBatidas(L,diaBR(dia),'juntas');};
 async function histGerar(tipo,pdfH){
   const f=filtrados();if(!f.length)return;
@@ -3679,7 +3685,7 @@ function podeAtualizar(){
 let atualizarPend=false;
 /* ---------- Visualizar: só ver, filtrar e exportar. Tudo que altera fica travado ---------- */
 const VER_VIEWS='#viewGest,#viewPrev,#viewHist,#viewTrato,#viewCarga,#viewAuto,#viewAutoC';
-const VER_FILTRO='.hNavUm,.gNavData,.hColCab,.zHistCab,.gPagNav,.gPagSel,.gMinzCab,.gCfgGrpCab,.fz3,.expTopo,.lotesExp,#hModo,.hModo,.dPer,.dPerCampos,.dLinha,.gCoLocNav,.zLocNav,.gPerDatas,#hPerBox,.aoVivo,.avBarra,.gGrpCab,#subGest,.gLotesAbre,.gBaseOp>summary,#gf_rForn,#gf_rIns,.gHojeTop,#gf_grafLocF,#gf_perF,#gf_tipoF,#gf_prodF,#gf_fornF,.gEstFil .gSug,#fzHCur,#gVenIni,#gVenFim,#gVenCpr,#gVenPor';
+const VER_FILTRO='.gRelExpL,.hNavUm,.gNavData,.hColCab,.zHistCab,.gPagNav,.gPagSel,.gMinzCab,.gCfgGrpCab,.fz3,.expTopo,.lotesExp,#hModo,.hModo,.dPer,.dPerCampos,.dLinha,.gCoLocNav,.zLocNav,.gPerDatas,#hPerBox,.aoVivo,.avBarra,.gGrpCab,#subGest,.gLotesAbre,.gBaseOp>summary,#gf_rForn,#gf_rIns,.gHojeTop,#gf_grafLocF,#gf_perF,#gf_tipoF,#gf_prodF,#gf_fornF,.gEstFil .gSug,#fzHCur,#gVenIni,#gVenFim,#gVenCpr,#gVenPor';
 const VER_OK_G=new Set(['fzCur','coAbre','coFecha','voltar','raiz','ir','lote','dataPasso','dataHoje','filtroLoc','lotLocP','loteTog','lotTodos','curGrp','coLocP','fzLocP','perP','pgN','pgP','cfgGrp','estOrd','estPer','estPerE','estFilP','estFilLimpa','estIrRel','estVerMov','evolN','evLoc','grafCur','grafLoc','celGraf','perAtalho','fzHN','fzFotoVer','nfVer','compRel','compDia','cbExp','estInsExp']);
 const VER_NAO_G=new Set(['senhaTurno','ntLoc','nota','msAbre','libLeit','baseDia','baseM']);
 function verPermite(el){const sb=el.closest('.gDataBox');if(sb){const s=sb.querySelector('select');if(s)return !s.disabled;}const g=el.closest('[data-g]');
