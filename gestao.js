@@ -2552,16 +2552,16 @@ function tEstoque(){const I=gTodos('insumo').filter(i=>!i.inativo).sort(porNome)
       <small class="gEstLin">${e.saldo==null?'Lance uma entrada ou uma contagem para começar o controle.':`<span class="gEstSt">${cor==='r'?'⚠ Estoque baixo':cor==='a'?'⚠ Estoque atenção':'✓ Estoque ok'}</span><span class="gEstFz">finaliza em</span><span class="gEstDias">${ok(e.dias)?`~${nf(e.dias,1)} dia${Math.round(e.dias*10)===10?'':'s'}`:'—'}</span><span class="gEstRest">${[abMin&&!baixo?'abaixo do mínimo':'',e.cons>0?`consumo ${nf(e.cons)} kg/dia (média 7 dias)`:'sem consumo nos últimos 7 dias',e.min?`mínimo ${nf(e.min)} kg`:''].filter(Boolean).join(' · ')}</span>`}</small></button>`;};
   return `<section class="panel"><div class="curhead"><h2>Estoque</h2><span class="note">${dB(hj)}</span></div>
     <div class="gEstBtns gEst4"><button class="gBtV" data-g="ir" data-t="estForm" data-mov="ent">＋ Entrada</button><button class="gBtV" data-g="nfNova">📎 ＋ NF</button><button class="gBtR" data-g="ir" data-t="estForm" data-mov="sai">－ Saída</button><button class="gBtA" data-g="ir" data-t="estForm" data-mov="inv">Contagem</button></div>
-    <div class="gEstBtns gEst3"><button data-g="ir" data-t="insumos">🌽 Insumos</button><button data-g="ir" data-t="fornec">🏢 Fornecedores</button><button class="gBtA" data-g="estIrRel">📋 Relatório</button></div>
+    <div class="gEstBtns gEst3"><button class="gBtC" data-g="ir" data-t="insumos">🌽 Insumos</button><button class="gBtC" data-g="ir" data-t="fornec">🏢 Fornecedores</button><button class="gBtA" data-g="estIrRel">📋 Relatório</button></div>
     ${L.map(item).join('')||'<p class="note">Cadastre os insumos primeiro (Gestão › Insumos).</p>'}
     <p class="note">As batidas salvas tiram do estoque automaticamente o realizado de cada produto (ou o previsto, se não tiver realizado). Contagem: o saldo do dia passa a ser o que foi contado (acerto). Toque no produto para ver o saldo, o consumo e o estoque mínimo.</p></section>
   ${L.length?estMovHTML():''}`;}
 /* todas as movimentações do estoque (todos os produtos), com período e ordem */
 /* período: um seletor com setas (7, 30, 60 dias, Tudo ou Período escolhendo as datas) */
-const PER_OPS=[[7,'Últimos 7 dias'],[30,'Últimos 30 dias'],[60,'Últimos 60 dias'],[0,'Tudo'],[-1,'Escolher datas']];
+const PER_OPS=[[7,'Últimos 7 dias'],[30,'Últimos 30 dias'],[60,'Últimos 60 dias'],[0,'Todos'],[-1,'Escolher datas']];
 const perNorm=v=>PER_OPS.some(o=>o[0]===v)?v:30;
 function perFaixa(per,k){const hj=hojeKey();if(per===-1){const a=GT[k+'De']||somaDias(hj,-29),b=GT[k+'Ate']||hj;return a<=b?[a,b]:[b,a];}return [per>0?somaDias(hj,-(per-1)):'0000','9999-99'];}
-function perTexto(per,k){if(per===-1){const [a,b]=perFaixa(per,k);return `${dB(a)} a ${dB(b)}`;}return per>0?`últimos ${per} dias`:'tudo';}
+function perTexto(per,k){if(per===-1){const [a,b]=perFaixa(per,k);return `${dB(a)} a ${dB(b)}`;}return per>0?`últimos ${per} dias`:'todos os dias';}
 function perSelHTML(per,k){const i=Math.max(0,PER_OPS.findIndex(o=>o[0]===per)),[a,b]=perFaixa(per,k);
   return `<div class="gCoLocNav">${selSetas('Período',PER_OPS,i,`data-g="perP" data-k="${k}" data-n`,`data-persel="${k}"`)}</div>${per===-1?`<div class="gPerDatas"><label>De<input type="date" data-perd="${k}De" value="${a}"></label><label>Até<input type="date" data-perd="${k}Ate" value="${b}"></label></div>`:''}`;}
 /* páginas das movimentações: mostrar 20 / 50 / 100 / 200 por página */
