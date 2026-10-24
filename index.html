@@ -824,6 +824,7 @@ body.menuFechado .menuSeta{background:#2e6b2f;color:#fff;padding:9px 12px;font-s
 .pvEstado{background:#fff4d6;color:#7a4b00;border-radius:10px;padding:8px 10px}
 #viewPrev.pvSoVer #tbPrev input.cell{background:transparent;border-color:transparent;color:var(--fg);opacity:1}
 .ntSel{min-width:0;width:48px;font-weight:700;font-size:1rem;padding:6px 2px}
+#viewPrev.pvTrava #tbPrev input.cell{background:transparent!important;border-color:transparent!important;box-shadow:none!important;cursor:default}
 .imsIn{width:64px!important;text-align:center;color:var(--ink,#11253d)!important;background:#fff!important;border:1.5px solid #9fb59a!important;font-weight:700}.imsIn.mudou,#tbPrev input.cell.mudou{border-color:#2e6b2f!important;background:#eef6e8!important;font-weight:800;color:#1b4d1d!important}#tbPrev input.cell.calc{color:#2e6b2f!important;font-style:italic;border-style:dashed!important}.imsIn.sel{outline:3px solid #2e6b2f}
 .imsKg{display:block;font-size:.75rem;color:var(--ok);font-weight:700;white-space:nowrap}
 #btnIms.on{background:var(--accent);border-color:var(--accent);color:#fff}
@@ -998,7 +999,7 @@ body.naInicio .topoTxt h1{font-size:clamp(16px,5vw,28px)!important}
     <div class="pvLocBox" id="linhas"></div>
     <div id="pvTN"></div>
     <div class="somaLinha" id="somaLinha"></div>
-    <div class="pvImsBar" id="pvImsBar" hidden><p class="note">Altere o <b>% IMS</b> ou o <b>kg/dia</b> de cada curral (na mesma linha vale o último que alterar). Nada muda até tocar em <b>Aplicar</b>; <b>Cancelar</b> volta tudo como estava.</p>
+    <div class="pvImsBar" id="pvImsBar" hidden><p class="note" id="pvImsTxt">Altere o <b>% IMS</b> ou o <b>kg/dia</b> de cada curral (na mesma linha vale o último que alterar). Nada muda até tocar em <b>Aplicar</b>; <b>Cancelar</b> volta tudo como estava.</p>
       <div class="row"><button class="primary" id="pvImsAplicar">✓ Aplicar</button><button id="pvImsCanc">Cancelar</button></div></div>
     <div class="tablebox"><table>
       <thead id="pvHead"><tr><th></th><th>Curral</th><th>Previsto (kg)</th><th></th></tr></thead>
@@ -1215,7 +1216,7 @@ body.naInicio .topoTxt h1{font-size:clamp(16px,5vw,28px)!important}
 <div class="toast" id="toast" hidden></div>
 <script>
 'use strict';
-const APP_VERSAO='156';
+const APP_VERSAO='157';
 const APP_DATA='19/10/2026';
 const KEY='confinamento-completo-v1';
 const $=id=>document.getElementById(id);
@@ -1841,16 +1842,16 @@ function renderPrev(){
   {const LO=window.LOC_OPS||[['T','Todos'],['C','Confinamento'],['P','Pasto']];$('linhas').innerHTML=selSetas('Local',LO,Math.max(0,LO.findIndex(o=>o[0]===linhaSel)),'data-pvlp','data-pvlsel');
    const TO=[[0,'Todos os tratos']].concat(tratosAtivos().map(Number).sort((a,b)=>a-b).map(k=>[k,nomeTrato(k)]));$('pvTN').innerHTML=PV.per?'':selSetas('Escolher<br>trato',TO,Math.max(0,TO.findIndex(o=>o[0]===PV.t)),'data-pvtp','data-pvtsel');}
   pvEstado();
-  const ed=pvEditavel(),hoje=PV.dia===hojeKey()&&!PV.per,o=pvObj(),m=pvMapa(),ims=PV.ims&&ed&&PV.t===0&&!PV.per;
+  const ed=pvEditavel(),hoje=PV.dia===hojeKey()&&!PV.per,o=pvObj(),m=pvMapa(),edM=PV.ims&&ed&&!PV.per,ims=edM&&PV.t===0;
   /* realizado do dia (todos os tratos) ou do trato escolhido; curral já tratado não deixa mais mudar o previsto */
   const comReal=!PV.per&&PV.dia<=hojeKey(),realDe=c=>{const rs=HIST.filter(r=>r.dia===PV.dia&&r.curral===c&&(PV.t===0||+r.trato===PV.t));return rs.length?rs.reduce((a,r)=>a+(+r.forn||0),0):null;};
   const horaDe=c=>{const rs=HIST.filter(r=>r.dia===PV.dia&&r.curral===c&&+r.trato===PV.t).sort((a,b)=>(a.ts||0)-(b.ts||0));return rs.length?rs[rs.length-1].hora||'':'';};  // hora em que foi tratado (Trato N)
   const feitoT=(c,k)=>HIST.some(r=>r.dia===PV.dia&&r.curral===c&&+r.trato===k);
   const travado=c=>{if(PV.t>0)return feitoT(c,PV.t);const ks=[];for(let k=1;k<=MAXT;k++){const v=(o[k]||{})[c];if(typeof v==='number'&&v>0)ks.push(k);}return ks.length>0&&ks.every(k=>feitoT(c,k));}; // Todos: trava quando todos os tratos do curral já foram feitos
   $('viewPrev').classList.toggle('pvSoVer',!ed);$('viewPrev').classList.toggle('pvComHora',PV.t>0&&comReal&&!PV.per);
-  const podeIncl=ed&&hoje;$('inclPrevLinha').hidden=!podeIncl;$('btnInclPrev').classList.toggle('on',!!PV.incl&&PV.t>0);$('listaBtns').hidden=!(podeIncl&&PV.incl&&PV.t>0);$('btnLimparPrev').hidden=true;$('btnIms').hidden=!(ed&&PV.t===0);
+  const podeIncl=ed&&hoje;$('inclPrevLinha').hidden=!podeIncl;$('btnInclPrev').classList.toggle('on',!!PV.incl&&PV.t>0);$('listaBtns').hidden=!(podeIncl&&PV.incl&&PV.t>0);$('btnLimparPrev').hidden=true;$('btnIms').hidden=!(ed&&!PV.per);$('btnIms').innerHTML=PV.t===0?'Alterar previsto <small style="font-size:.82em;font-weight:600;white-space:nowrap">(% IMS ou kg/dia)</small>':`Alterar previsto do Trato ${PV.t}`;
   $('btnOrdem').hidden=!hoje;$('btnCadastrar').hidden=true;$('btnRemoverCurral').hidden=true;
-  $('pvImsBar').hidden=!ims;$('viewPrev').classList.toggle('pvImsOn',ims);$('viewPrev').classList.toggle('pvTodos',PV.t===0&&!PV.per);$('btnIms').classList.toggle('on',ims);
+  $('pvImsBar').hidden=!edM;$('viewPrev').classList.toggle('pvTrava',!PV.per&&!edM);$('pvImsTxt').innerHTML=PV.t===0?'Altere o <b>% IMS</b> ou o <b>kg/dia</b> de cada curral (na mesma linha vale o último que alterar). Nada muda até tocar em <b>Aplicar</b>; <b>Cancelar</b> volta tudo como estava.':`Altere o kg do <b>Trato ${PV.t}</b> de cada curral. Nada muda até tocar em <b>Aplicar</b>; <b>Cancelar</b> volta tudo como estava.`;$('viewPrev').classList.toggle('pvImsOn',ims);$('viewPrev').classList.toggle('pvTodos',PV.t===0&&!PV.per);$('btnIms').classList.toggle('on',ims);
   $('pvHead').innerHTML=PV.per?'<tr><th></th><th>Curral</th><th>Total do período (kg)</th><th></th></tr>':
     PV.t===0?`<tr><th></th><th>Curral</th>${ims?'<th>% IMS</th>':''}<th>Previsto dia</th>${comReal?'<th>Realiz.</th><th>Dif.</th>':''}<th></th></tr>`:`<tr><th></th>${comReal?'<th class="hora">Hora</th>':''}<th class="pvCurTh">Curral</th><th class="pvPrevTh">Previsto T${PV.t}</th>${comReal?'<th>Realiz.</th><th>Dif.</th>':''}<th></th></tr>`;
   $('tbPrev').innerHTML=S.cadastro.map((c,i)=>{const v=m[c],esc_=esc(c),tr=travado(c),rl=comReal?realDe(c):null,pvN=typeof v==='number'?v:0;
@@ -1860,7 +1861,7 @@ function renderPrev(){
     const foraDoTrato=PV.t>0&&!PV.per&&!(pvN>0||v==='?'||rl!=null||(()=>{try{const pos=tratosAtivos().map(Number).indexOf(+PV.t)+1;return pos>0&&nTratos(c,o)>=pos;}catch(e){return true;}})());
     const ocultar=!curralAtivo(c)||(linhaSel!=='T'&&linhaDe(c)!==linhaSel)||foraDoTrato;
     const nome=`<td class="c" style="cursor:default">${esc_}</td>`;
-    const eI=ims&&PV.ed?PV.ed[c]:null,kgEd=eI?(eI.tipo==='kg'?eI.val:(window.gMnIms&&gMnIms(c,eI.val,PV.dia)!=null?arredPrev(gMnIms(c,eI.val,PV.dia)):null)):undefined;
+    const eI=edM&&PV.ed?PV.ed[c]:null,kgEd=eI?(eI.tipo==='kg'?eI.val:(window.gMnIms&&gMnIms(c,eI.val,PV.dia)!=null?arredPrev(gMnIms(c,eI.val,PV.dia)):null)):undefined;
     const cel=`<td><input class="cell${v==='?'?' duv':''}${tr?' feito':''}${eI?(eI.tipo==='kg'?' mudou':' calc'):''}" type="text" readonly tabindex="-1" inputmode="none" data-n="${i}" value="${esc(eI?valPrev(kgEd):valPrev(typeof v==='number'?(v||null):v))}" placeholder="—" aria-label="Previsto ${esc_}"${ed&&!tr?'':' disabled'}${tr?' title="Já tratado: não muda mais"':''}></td>`;
     const ac=`<td class="acoes">${modoRemover&&hoje?`<button class="mini danger" tabindex="-1" data-a="rm" data-i="${i}" aria-label="Excluir ${esc_}">✕</button>`:''}</td>`;
     if(PV.per)return `<tr${ocultar?' hidden':''}><td></td>${nome}<td class="num"><b>${v?fmt(v):'—'}</b></td><td></td></tr>`;
@@ -1915,7 +1916,8 @@ function pvEdSair(){tecIdx=null;$('teclado').hidden=true;document.body.classList
 $('btnIms').onclick=()=>{if(!pvEditavel())return;if(PV.ims){pvEdSair();return;}fecharTeclado();PV.ims=true;PV.ed={};renderPrev();};
 $('pvImsCanc').onclick=()=>{const n=Object.keys(PV.ed||{}).length;pvEdSair();toast(n?'Alteração cancelada: ficou como estava':'Cancelado');};
 $('pvImsAplicar').onclick=()=>{if(!pvEditavel())return;if(tecIdx!=null)fecharTeclado();const o=pvObj();let n=0,sem=[],feitosTodos=[];
-  Object.entries(PV.ed||{}).forEach(([c,e])=>{let kg;if(e.tipo==='kg')kg=e.val;else{const m=window.gMnIms?gMnIms(c,e.val,PV.dia):null;if(m==null){sem.push(c);return;}kg=arredPrev(m);}
+  if(PV.t>0){const k=String(PV.t),m=mapaPv(k);Object.entries(PV.ed||{}).forEach(([c,e])=>{if(HIST.some(r=>r.dia===PV.dia&&r.curral===c&&+r.trato===PV.t)){feitosTodos.push(c);return;}const antes=m[c];if(antes===e.val)return;m[c]=e.val;desfPrev.push({d:PV.dia,k,nome:c,antes});n++;});}
+  else Object.entries(PV.ed||{}).forEach(([c,e])=>{let kg;if(e.tipo==='kg')kg=e.val;else{const m=window.gMnIms?gMnIms(c,e.val,PV.dia):null;if(m==null){sem.push(c);return;}kg=arredPrev(m);}
     const antes=snapTratos(c,o);if(!ajustarTotalCurral(c,kg,o)){feitosTodos.push(c);return;}desfPrev.push({d:PV.dia,k:'T',nome:c,antes});n++;});
   if(!n){if(sem.length||feitosTodos.length){toast(sem.length?'Sem lote/ração cadastrado para: '+sem.join(', '):'Todos os tratos de hoje já foram feitos: '+feitosTodos.join(', '));return;}pvEdSair();toast('Nada foi alterado');return;}
   marcarPv();if(PV.dia===hojeKey()){editandoPrev=true;render();editandoPrev=false;}pvEdSair();
@@ -1982,7 +1984,7 @@ window.mudarNTratos=mudarNTratos;
 function campoPrev(i){return document.querySelector(`#tbPrev input[data-n="${i}"]`);}
 function aplicarPrev(i,t){
   const nome=S.cadastro[i];if(nome==null||!pvEditavel())return true;
-  if(PV.ims&&PV.t===0)return aplicarKgEd(i,t);   // Alterar previsto: só guarda; grava no "Aplicar"
+  if(PV.ims)return aplicarKgEd(i,t);   // Alterar previsto: só guarda; grava no "Aplicar"
   if(PV.t===0){const o=pvObj();t=String(t).trim();const v=t===''?0:parseNum(t);if(isNaN(v)||v<0||t==='?'){toast('Digite uma quantidade válida');return false;}
     const antesT=totalDia(nome,o,PV.dia);if(Math.round(v)!==Math.round(antesT)){const antes=snapTratos(nome,o);
       if(!ajustarTotalCurral(nome,v,o)){toast(`${nome}: todos os tratos de hoje já foram feitos`);const x=campoPrev(i);if(x)x.value=valPrev(antesT||null);return true;}
@@ -2067,7 +2069,7 @@ function teclar(k){
   else{if(tecBuf==='?')tecBuf='';if(tecTipo==='ims'){if(tecBuf.length<4)tecBuf=imsDig(tecBuf+k);}else if(tecBuf.length<6)tecBuf+=k;}
   mostra();marcarVoltar();
 }
-$('tbPrev').addEventListener('click',e=>{const td=e.target.closest('td'),f=td&&td.querySelector('input.feito[data-n]');if(f&&!e.target.closest('input:not(.feito)')){toast(PV.t?`${S.cadastro[+f.dataset.n]}: Trato ${PV.t} já tratado, o previsto não muda mais`:`${S.cadastro[+f.dataset.n]}: todos os tratos do dia já foram feitos, o total não muda mais`);return;}const y=e.target.closest('input.imsIn[data-ims]');if(y){e.preventDefault();y.blur();if(y.disabled)return;abrirTeclado(S.cadastro.indexOf(y.dataset.ims),'ims');return;}const x=e.target.closest('input[data-n]');if(x){e.preventDefault();x.blur();abrirTeclado(+x.dataset.n);}});
+$('tbPrev').addEventListener('click',e=>{const td=e.target.closest('td'),f=td&&td.querySelector('input.feito[data-n]');if(f&&!e.target.closest('input:not(.feito)')){toast(PV.t?`${S.cadastro[+f.dataset.n]}: Trato ${PV.t} já tratado, o previsto não muda mais`:`${S.cadastro[+f.dataset.n]}: todos os tratos do dia já foram feitos, o total não muda mais`);return;}const y=e.target.closest('input.imsIn[data-ims]');if(y){e.preventDefault();y.blur();if(y.disabled)return;abrirTeclado(S.cadastro.indexOf(y.dataset.ims),'ims');return;}const x=e.target.closest('input[data-n]');if(x){e.preventDefault();x.blur();if(!PV.ims&&!PV.per){if(pvEditavel())toast(PV.t?`Para mudar, toque em "Alterar previsto do Trato ${PV.t}" lá embaixo`:'Para mudar, toque em "Alterar previsto" lá embaixo');return;}abrirTeclado(+x.dataset.n);}});
 $('teclado').addEventListener('pointerdown',e=>{const b=e.target.closest('button[data-k]');if(!b)return;e.preventDefault();teclar(b.dataset.k);});
 document.addEventListener('keydown',e=>{if(tecIdx==null)return;
   if(/^[0-9]$/.test(e.key))teclar(e.key);else if(e.key==='Backspace')teclar('del');else if(e.key==='Enter'||e.key==='Tab'){e.preventDefault();teclar('ok');}else if(e.key==='Escape')teclar('fechar');else if(e.key==='?')teclar('?');});
@@ -2867,7 +2869,7 @@ async function enviarPrevisto(){
   if(typeof modoVer!=='undefined'&&modoVer){S.prevPend=false;return;} // quem só olha nunca manda previsto
   const temAlgo=o=>Object.values(o||{}).some(m=>Object.values(m||{}).some(v=>+v>0));
   try{const j=await (await fetch(apiUrl()+'?acao=previsto',{cache:'no-store'})).json();
-    if(j&&j.ok&&j.dados&&j.dados.prev&&+j.dados.ts>(S.prevSyncTs||0)&&j.dados.aparelho!==S.aparelho){
+    if(j&&j.ok&&j.dados&&j.dados.prev&&+j.dados.ts!==+(S.prevSyncTs||0)&&j.dados.aparelho!==S.aparelho){  /* a nuvem mudou desde a última vez (compara igual/diferente: não depende do relógio de cada aparelho) */
       const snap=S.prevSnap?JSON.parse(S.prevSnap):{};S.prev=juntarPrev(j.dados.prev,S.prev,snap);
       /* lista de currais (nomes): se não mudou aqui, vale a da nuvem (ex.: mudaram o nome de um curral em outro aparelho) */
       if(Array.isArray(j.dados.cadastro)&&(!S.cadSnap||JSON.stringify(S.cadastro)===S.cadSnap))aplicarCadastro(j.dados.cadastro);
@@ -2884,7 +2886,7 @@ async function puxarPrevisto(forcar){
   if(!forcar&&Date.now()-ultPuxaPrev<60000)return;
   ultPuxaPrev=Date.now();
   const r=await fetch(apiUrl()+'?acao=previsto',{cache:'no-store'});const j=await r.json();
-  if(j&&j.ok&&j.dados&&Array.isArray(j.dados.cadastro)&&+j.dados.ts>(S.prevTs||0)){
+  if(j&&j.ok&&j.dados&&Array.isArray(j.dados.cadastro)&&(S.prevSyncTs?+j.dados.ts!==+S.prevSyncTs:+j.dados.ts>(S.prevTs||0))){  /* outro aparelho mudou o previsto: vale o da nuvem (antes comparava com o relógio deste aparelho e às vezes não puxava) */
     if(S.prevPend){const snap=S.prevSnap?JSON.parse(S.prevSnap):{};S.prev=juntarPrev(j.dados.prev||{},S.prev,snap);}else S.prev=j.dados.prev||{};
     aplicarCadastro(j.dados.cadastro);S.cadSnap=JSON.stringify(S.cadastro);S.prevTs=Math.max(+j.dados.ts,S.prevTs||0);S.prevSyncTs=+j.dados.ts;if(!S.prevPend)S.prevSnap=JSON.stringify(S.prev);padronizarNomes();save();render();
     setTimeout(()=>{try{recompensar();}catch(e){}},300);
@@ -2928,8 +2930,10 @@ function caberTitulo(){caberSub();const h=document.querySelector('.topoTxt h1');
   const lin=()=>h.getBoundingClientRect().height/(f*(parseFloat(getComputedStyle(h).lineHeight)/f||1.2));
   while((h.scrollWidth>h.clientWidth+1||lin()>2.2)&&f>11&&n<40){f-=0.5;h.style.setProperty('font-size',f+'px','important');n++;}}
 window.addEventListener('resize',caberTitulo);window.addEventListener('load',caberTitulo);try{document.querySelector('.topoLogo').addEventListener('load',caberTitulo);}catch(e){}try{new MutationObserver(()=>setTimeout(caberTitulo,0)).observe(document.body,{attributes:true,attributeFilter:['class']});}catch(e){}setTimeout(caberTitulo,0);
+let sincDeNovo=false;
 async function sincronizar(avisar){
-  if(!apiUrl()||sincronizando){statusNuvem();return;}
+  if(!apiUrl()){statusNuvem();return;}
+  if(sincronizando){sincDeNovo=true;statusNuvem();return;}   // já está sincronizando: roda de novo logo depois (senão o previsto mudado agora ficava parado)
   if(!navigator.onLine){statusNuvem();if(avisar)toast('Sem sinal. Os dados sobem quando tiver internet.');return;}
   sincronizando=true;statusNuvem();
   let erro=null;
@@ -2944,14 +2948,16 @@ async function sincronizar(avisar){
     }
     if(S.editarNuvem&&S.editarNuvem.length){const lt=S.editarNuvem.slice();await postApi({acao:'editar',itens:lt});
       S.editarNuvem=S.editarNuvem.filter(x=>!lt.includes(x));save();}
-    await enviarPrevisto();
   }catch(e){erro=e;}
+  /* o previsto sobe sempre, mesmo se outra coisa acima deu erro */
+  try{await enviarPrevisto();}catch(e){erro=erro||e;}
   try{await puxarPrevisto(avisar);}catch(e){}
   try{await puxarRegistros(avisar);}catch(e){}
   try{if(typeof gSync==='function')await gSync(avisar);}catch(e){erro=erro||e;}
   if(avisar)toast(erro?'Não consegui enviar: '+(erro.message||erro):'Tudo salvo na nuvem');
   if(!erro&&navigator.onLine){ultAtualiz=Date.now();try{localStorage.setItem('ultAtualiz',String(ultAtualiz));}catch(e){}}
   sincronizando=false;statusNuvem();pintarHoje();
+  if(sincDeNovo){sincDeNovo=false;setTimeout(()=>sincronizar(),800);}
   if(S.backupPend)fazerBackup(true);
 }
 async function puxarNuvem(){
