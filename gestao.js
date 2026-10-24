@@ -1539,17 +1539,19 @@ function tRacoes(){
   return `<section class="panel"><div class="curhead gLotesTopo"><h2>Rações ativas</h2><span class="gLotesBts"><button type="button" class="mini lima" data-g="ir" data-t="racForm">+ Nova ração</button></span></div>${cards||'<p class="note">Nenhuma ração ativa. Cadastre os insumos primeiro e depois a ração.</p>'}</section>
     ${Ri.length?`<section class="panel"><h2>Rações inativas</h2><p class="note">Não aparecem no Carregar, no Fornecer nem nos lotes. Os registros antigos continuam.</p>${Ri.map(card).join('')}</section>`:''}`;
 }
+/* ordem de carregamento da ração (r.ordem = lista de insumos); o que não está na lista vai no fim, na ordem da fórmula */
+function ordenarRac(r,L,f){const o=(r&&Array.isArray(r.ordem))?r.ordem:[];if(!o.length)return L.slice();f=f||(i=>i.ins);const p=x=>{const k=o.indexOf(f(x));return k<0?1e6:k;};return L.map((x,j)=>[x,j]).sort((a,b)=>p(a[0])-p(b[0])||a[1]-b[1]).map(z=>z[0]);}
 function tRacForm(t){
   const r=t.id?G.it[t.id]:null,hj=hojeKey(),v=r?vig(r.versoes,hj):null;
-  if(!GT.itens)GT.itens=v?v.itens.map(i=>({ins:i.ins,pMS:i.pMS})):[{ins:'',pMS:''}];
+  if(!GT.itens)GT.itens=v?ordenarRac(r,v.itens).map(i=>({ins:i.ins,pMS:i.pMS})):[{ins:'',pMS:''}];
   const ops=opInsumos();
   if(!ops.length)return `${voltar()}<section class="panel"><h2>Nova ração</h2><p class="note">Cadastre os insumos primeiro (silagem, DDG, núcleo…).</p><button class="lima" data-g="ir" data-t="insForm">+ Novo insumo</button></section>`;
   const linhas=GT.itens.map((i,k)=>`<div class="gRacLin"><select data-ri="${k}"><option value="">— insumo —</option>${ops.map(([a,b])=>`<option value="${a}"${a===i.ins?' selected':''}>${esc(b)}</option>`).join('')}</select>
-    <input class="cell num" inputmode="decimal" data-rp="${k}" value="${esc(vIn(gNum(i.pMS)))}" placeholder="% MS"><button class="mini danger" data-g="racRm" data-i="${k}">✕</button></div>`).join('');
+    <input class="cell num" inputmode="decimal" data-rp="${k}" value="${esc(vIn(gNum(i.pMS)))}" placeholder="% MS"><span class="gRacOrd"><button type="button" class="mini" data-g="racUp" data-i="${k}"${k?'':' disabled'} aria-label="Subir">▲</button><button type="button" class="mini" data-g="racDn" data-i="${k}"${k<GT.itens.length-1?'':' disabled'} aria-label="Descer">▼</button></span><button class="mini danger" data-g="racRm" data-i="${k}">✕</button></div>`).join('');
   const vers=r?(r.versoes||[]).slice().sort((a,b)=>a.desde<b.desde?1:-1).map(x=>`<div class="gVers"><b>${x.desde<='2000-01-01'?'Fórmula inicial':'Desde '+dB(x.desde)}</b><span>${x.itens.map(i=>{const n=G.it[i.ins];return `${esc(n?n.nome:'?')} ${nf(+i.pMS,1)}%`;}).join(' · ')}</span></div>`).join(''):'';
   return `${voltar()}<section class="panel"><h2>${r?'Ração':'Nova ração'}</h2>
     <div class="gForm">${campo({k:'nome',l:'Nome da ração',v:GT.nome!=null?GT.nome:(r?r.nome:''),ph:'Ex.: Terminação'})}${campo({k:'desde',l:'Fórmula vale a partir de',t:'dia',v:GT.desde||(r?hj:'2000-01-01'),ajuda:r?'Mudou a fórmula? Os dias antes dessa data continuam com a fórmula antiga.':''})}</div>
-    <label>Insumos da fórmula</label><div class="gRacLin gRacCab"><span>Insumo</span><span>% na MS</span><span></span></div>${linhas}
+    <label>Insumos da fórmula · na ordem de carregamento</label><p class="note">Use ▲ ▼ para mudar a ordem: o vagão é carregado de cima para baixo.</p><div class="gRacLin gRacCab"><span>Insumo</span><span>% na MS</span><span>Ordem</span><span></span></div>${linhas}
     <button data-g="racAdd">+ Adicionar insumo</button>
     <div id="gRacCalc"></div>
     <button class="primary" data-g="salvaRac" data-id="${t.id||''}">Salvar ração</button></section>
@@ -1581,7 +1583,7 @@ function salvaRac(id){
   if(!its.length)return toast('Coloque os insumos');
   const soma=its.reduce((a,i)=>a+i.pMS,0);if(Math.abs(soma-100)>=0.05)return toast(`A soma na MS está em ${nf(soma,1)}%. Precisa dar 100%`);
   const r=id?JSON.parse(JSON.stringify(G.it[id])):{uid:novoId('rac'),tipo:'racao',versoes:[]};
-  r.nome=nome;const v=vig(r.versoes,desde),igual=v&&JSON.stringify(v.itens)===JSON.stringify(its);
+  r.nome=nome;const srt=L=>JSON.stringify(L.slice().sort((a,b)=>String(a.ins).localeCompare(String(b.ins)))),v=vig(r.versoes,desde),igual=v&&srt(v.itens)===srt(its);r.ordem=its.map(i=>i.ins);  // só mudou a ordem: não cria fórmula nova
   if(!igual)setHist(r.versoes,desde,{itens:its});
   gPut(r);toast('Ração salva');GT.itens=null;GT.nome=null;GT.desde=null;gVoltar();
 }
@@ -1986,6 +1988,7 @@ $('gBox').addEventListener('click',e=>{
   if(a==='apagaCur'){if(curUsoTxt(id))return toast('Este curral já foi usado: não pode apagar.');if(!confirm(`Deseja realmente apagar o curral ${id}?`))return;
     const r=window.curraisApi&&curraisApi.apagar?curraisApi.apagar(id):'';if(r)return toast(r);toast(`${id} apagado`);return gVoltar();}
   if(a==='racAdd'){lerItensRac();GT.itens.push({ins:'',pMS:''});const y=window.scrollY;gRender();window.scrollTo({top:y});return;}
+  if(a==='racUp'||a==='racDn'){lerItensRac();const k=+b.dataset.i,j=k+(a==='racUp'?-1:1);if(j>=0&&j<GT.itens.length){[GT.itens[k],GT.itens[j]]=[GT.itens[j],GT.itens[k]];}const y=window.scrollY;gRender();window.scrollTo({top:y});return;}
   if(a==='racRm'){lerItensRac();GT.itens.splice(+b.dataset.i,1);if(!GT.itens.length)GT.itens.push({ins:'',pMS:''});const y=window.scrollY;gRender();window.scrollTo({top:y});return;}
   if(a==='salvaRac')return salvaRac(id);
   if(a==='apagaRac'){const r=G.it[id];if(racUsoTxt(id))return toast('Esta ração já foi usada: não pode apagar.');if(!confirm(`Deseja realmente apagar a ração ${r.nome}?`))return;gDel(id);GT.itens=null;return gVoltar();}
@@ -2151,7 +2154,7 @@ function sugestaoCarga(trato,racId,loc){const hj=hojeKey(),m=(S.prev||{})[String
   gTodos('lote').filter(l=>cabPres(l,hj)>0).forEach(l=>{const r=racaoEm(l,hj),c=curralEm(l,hj);if(r&&r.uid===racId&&(!loc||linhaDe(c)===loc)&&typeof m[c]==='number'&&m[c]>0&&!cs.includes(c)){cs.push(c);tot+=m[c];}});
   return {cs:cs.sort(alfa),tot};}
 function itensCarga(racId,total){const r=G.it[racId];const cp=r&&!r.del?compRacao(r,hojeKey()):null;if(!cp)return [];
-  let resto=Math.round(total);return cp.itens.map((i,k,a)=>{const kg=k===a.length-1?resto:Math.round(total*i.pMN/100);resto-=kg;return {ins:i.ins?i.ins.uid:'',nome:i.nome,pMN:i.pMN,prev:kg,ini:null,fim:null,real:null};});}
+  let resto=Math.round(total);return ordenarRac(r,cp.itens,i=>i.ins?i.ins.uid:'').map((i,k,a)=>{const kg=k===a.length-1?resto:Math.round(total*i.pMN/100);resto-=kg;return {ins:i.ins?i.ins.uid:'',nome:i.nome,pMN:i.pMN,prev:kg,ini:null,fim:null,real:null};});}
 const cAtiva=()=>CG.ativa||null;
 /* a mesma batida aparece no Carregar manual (#cBox) e no Carregar da Automação (#acBox) */
 const cAuto=()=>!!($('viewAutoC')&&!$('viewAutoC').hidden);

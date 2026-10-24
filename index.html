@@ -586,7 +586,7 @@ input[type=date]::-webkit-calendar-picker-indicator{margin-left:2px;padding:0}
 .gComp>div b{text-align:right;font-variant-numeric:tabular-nums}
 .gComp .gCompCab{font-size:.66rem;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);font-weight:600;padding-top:0}
 .gComp .gCompCab span:not(:first-child){text-align:right}
-.gRacLin{display:grid!important;grid-template-columns:1fr 5.5em 2.4em;gap:6px;align-items:center}
+.gRacLin{display:grid!important;grid-template-columns:1fr 3.8em auto 2.2em;gap:6px;align-items:center}.gRacOrd{display:flex;gap:4px}.gRacOrd .mini{min-width:2.2em;padding-left:0;padding-right:0}.gRacLin select{min-width:0}
 .gRacLin input{width:100%!important}
 .gRacCab{font-size:.68rem;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);font-weight:600}
 .gRacTab td.c{font-size:.95rem}
@@ -824,6 +824,7 @@ body.menuFechado .menuSeta{background:#2e6b2f;color:#fff;padding:9px 12px;font-s
 .pvEstado{background:#fff4d6;color:#7a4b00;border-radius:10px;padding:8px 10px}
 #viewPrev.pvSoVer #tbPrev input.cell{background:transparent;border-color:transparent;color:var(--fg);opacity:1}
 .ntSel{min-width:0;width:48px;font-weight:700;font-size:1rem;padding:6px 2px}
+#tbPrev td.pvAm{color:#2e6b2f;font-weight:700}#pvHead th.pvAmTh{color:#2e6b2f}
 #viewPrev.pvTrava #tbPrev input.cell{background:transparent!important;border-color:transparent!important;box-shadow:none!important;cursor:default}
 .imsIn{width:64px!important;text-align:center;color:var(--ink,#11253d)!important;background:#fff!important;border:1.5px solid #9fb59a!important;font-weight:700}.imsIn.mudou,#tbPrev input.cell.mudou{border-color:#2e6b2f!important;background:#eef6e8!important;font-weight:800;color:#1b4d1d!important}#tbPrev input.cell.calc{color:#2e6b2f!important;font-style:italic;border-style:dashed!important}.imsIn.sel{outline:3px solid #2e6b2f}
 .imsKg{display:block;font-size:.75rem;color:var(--ok);font-weight:700;white-space:nowrap}
@@ -1216,7 +1217,7 @@ body.naInicio .topoTxt h1{font-size:clamp(16px,5vw,28px)!important}
 <div class="toast" id="toast" hidden></div>
 <script>
 'use strict';
-const APP_VERSAO='160';
+const APP_VERSAO='161';
 const APP_DATA='19/10/2026';
 const KEY='confinamento-completo-v1';
 const $=id=>document.getElementById(id);
@@ -1822,7 +1823,7 @@ function pvIni(){if(!PV.dia){PV.dia=hojeKey();PV.ini=PV.fim=PV.dia;}}
 function temLeitura(d){try{return gOk()&&typeof gTodos==='function'&&gTodos('leitura').some(x=>x.dia===d);}catch(e){return false;}}
 function pvEditavel(){pvIni();if(PV.per||modoVer)return false;if(PV.dia===hojeKey())return true;return PV.dia===amanhaKey()&&temLeitura(PV.dia);}
 function pvObj(){pvIni();if(PV.dia===hojeKey())return S.prev;
-  if(PV.dia===amanhaKey()){if(!PV.am)PV.am=JSON.parse(JSON.stringify(prevGuardado(PV.dia)||(temLeitura(PV.dia)?S.prev:null)||{}));return PV.am;}return prevDoDia(PV.dia);} // sem leitura: dia futuro fica sem previsto
+  if(PV.dia===amanhaKey()){if(!PV.am||!PV.ims)PV.am=JSON.parse(JSON.stringify(prevGuardado(PV.dia)||(temLeitura(PV.dia)?S.prev:null)||{}));return PV.am;}return prevDoDia(PV.dia);} // sem leitura: dia futuro fica sem previsto
 function mapaPv(k){const o=pvObj();k=String(k);if(!o[k])o[k]={};return o[k];}
 function marcarPv(){if(PV.dia===hojeKey())marcarPrev();else if(PV.dia===amanhaKey())guardarPrevDia(PV.dia,PV.am);}
 /* o que a tabela mostra: total de cada curral (Todos), um trato, ou o total do período */
@@ -1843,6 +1844,8 @@ function renderPrev(){
    const TO=[[0,'Todos os tratos']].concat(tratosAtivos().map(Number).sort((a,b)=>a-b).map(k=>[k,nomeTrato(k)]));$('pvTN').innerHTML=PV.per?'':selSetas('Escolher<br>trato',TO,Math.max(0,TO.findIndex(o=>o[0]===PV.t)),'data-pvtp','data-pvtsel');}
   pvEstado();
   const ed=pvEditavel(),hoje=PV.dia===hojeKey()&&!PV.per,o=pvObj(),m=pvMapa(),edM=PV.ims&&ed&&!PV.per,ims=edM&&PV.t===0;
+  /* hoje · Todos: mostra ao lado o previsto de amanhã de cada curral que já tem leitura de amanhã */
+  const amO=hoje&&PV.t===0&&!edM?prevGuardado(amanhaKey()):null,amDe=c=>amO?totalDia(c,amO,amanhaKey()):0,comAm=!!amO&&S.cadastro.some(c=>amDe(c)>0);
   /* realizado do dia (todos os tratos) ou do trato escolhido; curral já tratado não deixa mais mudar o previsto */
   const comReal=!PV.per&&PV.dia<=hojeKey(),realDe=c=>{const rs=HIST.filter(r=>r.dia===PV.dia&&r.curral===c&&(PV.t===0||+r.trato===PV.t));return rs.length?rs.reduce((a,r)=>a+(+r.forn||0),0):null;};
   const horaDe=c=>{const rs=HIST.filter(r=>r.dia===PV.dia&&r.curral===c&&+r.trato===PV.t).sort((a,b)=>(a.ts||0)-(b.ts||0));return rs.length?rs[rs.length-1].hora||'':'';};  // hora em que foi tratado (Trato N)
@@ -1853,7 +1856,7 @@ function renderPrev(){
   $('btnOrdem').hidden=!hoje;$('btnCadastrar').hidden=true;$('btnRemoverCurral').hidden=true;
   $('pvImsBar').hidden=!edM;$('viewPrev').classList.toggle('pvTrava',!PV.per&&!edM);$('pvImsTxt').innerHTML=PV.t===0?'Altere o <b>% IMS</b> ou o <b>kg/dia</b> de cada curral (na mesma linha vale o último que alterar). Nada muda até tocar em <b>Aplicar</b>; <b>Cancelar</b> volta tudo como estava.':`Altere o kg do <b>Trato ${PV.t}</b> de cada curral. Nada muda até tocar em <b>Aplicar</b>; <b>Cancelar</b> volta tudo como estava.`;$('viewPrev').classList.toggle('pvImsOn',ims);$('viewPrev').classList.toggle('pvTodos',PV.t===0&&!PV.per);$('btnIms').classList.toggle('on',ims);
   $('pvHead').innerHTML=PV.per?'<tr><th></th><th>Curral</th><th>Total do período (kg)</th><th></th></tr>':
-    PV.t===0?`<tr><th></th><th>Curral</th>${ims?'<th>% IMS</th>':''}<th>Previsto dia</th>${comReal?'<th>Realiz.</th><th>Dif.</th>':''}<th></th></tr>`:`<tr><th></th>${comReal?'<th class="hora">Hora</th>':''}<th class="pvCurTh">Curral</th><th class="pvPrevTh">Previsto T${PV.t}</th>${comReal?'<th>Realiz.</th><th>Dif.</th>':''}<th></th></tr>`;
+    PV.t===0?`<tr><th></th><th>Curral</th>${ims?'<th>% IMS</th>':''}<th>Previsto dia</th>${comReal?'<th>Realiz.</th><th>Dif.</th>':''}${comAm?'<th class="pvAmTh">Amanhã</th>':''}<th></th></tr>`:`<tr><th></th>${comReal?'<th class="hora">Hora</th>':''}<th class="pvCurTh">Curral</th><th class="pvPrevTh">Previsto T${PV.t}</th>${comReal?'<th>Realiz.</th><th>Dif.</th>':''}<th></th></tr>`;
   $('tbPrev').innerHTML=S.cadastro.map((c,i)=>{const v=m[c],esc_=esc(c),tr=travado(c),rl=comReal?realDe(c):null,pvN=typeof v==='number'?v:0;
     const colR=comReal?(PV.t===0?`<td class="num pvReal">${rl!=null?fmt(rl):''}</td><td class="num ${rl!=null&&pvN?classeDesv(rl-pvN,pvN):''}">${rl!=null&&pvN?sgn(rl-pvN):''}</td>`
       :`<td class="num pvReal">${rl!=null?fmt(rl):''}</td><td class="num ${rl!=null&&pvN?classeDesv(rl-pvN,pvN):''}">${rl!=null&&pvN?sgn(rl-pvN):''}</td>`):'';
@@ -1870,7 +1873,7 @@ function renderPrev(){
       const imsC=ims?(()=>{const p0=window.gImsDe?gImsDe(c,PV.dia,v||0):null,o0=p0?nf(p0,2):'';
         const pE=eI?(eI.tipo==='ims'?eI.val:(window.gImsDe?gImsDe(c,PV.dia,eI.val):null)):null,txt=eI?(pE?nf(pE,2):''):o0;
         return `<td><input class="cell imsIn${eI?(eI.tipo==='ims'?' mudou':' calc'):''}${tr?' feito':''}" type="text" readonly tabindex="-1" inputmode="none" data-ims="${esc_}" data-orig="${o0}" placeholder="%" value="${txt}"${tr?' disabled':''}>${eI&&eI.tipo==='ims'&&kgEd==null?'<small class="imsKg">sem lote</small>':''}</td>`;})():'';
-      return `<tr${ocultar?' hidden':''}><td class="alca" title="Arraste para mudar a ordem" aria-label="Arrastar ${esc_}">☰</td>${nome}${ims?imsC:''}${cel}${colR}${ac}</tr>`;}
+      return `<tr${ocultar?' hidden':''}><td class="alca" title="Arraste para mudar a ordem" aria-label="Arrastar ${esc_}">☰</td>${nome}${ims?imsC:''}${cel}${colR}${comAm?`<td class="num pvAm">${amDe(c)>0?fmt(amDe(c)):'—'}</td>`:''}${ac}</tr>`;}
     return `<tr${ocultar?' hidden':''}><td class="alca" title="Arraste para mudar a ordem" aria-label="Arrastar ${esc_}">☰</td>${comReal?`<td class="hora">${esc(horaDe(c))}</td>`:''}${nome}${cel}${colR}${ac}</tr>`;}).join('');
   $('pvTot').title=`${S.cadastro.length} currais cadastrados`;
   resumoPrev();
