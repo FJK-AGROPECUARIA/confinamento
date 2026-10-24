@@ -1056,14 +1056,14 @@ function tCocho(t){
       ${trv?'<p class="gCoROtxt">🔒 Trato feito neste dia: não pode alterar.</p>':''}
       ${gradeNotas(notas,nota,c)}
       <div class="gCoNovo"><b class="gCoPct">% IMS</b><input class="cell num gCoImsIn" inputmode="decimal" data-ims="${esc(c)}"${trv?' readonly':''} value="${sel&&sel.ims>0?String(sel.ims).replace('.',','):''}" placeholder="${(()=>{const q=ok(kg)&&window.gImsDe?gImsDe(c,dia,kg):null;return q?nf(q,2):'%';})()}"><input class="cell num" inputmode="numeric" data-kg="${esc(c)}" value="${kg!=null?kg:''}" placeholder="kg/dia"${trv?' readonly':''}>${pode.ok&&!trv?`<button type="button" class="gCoSalva" data-g="salvaCocho1" data-c="${esc(c)}" aria-label="Salvar este curral">💾</button>`:''}</div></div>`;}).join('');
-  return `<section class="panel"><h2 class="gH2Bt"><span>Leitura de cocho</span>${rows&&pode.ok?'<button type="button" class="gSalvaTop" data-g="salvaCocho">💾 Salvar</button>':''}</h2>
+  return `<section class="panel"><h2 class="gH2Bt"><span>Leitura de cocho</span>${rows&&pode.ok?'<button type="button" class="gSalvaTop" data-g="salvaCocho">💾 Salvar leitura de cocho</button>':''}</h2>
     ${navData('gCoDia',dia,'')}
     ${typeof selSetas==='function'&&window.LOC_OPS?`<div class="gCoLocNav">${selSetas('Local',LOC_OPS,Math.max(0,LOC_OPS.findIndex(o=>o[0]===lc)),'data-g="coLocP" data-n','data-colsel')}</div>`:locBotoes('coLoc',lc)}
     <details class="gLeg"><summary class="note">Ver as notas</summary>${notas.map(x=>`<p class="note"><b>${notaTxt(x.n)}</b> — ${esc(x.t)}: ${x.p>0?'+':''}${nf(x.p,0)}%</p>`).join('')}<p class="note">Para mudar as notas: Config.</p></details>
     ${pode.ok?'':`<p class="aviso">${esc(pode.msg)}${pode.falta&&pode.falta.length?`<br><b>Ainda sem registro hoje:</b><br>${pode.falta.map(esc).join('<br>')}`:''}</p>
       ${pode.lib?`<p class="note">Se algum desses currais não vai ser tratado hoje (ex.: pasto, curral vazio), libere a leitura assim mesmo.</p><button class="lima" data-g="libLeit">🔓 Liberar a leitura de amanhã</button>`:''}`}
     <div class="${pode.ok?'':'gLeitTrava'}">${rows||'<p class="note">Nenhum lote ativo nesta data. Cadastre os lotes primeiro.</p>'}</div>
-    ${rows&&pode.ok?`<button class="primary" data-g="salvaCocho">${amanha?'Salvar leitura e montar previsto de amanhã':'Salvar leitura e ajustar previsto de hoje'}</button>
+    ${rows&&pode.ok?`<button class="primary" data-g="salvaCocho">💾 Salvar leitura de cocho</button>
     <p class="note">O total do dia de cada curral (realizado de ontem ± a nota) é dividido nos tratos pela quantidade de tratos do curral e pela divisão em % do Config.${amanha?' O previsto de amanhã fica guardado e passa a valer quando virar o dia.':''}</p>`:''}
     <button class="verde" data-g="ir" data-t="cochoGraf">📈 Gráfico dos últimos 10 dias</button></section>`;
 }
