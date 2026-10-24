@@ -1,4 +1,4 @@
-const CACHE='confinamento-v159';
+const CACHE='confinamento-v160';
 const RUNTIME='confinamento-runtime-v1';
 const FILES=['./','./index.html','./manifest.json','./icone-192.png','./icone-512.png','./gestao.js','./automacao.js'];
 

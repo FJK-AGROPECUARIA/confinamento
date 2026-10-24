@@ -1216,7 +1216,7 @@ body.naInicio .topoTxt h1{font-size:clamp(16px,5vw,28px)!important}
 <div class="toast" id="toast" hidden></div>
 <script>
 'use strict';
-const APP_VERSAO='159';
+const APP_VERSAO='160';
 const APP_DATA='19/10/2026';
 const KEY='confinamento-completo-v1';
 const $=id=>document.getElementById(id);
@@ -1833,7 +1833,7 @@ function pvMapa(){const o=pvObj(),m={};
 function pvEstado(){const e=$('pvEstado'),hj=hojeKey();let t='';
   if(PV.per)t='Período: total previsto de cada curral, somando os dias. Só consulta.';
   else if(PV.dia<hj)t='Dia que já passou: só consulta.';
-  else if(PV.dia===amanhaKey())t=pvEditavel()?'Previsto de amanhã (vem da leitura de cocho de amanhã). Passa a valer quando virar o dia.':'Previsto de amanhã: faça antes a leitura de cocho de amanhã (Tratos › Leitura). Ela libera quando o trato de hoje terminar.';
+  else if(PV.dia===amanhaKey())t=pvEditavel()?'Previsto de amanhã: já calculado pelas leituras de cocho de amanhã que foram salvas (cada curral lido já tem o seu). Amanhã ele vira o previsto do dia sozinho.':'Previsto de amanhã: faça antes a leitura de cocho de amanhã (Tratos › Leitura). Ela libera quando o trato de hoje terminar.';
   else if(PV.dia>hj)t='Ainda não dá para lançar: depende da leitura de cocho.';
   e.textContent=t;e.hidden=!t;}
 function renderPrev(){
