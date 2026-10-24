@@ -2012,13 +2012,18 @@ $('gBox').addEventListener('input',e=>{
 $('gBox').addEventListener('input',e=>{const t=e.target;if(!t.matches||!t.matches('input[data-kg]'))return;const c=t.dataset.kg,dia=GT.dia||hojeKey(),kg=gNum(t.value);GT.sel=GT.sel||{};
   const pi=t.closest('.gCoNovo')&&t.closest('.gCoNovo').querySelector('input[data-ims]'),lt=G.it[idLeit(dia,c)],n0=GT.sel[c]?GT.sel[c].n:(lt&&!lt.del?lt.nota:null);
   const q=kg>0&&window.gImsDe?gImsDe(c,dia,kg):null,qr=q?Math.round(q*100)/100:null;if(pi){pi.value=qr?nf(qr,2):'';pi.placeholder='%';}
-  GT.sel[c]={n:n0,ims:n0==null?qr:null,kg:kg>0?kg:null};});
+  const nb=kg>0?notaPerto(t.closest('.gCocho'),kg):null;GT.sel[c]={n:nb!=null?nb:n0,ims:(nb!=null?nb:n0)==null?qr:null,kg:kg>0?kg:null};});
+/* digitou o kg/dia ou o % IMS: marca sozinha a nota que dá o valor mais próximo (a partir da base do curral) */
+function notaPerto(card,kg){if(!card||!(kg>0))return null;const base=+card.dataset.base;if(!(base>0))return null;let best=null;
+  gCfg().notas.forEach(o=>{const v=base*(1+o.p/100);if(!best||Math.abs(v-kg)<Math.abs(best.v-kg))best={n:o.n,v};});
+  card.querySelectorAll('.gNotas [data-g="nota"]').forEach(b=>b.classList.toggle('sel',best&&+b.dataset.n===best.n));
+  card.querySelectorAll('.gU3.sel').forEach(b=>b.classList.remove('sel'));return best?best.n:null;}
 $('gBox').addEventListener('input',e=>{const t=e.target;if(!t.matches||!t.matches('input[data-ims]'))return;const c=t.dataset.ims,p=gNum(t.value),dia=GT.dia||hojeKey();
   const card=t.closest('.gCocho'),kgI=card&&card.querySelector('input[data-kg]'),info=card&&card.querySelector('[data-imsinfo]');GT.sel=GT.sel||{};
   const lt=G.it[idLeit(dia,c)],n0=GT.sel[c]?GT.sel[c].n:(lt&&!lt.del?lt.nota:null);
   if(!(p>0)){GT.sel[c]={n:n0,ims:null};if(info)info.textContent='';return;}
   const kg=window.gMnIms?gMnIms(c,p,dia):null;if(kg==null){if(info)info.textContent='sem lote/ração';return;}
-  const v=arred(kg,gCfg().arred);if(kgI)kgI.value=v;if(info)info.textContent='→ '+nf(v)+' kg';GT.sel[c]={n:n0,ims:p,kg:v};});
+  const v=arred(kg,gCfg().arred);if(kgI)kgI.value=v;if(info)info.textContent='→ '+nf(v)+' kg';const nb=notaPerto(card,v);GT.sel[c]={n:nb!=null?nb:n0,ims:p,kg:v};});
 $('gBox').addEventListener('change',e=>{
   const t=e.target;
   if(GT.t==='racForm'&&t.matches('[data-ri]'))calcRacao();
