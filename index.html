@@ -756,6 +756,10 @@ button.primary{background:#2e6b2f;border-color:#2e6b2f}
 #tratoTiles{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
 #tratoTiles button{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;min-height:112px;padding:10px 6px;border-radius:18px;border:0;background:var(--c);color:#fff;font-size:1.25rem;font-weight:800;box-shadow:0 2px 6px rgba(0,0,0,.12)}
 #tratoTiles button[hidden]{display:none}
+#tratoTiles .avBtn{grid-column:1/-1;min-height:0;flex-direction:row;gap:8px;padding:9px 12px;font-size:.92rem;letter-spacing:.04em;background:#c62828;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:block;text-align:center;border-radius:12px}
+#tratoTiles .avBtn.on{background:#1e9e45;animation:avPulso 1.6s ease-in-out infinite}#tratoTiles .avBtn span{font-size:.8rem;font-weight:700;opacity:.9;letter-spacing:0}
+body:not(.somenteVer) #avBtn{display:none!important}
+@keyframes avPulso{50%{box-shadow:0 0 0 6px rgba(30,158,69,.25)}}
 #tratoTiles small{font-size:.66rem;letter-spacing:.12em;font-weight:800;opacity:.9;text-transform:uppercase}
 #tratoTiles .gIc{font-size:2.1rem;line-height:1}.tStk{display:flex;align-items:center;gap:6px}.tStk i{font-style:normal;font-size:1.9rem}.tStk svg{display:block}
 .tBoi{filter:brightness(0) invert(1)}.tFz{display:inline-block;filter:brightness(.5) contrast(1.3) drop-shadow(0 0 3px rgba(255,255,255,.55))}
@@ -915,6 +919,7 @@ body.naInicio .topoTxt h1{font-size:clamp(16px,5vw,28px)!important}
     <button id="tabMan" aria-selected="false" title="Manual (só se a Automação não estiver funcionando)">✋<small>Manual</small></button>
   </div>
   <div class="tTiles" id="tratoTiles">
+    <button type="button" id="avBtn" class="avBtn" hidden>● AO VIVO</button>
     <button type="button" data-tt="leit" style="--c:#7d8a92"><span class="gIc">🔍</span><span>Leitura</span></button>
     <button type="button" data-tt="prev" style="--c:#5f6b73"><span class="gIc">🕒</span><span>Previsto</span></button>
     <button type="button" data-tt="autoc" style="--c:#2e8b3d"><small>⚡ Automação</small><span class="gIc"><span class="tStk"><svg viewBox="0 0 24 24" width="34" height="34" aria-hidden="true"><path d="M3 12h16M12 5l7 7-7 7" stroke="#fff" stroke-width="3.6" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg><i>🚛</i></span></span><span>Carregar</span></button>
@@ -1199,7 +1204,7 @@ body.naInicio .topoTxt h1{font-size:clamp(16px,5vw,28px)!important}
 <div class="toast" id="toast" hidden></div>
 <script>
 'use strict';
-const APP_VERSAO='149';
+const APP_VERSAO='150';
 const APP_DATA='19/10/2026';
 const KEY='confinamento-completo-v1';
 const $=id=>document.getElementById(id);
@@ -3630,7 +3635,12 @@ function avMiniTxt(d){const au=d.origem==='auto'||!!d.tela||!!(d.bat&&d.bat.orig
   return `${au?'⚡':'✋'} Fornecer · Trato ${esc(d.trato)}${d.curral?' · '+esc(d.curral):''} <em>${d.feitos||0}/${d.total||0}</em>${sem}`;}
 document.addEventListener('click',e=>{const b=e.target.closest&&e.target.closest('[data-avir]');if(!b||!modoVer)return;const [ab,...k]=b.dataset.avir.split('|');avSel=k.join('|');
   if(window.abaAtual!==ab)aba(ab);else renderAoVivo();setTimeout(()=>{try{renderAoVivo();$('aoVivo').scrollIntoView({block:'start',behavior:'smooth'});}catch(x){}},50);});
-function renderAoVivo(){const box=$('aoVivo');if(!modoVer){box.innerHTML='';pintarAvCarga([]);return;}
+/* Visualizar: botão comprido "AO VIVO" em cima dos quadrados — verde quando alguém está carregando/fornecendo (toca e abre), vermelho quando não */
+function pintarAvBtn(){const b=$('avBtn');if(!b)return;b.hidden=!modoVer;if(!modoVer)return;const L=window.avTodos||[],on=L.length>0;
+  const d=on?L[0].d:null,txt=on?`● AO VIVO · ${d.modo==='carga'?'Carregando'+(d.rac?' '+esc(d.rac):''):'Fornecendo'+(d.curral?' '+esc(d.curral):'')}${L.length>1?` · +${L.length-1}`:''} ▸`:'● AO VIVO · nada agora';
+  b.classList.toggle('on',on);if(b.dataset.h!==txt){b.dataset.h=txt;b.innerHTML=txt;}}
+$('avBtn')&&($('avBtn').onclick=()=>{const L=window.avTodos||[];if(!L.length){toast('Ninguém carregando ou fornecendo agora');return;}aba(L[0].aba);});
+function renderAoVivo(){const box=$('aoVivo');window.avTodos=[];pintarAvBtn();if(!modoVer){box.innerHTML='';pintarAvCarga([]);return;}
   if(avDados==null||!navigator.onLine){pintarAvCarga([]);document.body.classList.add('verSemTrato');}
   if(!navigator.onLine){box.innerHTML='<div class="avVazio">Sem internet: não dá para ver ao vivo agora</div>';return;}
   if(avDados==null){box.innerHTML=`<div class="avVazio">${avErro?'Não consegui buscar quem está tratando':'Buscando quem está tratando…'}</div>`;return;}
@@ -3648,7 +3658,7 @@ function renderAoVivo(){const box=$('aoVivo');if(!modoVer){box.innerHTML='';pint
   if(JSON.stringify(nf_)!==JSON.stringify(avFiltro)){avFiltro=nf_;setTimeout(()=>{try{render();}catch(e){}},0);}
   const verTxt=`<div class="avVer">👁 ${nVer} ${nVer>1?'pessoas visualizando':'pessoa visualizando'}</div>`;
   const abaDe=d=>{const au=d.origem==='auto'||!!d.tela||!!(d.bat&&d.bat.origem==='balanca');return d.modo==='carga'?(au?'autoc':'carga'):(au?'auto':'trato');};
-  const chave=d=>d.ap+'|'+d.modo,todosAb=lst.slice();
+  const chave=d=>d.ap+'|'+d.modo,todosAb=lst.slice();window.avTodos=todosAb.map(d=>({d,aba:abaDe(d)}));pintarAvBtn();
   const barra=todosAb.length>1||todosAb.some(d=>abaDe(d)!==window.abaAtual)?`<div class="avBarra"><b>Em andamento (${todosAb.length})</b>${todosAb.map(d=>`<button class="avChip${abaDe(d)===window.abaAtual&&(avSel===chave(d)||todosAb.filter(x=>abaDe(x)===window.abaAtual).length===1)?' sel':''}${d.idade>3*60000?' parado':''}" data-avir="${abaDe(d)}|${esc(chave(d))}">${avMiniTxt(d)}</button>`).join('')}</div>`:'';
   const naCarga=document.body.classList.contains('verCarga'),outros=lst.filter(d=>(d.modo==='carga')!==naCarga);
   /* Manual mostra só o que é do Manual; Automação só o que é da Automação */
@@ -3686,7 +3696,7 @@ function renderAoVivo(){const box=$('aoVivo');if(!modoVer){box.innerHTML='';pint
 }
 /* busca mais rápido (a cada 2 s) enquanto alguém está carregando ou fornecendo; parado, a cada 5 s */
 let avUltBusca=0;const avAlguemTrabalhando=()=>{if(!avDados)return false;const passou=Date.now()-avRecebido;return Object.values(avDados).some(d=>d&&(d.modo==='carga'&&!d.semBatida||d.modo==='trato'&&!d.fimForn)&&(avAgora-(+d.tsServ||0)+passou)<60000);};
-setInterval(()=>{if(!(modoVer&&navigator.onLine&&document.visibilityState==='visible'&&(!$('viewTrato').hidden||(!avAbriu&&window.abaAtual===''))))return;
+setInterval(()=>{if(!(modoVer&&navigator.onLine&&document.visibilityState==='visible'&&(!$('viewTrato').hidden||(!avAbriu&&window.abaAtual==='')||!document.body.classList.contains('menuFechado'))))return;
   const iv=avAlguemTrabalhando()?2000:5000;if(Date.now()-avUltBusca>=iv-200){avUltBusca=Date.now();puxarAoVivo();}},1000);
 Promise.resolve(iniciar()).catch(()=>{})
   /* espera a página terminar de carregar (automacao.js) antes de reabrir a tela: senão o Fornecer abria vazio às vezes */
