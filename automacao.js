@@ -697,8 +697,8 @@ const todosSons=()=>[].concat(SONS.lento||[],SONS.rapido||[],SONS.direto||[]);
 function liberarSom(){try{
   try{if(navigator.audioSession)navigator.audioSession.type='playback';}catch(e){}
   criarSons();if(somLiberado)return;somLiberado=true;
-  todosSons().forEach(a=>{a.muted=true;const p=a.play();const fim=()=>{a.pause();a.currentTime=0;a.muted=false;};
-    if(p&&p.then)p.then(fim).catch(()=>{a.muted=false;somLiberado=false;});else fim();});
+  todosSons().forEach(a=>{a.muted=true;a.volume=0;const p=a.play();const fim=()=>{a.pause();a.currentTime=0;setTimeout(()=>{a.muted=false;a.volume=1;},150);};
+    if(p&&p.then)p.then(fim).catch(()=>{a.muted=false;a.volume=1;somLiberado=false;});else fim();});
 }catch(e){}}
 ['touchend','click','keydown'].forEach(ev=>document.addEventListener(ev,liberarSom,{passive:true,capture:true}));
 function tocar(tipo){try{criarSons();const pool=SONS[tipo];const a=pool[pool.i=(pool.i+1)%pool.length];
