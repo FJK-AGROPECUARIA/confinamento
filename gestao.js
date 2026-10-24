@@ -2649,7 +2649,8 @@ const EST_TIPO=[['','Todas'],['ent','Entradas'],['sai','Saídas']];
 function estFiltros(){const tipo=EST_TIPO.some(o=>o[0]===GT.tipoE)?GT.tipoE:'',fo=String(GT.fornE||'').trim(),pq=String(GT.prodE||'').trim();
   const todos=gTodos('insumo').sort(porNome),exato=pq&&todos.find(i=>fSem(i.nome)===fSem(pq));
   const I=exato?[exato]:todos.filter(i=>pq?fSem(i.nome).includes(fSem(pq)):!i.inativo);return {tipo,fo,pq,I,ins:exato?exato.uid:''};}
-function estMovs(){const per=perNorm(GT.perE==null?30:GT.perE),[de,ate]=perFaixa(per,'perE'),novo=GT.ordE!=='antigo',{tipo,fo,pq,I,ins}=estFiltros();
+/* movimentações: sempre duas datas (De · Até), começando no dia de hoje; para ver mais para trás, troca as datas */
+function estMovs(){{const hj=hojeKey();if(GT.perEDia!==hj){GT.perEDia=hj;GT.perEDe=hj;GT.perEAte=hj;}}GT.perE=-1;const per=-1,[de,ate]=perFaixa(per,'perE'),novo=GT.ordE!=='antigo',{tipo,fo,pq,I,ins}=estFiltros();
   const passa=m=>(!tipo||(tipo==='ent'&&m.mov==='ent')||(tipo==='sai'&&(m.mov==='bat'||m.mov==='sai')))
     &&(!fo||(m.mov==='ent'&&fSem(m.forn).includes(fSem(fo))));
   const L=[],P=[];I.forEach(i=>{const e=estoqueIns(i);
@@ -2666,8 +2667,8 @@ function estMovHTML(){const D=estMovs(),{L,per,novo,tipo,ins,fo,pq,tot}=D,PGE=pa
   const ed=m=>m.manual?` <button class="mini" data-g="ir" data-t="estForm" data-id="${m.uid}" aria-label="Editar">✎</button> <button class="mini danger" data-g="estRm" data-id="${m.uid}" aria-label="Apagar">✕</button>`:'';
   const ab=gMinAb.has('estRel');
   return `<section class="panel gEstRel gMinz${ab?' aberto':''}" data-min-k="estRel"><div class="curhead gMinzCab"><h2>📋 Movimentações</h2><span class="note">${L.length}</span><em class="gGrpDica">${ab?'clique para fechar':'clique para abrir'}</em></div>
-    <div class="gForm gEstFil">${campo({k:'perF',l:'Período',t:'sel',op:PER_OPS,v:per,meia:1})}${campo({k:'tipoF',l:'Tipo',t:'sel',op:EST_TIPO,v:tipo,meia:1})}
-      ${per===-1?`<div class="gPerDatas"><label>De<input type="date" data-perd="perEDe" value="${pa}"></label><label>Até<input type="date" data-perd="perEAte" value="${pb}"></label></div>`:''}
+    <div class="gPerDatas gEstDatas"><label>Período · de<input type="date" data-perd="perEDe" value="${pa}"></label><label>até<input type="date" data-perd="perEAte" value="${pb}"></label></div>
+    <div class="gForm gEstFil">${campo({k:'tipoF',l:'Tipo',t:'sel',op:EST_TIPO,v:tipo})}
       ${campo({k:'prodF',l:'Produto',v:pq,sug:'prodF',ph:'Todos · digite para procurar'})}${campo({k:'fornF',l:'Fornecedor',v:fo,sug:'fornF',ph:'Todos · digite para procurar'})}</div>
     ${tipo||pq||fo?`<button type="button" class="mini gEstLimpa" data-g="estFilLimpa">✕ Limpar filtros</button>`:''}
     <div class="stat gStat3">${mostraEnt?st('Entradas',nf(tot.ent)+' kg'+(tot.vEnt?`<small>${rs(tot.vEnt)}${ok(tot.pm)?' · '+rs(tot.pm)+'/kg':''}</small>`:'')):''}${mostraSai?st('Batidas',nf(tot.bat)+' kg')+st('Saídas manuais',nf(tot.sai)+' kg'):''}${P1?st('Saldo no início',nf(P1.ini)+' kg')+st('Saldo no fim',P1.fim==null?'—':nf(P1.fim)+' kg'):''}</div>
@@ -3358,7 +3359,7 @@ async function relExpGerar(k,dia,fmt,ini,fim){const GT0=GT,gL=gLoc,cap=window.__
     case 'tratosPJ':await window.histExpPer(ini,fim,'juntos',fmt);break;
     case 'batidasP':{const L=batidasLista(ini,fim,'T',0);if(!L.length)break;const rot=ini===fim?diaBR(ini):diaBR(ini)+' a '+diaBR(fim);if(xls){await window.xlsBatidas(L,rot);break;}window.__expPdf=pdf;await window.imgBatidas(L,rot,'juntas');break;}
     case 'perLote':GT={t:'periodo',ini,fim};if(!periodoDados(ini,fim).lotes.length)break;if(xls){await xlsPer();break;}window.__expPdf=pdf;await imgPer();break;
-    case 'estMov':GT={t:'estoque',perE:-1,perEDe:ini,perEAte:fim,tipoE:'',prodE:'',fornE:''};await estExp(fmt);break;
+    case 'estMov':GT={t:'estoque',perE:-1,perEDia:hojeKey(),perEDe:ini,perEAte:fim,tipoE:'',prodE:'',fornE:''};await estExp(fmt);break;
     case 'vendas':GT={t:'vendas',vF:{ini,fim,por:'cpr'}};if(!vendasFiltradas(GT.vF).length)break;if(xls){await xlsVendas();break;}window.__expPdf=pdf;await imgVendas();break;
     case 'comp':GT={t:'comp',compEnc:false};if(xls){await xlsComp();break;}window.__expPdf=pdf;await imgComp();break;
     case 'tratosJ':await window.histExpDia(dia,'juntos',fmt);break;
