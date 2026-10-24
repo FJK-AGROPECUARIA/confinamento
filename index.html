@@ -1216,7 +1216,7 @@ body.naInicio .topoTxt h1{font-size:clamp(16px,5vw,28px)!important}
 <div class="toast" id="toast" hidden></div>
 <script>
 'use strict';
-const APP_VERSAO='158';
+const APP_VERSAO='159';
 const APP_DATA='19/10/2026';
 const KEY='confinamento-completo-v1';
 const $=id=>document.getElementById(id);
@@ -2043,6 +2043,7 @@ $('tecBal').addEventListener('pointerdown',e=>{const b=e.target.closest('button[
 document.addEventListener('pointerdown',e=>{if(balCampo&&!e.target.closest('#tecBal,#ini,#fim,.limparX'))fecharBal();},true);
 document.addEventListener('keydown',e=>{if(!balCampo)return;if(/^[0-9]$/.test(e.key))teclarBal(e.key);else if(e.key==='Backspace')teclarBal('del');else if(e.key==='Enter'||e.key==='Escape'){e.preventDefault();teclarBal('ok');}});
 function teclar(k){
+  if(tecGen)return teclarGen(k);
   if(tecIdx==null)return;
   const mostra=()=>{const x=campoTec(tecIdx);const t=tecTipo==='ims'?imsTxt(tecBuf):tecBuf;if(x)x.value=t;$('tecValor').textContent=tecTipo==='ims'?(t?t+' %':'—'):(t||'—');};
   const pula=d=>{let q=tecIdx+d;while(campoTec(q)&&(campoTec(q).closest('tr').hidden||campoTec(q).disabled))q+=d;return q;};
@@ -2071,6 +2072,32 @@ function teclar(k){
 }
 $('tbPrev').addEventListener('click',e=>{const td=e.target.closest('td'),f=td&&td.querySelector('input.feito[data-n]');if(f&&!e.target.closest('input:not(.feito)')){toast(PV.t?`${S.cadastro[+f.dataset.n]}: Trato ${PV.t} já tratado, o previsto não muda mais`:`${S.cadastro[+f.dataset.n]}: todos os tratos do dia já foram feitos, o total não muda mais`);return;}const y=e.target.closest('input.imsIn[data-ims]');if(y){e.preventDefault();y.blur();if(y.disabled)return;abrirTeclado(S.cadastro.indexOf(y.dataset.ims),'ims');return;}const x=e.target.closest('input[data-n]');if(x){e.preventDefault();x.blur();if(!PV.ims&&!PV.per){if(pvEditavel())toast(PV.t?`Para mudar, toque em "Alterar previsto do Trato ${PV.t}" lá embaixo`:'Para mudar, toque em "Alterar previsto" lá embaixo');return;}abrirTeclado(+x.dataset.n);}});
 $('teclado').addEventListener('pointerdown',e=>{const b=e.target.closest('button[data-k]');if(!b)return;e.preventDefault();teclar(b.dataset.k);});
+/* ---- o mesmo teclado do app em outros campos (Leitura de cocho: % IMS com vírgula automática e kg/dia) ----
+   % IMS: digita só os números e a vírgula entra sozinha com 2 casas (280 → 2,80 · 84 → 0,84) */
+let tecGen=null;
+const tgCampo=()=>tecGen?document.querySelector(tecGen.q):null;
+const tgTxt=()=>tecGen.tipo==='ims'?imsTxt(tecGen.buf):tecGen.buf;
+function tgMostra(dispara){const el=tgCampo(),t=tgTxt();if(el){el.value=t;el.classList.add('sel');if(dispara)el.dispatchEvent(new Event('input',{bubbles:true}));}
+  $('tecValor').textContent=t?(tecGen.tipo==='ims'?t+' %':t+' kg'):'—';const v=$('tecVoltar');if(v)v.disabled=tecGen.buf===tecGen.orig;}
+function abrirTecGen(el){if(!el||el.dataset.trava==='1')return;if(tecIdx!=null)fecharTeclado();if(tecGen)fecharTecGen();
+  const tipo=el.dataset.tecg,chave=tipo==='ims'?'ims':'kg',c=el.dataset[chave];
+  tecGen={tipo,q:`#gBox input[data-tecg="${tipo}"][data-${chave}="${CSS.escape(c)}"]`,c,buf:'',orig:'',novo:true};
+  tecGen.buf=tipo==='ims'?imsDig(el.value):String(el.value||'').replace(/\D/g,'');tecGen.orig=tecGen.buf;
+  document.querySelectorAll('#gBox input.sel').forEach(x=>x.classList.remove('sel'));
+  $('teclado').hidden=false;document.body.classList.add('comteclado');$('tecNome').textContent=c+(tipo==='ims'?' · % IMS':' · kg/dia');tgMostra(false);
+  requestAnimationFrame(()=>{try{const r=el.getBoundingClientRect(),vis=innerHeight-$('teclado').offsetHeight,mb=topoLivre();window.scrollBy({top:r.top-Math.max(mb,mb+(vis-mb)/2-r.height/2),behavior:'smooth'});}catch(x){}});}
+function fecharTecGen(){if(!tecGen)return;const el=tgCampo();if(el){el.classList.remove('sel');el.dispatchEvent(new Event('change',{bubbles:true}));}tecGen=null;$('teclado').hidden=true;document.body.classList.remove('comteclado');}
+function teclarGen(k){if(!tecGen)return;
+  if(k==='fechar'){fecharTecGen();return;}
+  if(k==='voltar'){tecGen.buf=tecGen.orig;tecGen.novo=true;tgMostra(true);return;}
+  if(k==='ok'||k==='up'){const L=[...document.querySelectorAll(`#gBox input[data-tecg="${tecGen.tipo}"]`)].filter(x=>x.offsetParent!==null&&x.dataset.trava!=='1'),i=L.indexOf(tgCampo()),nx=L[i+(k==='ok'?1:-1)];
+    if(nx){fecharTecGen();abrirTecGen(nx);}else if(k==='ok')fecharTecGen();return;}
+  if(tecGen.novo&&k!=='del')tecGen.buf='';tecGen.novo=false;
+  if(k==='del')tecGen.buf=tecGen.buf.slice(0,-1);else if(k==='limpar')tecGen.buf='';
+  else if(/^\d$/.test(k)){const max=tecGen.tipo==='ims'?4:6;if(tecGen.buf.length<max)tecGen.buf=tecGen.tipo==='ims'?imsDig(tecGen.buf+k):(tecGen.buf==='0'?'':tecGen.buf)+k;}
+  tgMostra(true);}
+document.addEventListener('click',e=>{const el=e.target.closest&&e.target.closest('#gBox input[data-tecg]');if(!el)return;e.preventDefault();el.blur();abrirTecGen(el);});
+document.addEventListener('pointerdown',e=>{if(tecGen&&!e.target.closest('#teclado,#gBox input[data-tecg]'))fecharTecGen();},true);
 document.addEventListener('keydown',e=>{if(tecIdx==null)return;
   if(/^[0-9]$/.test(e.key))teclar(e.key);else if(e.key==='Backspace')teclar('del');else if(e.key==='Enter'||e.key==='Tab'){e.preventDefault();teclar('ok');}else if(e.key==='Escape')teclar('fechar');else if(e.key==='?')teclar('?');});
 document.addEventListener('pointerdown',e=>{if(tecIdx!=null&&!e.target.closest('#teclado,#tbPrev input'))fecharTeclado();},true);
