@@ -172,6 +172,10 @@ body.somenteVer .fBar{display:none!important}
 .cCancelar{display:block;width:100%;margin-top:10px;background:#fff;color:#b3261e;border:2px solid #e3b4ae;font-weight:700}
 .cOrdem{margin:10px 0;padding:8px;border:1px dashed #b9c7a5;border-radius:12px}.cOrdLin{display:grid;grid-template-columns:28px 1fr 44px 44px;gap:6px;align-items:center;padding:4px 0}.cOrdLin button{margin:0;padding:6px 0;min-height:0}.cJaIn{width:80px;margin:0;padding:6px 8px;text-align:right}
 .cBotoes{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:6px}.cBotoes>button{margin:0!important;width:100%;font-size:.82rem;padding:8px 6px}
+.fResumo{margin-top:12px;border:1.5px solid #dfe5dc;border-radius:14px;overflow:hidden;background:#fafcf8}
+.fResTop{display:flex;justify-content:space-between;align-items:center;gap:8px;background:#2e6b2f;color:#fff;padding:10px 14px;font-weight:700}.fResTop b{font-size:1.25rem}
+.fResLin{display:flex;justify-content:space-between;gap:8px;padding:8px 14px;border-top:1px solid #e6ebe3;font-size:1.05rem}.fResLin b{font-variant-numeric:tabular-nums}
+.fResLin.ok{color:#8a958a}.fResLin.ok span{text-decoration:line-through}.fResumo .note{margin:6px 14px 10px}
 .cJuntoLista{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}
 .cvFundo{position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:9999;display:flex;align-items:center;justify-content:center;padding:16px}.cvCaixa{background:var(--card,#fff);border-radius:16px;max-width:420px;width:100%;padding:20px;border:3px solid #d32f2f;max-height:90vh;overflow:auto}.cvCaixa .cvBt{display:grid;gap:10px;margin-top:12px}.gBatEd label{display:block;font-size:.85rem;font-weight:700;margin:8px 0 0}.gBatEd input{width:100%;margin-top:4px}
 #tbHist .hAcoes{display:inline-flex;gap:4px;margin-left:6px;vertical-align:middle}#tbHist .hEdIn{width:5.2em;padding:4px 6px;font-size:1rem;font-weight:700;text-align:right;border:2px solid var(--lima);border-radius:8px;margin:0}.gBatFim .mini.btEdVerm,.gBatFim .btEdVerm{background:#d32f2f!important;border-color:#d32f2f!important;color:#fff!important;opacity:1!important;font-weight:700}.gTab .bEdIn{width:5.2em;padding:4px 6px;font-size:1rem;font-weight:700;text-align:right;border:2px solid var(--lima);border-radius:8px;margin:0}.gTab .bRm{padding:2px 7px!important;font-size:.75rem!important;min-height:0;margin-left:4px;width:auto!important}.gBatExc{margin-top:8px!important;width:auto!important;background:#fdecea!important;border:2px solid #c62828!important;color:#c62828!important;font-weight:700;padding:6px 12px!important;font-size:.85rem!important}#tbHist .hAcoes .mini{padding:3px 7px;font-size:.78rem;min-height:0;margin:0}.gBatAc{display:flex;gap:8px;margin-top:8px}.bedLin{display:flex;gap:6px;align-items:flex-end}.bedLin label{flex:1}.bedLin .mini{width:auto!important;padding:8px 12px;margin:0 0 6px!important}.bedLin.bedRm label{opacity:.4;text-decoration:line-through}.gBatFim{display:flex;justify-content:flex-end;gap:6px;margin:14px 0 4px}.gBatFim .mini{padding:3px 9px!important;font-size:.72rem!important;min-height:0;width:auto!important;margin:0!important;opacity:.8}.gBatFim.gbSel{justify-content:space-between;align-items:center;background:#fff4d6;border:1px solid #f2b705;border-radius:10px;padding:6px 8px;font-size:.82rem}.gBatFim.gbSel .mini{opacity:1}.gBatFim.gbTopo{margin:0 0 8px}.gBatPick{margin-top:8px!important;background:#eef5e4!important;border:2px solid #2e6b2f!important;color:#2e6b2f!important;font-weight:800}.gBatPick.del{background:#fdecea!important;border-color:#c62828!important;color:#c62828!important}.gBatAc .mini{flex:1}
@@ -759,6 +763,7 @@ button.primary{background:#2e6b2f;border-color:#2e6b2f}
 #tratoTiles .avBtn{grid-column:1/-1;min-height:0;flex-direction:row;gap:8px;padding:9px 12px;font-size:.92rem;letter-spacing:.04em;background:#c62828;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:block;text-align:center;border-radius:12px}
 #tratoTiles .avBtn.on{background:#1e9e45;animation:avPulso 1.6s ease-in-out infinite}
 body:not(.somenteVer) #avBtn{display:none!important}
+body.somenteVer:not(.avVendo) #viewTrato,body.somenteVer:not(.avVendo) #viewCarga,body.somenteVer:not(.avVendo) #viewAuto,body.somenteVer:not(.avVendo) #viewAutoC{display:none!important}
 body.somenteVer #viewEscolha{display:none!important}
 /* Visualizar: sem Carregar/Fornecer (o AO VIVO abre o que estiver acontecendo); AO VIVO grande, na largura dos dois quadrados */
 body.somenteVer #tratoTiles [data-tt="autoc"],body.somenteVer #tratoTiles [data-tt="auto"]{display:none!important}
@@ -818,7 +823,7 @@ body.menuFechado .menuSeta{background:#2e6b2f;color:#fff;padding:9px 12px;font-s
 .pvEstado{background:#fff4d6;color:#7a4b00;border-radius:10px;padding:8px 10px}
 #viewPrev.pvSoVer #tbPrev input.cell{background:transparent;border-color:transparent;color:var(--fg);opacity:1}
 .ntSel{min-width:0;width:48px;font-weight:700;font-size:1rem;padding:6px 2px}
-.imsIn{width:64px!important;text-align:center}
+.imsIn{width:64px!important;text-align:center;color:var(--ink,#11253d)!important;background:#fff!important;border:1.5px solid #9fb59a!important;font-weight:700}.imsIn.mudou{border-color:#2e6b2f!important;background:#eef6e8!important}
 .imsKg{display:block;font-size:.75rem;color:var(--ok);font-weight:700;white-space:nowrap}
 #btnIms.on{background:var(--accent);border-color:var(--accent);color:#fff}
 .pvImsBar{background:var(--chip);border-radius:12px;padding:10px;display:flex;flex-direction:column;gap:8px}
@@ -1209,7 +1214,7 @@ body.naInicio .topoTxt h1{font-size:clamp(16px,5vw,28px)!important}
 <div class="toast" id="toast" hidden></div>
 <script>
 'use strict';
-const APP_VERSAO='153';
+const APP_VERSAO='154';
 const APP_DATA='19/10/2026';
 const KEY='confinamento-completo-v1';
 const $=id=>document.getElementById(id);
@@ -1507,7 +1512,16 @@ function fornSetupHTML0(){if(!FS.local)FS.passo=1;const cont=n=>`<button type="b
       ${FS.juntos.length?`<p class="note"><b>Tratos ${[+FS.trato].concat(FS.juntos).sort((a,b)=>a-b).join(' + ')} juntos:</b> cada curral recebe a soma (${fmt(soma)} kg no total) e fica registrado no <b>Trato ${alvo}</b>.</p>`:''}`;})():''}${`
     ${L.length?'':`<p class="note">${Object.keys(S.prev||{}).some(k=>Object.keys(S.prev[k]||{}).length)?'Nenhum curral com previsto neste trato para este local e ração.':'Ainda não tem previsto hoje: faça a leitura de cocho (Tratos › Leitura).'}</p>`}
     <button class="primary" id="fIniciar"${L.length?'':' disabled'}>▶ Iniciar fornecimento</button>
+    ${fornResumoHTML()}
     ${L.length&&!pend.length?`<div class="fTodosOk">⚠ TRATO ${FS.trato}: TODOS JÁ FORAM FORNECIDOS<small>Se precisar, pode iniciar o fornecimento mesmo assim.</small></div>`:''}`}`;}
+/* embaixo do Iniciar: os currais deste trato (somando os tratos juntos), quanto vai em cada um e o total — só para o operador conferir */
+function fornResumoHTML(){try{const trs=[+FS.trato].concat(FS.juntoAb?(FS.juntos||[]).map(Number).filter(k=>k!==+FS.trato):[]),hj=diaAtivo(),m={};
+  trs.forEach(k=>fornCurrais(FS.local,FS.rac,k).forEach(x=>{const ok=HIST.some(r=>r.dia===hj&&+r.trato===k&&r.curral===x.nome);const o=m[x.nome]=m[x.nome]||{kg:0,ok:0,n:0};o.n++;if(ok)o.ok++;else o.kg+=+x.prev||0;}));
+  const ns=S.cadastro.filter(n=>m[n]);if(!ns.length)return '';
+  const pend=ns.filter(n=>m[n].ok<m[n].n),tot=pend.reduce((a,n)=>a+m[n].kg,0),feitos=ns.length-pend.length;
+  return `<div class="fResumo"><div class="fResTop"><span>${trs.length>1?'Tratos '+trs.slice().sort((a,b)=>a-b).join(' + '):'Trato '+trs[0]} · ${pend.length} curra${pend.length===1?'l':'is'}</span><b>${fmt(tot)} kg</b></div>
+    ${ns.map(n=>{const o=m[n],ok=o.ok>=o.n;return `<div class="fResLin${ok?' ok':''}"><span>${esc(n)}</span><b>${ok?'✓ fornecido':fmt(o.kg)+' kg'}</b></div>`;}).join('')}
+    ${feitos?`<p class="note">${feitos} curra${feitos===1?'l já fornecido':'is já fornecidos'} neste trato (não entra no total).</p>`:''}</div>`;}catch(e){return '';}}
 const FORN_NOVO_TXT=()=>{const f=S&&S.forn;return f&&f.dia&&f.dia<hojeKey()?`<p class="note" style="color:#b3261e;font-weight:700">⚠ Este fornecimento está aberto desde ${diaBR(f.dia).slice(0,5)}. Finalize ou cancele para começar outro.</p>`:'';};
 const FORN_NOVO={toString(){return FORN_NOVO_TXT();}}; /* sem "Abrir outro fornecimento": finaliza ou cancela este antes */
 function fornBarHTML(){const f=filtroForn();if(!f)return '';const r=f.rac&&typeof G!=='undefined'&&G.it[f.rac];
@@ -1850,7 +1864,7 @@ function renderPrev(){
     if(PV.per)return `<tr${ocultar?' hidden':''}><td></td>${nome}<td class="num"><b>${v?fmt(v):'—'}</b></td><td></td></tr>`;
     if(PV.t===0){const n=nTratos(c,o);
       const sel=ed?`<select class="mini ntSel" data-nt="${esc_}">${tratosAtivos().map((_,i)=>i+1).map(x=>`<option value="${x}"${x===n?' selected':''}>${x}</option>`).join('')}</select>`:`<b>${n}</b>`;
-      const imsC=ims?`<td><input class="cell imsIn" type="text" inputmode="decimal" data-ims="${esc_}" placeholder="${(()=>{const p=window.gImsDe?gImsDe(c,PV.dia,v||0):null;return p?nf(p,2):'%';})()}" value="${PV.imsV&&PV.imsV[c]!=null?esc(PV.imsV[c]):''}"><small class="imsKg" data-imskg="${esc_}"></small></td>`:'';
+      const imsC=ims?(()=>{const p0=window.gImsDe?gImsDe(c,PV.dia,v||0):null,o0=p0?nf(p0,2):'';return `<td><input class="cell imsIn" type="text" inputmode="decimal" data-ims="${esc_}" data-orig="${o0}" placeholder="%" value="${PV.imsV&&PV.imsV[c]!=null?esc(PV.imsV[c]):o0}"><small class="imsKg" data-imskg="${esc_}"></small></td>`;})():'';
       return `<tr${ocultar?' hidden':''}><td class="alca" title="Arraste para mudar a ordem" aria-label="Arrastar ${esc_}">☰</td>${nome}${ims?imsC:''}${cel}${colR}${ac}</tr>`;}
     return `<tr${ocultar?' hidden':''}><td class="alca" title="Arraste para mudar a ordem" aria-label="Arrastar ${esc_}">☰</td>${comReal?`<td class="hora">${esc(horaDe(c))}</td>`:''}${nome}${cel}${colR}${ac}</tr>`;}).join('');
   if(ims)document.querySelectorAll('#tbPrev .imsIn').forEach(calcIms);
@@ -1866,15 +1880,21 @@ ligarNavDia($('pvData'),PV,()=>{fecharTeclado();PV.am=null;PV.ims=false;PV.imsV=
 $('tbPrev').addEventListener('change',e=>{const s_=e.target.closest('select[data-nt]');if(!s_||!pvEditavel())return;const c=s_.dataset.nt,n=+s_.value,o=pvObj();
   mudarNTratos(c,n,o,PV.dia);marcarPv();if(PV.dia===hojeKey()){editandoPrev=true;render();editandoPrev=false;}renderPrev();toast(`${c}: ${n} trato(s)`);});
 /* % IMS: calcula na hora o total em kg de matéria natural */
-function calcIms(inp){const c=inp.dataset.ims,p=parseNum(inp.value),out=document.querySelector(`#tbPrev [data-imskg="${CSS.escape(c)}"]`);PV.imsV=PV.imsV||{};PV.imsV[c]=inp.value;
-  if(!out)return;if(!(p>0)){out.textContent='';return;}const kg=window.gMnIms?gMnIms(c,p,PV.dia):null;out.textContent=kg==null?'sem lote':'→ '+fmt(arredPrev(kg))+' kg';}
+/* % IMS aceita casas decimais (2,77 é 2,77 — não arredonda para 2) */
+function parseDec(s){s=String(s||'').replace(/\s/g,'').replace(/%/g,'');if(!s)return NaN;if(s.includes(','))s=s.replace(/\./g,'').replace(',','.');return parseFloat(s);}
+function imsMudou(inp){const a=parseDec(inp.value),b=parseDec(inp.dataset.orig);return a>0&&!(b>0&&Math.abs(a-b)<0.0005);}
+function calcIms(inp){const c=inp.dataset.ims,p=parseDec(inp.value),out=document.querySelector(`#tbPrev [data-imskg="${CSS.escape(c)}"]`);PV.imsV=PV.imsV||{};PV.imsV[c]=inp.value;
+  inp.classList.toggle('mudou',imsMudou(inp));if(!out)return;if(!(p>0)||!imsMudou(inp)){out.textContent='';return;}const kg=window.gMnIms?gMnIms(c,p,PV.dia):null;out.textContent=kg==null?'sem lote':'→ '+fmt(arredPrev(kg))+' kg';}
 $('tbPrev').addEventListener('input',e=>{if(e.target.matches('.imsIn'))calcIms(e.target);});
+/* tocou no campo: limpa para digitar o novo (o atual fica de dica); saiu sem digitar, volta o atual */
+$('tbPrev').addEventListener('focusin',e=>{const t=e.target;if(!t.matches('.imsIn'))return;if(t.value===t.dataset.orig){t.placeholder=t.dataset.orig||'%';t.value='';}});
+$('tbPrev').addEventListener('focusout',e=>{const t=e.target;if(!t.matches('.imsIn'))return;if(t.value.trim()===''){t.value=t.dataset.orig||'';t.placeholder='%';calcIms(t);}});
 $('btnIms').onclick=()=>{if(!pvEditavel())return;PV.ims=!PV.ims;PV.imsV={};renderPrev();};
 $('pvImsCanc').onclick=()=>{PV.ims=false;PV.imsV={};renderPrev();};
 $('pvImsAplicar').onclick=()=>{if(!pvEditavel())return;const o=pvObj();let n=0,sem=[],feitosTodos=[];
-  document.querySelectorAll('#tbPrev .imsIn').forEach(inp=>{const c=inp.dataset.ims,p=parseNum(inp.value);if(!(p>0))return;const kg=window.gMnIms?gMnIms(c,p,PV.dia):null;if(kg==null){sem.push(c);return;}
+  document.querySelectorAll('#tbPrev .imsIn').forEach(inp=>{const c=inp.dataset.ims,p=parseDec(inp.value);if(!(p>0)||!imsMudou(inp))return;const kg=window.gMnIms?gMnIms(c,p,PV.dia):null;if(kg==null){sem.push(c);return;}
     const antes=snapTratos(c,o);if(!ajustarTotalCurral(c,arredPrev(kg),o)){feitosTodos.push(c);return;}desfPrev.push({d:PV.dia,k:'T',nome:c,antes});n++;});
-  if(!n){toast(sem.length?'Sem lote/ração cadastrado para: '+sem.join(', '):feitosTodos.length?'Todos os tratos de hoje já foram feitos: '+feitosTodos.join(', '):'Digite o % de IMS de algum curral');return;}
+  if(!n){toast(sem.length?'Sem lote/ração cadastrado para: '+sem.join(', '):feitosTodos.length?'Todos os tratos de hoje já foram feitos: '+feitosTodos.join(', '):'Altere o % de IMS de algum curral');return;}
   marcarPv();if(PV.dia===hojeKey()){editandoPrev=true;render();editandoPrev=false;}PV.ims=false;PV.imsV={};renderPrev();
   toast(`Previsto calculado por % IMS em ${n} curral(is)`+(sem.length?` · sem lote: ${sem.join(', ')}`:'')+(feitosTodos.length?` · já tratados (não muda): ${feitosTodos.join(', ')}`:''));};
 function snapTratos(c,o){const r={};for(let k=1;k<=MAXT;k++){const v=(o[k]||{})[c];if(v!==undefined)r[k]=v;}return r;}
@@ -3411,7 +3431,7 @@ $('btnModoVer').onclick=()=>pedirSenha('ver');
 function entrarVer(){verSenha(false);if(typeof fecharTeclado==='function')fecharTeclado();if(balCampo)fecharBal();
   guardarExec();modoVer=true;document.body.classList.remove('naInicio','modoTrato','modoGest');document.body.classList.add('somenteVer');$('faixaVer').hidden=false;menuAberto=null;abrirMenu('trato');
   S.dataManual=null;S.ini='';S.fim='';escolherTratoDoDia();$('tratoSel').value=String(S.tratoSel);$('pvTrato').value=String(S.tratoSel);S.pvTrato=S.tratoSel;
-  $('ini').value='';$('fim').value='';render();renderPrev();modoAtual=null;$('subModo').hidden=true;$('tabMan').setAttribute('aria-selected','false');$('tabModoAuto').setAttribute('aria-selected','false');escolherModo('auto');avDados=null;avErro=false;avAbriu=false;avisarVendo();renderAoVivo();if(navigator.onLine)puxarAoVivo();
+  $('ini').value='';$('fim').value='';render();renderPrev();modoAtual=null;$('subModo').hidden=true;$('tabMan').setAttribute('aria-selected','false');$('tabModoAuto').setAttribute('aria-selected','false');escolherModo('auto');avDados=null;avErro=false;avAbriu=false;avVer(false);avisarVendo();renderAoVivo();if(navigator.onLine)puxarAoVivo();
   if(navigator.onLine){puxarRegistros(true).catch(()=>{});puxarPrevisto(true).catch(()=>{});}}
 function voltarInicio(){try{geoParar();}catch(e){}
   if(typeof fecharTeclado==='function')fecharTeclado();if(typeof balCampo!=='undefined'&&balCampo)fecharBal();
@@ -3660,13 +3680,15 @@ let avSel=null;
 function avMiniTxt(d){const au=d.origem==='auto'||!!d.tela||!!(d.bat&&d.bat.origem==='balanca'),sem=d.idade>3*60000?` · sem sinal ${idadeTxt(d.idade)}`:'';
   if(d.modo==='carga'){const b=d.bat||{};return `🚜 Batida${d.trato||b.trato?' · Trato '+esc(d.trato||b.trato):''}${b.rac||d.rac?' · '+esc(b.rac||d.rac):''} ${au?'⚡':'✋'}${sem}`;}
   return `${au?'⚡':'✋'} Fornecer · Trato ${esc(d.trato)}${d.curral?' · '+esc(d.curral):''} <em>${d.feitos||0}/${d.total||0}</em>${sem}`;}
-document.addEventListener('click',e=>{const b=e.target.closest&&e.target.closest('[data-avir]');if(!b||!modoVer)return;const [ab,...k]=b.dataset.avir.split('|');avSel=k.join('|');
+document.addEventListener('click',e=>{const b=e.target.closest&&e.target.closest('[data-avir]');if(!b||!modoVer)return;avVer(true);const [ab,...k]=b.dataset.avir.split('|');avSel=k.join('|');
   if(window.abaAtual!==ab)aba(ab);else renderAoVivo();setTimeout(()=>{try{renderAoVivo();$('aoVivo').scrollIntoView({block:'start',behavior:'smooth'});}catch(x){}},50);});
 /* Visualizar: botão comprido "AO VIVO" em cima dos quadrados — verde quando alguém está carregando/fornecendo (toca e abre), vermelho quando não */
 function pintarAvBtn(){const b=$('avBtn');if(!b)return;b.hidden=!modoVer;if(!modoVer)return;const L=window.avTodos||[],on=L.length>0;
   const d=on?L[0].d:null,txt=on?`<span>● AO VIVO</span><small>${d.modo==='carga'?'Carregando'+(d.rac?' '+esc(d.rac):''):'Fornecendo'+(d.curral?' '+esc(d.curral):'')}${L.length>1?` · +${L.length-1}`:''} · toque para ver ▸</small>`:'<span>● AO VIVO</span><small>nada agora</small>';
   b.classList.toggle('on',on);if(b.dataset.h!==txt){b.dataset.h=txt;b.innerHTML=txt;}}
-$('avBtn')&&($('avBtn').onclick=()=>{const L=window.avTodos||[];if(!L.length){toast('Ninguém carregando ou fornecendo agora');return;}aba(L[0].aba);});
+/* o Ao vivo só aparece pelo botão: tocou (e tem alguém trabalhando) abre; abriu o menu de novo ou foi para outro quadrado, some */
+function avVer(on){document.body.classList.toggle('avVendo',!!on);}
+$('avBtn')&&($('avBtn').onclick=()=>{const L=window.avTodos||[];if(!L.length){avVer(false);toast('Ninguém carregando ou fornecendo agora');return;}avVer(true);aba(L[0].aba);setTimeout(()=>{try{menuFecha();window.scrollTo({top:0});}catch(e){}},150);});
 function renderAoVivo(){const box=$('aoVivo');window.avTodos=[];pintarAvBtn();if(!modoVer){box.innerHTML='';pintarAvCarga([]);return;}
   if(avDados==null||!navigator.onLine){pintarAvCarga([]);document.body.classList.add('verSemTrato');}
   if(!navigator.onLine){box.innerHTML='<div class="avVazio">Sem internet: não dá para ver ao vivo agora</div>';return;}
@@ -3697,8 +3719,7 @@ function renderAoVivo(){const box=$('aoVivo');window.avTodos=[];pintarAvBtn();if
   pintarAvCarga(naCarga?lst:[]);
   document.body.classList.toggle('verSemTrato',!naCarga&&!lst.some(d=>d.modo==='trato'));
   if(!lst.length){box.innerHTML=verTxt+barra+`<div class="avVazio">${window.abaAtual?(naCarga?`Nenhuma batida ${abaAuto?'na Automação':'no Manual'} agora`:`Nenhum trato ${abaAuto?'na Automação':'no Manual'} sendo feito agora`):(naCarga?'Ninguém carregando agora':'Ninguém fornecendo agora')}</div>`+outTxt;return;}
-  if(!avAbriu&&window.abaAtual===''&&menuAberto==='trato'){avAbriu=true;const d0=lst[0];
-    const au=lst.some(d=>d.origem==='auto'||d.tela||(d.bat&&d.bat.origem==='balanca')),cg=d0.modo==='carga';aba(au?(cg?'autoc':'auto'):(cg?'carga':'trato'));return;}
+  /* não abre sozinho: o Ao vivo só aparece quando a pessoa toca no botão AO VIVO */
   /* mais de um aberto nesta tela: mostra o escolhido completo e os outros como quadrinho (toca para abrir) */
   if(lst.length>1&&!lst.some(d=>chave(d)===avSel))avSel=chave(lst[0]);
   const mini=d=>`<button class="avMini${d.idade>3*60000?' parado':''}" data-avir="${abaDe(d)}|${esc(chave(d))}">${avMiniTxt(d)}<span>toque para ver ▸</span></button>`;
@@ -3836,7 +3857,7 @@ if('serviceWorker' in navigator){
     return p.filter(Boolean).join(' › ');};
   const pinta=()=>{const f=document.body.classList.contains('menuFechado');b.innerHTML=f?`<span>☰ ${esc(caminho())}</span><span>▼ menu</span>`:'▲ esconder menu';};
   const fecha=()=>{document.body.classList.add('menuFechado');pinta();};
-  const abre=()=>{document.body.classList.remove('menuFechado');pinta();const y=m.getBoundingClientRect().top+scrollY-8;if(scrollY>y)window.scrollTo({top:Math.max(0,y)});};
+  const abre=()=>{document.body.classList.remove('menuFechado');if(typeof modoVer!=='undefined'&&modoVer&&window.avVer)avVer(false);pinta();const y=m.getBoundingClientRect().top+scrollY-8;if(scrollY>y)window.scrollTo({top:Math.max(0,y)});};
   b.onclick=()=>document.body.classList.contains('menuFechado')?abre():fecha();
   m.addEventListener('click',e=>{const t=e.target.closest('button');if(!t||t===b)return;
     const final=t.closest('#subGest')||t.closest('#subModo')||['tabPrev','tabLeit','tabFez','tabMS','tabHist'].includes(t.id);
@@ -3847,7 +3868,7 @@ if('serviceWorker' in navigator){
     g.querySelectorAll('button[data-tt]').forEach(x=>{const ids=TT[x.dataset.tt],o=$(ids[0]);x.hidden=!o||o.hidden;
       const sel=ids.length>1?(ma==='auto'&&$(ids[1]).getAttribute('aria-selected')==='true'):(x.dataset.tt==='man'?ma==='man':o&&o.getAttribute('aria-selected')==='true');x.classList.toggle('sel',!!sel);});
     $('subModo').classList.toggle('soAuto',ma==='auto');};
-  {const g=$('tratoTiles');if(g){g.addEventListener('click',e=>{const x=e.target.closest('button[data-tt]');if(!x)return;const ids=TT[x.dataset.tt];
+  {const g=$('tratoTiles');if(g){g.addEventListener('click',e=>{const x=e.target.closest('button[data-tt]');if(!x)return;if(window.avVer)avVer(false);const ids=TT[x.dataset.tt];
       if(ids.length>1&&!(typeof modoAtual!=='undefined'&&modoAtual==='auto'))$(ids[0]).click();$(ids[ids.length-1]).click();setTimeout(tts,0);});
     new MutationObserver(tts).observe(m,{subtree:true,attributes:true,attributeFilter:['aria-selected','hidden']});tts();}}
   window.menuCaminho=pinta;window.menuFecha=fecha;window.menuAbre=()=>{if(document.body.classList.contains('menuFechado'))abre();};pinta();})();
