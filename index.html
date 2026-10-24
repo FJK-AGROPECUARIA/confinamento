@@ -1217,7 +1217,7 @@ body.naInicio .topoTxt h1{font-size:clamp(16px,5vw,28px)!important}
 <div class="toast" id="toast" hidden></div>
 <script>
 'use strict';
-const APP_VERSAO='161';
+const APP_VERSAO='162';
 const APP_DATA='19/10/2026';
 const KEY='confinamento-completo-v1';
 const $=id=>document.getElementById(id);
@@ -1844,8 +1844,8 @@ function renderPrev(){
    const TO=[[0,'Todos os tratos']].concat(tratosAtivos().map(Number).sort((a,b)=>a-b).map(k=>[k,nomeTrato(k)]));$('pvTN').innerHTML=PV.per?'':selSetas('Escolher<br>trato',TO,Math.max(0,TO.findIndex(o=>o[0]===PV.t)),'data-pvtp','data-pvtsel');}
   pvEstado();
   const ed=pvEditavel(),hoje=PV.dia===hojeKey()&&!PV.per,o=pvObj(),m=pvMapa(),edM=PV.ims&&ed&&!PV.per,ims=edM&&PV.t===0;
-  /* hoje · Todos: mostra ao lado o previsto de amanhã de cada curral que já tem leitura de amanhã */
-  const amO=hoje&&PV.t===0&&!edM?prevGuardado(amanhaKey()):null,amDe=c=>amO?totalDia(c,amO,amanhaKey()):0,comAm=!!amO&&S.cadastro.some(c=>amDe(c)>0);
+  /* previsto de amanhã: só na data de amanhã (sem coluna no dia de hoje) */
+  const amO=null,amDe=c=>amO?totalDia(c,amO,amanhaKey()):0,comAm=!!amO&&S.cadastro.some(c=>amDe(c)>0);
   /* realizado do dia (todos os tratos) ou do trato escolhido; curral já tratado não deixa mais mudar o previsto */
   const comReal=!PV.per&&PV.dia<=hojeKey(),realDe=c=>{const rs=HIST.filter(r=>r.dia===PV.dia&&r.curral===c&&(PV.t===0||+r.trato===PV.t));return rs.length?rs.reduce((a,r)=>a+(+r.forn||0),0):null;};
   const horaDe=c=>{const rs=HIST.filter(r=>r.dia===PV.dia&&r.curral===c&&+r.trato===PV.t).sort((a,b)=>(a.ts||0)-(b.ts||0));return rs.length?rs[rs.length-1].hora||'':'';};  // hora em que foi tratado (Trato N)
