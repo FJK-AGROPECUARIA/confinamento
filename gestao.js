@@ -1156,6 +1156,9 @@ function salvaCocho(so){
     const bs=(GT.base||{})[c]||(lt&&!lt.del&&lt.baseM?{m:lt.baseM,d:lt.baseDia}:null)||{m:'ontem'};
     gPut({uid:idLeit(dia,c),tipo:'leitura',dia,curral:c,nota,ims,hora:new Date().toTimeString().slice(0,5),pct:cn?cn.p:0,base:+el.dataset.base||0,baseM:bs.m,baseDia:bs.m==='dia'?bs.d:null,novo:ok(kg)?kg:null,msF:+el.dataset.msf||1});n++;
     if(ok(kg)&&kg>0&&aplicaPrev(c,kg,obj))ap++;});
+  if(!n&&!rm&&!so){const feitas=gTodos('leitura').filter(l=>l.dia===dia&&!l.del).length,abertas=document.querySelectorAll('#gBox .gCocho').length;
+    if(feitas&&!abertas)return toast('✓ Leitura salva · todos os currais já estão salvos');
+    if(feitas)return toast(`✓ ${feitas} leitura(s) salva(s) · marque a nota dos currais que faltam`);}
   if(!n&&!rm)return toast(so?'Marque a nota ou o % de IMS do '+so:'Marque a nota ou o % de IMS de pelo menos um curral');
   if(so){if(ap){if(hoje){marcarPrev();if(typeof render==='function')render();}else prevApi.guardarPrevDia(dia,obj);}
     [GT.sel,GT.base,GT.coAberto].forEach(o=>{if(o)delete o[so];});const y=window.scrollY;gRender();window.scrollTo({top:y});
