@@ -763,6 +763,7 @@ button.primary{background:#2e6b2f;border-color:#2e6b2f}
 #tratoTiles .avBtn{grid-column:1/-1;min-height:0;flex-direction:row;gap:8px;padding:9px 12px;font-size:.92rem;letter-spacing:.04em;background:#c62828;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:block;text-align:center;border-radius:12px}
 #tratoTiles .avBtn.on{background:#1e9e45;animation:avPulso 1.6s ease-in-out infinite}
 body:not(.somenteVer) #avBtn{display:none!important}
+body.semTela:not(.menuFechado) .menuSeta{display:none!important}
 body.somenteVer:not(.avVendo) #viewTrato,body.somenteVer:not(.avVendo) #viewCarga,body.somenteVer:not(.avVendo) #viewAuto,body.somenteVer:not(.avVendo) #viewAutoC{display:none!important}
 body.somenteVer #viewEscolha{display:none!important}
 /* Visualizar: sem Carregar/Fornecer (o AO VIVO abre o que estiver acontecendo); AO VIVO grande, na largura dos dois quadrados */
@@ -1004,7 +1005,7 @@ body.naInicio .topoTxt h1{font-size:clamp(16px,5vw,28px)!important}
       <tbody id="tbPrev"></tbody>
     </table></div>
     <button class="danger" id="btnLimparPrev">Limpar previsto deste trato</button>
-    <button class="lima" id="btnIms">% Alterar trato por % de IMS</button>
+    <button class="lima" id="btnIms">Alterar previsto <small style="font-size:.82em;font-weight:600;white-space:nowrap">(% IMS ou kg/dia)</small></button>
     <button id="btnOrdem">↕ Alterar ordem</button>
     <div class="inclPrevLinha" id="inclPrevLinha"><button id="btnInclPrev" type="button">＋ Incluir previsto</button></div>
     <button class="lima" id="btnCadastrar">+ Adicionar curral</button>
@@ -1134,7 +1135,7 @@ body.naInicio .topoTxt h1{font-size:clamp(16px,5vw,28px)!important}
     <label class="filebtn lima" id="lblRestaurar" for="restaurar" hidden data-antigo="1" style="margin:0;text-transform:none;letter-spacing:0;color:var(--fg);font-size:1rem">Escolher o arquivo da cópia<input id="restaurar" type="file" accept=".json,application/json"></label>
   </section>
   <section class="panel fimHist" hidden><button class="danger" id="hApagar">Apagar registros…</button></section>
-  <p class="note" id="versao" style="text-align:center"></p>
+  <p class="note" id="versao" style="text-align:center" hidden></p>
 </div>
   <div id="viewCarga" hidden><div class="gTela" id="cBox"></div></div>
   <div id="viewGest" hidden><div class="gTela" id="gBox"></div></div>
@@ -1214,7 +1215,7 @@ body.naInicio .topoTxt h1{font-size:clamp(16px,5vw,28px)!important}
 <div class="toast" id="toast" hidden></div>
 <script>
 'use strict';
-const APP_VERSAO='154';
+const APP_VERSAO='155';
 const APP_DATA='19/10/2026';
 const KEY='confinamento-completo-v1';
 const $=id=>document.getElementById(id);
@@ -1851,7 +1852,7 @@ function renderPrev(){
   $('btnOrdem').hidden=!hoje;$('btnCadastrar').hidden=true;$('btnRemoverCurral').hidden=true;
   $('pvImsBar').hidden=!ims;$('viewPrev').classList.toggle('pvImsOn',ims);$('viewPrev').classList.toggle('pvTodos',PV.t===0&&!PV.per);$('btnIms').classList.toggle('on',ims);
   $('pvHead').innerHTML=PV.per?'<tr><th></th><th>Curral</th><th>Total do período (kg)</th><th></th></tr>':
-    PV.t===0?`<tr><th></th><th>Curral</th>${ims?'<th>% IMS</th>':''}<th>Previsto do dia</th>${comReal?'<th>Realiz.</th><th>Dif.</th>':''}<th></th></tr>`:`<tr><th></th>${comReal?'<th class="hora">Hora</th>':''}<th class="pvCurTh">Curral</th><th class="pvPrevTh">Previsto T${PV.t}</th>${comReal?'<th>Realiz.</th><th>Dif.</th>':''}<th></th></tr>`;
+    PV.t===0?`<tr><th></th><th>Curral</th>${ims?'<th>% IMS</th>':''}<th>Previsto dia</th>${comReal?'<th>Realiz.</th><th>Dif.</th>':''}<th></th></tr>`:`<tr><th></th>${comReal?'<th class="hora">Hora</th>':''}<th class="pvCurTh">Curral</th><th class="pvPrevTh">Previsto T${PV.t}</th>${comReal?'<th>Realiz.</th><th>Dif.</th>':''}<th></th></tr>`;
   $('tbPrev').innerHTML=S.cadastro.map((c,i)=>{const v=m[c],esc_=esc(c),tr=travado(c),rl=comReal?realDe(c):null,pvN=typeof v==='number'?v:0;
     const colR=comReal?(PV.t===0?`<td class="num pvReal">${rl!=null?fmt(rl):''}</td><td class="num ${rl!=null&&pvN?classeDesv(rl-pvN,pvN):''}">${rl!=null&&pvN?sgn(rl-pvN):''}</td>`
       :`<td class="num pvReal">${rl!=null?fmt(rl):''}</td><td class="num ${rl!=null&&pvN?classeDesv(rl-pvN,pvN):''}">${rl!=null&&pvN?sgn(rl-pvN):''}</td>`):'';
@@ -2422,7 +2423,7 @@ if($('hcXls'))$('hcXls').onclick=()=>{const G_=compDados();if(!G_.length)return 
   const [pa,pb]=intervaloHist();compartilharArquivo(montarXlsx([['Relatório completo',rows,[12,15,7,8,22,13,14,14,14,14]]]),`FJK - Relatório completo - ${dataArq(pa)}${pa!==pb?' a '+dataArq(pb):''}.xlsx`,XT);};
 
 /* ---------- Abas ---------- */
-function aba(qual){const vq=qual;if(modoVer&&(qual==='auto'||qual==='autoc'||qual==='carga'))qual='trato';
+function aba(qual){setTimeout(()=>{if(window.semTela)semTela();},0);const vq=qual;if(modoVer&&(qual==='auto'||qual==='autoc'||qual==='carga'))qual='trato';
   if(!modoVer&&['trato','auto'].includes(qual)&&window.abaAtual!==qual)fLimparSetup();  // entrou no Fornecer: começa limpo (se não tiver fornecimento aberto) // no Visualizar, todas mostram o Ao vivo (manual e automação, carregar e fornecer)
   try{if((qual==='carga'||qual==='autoc')&&typeof CG!=='undefined'&&!CG.ativa){CG.passo=1;CG.local=null;CG.trato=null;CG.juntos=[];CG.avulso=false;CG.juntoAberto=false;}
     if((qual==='trato'||qual==='auto')&&window.abaAtual!==qual&&typeof filtroForn==='function'&&!filtroForn()){FS.local=null;FS.rac=null;FS.trato=null;FS.passo=1;FS.fim='';}}catch(e){}
@@ -2614,9 +2615,9 @@ function totaisPorCurral(regs){const m=new Map();regs.forEach(r=>{const x=m.get(
 var hModo='T';
 /* relatório zootécnico do dia (no fim do Histórico de tratos): dia próprio, segue o filtro de local */
 let zDia=null;
-/* Histórico: as listas de baixo (registros, batidas, índices) começam minimizadas; a setinha abre */
-window.__hAb={T:false,B:false,R:false};
-function hColFechar(){window.__hAb={T:false,B:false,R:false};document.querySelectorAll('#viewHist .hColap').forEach(s=>s.classList.remove('aberto'));}
+/* Histórico: as listas de baixo (registros, batidas, índices) já abrem expandidas; a setinha minimiza */
+window.__hAb={T:true,B:true,R:true};
+function hColFechar(){window.__hAb={T:true,B:true,R:true};document.querySelectorAll('#viewHist .hColap').forEach(s=>s.classList.add('aberto'));}
 document.addEventListener('click',e=>{const c=e.target.closest('#viewHist .hColCab');if(!c)return;const s=c.closest('.hColap'),k=s.dataset.hcol;
   window.__hAb[k]=!window.__hAb[k];s.classList.toggle('aberto',window.__hAb[k]);});
 function pintarZoot(){const b=$('zootSec');if(!b||!window.zootBoxHTML)return;if(hModo!=='R'){b.hidden=true;return;}b.hidden=false;
@@ -2641,7 +2642,7 @@ function renderHist(){try{aplicarRenomesHist();}catch(e){}
   $('hPrev').textContent=regs.length?fmt(p):'—';$('hReal').textContent=regs.length?fmt(f):'—';
   $('hDif').textContent=regs.length?sgn(f-p):'—';$('hDif').className='num '+(regs.length?classeDesv(f-p,p):'');
   /* um dia só: previsto do DIA inteiro (todos os tratos ou o trato escolhido), o que já foi feito e o que falta */
-  let PDC=null;{const um=!HD.per;$('hFaltaBox').hidden=true;$('hStat').classList.remove('st4');$('hPrevLbl').textContent=um?(HD.t>0?'Previsto do trato':'Previsto do dia'):'Previsto';$('hDifLbl').textContent='Diferença';
+  let PDC=null;{const um=!HD.per;$('hFaltaBox').hidden=true;$('hStat').classList.remove('st4');$('hPrevLbl').textContent='Previsto';$('hDifLbl').textContent='Diferença';
    if(um){const [d]=intervaloHist(),P=prevDoDia(d)||{},t=HD.t<0?0:HD.t,feito=new Set(regs.map(r=>r.trato+'|'+r.curral));let pd=0,fa=0;
      PDC={};const add=(c,v)=>{PDC[c]=(PDC[c]||0)+v;};
      for(let k=1;k<=MAXT;k++){if(t&&k!==t)continue;const m=P[String(k)]||P[k]||{};Object.keys(m).forEach(c=>{const v=+m[c];if(!(v>0))return;if(localSel!=='T'&&linhaDe(c)!==localSel)return;
@@ -3687,7 +3688,9 @@ function pintarAvBtn(){const b=$('avBtn');if(!b)return;b.hidden=!modoVer;if(!mod
   const d=on?L[0].d:null,txt=on?`<span>● AO VIVO</span><small>${d.modo==='carga'?'Carregando'+(d.rac?' '+esc(d.rac):''):'Fornecendo'+(d.curral?' '+esc(d.curral):'')}${L.length>1?` · +${L.length-1}`:''} · toque para ver ▸</small>`:'<span>● AO VIVO</span><small>nada agora</small>';
   b.classList.toggle('on',on);if(b.dataset.h!==txt){b.dataset.h=txt;b.innerHTML=txt;}}
 /* o Ao vivo só aparece pelo botão: tocou (e tem alguém trabalhando) abre; abriu o menu de novo ou foi para outro quadrado, some */
-function avVer(on){document.body.classList.toggle('avVendo',!!on);}
+function avVer(on){document.body.classList.toggle('avVendo',!!on);semTela();}
+/* sem nenhuma tela aberta embaixo (nada tocado, ou Ao vivo fechado no Visualizar): não tem o que esconder, some o "esconder menu" */
+function semTela(){try{const a=window.abaAtual||'',vivo=['trato','carga','auto','autoc'].includes(a);document.body.classList.toggle('semTela',!a||(typeof modoVer!=='undefined'&&modoVer&&vivo&&!document.body.classList.contains('avVendo')));}catch(e){}}
 $('avBtn')&&($('avBtn').onclick=()=>{const L=window.avTodos||[];if(!L.length){avVer(false);toast('Ninguém carregando ou fornecendo agora');return;}avVer(true);aba(L[0].aba);setTimeout(()=>{try{menuFecha();window.scrollTo({top:0});}catch(e){}},150);});
 function renderAoVivo(){const box=$('aoVivo');window.avTodos=[];pintarAvBtn();if(!modoVer){box.innerHTML='';pintarAvCarga([]);return;}
   if(avDados==null||!navigator.onLine){pintarAvCarga([]);document.body.classList.add('verSemTrato');}
@@ -3855,7 +3858,7 @@ if('serviceWorker' in navigator){
   const caminho=()=>{const g=$('tabGrpGest').getAttribute('aria-selected')==='true'?'Gestão':'Tratos';
     const p=[g];if(g==='Gestão'){p.push(sel('#subGest'));}else{const t=sel('#subTrato');p.push(t);if(/Manual|Automação/.test(t))p.push(sel('#subModo'));}
     return p.filter(Boolean).join(' › ');};
-  const pinta=()=>{const f=document.body.classList.contains('menuFechado');b.innerHTML=f?`<span>☰ ${esc(caminho())}</span><span>▼ menu</span>`:'▲ esconder menu';};
+  const pinta=()=>{if(window.semTela)semTela();const f=document.body.classList.contains('menuFechado');b.innerHTML=f?`<span>☰ ${esc(caminho())}</span><span>▼ menu</span>`:'▲ esconder menu';};
   const fecha=()=>{document.body.classList.add('menuFechado');pinta();};
   const abre=()=>{document.body.classList.remove('menuFechado');if(typeof modoVer!=='undefined'&&modoVer&&window.avVer)avVer(false);pinta();const y=m.getBoundingClientRect().top+scrollY-8;if(scrollY>y)window.scrollTo({top:Math.max(0,y)});};
   b.onclick=()=>document.body.classList.contains('menuFechado')?abre():fecha();
