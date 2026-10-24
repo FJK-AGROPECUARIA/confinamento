@@ -750,6 +750,12 @@ button.primary{background:#2e6b2f;border-color:#2e6b2f}
 .subModo{background:#2e6b2f;border-radius:12px;margin-top:0}
 .subModo button{background:#3f7d3a;border-color:#3f7d3a}
 .subModo button[aria-selected="true"]{background:#d8f06a;border-color:#d8f06a;color:#1f3d20}
+/* menu da Gestão em quadrados grandes (2 por linha); com o menu aberto só aparecem os quadrados */
+#subGest.gTiles{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}#subGest.gTiles[hidden]{display:none}
+#subGest.gTiles button{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;min-height:118px;padding:14px 8px;border-radius:18px;border:0;background:var(--c);color:#fff;font-size:1.3rem;font-weight:800;box-shadow:0 2px 6px rgba(0,0,0,.12)}
+#subGest.gTiles .gIc{font-size:2.3rem;line-height:1}#subGest.gTiles .gIc svg{width:2.6rem;height:2.6rem;display:block}
+#subGest.gTiles button[aria-selected="true"]{outline:3px solid #9bc31c;outline-offset:2px}
+body.modoGest:not(.menuFechado):not(.naInicio) #viewGest,body.modoGest:not(.menuFechado):not(.naInicio) #viewEscolha,body.modoGest:not(.menuFechado):not(.naInicio) .menuSeta{display:none!important}
 .menuSeta{align-self:stretch;border:0;background:transparent;padding:4px 8px 0;font-size:.85rem;font-weight:700;color:#5d6b7a;line-height:1.2;border-radius:10px;text-align:center}
 body.menuFechado .wrap>.menu{position:sticky;top:env(safe-area-inset-top,0px);z-index:30;padding:4px;box-shadow:0 3px 10px rgba(17,37,61,.18)}
 body.menuFechado .wrap>.menu>*:not(.menuSeta){display:none!important}
@@ -899,14 +905,14 @@ body.naInicio .topoTxt h1{font-size:clamp(16px,5vw,28px)!important}
     <button id="tabAutoC" aria-selected="false" hidden>Carregar</button>
     <button id="tabAuto" aria-selected="false" hidden>Fornecer</button>
   </div>
-  <div class="subtabs sub4" id="subGest" hidden>
-    <button data-gt="home" id="tabGest">Resumo</button>
-    <button data-gt="rels">Relatórios</button>
-    <button data-gt="currais">Currais</button>
-    <button data-gt="lotes">Lotes</button>
-    <button data-gt="racoes">Rações</button>
-    <button data-gt="estoque">Estoque</button>
-    <button data-gt="cfg">Config.</button>
+  <div class="subtabs gTiles" id="subGest" hidden>
+    <button data-gt="currais" style="--c:#4f9a52"><span class="gIc"><svg class="icoCurral" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 21V7.5L5.5 5 7 7.5V21M10.5 21V7.5L12 5l1.5 2.5V21M17 21V7.5L18.5 5 20 7.5V21" fill="#c9a26b" stroke="#7a4f21" stroke-width="1.3" stroke-linejoin="round"/><path d="M2.5 10.5h19M2.5 16h19" stroke="#7a4f21" stroke-width="2.2" stroke-linecap="round"/></svg></span><span>Currais</span></button>
+    <button data-gt="lotes" style="--c:#3d8442"><span class="gIc">🐂</span><span>Lotes</span></button>
+    <button data-gt="racoes" style="--c:#b8860b"><span class="gIc">🌽</span><span>Rações</span></button>
+    <button data-gt="estoque" style="--c:#946a0c"><span class="gIc">📦</span><span>Estoque</span></button>
+    <button data-gt="home" id="tabGest" style="--c:#3f80c4"><span class="gIc">📋</span><span>Resumo</span></button>
+    <button data-gt="rels" style="--c:#24507f"><span class="gIc">📈</span><span>Relatórios</span></button>
+    <button data-gt="cfg" style="--c:#6b7479"><span class="gIc">⚙️</span><span>Config.</span></button>
   </div>
   </div>
 
@@ -1167,7 +1173,7 @@ body.naInicio .topoTxt h1{font-size:clamp(16px,5vw,28px)!important}
 <div class="toast" id="toast" hidden></div>
 <script>
 'use strict';
-const APP_VERSAO='145';
+const APP_VERSAO='146';
 const APP_DATA='19/10/2026';
 const KEY='confinamento-completo-v1';
 const $=id=>document.getElementById(id);
@@ -1769,7 +1775,7 @@ function renderPrev(){
   const feitoT=(c,k)=>HIST.some(r=>r.dia===PV.dia&&r.curral===c&&+r.trato===k);
   const travado=c=>{if(PV.t>0)return feitoT(c,PV.t);const ks=[];for(let k=1;k<=MAXT;k++){const v=(o[k]||{})[c];if(typeof v==='number'&&v>0)ks.push(k);}return ks.length>0&&ks.every(k=>feitoT(c,k));}; // Todos: trava quando todos os tratos do curral já foram feitos
   $('viewPrev').classList.toggle('pvSoVer',!ed);$('viewPrev').classList.toggle('pvComHora',PV.t>0&&comReal&&!PV.per);
-  const podeIncl=ed&&hoje&&PV.t>0;$('inclPrevLinha').hidden=!podeIncl;$('btnInclPrev').classList.toggle('on',!!PV.incl);$('listaBtns').hidden=!(podeIncl&&PV.incl);$('btnLimparPrev').hidden=true;$('btnIms').hidden=!(ed&&PV.t===0);
+  const podeIncl=ed&&hoje;$('inclPrevLinha').hidden=!podeIncl;$('btnInclPrev').classList.toggle('on',!!PV.incl&&PV.t>0);$('listaBtns').hidden=!(podeIncl&&PV.incl&&PV.t>0);$('btnLimparPrev').hidden=true;$('btnIms').hidden=!(ed&&PV.t===0);
   $('btnOrdem').hidden=!hoje;$('btnCadastrar').hidden=true;$('btnRemoverCurral').hidden=true;
   $('pvImsBar').hidden=!ims;$('viewPrev').classList.toggle('pvImsOn',ims);$('viewPrev').classList.toggle('pvTodos',PV.t===0&&!PV.per);$('btnIms').classList.toggle('on',ims);
   $('pvHead').innerHTML=PV.per?'<tr><th></th><th>Curral</th><th>Total do período (kg)</th><th></th></tr>':
@@ -3350,7 +3356,7 @@ function voltarInicio(){try{geoParar();}catch(e){}
 $('btnSairVer').onclick=voltarInicio;
 /* ↕ Alterar ordem: só mostra o ☰ de arrastar quando liga */
 function modoOrdem(v){$('viewPrev').classList.toggle('ordem',v);$('btnOrdem').textContent=v?'✓ Concluir':'↕ Alterar ordem';if(v)toast('Arraste pelo ☰ para mudar a ordem');}
-$('btnInclPrev').onclick=()=>{if(bloqueado())return;PV.incl=!PV.incl;renderPrev();if(PV.incl){const l=$('listaBtns');if(l&&!l.hidden)l.scrollIntoView({behavior:'smooth',block:'center'});}};
+$('btnInclPrev').onclick=()=>{if(bloqueado())return;if(PV.t===0){PV.t=+S.pvTrato||+$('pvTrato').value||1;PV.ims=false;PV.incl=true;}else PV.incl=!PV.incl;renderPrev();if(PV.incl){const l=$('listaBtns');if(l&&!l.hidden)l.scrollIntoView({behavior:'smooth',block:'center'});}};
 $('btnOrdem').onclick=()=>{if(bloqueado())return;modoOrdem(!$('viewPrev').classList.contains('ordem'));};
 /* ⟳ Atualizar agora: no Visualizar busca tudo na hora; em Executar envia o que falta e busca o que os outros lançaram */
 let atualizando=false;
