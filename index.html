@@ -757,8 +757,13 @@ button.primary{background:#2e6b2f;border-color:#2e6b2f}
 #tratoTiles button{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;min-height:112px;padding:10px 6px;border-radius:18px;border:0;background:var(--c);color:#fff;font-size:1.25rem;font-weight:800;box-shadow:0 2px 6px rgba(0,0,0,.12)}
 #tratoTiles button[hidden]{display:none}
 #tratoTiles .avBtn{grid-column:1/-1;min-height:0;flex-direction:row;gap:8px;padding:9px 12px;font-size:.92rem;letter-spacing:.04em;background:#c62828;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:block;text-align:center;border-radius:12px}
-#tratoTiles .avBtn.on{background:#1e9e45;animation:avPulso 1.6s ease-in-out infinite}#tratoTiles .avBtn span{font-size:.8rem;font-weight:700;opacity:.9;letter-spacing:0}
+#tratoTiles .avBtn.on{background:#1e9e45;animation:avPulso 1.6s ease-in-out infinite}
 body:not(.somenteVer) #avBtn{display:none!important}
+body.somenteVer #viewEscolha{display:none!important}
+/* Visualizar: sem Carregar/Fornecer (o AO VIVO abre o que estiver acontecendo); AO VIVO grande, na largura dos dois quadrados */
+body.somenteVer #tratoTiles [data-tt="autoc"],body.somenteVer #tratoTiles [data-tt="auto"]{display:none!important}
+body.somenteVer #tratoTiles .avBtn{min-height:112px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;white-space:normal;font-size:1.35rem;letter-spacing:.06em;border-radius:18px;padding:10px 14px}
+#tratoTiles .avBtn small{font-size:.95rem;font-weight:700;letter-spacing:.02em;opacity:.95;text-transform:none}
 @keyframes avPulso{50%{box-shadow:0 0 0 6px rgba(30,158,69,.25)}}
 #tratoTiles small{font-size:.66rem;letter-spacing:.12em;font-weight:800;opacity:.9;text-transform:uppercase}
 #tratoTiles .gIc{font-size:2.1rem;line-height:1}.tStk{display:flex;align-items:center;gap:6px}.tStk i{font-style:normal;font-size:1.9rem}.tStk svg{display:block}
@@ -1204,7 +1209,7 @@ body.naInicio .topoTxt h1{font-size:clamp(16px,5vw,28px)!important}
 <div class="toast" id="toast" hidden></div>
 <script>
 'use strict';
-const APP_VERSAO='150';
+const APP_VERSAO='151';
 const APP_DATA='19/10/2026';
 const KEY='confinamento-completo-v1';
 const $=id=>document.getElementById(id);
@@ -2437,7 +2442,7 @@ function escolherModo(m){if(m!=='man'&&m!=='auto'){modoAtual=null;$('subModo').h
     telaEscolha('Escolha ⚡ Automação ou ✋ Manual no menu acima.');return;}
   modoAtual=m;$('tabMan').setAttribute('aria-selected',String(m==='man'));$('tabModoAuto').setAttribute('aria-selected',String(m==='auto'));
   $('tabTrato').hidden=$('tabCarga').hidden=m!=='man';$('tabAuto').hidden=$('tabAutoC').hidden=m!=='auto';$('modoTit').textContent=m==='auto'?'⚡ Automação':'✋ Manual';
-  $('subModo').hidden=false;telaEscolha(m==='auto'?'⚡ Automação: escolha Carregar ou Fornecer.':'✋ Manual: escolha Carregar ou Fornecer.');}
+  $('subModo').hidden=false;telaEscolha(modoVer&&m==='auto'?'👁 Toque em AO VIVO para ver quem está carregando ou fornecendo.':m==='auto'?'⚡ Automação: escolha Carregar ou Fornecer.':'✋ Manual: escolha Carregar ou Fornecer.');}
 $('tabMan').onclick=()=>escolherModo('man');
 $('tabModoAuto').onclick=()=>escolherModo('auto');
 $('tabTrato').onclick=()=>aba('trato');
@@ -3637,7 +3642,7 @@ document.addEventListener('click',e=>{const b=e.target.closest&&e.target.closest
   if(window.abaAtual!==ab)aba(ab);else renderAoVivo();setTimeout(()=>{try{renderAoVivo();$('aoVivo').scrollIntoView({block:'start',behavior:'smooth'});}catch(x){}},50);});
 /* Visualizar: botão comprido "AO VIVO" em cima dos quadrados — verde quando alguém está carregando/fornecendo (toca e abre), vermelho quando não */
 function pintarAvBtn(){const b=$('avBtn');if(!b)return;b.hidden=!modoVer;if(!modoVer)return;const L=window.avTodos||[],on=L.length>0;
-  const d=on?L[0].d:null,txt=on?`● AO VIVO · ${d.modo==='carga'?'Carregando'+(d.rac?' '+esc(d.rac):''):'Fornecendo'+(d.curral?' '+esc(d.curral):'')}${L.length>1?` · +${L.length-1}`:''} ▸`:'● AO VIVO · nada agora';
+  const d=on?L[0].d:null,txt=on?`<span>● AO VIVO</span><small>${d.modo==='carga'?'Carregando'+(d.rac?' '+esc(d.rac):''):'Fornecendo'+(d.curral?' '+esc(d.curral):'')}${L.length>1?` · +${L.length-1}`:''} · toque para ver ▸</small>`:'<span>● AO VIVO</span><small>nada agora</small>';
   b.classList.toggle('on',on);if(b.dataset.h!==txt){b.dataset.h=txt;b.innerHTML=txt;}}
 $('avBtn')&&($('avBtn').onclick=()=>{const L=window.avTodos||[];if(!L.length){toast('Ninguém carregando ou fornecendo agora');return;}aba(L[0].aba);});
 function renderAoVivo(){const box=$('aoVivo');window.avTodos=[];pintarAvBtn();if(!modoVer){box.innerHTML='';pintarAvCarga([]);return;}
