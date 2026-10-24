@@ -57,12 +57,22 @@ async function gSync(puxar){
       if(j&&j.ok&&Array.isArray(j.itens)){let mud=false;try{marcarAtualiz();}catch(e){}
         j.itens.forEach(x=>{if(!x||!x.uid)return;const l=G.it[x.uid];
           if(!l||((+x.ts||0)>(l.ts||0)&&!G.pend.includes(x.uid))){G.it[x.uid]=x;mud=true;}});
-        if(mud){gSave();try{aplicarRenomesHist();limparPrevRenomes();}catch(e){}if(!$('viewGest').hidden&&!gEditando())gRender();}
+        if(mud){gSave();try{aplicarRenomesHist();limparPrevRenomes();}catch(e){}if(!$('viewGest').hidden&&!gEditando())gRenderManter();}
       }
     }
   }finally{gSinc=false;if(typeof statusNuvem==='function')statusNuvem();}
 }
 const gEditando=()=>{const a=document.activeElement;return a&&$('gBox').contains(a)&&/INPUT|SELECT|TEXTAREA/.test(a.tagName);};
+/* redesenho vindo da nuvem (sincronização): não pode apagar o que a pessoa digitou e ainda não salvou.
+   Guarda os campos alterados (valor diferente do original) e coloca de volta depois de redesenhar. */
+function gChaveCampo(el){if(el.id)return '#'+el.id;const d=Object.entries(el.dataset||{}).map(([k,v])=>k+'='+v).join('&');if(!d)return null;
+  const irm=[...$('gBox').querySelectorAll(el.tagName)].filter(x=>Object.entries(x.dataset||{}).map(([k,v])=>k+'='+v).join('&')===d);return d+'#'+irm.indexOf(el);}
+function gRenderManter(){const box=$('gBox'),guard=[];
+  box.querySelectorAll('input,select,textarea').forEach(el=>{if(el.type==='checkbox'||el.type==='radio'||el.type==='file')return;const ori=el.tagName==='SELECT'?([...el.options].find(o=>o.defaultSelected)||{}).value:el.defaultValue;
+    if(ori!==undefined&&el.value!==ori){const k=gChaveCampo(el);if(k)guard.push([k,el.value]);}});
+  const y=window.scrollY;gRender();
+  if(guard.length){guard.forEach(([k,v])=>{let el=null;if(k[0]==='#')el=document.getElementById(k.slice(1));else{const [d,i]=k.split('#');el=[...box.querySelectorAll('input,select,textarea')].filter(x=>Object.entries(x.dataset||{}).map(([a,b])=>a+'='+b).join('&')===d)[+i];}
+    if(el&&el.value!==v){el.value=v;el.dispatchEvent(new Event('input',{bubbles:true}));}});window.scrollTo({top:y});}}
 setInterval(()=>{if(modoVer&&!$('viewGest').hidden&&navigator.onLine&&document.visibilityState==='visible')gSync(true).catch(()=>{});},20000);
 
 /* ---------- configurações ---------- */
@@ -3298,7 +3308,7 @@ function migrarRenomes(){try{if(typeof modoVer!=='undefined'&&modoVer)return 0;i
     if(!G.it[id]||G.it[id].del){const y=JSON.parse(JSON.stringify(x));y.uid=id;y.curral=nv;y.nomeAntigo=x.curral;gPut(y);}gDel(x.uid);n++;});
   gTodos('fezes').forEach(x=>{const nv=nomeAtual(x.curral);if(!nv||nv===x.curral)return;const id=fzId(x.dia,nv);
     if(!G.it[id]||G.it[id].del){const y=JSON.parse(JSON.stringify(x));y.uid=id;y.curral=nv;gPut(y);}gDel(x.uid);n++;});
-  if(n&&!$('viewGest').hidden&&!gEditando())gRender();return n;}catch(e){return 0;}}
+  if(n&&!$('viewGest').hidden&&!gEditando())gRenderManter();return n;}catch(e){return 0;}}
 window.migrarRenomes=migrarRenomes;
 setTimeout(migrarRenomes,7000);setInterval(migrarRenomes,60000);
 

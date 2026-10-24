@@ -1209,7 +1209,7 @@ body.naInicio .topoTxt h1{font-size:clamp(16px,5vw,28px)!important}
 <div class="toast" id="toast" hidden></div>
 <script>
 'use strict';
-const APP_VERSAO='151';
+const APP_VERSAO='152';
 const APP_DATA='19/10/2026';
 const KEY='confinamento-completo-v1';
 const $=id=>document.getElementById(id);
@@ -1500,7 +1500,11 @@ function fornSetupHTML0(){if(!FS.local)FS.passo=1;const cont=n=>`<button type="b
     return passoRac+`<label for="fTrato">3. Trato</label>${tratoSeta('fTrato',null,'',trF)}<p class="note">${pend.length?pend.map(x=>`Trato ${x.k}: ${x.n?`faltam ${x.n} de ${x.t}`:'✓ todos fornecidos'}`).join(' · '):'Ainda não tem previsto para este local e ração.'}</p>`;}
   const L=fornCurrais(FS.local,FS.rac,FS.trato),pend=fornPendentes(FS.local,FS.rac,FS.trato),tot=L.reduce((a,x)=>a+x.prev,0);
   return passoRac+`
-    <label for="fTrato">3. Trato</label>${tratoSeta('fTrato',FS.trato,'',trF)}${`
+    <label for="fTrato">3. Trato</label><div class="cTrLin">${tratoSeta('fTrato',FS.trato,'',trF)}<button type="button" class="mini cJtTog${FS.juntoAb?' sel':''}" data-fjtog="1">＋ Trato</button></div>
+    ${FS.juntoAb?(()=>{FS.juntos=(FS.juntos||[]).filter(k=>k!==+FS.trato);const op=trF.filter(k=>k!==+FS.trato&&(FS.juntos.includes(k)||fornPendentes(FS.local,FS.rac,k).length));
+      const alvo=Math.max(+FS.trato,...FS.juntos),soma=[+FS.trato].concat(FS.juntos).reduce((a,k)=>a+fornPendentes(FS.local,FS.rac,k).reduce((b,x)=>b+x.prev,0),0);
+      return `<div class="cJuntoLista">${op.map(k=>{const t=fornPendentes(FS.local,FS.rac,k).reduce((a,x)=>a+x.prev,0);return `<button type="button" data-fjunto="${k}" class="${FS.juntos.includes(k)?'sel':''}"><span>${FS.juntos.includes(k)?'✓ ':''}Trato ${k}</span>${t?`<small>${fmt(t)} kg</small>`:''}</button>`;}).join('')||'<p class="note">Nenhum outro trato pendente para juntar.</p>'}</div>
+      ${FS.juntos.length?`<p class="note"><b>Tratos ${[+FS.trato].concat(FS.juntos).sort((a,b)=>a-b).join(' + ')} juntos:</b> cada curral recebe a soma (${fmt(soma)} kg no total) e fica registrado no <b>Trato ${alvo}</b>.</p>`:''}`;})():''}${`
     ${L.length?'':`<p class="note">${Object.keys(S.prev||{}).some(k=>Object.keys(S.prev[k]||{}).length)?'Nenhum curral com previsto neste trato para este local e ração.':'Ainda não tem previsto hoje: faça a leitura de cocho (Tratos › Leitura).'}</p>`}
     <button class="primary" id="fIniciar"${L.length?'':' disabled'}>▶ Iniciar fornecimento</button>
     ${L.length&&!pend.length?`<div class="fTodosOk">⚠ TRATO ${FS.trato}: TODOS JÁ FORAM FORNECIDOS<small>Se precisar, pode iniciar o fornecimento mesmo assim.</small></div>`:''}`}`;}
@@ -1514,7 +1518,16 @@ function mostrarFornecimento(){try{const setup=!modoVer&&!filtroForn();
   if(va&&$('fSetupA')){va.classList.toggle('emSetup',setup);$('fSetupA').hidden=!setup;if(setup)$('fSetupA').innerHTML=fRemHTML()+fornSetupHTML();$('fBarA').hidden=setup;$('fBarA').innerHTML=fornBarHTML();if($('fNovoA')){$('fNovoA').hidden=setup||modoVer||!FORN_NOVO_TXT();$('fNovoA').innerHTML=FORN_NOVO;}if($('fCancA'))$('fCancA').hidden=setup||modoVer;}
 }catch(e){}}
 window.mostrarFornecimento=mostrarFornecimento;
-async function iniciarFornecimentoChecado(){const pend=fornPendentes(FS.local,FS.rac,FS.trato),prec=pend.reduce((a,x)=>a+x.prev,0);
+/* tratos juntos no fornecimento: o previsto dos currais pendentes vai todo para o trato maior (ex.: 2 + 3 → Trato 3) */
+async function juntarTratosForn(){const js=(FS.juntos||[]).map(Number).filter(k=>k!==+FS.trato);if(!js.length)return true;
+  const todos=[+FS.trato].concat(js),alvo=Math.max(...todos),hj=diaAtivo(),feitoEm=(k,c)=>HIST.some(r=>r.dia===hj&&+r.trato===k&&r.curral===c);
+  const mov=[];todos.filter(k=>k!==alvo).forEach(k=>fornPendentes(FS.local,FS.rac,k).forEach(x=>{if(!feitoEm(alvo,x.nome))mov.push({k,c:x.nome,kg:x.prev});}));
+  if(!mov.length){FS.trato=alvo;return true;}
+  const ok=await perg(`Juntar Tratos ${todos.slice().sort((a,b)=>a-b).join(' + ')}?`,`O previsto de ${new Set(mov.map(m=>m.c)).size} curral(is) passa para o Trato ${alvo} (somado) e o fornecimento fica registrado no Trato ${alvo}.`,'Sim, juntar','Não, voltar',true);if(!ok)return false;
+  mov.forEach(m=>{const de=S.prev[String(m.k)],pa=S.prev[String(alvo)]=S.prev[String(alvo)]||{};pa[m.c]=(+pa[m.c]||0)+(+de[m.c]||0);delete de[m.c];});
+  try{diagLog&&diagLog('tratos_juntos',{local:FS.local,tratos:todos,alvo,currais:mov.map(m=>m.c+':'+m.kg)});}catch(e){}
+  FS.trato=alvo;FS.juntos=[];FS.juntoAb=false;marcarPrev();toast(`Tratos juntos no Trato ${alvo}`);return true;}
+async function iniciarFornecimentoChecado(){if(!await juntarTratosForn())return;const pend=fornPendentes(FS.local,FS.rac,FS.trato),prec=pend.reduce((a,x)=>a+x.prev,0);
   if(!pend.length&&fornCurrais(FS.local,FS.rac,FS.trato).length&&!await perg('Deseja realmente iniciar o fornecimento?',`O Trato ${FS.trato} (${FS.local==='C'?'Confinamento':'Pasto'}) já foi realizado hoje: todos os currais já foram tratados.`,'Sim, iniciar mesmo assim','Não, voltar'))return;
   const peso=window.pesoBalanca?pesoBalanca():null;
   if(peso!=null&&prec>0&&peso<prec){const ok=window.confirmaVermelho?await confirmaVermelho('Pouca ração no vagão',`A balança mostra ${fmt(peso)} kg e o fornecimento precisa de ${fmt(prec)} kg (${pend.length} curral(is)). Faltam ${fmt(prec-peso)} kg.`,'Iniciar mesmo assim','Voltar para carregar mais'):confirm('Pouca ração no vagão. Iniciar mesmo assim?');if(!ok)return;}
@@ -1525,6 +1538,8 @@ function iniciarFornecimento(){FS.fim='';S.forn={ativo:true,ts0:Date.now(),dia:h
   if(window.aRenderFora)aRenderFora();render();mostrarFornecimento();window.scrollTo({top:0});}
 document.addEventListener('click',e=>{const lb=e.target.closest('[data-floc]');if(lb){FS.local=lb.dataset.floc;FS.rac=null;FS.trato=null;FS.passo=2;mostrarFornecimento();return;}
   const fp=e.target.closest('[data-fpasso]');if(fp){FS.passo=+fp.dataset.fpasso;mostrarFornecimento();return;}
+  if(e.target.closest('[data-fjtog]')){FS.juntoAb=!FS.juntoAb;if(!FS.juntoAb)FS.juntos=[];mostrarFornecimento();return;}
+  const fj=e.target.closest('[data-fjunto]');if(fj){const k=+fj.dataset.fjunto;FS.juntos=FS.juntos||[];FS.juntos=FS.juntos.includes(k)?FS.juntos.filter(x=>x!==k):FS.juntos.concat(k);mostrarFornecimento();return;}
   if(e.target.closest('#fIniciar'))return iniciarFornecimentoChecado();
   if(e.target.closest('[data-ffinal]')){(async()=>{if(window.autoDescarregando&&autoDescarregando()){toast('Está fornecendo num curral: registre antes de finalizar.');return;}const f=filtroForn();if(!f)return;
     const pz=window.aPausadoKg?aPausadoKg():null;   // curral pausado no meio: o que já caiu entra no registro ao finalizar
