@@ -122,7 +122,7 @@ const pesagensDe=l=>gTodos('pesagem').filter(s=>s.lote===l.uid).sort(porDia);
 /* agrupado por lote e guardado (é chamado muitas vezes por dia nos relatórios); refaz ao gravar algo ou a cada 1 s */
 var ENT_C=null,ENT_T=0;
 function entradasDe(l){if(!ENT_C||Date.now()-ENT_T>1000){ENT_C={};gTodos('entlote').forEach(x=>{(ENT_C[x.lote]=ENT_C[x.lote]||[]).push(x);});Object.values(ENT_C).forEach(a=>a.sort(porDia));ENT_T=Date.now();}return ENT_C[l.uid]||[];}
-function cabPres(l,dia,sd){if(!l.ent||dia<l.ent.dia)return 0;let c=+l.ent.cab||0;entradasDe(l).forEach(x=>{if(x.dia<=dia)c+=+x.cab||0;});(sd||saidasDe(l)).forEach(s=>{if(s.dia<dia||((s.mot==='apart'||s.mot==='transf'||s.mot==='falta')&&s.dia===dia))c-=+s.cab||0;});return Math.max(0,c);}
+function cabPres(l,dia,sd){if(!l.ent||dia<l.ent.dia)return 0;let c=+l.ent.cab||0;entradasDe(l).forEach(x=>{if(x.dia<=dia)c+=+x.cab||0;});(sd||saidasDe(l)).forEach(s=>{if(s.dia<dia||(s.mot!=='morte'&&s.dia===dia))c-=+s.cab||0;});  /* venda/sobra: no dia lançado já não conta (sai cedo, sem consumo); o consumo vai até o dia anterior */return Math.max(0,c);}
 function cabEm(l,dia,sd){if(!l.ent||dia<l.ent.dia)return 0;let c=+l.ent.cab||0;entradasDe(l).forEach(x=>{if(x.dia<=dia)c+=+x.cab||0;});(sd||saidasDe(l)).forEach(s=>{if(s.dia<=dia)c-=+s.cab||0;});return Math.max(0,c);}
 /* cabeças totais que entraram no lote (entrada inicial + entradas depois) e peso médio de entrada de todas */
 const cabEntTot=l=>(+l.ent.cab||0)+entradasDe(l).reduce((a,x)=>a+(+x.cab||0),0);
@@ -812,8 +812,7 @@ function fcCalc(l,F){const d=F.dia||hojeKey(),tem=cabPres(l,d),cabV=gNum(F.cab)|
   const FC=faltaCalc(l,d,tem,F,pV),cabF=FC.cab,pF=FC.p,kgF=FC.kg;
   const kgV=cabV>0&&pV>0?cabV*pV:0,kgTot=kgV+kgT+kgF,K=custoAteDia(l,d),fixo=FC.fixo!=null?FC.fixo:0,resto=1-fixo;
   T.forEach(g=>{g.sh=kgTot?g.kg/kgTot*resto:0;g.cst={};['compra','alim','op','outros'].forEach(k=>g.cst[k]=K[k]*g.sh);g.custo=K.total*g.sh;});
-  /* no dia da venda os vendidos ainda comem no curral (os transferidos já comem no lote novo): esse trato fica com os vendidos */
-  let extraD=0;try{if(cabV>0){const x=diaLote(l,d,gCtx());if(x&&ok(x.custoR))extraD=x.custoR*(x.juntos>1?cabV/Math.max(1,x.cab):1);}}catch(e){}
+    const extraD=0;  /* dia da venda/sobra não tem consumo (sai cedo): custo, diárias e dias vão até o dia anterior */
   const cabTot=cabV+cabF+T.reduce((a,g)=>a+g.cab,0),shF=FC.fixo!=null?fixo:(kgTot?kgF/kgTot:0),custoF=K.total*shF,cstF={};['compra','alim','op','outros'].forEach(k=>cstF[k]=K[k]*shF);const custoV=K.total-T.reduce((a,g)=>a+g.custo,0)-custoF+extraD;
   const rc=gNum(F.rc)>0&&gNum(F.rc)<100?gNum(F.rc):50,s={cab:cabV,peso:pV,rc,unid:F.unid,preco:gNum(F.preco)||0,desc:gNum(F.desc)||0,vTot:gNum(F.vTot)||0},rec=valorVenda(s);
   return {d,tem,cabV,cabF,pF,shF,custoF,cstF,pV,deLote,kgV,T,kgTot,K,cabTot,custoV,rc,rec,res:rec-custoV};}
