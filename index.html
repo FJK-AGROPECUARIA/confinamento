@@ -207,7 +207,7 @@ button.fFinal{margin-top:8px!important;background:#f2b705!important;border-color
 :is(#cBox,#acBox,.fornSetup) .gLocal{margin:0}
 :is(#cBox,#acBox,.fornSetup) .tSeta{margin:0}
 :is(#cBox,#acBox,.fornSetup) select{margin:0}
-.tPvRl{display:flex;flex-direction:column;align-items:center;line-height:1.15}.tPvRl i{display:block;width:70%;height:1px;background:rgba(255,255,255,.75);margin:1px 0}.cJunto{margin:6px 0 0}.cJtTog{padding:5px 10px;font-size:.8rem}#acBox .cExpTog,#cBox .cExpTog{display:inline-block!important;width:auto!important;max-width:max-content!important;align-self:flex-start!important;margin:6px 0 0!important;padding:3px 10px!important;font-size:.72rem!important;min-height:0!important;background:#fff!important;color:#2e6b2f!important;border:1px solid #2e6b2f!important;font-weight:700}.cExpLista button:not(.sel){background:#f3f3f3!important;color:#888!important;text-decoration:line-through}.cExpLista button em{font-style:normal;font-size:.68rem;font-weight:700;text-decoration:none!important;display:block}.cExpLista button.cJaCarr{text-decoration:none!important;background:#e8f1fb!important;color:#3f6f9f!important;border-color:#9dbbe0!important}.cExpLista button.cJaCarr span,.cExpLista button.cJaCarr small{text-decoration:line-through}
+.pvImsBtns{gap:10px;margin:8px 0 0}.pvImsBtns button{flex:1;margin:0}.tPvRl{display:flex;flex-direction:column;align-items:center;line-height:1.15}.tPvRl i{display:block;width:70%;height:1px;background:rgba(255,255,255,.75);margin:1px 0}.cJunto{margin:6px 0 0}.cJtTog{padding:5px 10px;font-size:.8rem}#acBox .cExpTog,#cBox .cExpTog{display:inline-block!important;width:auto!important;max-width:max-content!important;align-self:flex-start!important;margin:6px 0 0!important;padding:3px 10px!important;font-size:.72rem!important;min-height:0!important;background:#fff!important;color:#2e6b2f!important;border:1px solid #2e6b2f!important;font-weight:700}.cExpLista button:not(.sel){background:#f3f3f3!important;color:#888!important;text-decoration:line-through}.cExpLista button em{font-style:normal;font-size:.68rem;font-weight:700;text-decoration:none!important;display:block}.cExpLista button.cJaCarr{text-decoration:none!important;background:#e8f1fb!important;color:#3f6f9f!important;border-color:#9dbbe0!important}.cExpLista button.cJaCarr span,.cExpLista button.cJaCarr small{text-decoration:line-through}
 .cAvulso{display:block;margin:8px 0 0;font-size:.8rem;padding:6px 10px}.cAvulso.sel{background:#fff3cd;border-color:#b26a00}
 .cAvInfo{padding:10px;border-radius:10px;background:#fff3cd;font-weight:700}
 .cTotWrap{position:relative}.cTotWrap input{padding-right:118px}
@@ -1009,7 +1009,9 @@ body.naInicio .topoTxt h1{font-size:clamp(16px,5vw,28px)!important}
     </table></div>
     <button class="danger" id="btnLimparPrev">Limpar previsto deste trato</button>
     <button class="lima" id="btnIms">Alterar previsto <small style="font-size:.82em;font-weight:600;white-space:nowrap">(% IMS ou kg/dia)</small></button>
+    <div class="row pvImsBtns" id="pvImsBtns" hidden><button class="primary" type="button" data-pvims="ok">✓ Aplicar</button><button class="dangerfill" type="button" data-pvims="canc">✕ Cancelar</button></div>
     <button id="btnOrdem">↕ Alterar ordem</button>
+    <div class="row pvImsBtns" id="pvOrdBtns" hidden><button class="primary" type="button" data-pvord="ok">✓ Aplicar</button><button class="dangerfill" type="button" data-pvord="canc">✕ Cancelar</button></div>
     <div class="inclPrevLinha" id="inclPrevLinha"><button id="btnInclPrev" type="button">＋ Incluir previsto</button></div>
     <button class="lima" id="btnCadastrar">+ Adicionar curral</button>
     <button class="dangerfill" id="btnRemoverCurral">− Remover curral</button>
@@ -1220,7 +1222,7 @@ body.naInicio .topoTxt h1{font-size:clamp(16px,5vw,28px)!important}
 <div class="toast" id="toast" hidden></div>
 <script>
 'use strict';
-const APP_VERSAO='173';
+const APP_VERSAO='174';
 const APP_DATA='19/10/2026';
 const KEY='confinamento-completo-v1';
 const $=id=>document.getElementById(id);
@@ -1864,7 +1866,10 @@ function renderPrev(){
   $('viewPrev').classList.toggle('pvSoVer',!ed);$('viewPrev').classList.toggle('pvComHora',PV.t>0&&comReal&&!PV.per);
   const podeIncl=ed&&hoje;$('inclPrevLinha').hidden=!podeIncl;$('btnInclPrev').classList.toggle('on',!!PV.incl&&PV.t>0);$('listaBtns').hidden=!(podeIncl&&PV.incl&&PV.t>0);$('btnLimparPrev').hidden=true;$('btnIms').hidden=!(ed&&!PV.per);$('btnIms').innerHTML=PV.t===0?'Alterar previsto <small style="font-size:.82em;font-weight:600;white-space:nowrap">(% IMS ou kg/dia)</small>':`Alterar previsto do Trato ${PV.t}`;
   $('btnOrdem').hidden=!hoje;$('btnCadastrar').hidden=true;$('btnRemoverCurral').hidden=true;
-  $('pvImsBar').hidden=!edM;$('viewPrev').classList.toggle('pvTrava',!PV.per&&!edM);$('pvImsTxt').innerHTML=PV.t===0?'Altere o <b>% IMS</b> ou o <b>kg/dia</b> de cada curral (na mesma linha vale o último que alterar). Nada muda até tocar em <b>Aplicar</b>; <b>Cancelar</b> volta tudo como estava.':`Altere o kg do <b>Trato ${PV.t}</b> de cada curral. Nada muda até tocar em <b>Aplicar</b>; <b>Cancelar</b> volta tudo como estava.`;$('viewPrev').classList.toggle('pvImsOn',ims);$('viewPrev').classList.toggle('pvTodos',PV.t===0&&!PV.per);$('btnIms').classList.toggle('on',ims);
+  /* editando o previsto: o próprio botão vira Aplicar (verde) e Cancelar (vermelho), no mesmo lugar; some o resto */
+  $('pvImsBar').hidden=true;$('pvImsBtns').hidden=!edM;if(edM){$('btnIms').hidden=true;$('btnOrdem').hidden=true;$('inclPrevLinha').hidden=true;}
+  $('inclPrevLinha').hidden=true;$('listaBtns').hidden=true;  /* Incluir previsto saiu */
+  pvBotoesOrdem();$('viewPrev').classList.toggle('pvTrava',!PV.per&&!edM);$('pvImsTxt').innerHTML=PV.t===0?'Altere o <b>% IMS</b> ou o <b>kg/dia</b> de cada curral (na mesma linha vale o último que alterar). Nada muda até tocar em <b>Aplicar</b>; <b>Cancelar</b> volta tudo como estava.':`Altere o kg do <b>Trato ${PV.t}</b> de cada curral. Nada muda até tocar em <b>Aplicar</b>; <b>Cancelar</b> volta tudo como estava.`;$('viewPrev').classList.toggle('pvImsOn',ims);$('viewPrev').classList.toggle('pvTodos',PV.t===0&&!PV.per);$('btnIms').classList.toggle('on',ims);
   $('pvHead').innerHTML=PV.per?'<tr><th></th><th>Curral</th><th>Total do período (kg)</th><th></th></tr>':
     PV.t===0?`<tr><th></th><th>Curral</th>${ims?'<th>% IMS</th>':''}<th>Previsto dia</th>${comReal?'<th>Realiz.</th><th>Dif.</th>':''}${comAm?'<th class="pvAmTh">Amanhã</th>':''}<th></th></tr>`:`<tr><th></th>${comReal?'<th class="hora">Hora</th>':''}<th class="pvCurTh">Curral</th><th class="pvPrevTh">Previsto T${PV.t}</th>${comReal?'<th>Realiz.</th><th>Dif.</th>':''}<th></th></tr>`;
   $('tbPrev').innerHTML=S.cadastro.map((c,i)=>{const v=m[c],esc_=esc(c),tr=travado(c),rl=comReal?realDe(c):null,pvN=typeof v==='number'?v:0;
@@ -1927,6 +1932,7 @@ function aplicarKgEd(i,t){const c=S.cadastro[i];if(c==null)return true;PV.ed=PV.
 function aplicarTec(i,buf){return tecTipo==='ims'?aplicarIms(i,buf):aplicarPrev(i,buf);}
 function pvEdSair(){if(window.HPV==='ims')setTimeout(()=>{if(window.HPV==='ims')hpvFechar();},0);tecIdx=null;$('teclado').hidden=true;document.body.classList.remove('comteclado');document.querySelectorAll('#tbPrev input.sel').forEach(x=>x.classList.remove('sel'));PV.ims=false;PV.ed={};tecTipo='kg';renderPrev();}
 $('btnIms').onclick=()=>{if(!pvEditavel())return;if(PV.ims){pvEdSair();return;}fecharTeclado();PV.ims=true;PV.ed={};renderPrev();};
+document.addEventListener('click',e=>{const b=e.target.closest('[data-pvims]');if(!b)return;$(b.dataset.pvims==='ok'?'pvImsAplicar':'pvImsCanc').click();});
 $('pvImsCanc').onclick=()=>{const n=Object.keys(PV.ed||{}).length;pvEdSair();toast(n?'Alteração cancelada: ficou como estava':'Cancelado');};
 $('pvImsAplicar').onclick=()=>{if(!pvEditavel())return;if(tecIdx!=null)fecharTeclado();const o=pvObj();let n=0,sem=[],feitosTodos=[];
   if(PV.t>0){const k=String(PV.t),m=mapaPv(k);Object.entries(PV.ed||{}).forEach(([c,e])=>{if(HIST.some(r=>r.dia===PV.dia&&r.curral===c&&+r.trato===PV.t)){feitosTodos.push(c);return;}const antes=m[c];if(antes===e.val)return;m[c]=e.val;desfPrev.push({d:PV.dia,k,nome:c,antes});n++;});}
@@ -3559,7 +3565,15 @@ function voltarInicio(){try{geoParar();}catch(e){}
 }
 $('btnSairVer').onclick=voltarInicio;
 /* ↕ Alterar ordem: só mostra o ☰ de arrastar quando liga */
-function modoOrdem(v){if(!v&&window.HPV==='ordem')setTimeout(()=>{if(window.HPV==='ordem')hpvFechar();},0);$('viewPrev').classList.toggle('ordem',v);$('btnOrdem').textContent=v?'✓ Concluir':'↕ Alterar ordem';if(v)toast('Arraste pelo ☰ para mudar a ordem');}
+/* Alterar ordem: o botão vira Aplicar (verde) e Cancelar (vermelho); Cancelar volta a ordem de antes */
+function pvBotoesOrdem(){const on=$('viewPrev').classList.contains('ordem');$('pvOrdBtns').hidden=!on;if(on){$('btnOrdem').hidden=true;$('btnIms').hidden=true;$('pvImsBtns').hidden=true;}}
+function modoOrdem(v){if(!v&&window.HPV==='ordem')setTimeout(()=>{if(window.HPV==='ordem')hpvFechar();},0);
+  const era=$('viewPrev').classList.contains('ordem');if(v&&!era)window.pvOrdSnap=JSON.stringify(S.cadastro);
+  $('viewPrev').classList.toggle('ordem',v);$('btnOrdem').textContent='↕ Alterar ordem';if(v&&!era)toast('Arraste pelo ☰ para mudar a ordem');
+  if(era!==v){try{renderPrev();}catch(e){}}}
+document.addEventListener('click',e=>{const b=e.target.closest('[data-pvord]');if(!b)return;
+  if(b.dataset.pvord==='canc'&&window.pvOrdSnap){const a=JSON.parse(window.pvOrdSnap);if(JSON.stringify(S.cadastro)!==window.pvOrdSnap){S.cadastro=a;marcarPrev();render();toast('Ordem cancelada: ficou como estava');}else toast('Cancelado');}
+  else toast('Ordem aplicada');window.pvOrdSnap=null;modoOrdem(false);});
 $('btnInclPrev').onclick=()=>{if(bloqueado())return;if(PV.t===0){PV.t=+S.pvTrato||+$('pvTrato').value||1;PV.ims=false;PV.incl=true;}else PV.incl=!PV.incl;renderPrev();if(PV.incl){const l=$('listaBtns');if(l&&!l.hidden)l.scrollIntoView({behavior:'smooth',block:'center'});}};
 $('btnOrdem').onclick=()=>{if(bloqueado())return;modoOrdem(!$('viewPrev').classList.contains('ordem'));};
 /* ⟳ Atualizar agora: no Visualizar busca tudo na hora; em Executar envia o que falta e busca o que os outros lançaram */
