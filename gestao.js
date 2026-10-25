@@ -153,7 +153,8 @@ const ehVenda=s=>s.mot!=='morte'&&s.mot!=='apart'&&s.mot!=='transf'&&s.mot!=='fa
 function valorCompra(l){if(l.ent&&l.ent.unid==='transf')return (+l.ent.preco||0)+entradasDe(l).reduce((a,x)=>a+(+x.rs||0),0);if(l.apDe)return custoHerdado(l)+entradasDe(l).reduce((a,x)=>a+(+x.rs||0),0);const e=l.ent||{};const cab=+e.cab||0,peso=+(e.pesoC||e.peso)||0,p=+e.preco||0;
   const rc=+e.rcC||50,v=e.unid==='cab'?cab*p:e.unid==='kg'?cab*peso*p:e.unid==='arrV'?cab*peso/30*p:cab*peso*rc/100/15*p;return v+(+e.outros||0)+entradasDe(l).reduce((a,x)=>a+(+x.rs||0),0);}
 const arrobaVenda=s=>(+s.cab||0)*(+s.peso||0)*((+s.rc||0)/100)/15;
-function valorVenda(s){const cab=+s.cab||0,peso=+s.peso||0,p=+s.preco||0;
+function valorVenda(s){if(+s.vTot>0)return +s.vTot-(+s.desc||0);  /* valor total da venda digitado/calculado: vale ele */
+  const cab=+s.cab||0,peso=+s.peso||0,p=+s.preco||0;
   const v=s.unid==='cab'?cab*p:s.unid==='kg'?cab*peso*p:s.unid==='arrV'?cab*peso/30*p:arrobaVenda(s)*p;return v-(+s.desc||0);}
 
 /* ---------- consumo e custo por dia (a partir do realizado do trato) ---------- */
@@ -779,9 +780,11 @@ function tFechaForm(t){const l=G.it[t.id],hj=hojeKey(),cfg=gCfg();
     <h3 class="gSubT">💲 Vendidos</h3><div class="gForm"><div class="gCampo"><label>Quantidade vendida</label><input type="text" inputmode="decimal" data-fc="cab" value="${esc(F.cab)}" autocomplete="off"></div>
       ${inp('peso','Peso médio vendido',F.peso,1,'kg')}${inp('pesoT','Peso total vendido',F.pesoT,1,'kg')}
       ${inp('carcM','Peso médio abatido',F.carcM||'',1,'kg')}${inp('carcT','Peso total abatido',F.carcT||'',1,'kg')}
+      ${inp('arrT','Total de arrobas abatidas',F.arrT||'',1,'@')}
       <div class="gCampo"><label>Rendimento de carcaça <span class="gSuf">(%)</span></label><input type="text" inputmode="decimal" data-fc="rc" value="${esc(F.rc)}" placeholder="em branco = 50%" autocomplete="off"></div>
       <div class="gCampo"><label>Preço de venda em</label><select data-fc="unid">${UNID_V.map(([a,b])=>`<option value="${a}"${a===F.unid?' selected':''}>${esc(b)}</option>`).join('')}</select></div>
-      ${inp('preco','Preço de venda',F.preco,1,'R$')}${inp('desc','Descontos (frete, impostos)',F.desc,1,'R$ total')}
+      ${inp('preco','Preço de venda',F.preco,1,'R$')}${inp('vTot','Valor total da venda',F.vTot||'',1,'R$')}
+      ${inp('desc','Descontos (frete, impostos)',F.desc,1,'R$ total')}${inp('vLiq','Valor total líquido',F.vLiq||'',1,'R$')}
       <div class="gCampo"><label>Comprador</label><select data-fc="comp">${opCompradores().map(([a,b])=>`<option value="${esc(a)}"${a===F.comp?' selected':''}>${esc(b)}</option>`).join('')}</select></div>
       <div class="gForm gCprNovo" id="gFcNovo"${F.comp==='__novo'?'':' hidden'}><div class="gCampo meia"><label>Nome do novo comprador</label><input type="text" id="gf_cprNome" data-fc="cprNome" value="${esc(F.cprNome||'')}" autocomplete="off"></div>
         <div class="gCampo meia"><label>Tipo</label><select id="gf_cprCat" data-fc="cprCat">${TIPOS_CPR.map(x=>`<option${x===F.cprCat?' selected':''}>${esc(x)}</option>`).join('')}</select></div></div>
@@ -805,7 +808,7 @@ function fcCalc(l,F){const d=F.dia||hojeKey(),tem=cabPres(l,d),cabV=gNum(F.cab)|
   /* no dia da venda os vendidos ainda comem no curral (os transferidos já comem no lote novo): esse trato fica com os vendidos */
   let extraD=0;try{if(cabV>0){const x=diaLote(l,d,gCtx());if(x&&ok(x.custoR))extraD=x.custoR*(x.juntos>1?cabV/Math.max(1,x.cab):1);}}catch(e){}
   const cabTot=cabV+cabF+T.reduce((a,g)=>a+g.cab,0),shF=FC.fixo!=null?fixo:(kgTot?kgF/kgTot:0),custoF=K.total*shF,cstF={};['compra','alim','op','outros'].forEach(k=>cstF[k]=K[k]*shF);const custoV=K.total-T.reduce((a,g)=>a+g.custo,0)-custoF+extraD;
-  const rc=gNum(F.rc)>0&&gNum(F.rc)<100?gNum(F.rc):50,s={cab:cabV,peso:pV,rc,unid:F.unid,preco:gNum(F.preco)||0,desc:gNum(F.desc)||0},rec=valorVenda(s);
+  const rc=gNum(F.rc)>0&&gNum(F.rc)<100?gNum(F.rc):50,s={cab:cabV,peso:pV,rc,unid:F.unid,preco:gNum(F.preco)||0,desc:gNum(F.desc)||0,vTot:gNum(F.vTot)||0},rec=valorVenda(s);
   return {d,tem,cabV,cabF,pF,shF,custoF,cstF,pV,deLote,kgV,T,kgTot,K,cabTot,custoV,rc,rec,res:rec-custoV};}
 function fcPrevia(){const box=$('gFcRes'),l=G.it[GT.id];if(!box||!l||!GT.f)return;const X=fcCalc(l,GT.f);
   box.innerHTML=`<div class="stat gStat3">${st('Quantidade',`${nf(X.cabTot)} de ${nf(X.tem)}`,X.cabTot===X.tem?'':'bad')}${st('Peso dos vendidos',X.pV>0?nf(X.pV,1)+` kg<small>${X.deLote?'pelo peso do lote inteiro':'média'}</small>`:'—')}${st('Peso total',nf(X.kgTot)+' kg')}</div>
@@ -832,7 +835,7 @@ function salvaFecha(id){fcLer();const l=G.it[id],F=GT.f,X=fcCalc(l,F),d=X.d;
     gPut({uid:sU,tipo:'saida',mot:'transf',lote:l.uid,destino:g.dest,dia:d,cab:g.cab,peso:p,pesado:true,cst,custo:tot,entl:eU,obs:'Fechamento do lote',fech:true});
     gPut({uid:eU,tipo:'entlote',lote:g.dest,dia:d,cab:g.cab,peso:p,rs:tot,de:l.uid,transf:sU,obs:`Transferido de ${l.nome} (fechamento)`});});
   if(X.cabF>0){const cst={};Object.keys(X.cstF).forEach(k=>cst[k]=Math.round(X.cstF[k]*100)/100);gPut({uid:novoId('sai'),tipo:'saida',mot:'falta',lote:l.uid,dia:d,cab:X.cabF,peso:Math.round(X.pF*10)/10,cst,custo:Object.values(cst).reduce((a,v)=>a+v,0),achados:[],obs:F.fobs||'',fech:true});}
-  if(X.cabV>0)gPut({uid:novoId('sai'),tipo:'saida',mot:'venda',lote:l.uid,dia:d,cab:X.cabV,peso:Math.round(X.pV*10)/10,rc:X.rc,pesoVT:X.kgV?Math.round(X.kgV*10)/10:null,carcT:gNum(F.carcT)>0?gNum(F.carcT):(gNum(F.carcM)>0?Math.round(gNum(F.carcM)*X.cabV*10)/10:null),unid:F.unid,preco:gNum(F.preco)||0,desc:gNum(F.desc)||0,comp:cp||'',obs:F.obs||'',fech:true});
+  if(X.cabV>0)gPut({uid:novoId('sai'),tipo:'saida',mot:'venda',lote:l.uid,dia:d,cab:X.cabV,peso:Math.round(X.pV*10)/10,rc:X.rc,pesoVT:X.kgV?Math.round(X.kgV*10)/10:null,carcT:gNum(F.carcT)>0?gNum(F.carcT):(gNum(F.carcM)>0?Math.round(gNum(F.carcM)*X.cabV*10)/10:null),unid:F.unid,preco:gNum(F.preco)||0,vTot:gNum(F.vTot)||null,desc:gNum(F.desc)||0,comp:cp||'',obs:F.obs||'',fech:true});
   toast(`${l.nome} fechado`);gPilha.pop();GT={t:'rel',id:l.uid};gRender();window.scrollTo({top:0});}
 function tEntForm(t){const l=G.it[t.id];GT.entLote=l.uid;
   return `${voltar()}<section class="panel"><h2>＋ Entrada de animais · ${esc(l.nome)}</h2><p class="note">No lote agora: ${nf(cabAtual(l))} cabeças · peso projetado hoje ${nf(pesoEm(l,hojeKey()))} kg.</p>
@@ -849,26 +852,31 @@ function calcEnt(qual){const c=gNum($('gf_cab')&&$('gf_cab').value),pi=gNum($('g
   const l=G.it[GT.entLote],P=gNum($('gf_peso').value),d=fv('dia')||hojeKey();if(!res||!l)return;
   if(c>0&&P>0){const a=cabEm(l,somaDias(d,-1)),pA=pesoEm(l,d),m=(a*pA+c*P)/(a+c);res.innerHTML=`Depois da entrada: <b>${nf(a+c)} cab</b> · peso médio do lote <b>${nf(m)} kg</b> (antes ${nf(pA)} kg).`;}else res.textContent='';}
 /* venda: peso total vendido (vivo) e abatido (carcaça) → rendimento de carcaça sozinho; total ↔ peso médio pelas cabeças */
-function calcSai(q){try{const g=k=>gNum(($('gf_'+k)||{}).value),put=(k,v)=>{const e=$('gf_'+k);if(e&&ok(v)&&v>0)e.value=vIn(Math.round(v*10)/10);};
-  const c=g('cab');
-  /* vivo: médio ↔ total */
-  if(q==='pesoVT'){if(c>0&&g('pesoVT')>0)put('peso',g('pesoVT')/c);}
-  else if((q==='peso'||q==='cab')&&c>0&&g('peso')>0)put('pesoVT',c*g('peso'));
-  /* carcaça: médio ↔ total */
-  if(q==='carcT'){if(c>0&&g('carcT')>0)put('carcM',g('carcT')/c);}
-  else if((q==='carcM'||q==='cab')&&c>0&&g('carcM')>0)put('carcT',c*g('carcM'));
-  const vt=g('pesoVT')||(c>0&&g('peso')>0?c*g('peso'):NaN),vm=g('peso');
-  if(q==='rc'){const r=g('rc');if(r>0&&r<100){if(vt>0)put('carcT',vt*r/100);if(vm>0)put('carcM',vm*r/100);}return;}
-  /* abatido (ou vivo) mudou: rendimento = carcaça ÷ vivo */
-  const ct=g('carcT'),cm=g('carcM'),rc=vt>0&&ct>0?ct/vt*100:vm>0&&cm>0?cm/vm*100:NaN;
-  if(ok(rc)&&rc>0&&rc<100&&$('gf_rc'))$('gf_rc').value=vIn(Math.round(rc*10)/10);}catch(e){}}
+/* venda: médio ↔ total (vivo e abatido), rendimento ↔ abatido, @ abatidas, preço ↔ valor total e valor líquido */
+function vendaAuto(q,g,p,ps){const c=g('cab');
+  if(q==='vt'){if(c>0&&g('vt')>0)p('vm',g('vt')/c);}else if((q==='vm'||q==='cab')&&c>0&&g('vm')>0)p('vt',c*g('vm'));
+  if(q==='arr'&&g('arr')>0)p('ct',g('arr')*15);
+  if(q==='ct'||q==='arr'){if(c>0&&g('ct')>0)p('cm',g('ct')/c);}else if((q==='cm'||q==='cab')&&c>0&&g('cm')>0)p('ct',c*g('cm'));
+  const vt=g('vt')||(c>0&&g('vm')>0?c*g('vm'):NaN),vm=g('vm');
+  if(q==='rc'){const r=g('rc');if(r>0&&r<100){if(vt>0)p('ct',vt*r/100);if(vm>0)p('cm',vm*r/100);}}
+  else if(['cab','vm','vt','cm','ct','arr'].includes(q)){const ct=g('ct'),cm=g('cm'),rc=vt>0&&ct>0?ct/vt*100:vm>0&&cm>0?cm/vm*100:NaN;if(ok(rc)&&rc>0&&rc<100)p('rc',rc);}
+  let ct=g('ct');if(!(ct>0)){const r=g('rc');if(vt>0&&r>0&&r<100)ct=vt*r/100;}
+  if(q!=='arr'&&ct>0)p('arr',ct/15,2);
+  const u=g('unid'),base=u==='cab'?c:u==='kg'?vt:u==='arrV'?vt/30:(ct>0?ct/15:NaN);
+  if(q==='vTot'){if(base>0&&g('vTot')>0)ps('preco',g('vTot')/base);}else if(q!=='vLiq'&&base>0&&g('preco')>0)ps('vTot',base*g('preco'));
+  const vT=g('vTot');if(vT>0&&q!=='vLiq')ps('vLiq',vT-(g('desc')||0));}
+const VENDA_K={cab:'cab',vm:'peso',cm:'carcM',ct:'carcT',arr:'arrT',rc:'rc',unid:'unid',preco:'preco',vTot:'vTot',desc:'desc',vLiq:'vLiq'};
+function vendaLiga(el,campo,qDe){const g=k=>{const e=el(k);if(!e)return k==='unid'?'arroba':NaN;return k==='unid'?e.value:gNum(e.value);},
+  p=(k,v,d)=>{const e=el(k);if(e&&ok(v)&&v>0)e.value=vIn(Math.round(v*Math.pow(10,d||1))/Math.pow(10,d||1));},ps=(k,v)=>{const e=el(k);if(e&&ok(v))e.value=rsIn(Math.round(v*100)/100);};
+  try{vendaAuto(qDe,g,p,ps);}catch(x){}}
+function calcSai(q){const M=Object.assign({},VENDA_K,{vt:'pesoVT'}),R={};Object.keys(M).forEach(k=>R[M[k]]=k);vendaLiga(k=>$('gf_'+M[k]),null,R[q]);}
 function tSaiForm(t){const l=G.it[t.id],m=t.o==='morte',cfg=gCfg(),E=t.sid?G.it[t.sid]:null,V=(k,d)=>E&&E[k]!=null&&E[k]!==''?E[k]:d;
   const fs=m?[{k:'dia',l:'Data',t:'dia',v:V('dia',hojeKey()),meia:1},{k:'cab',l:'Cabeças',t:'num',v:V('cab',1),meia:1},{k:'obs',l:'Causa / observação',v:V('obs','')}]:
    [{k:'dia',l:'Data da venda',t:'dia',v:V('dia',hojeKey()),meia:1},{k:'cab',l:'Quantidade',t:'num',v:V('cab',cabAtual(l)),meia:1},
     {k:'peso',l:'Peso vivo médio na saída',suf:'kg',t:'num',v:V('peso',Math.round(pesoEm(l,hojeKey()))),meia:1},{k:'pesoVT',l:'Peso total vendido (vivo)',suf:'kg',t:'num',v:V('pesoVT',''),meia:1},
-    {k:'carcM',l:'Peso médio abatido (carcaça)',suf:'kg',t:'num',v:V('carcM',''),meia:1},{k:'carcT',l:'Peso total abatido (carcaça)',suf:'kg',t:'num',v:V('carcT',''),meia:1,ajuda:'Preencha o rendimento ou o peso abatido: o outro é calculado sozinho.'},{k:'rc',l:'Rendimento de carcaça',suf:'%',t:'num',v:V('rc',l.rcPrev||cfg.rc||50),meia:1,ajuda:'Vendeu em peso vivo ou não sabe? Deixe em branco: fica 50%.'},
-    {k:'unid',l:'Preço de venda em',t:'sel',op:UNID_V,v:V('unid','arroba')},{k:'preco',l:'Preço de venda',t:'rs',v:V('preco',''),meia:1},
-    {k:'desc',l:'Descontos (frete, impostos)',suf:'total',t:'rs',v:V('desc',''),meia:1},
+    {k:'carcM',l:'Peso médio abatido (carcaça)',suf:'kg',t:'num',v:V('carcM',''),meia:1},{k:'carcT',l:'Peso total abatido (carcaça)',suf:'kg',t:'num',v:V('carcT',''),meia:1,ajuda:'Preencha o rendimento ou o peso abatido: o outro é calculado sozinho.'},{k:'arrT',l:'Total de arrobas abatidas',suf:'@',t:'num',v:V('carcT','')?Math.round(+V('carcT',0)/15*100)/100:'',meia:1},{k:'rc',l:'Rendimento de carcaça',suf:'%',t:'num',v:V('rc',l.rcPrev||cfg.rc||50),meia:1,ajuda:'Vendeu em peso vivo ou não sabe? Deixe em branco: fica 50%.'},
+    {k:'unid',l:'Preço de venda em',t:'sel',op:UNID_V,v:V('unid','arroba')},{k:'preco',l:'Preço de venda',t:'rs',v:V('preco',''),meia:1},{k:'vTot',l:'Valor total da venda',t:'rs',v:V('vTot',''),meia:1},
+    {k:'desc',l:'Descontos (frete, impostos)',suf:'total',t:'rs',v:V('desc',''),meia:1},{k:'vLiq',l:'Valor total líquido',t:'rs',v:V('vTot','')?(+V('vTot',0))-(+V('desc',0)):'',meia:1},
     {k:'comp',l:'Comprador',t:'sel',op:opCompradores(),v:V('comp','')},{k:'obs',l:'Observação',v:V('obs','')}];
   const novo=m?'':`<div class="gForm gCprNovo" id="gCprNovo" hidden><div class="gCampo meia"><label for="gf_cprNome">Nome do novo comprador</label><input type="text" id="gf_cprNome" autocomplete="off"></div>
     <div class="gCampo meia"><label for="gf_cprCat">Tipo</label><select id="gf_cprCat">${TIPOS_CPR.map(x=>`<option>${esc(x)}</option>`).join('')}</select></div></div>`;
@@ -1953,7 +1961,7 @@ $('gBox').addEventListener('click',e=>{
     if(!dia||!(cab>0))return toast('Coloque a data e a quantidade');if(dia<l.ent.dia)return toast('A data é antes da entrada do lote');
     const old=b.dataset.sid?G.it[b.dataset.sid]:null,tem=cabPres(l,dia,saidasDe(l).filter(x=>!old||x.uid!==old.uid)),cabF=!m&&!old?Math.max(0,fn('vfalta')||0):0;if(cab+cabF>tem)return toast(`Nessa data o lote tem ${nf(tem)} animais`+(cabF?' (vendidos + faltaram)':''));
     const s=old?Object.assign(JSON.parse(JSON.stringify(old)),{dia,cab,obs:fv('obs')}):{uid:novoId('sai'),tipo:'saida',mot:m?'morte':'venda',lote:id,dia,cab,obs:fv('obs')};
-    if(!m){s.peso=fn('peso');s.rc=fn('rc');s.pesoVT=fn('pesoVT')||null;s.carcT=fn('carcT')||null;s.carcM=fn('carcM')||null;if(!(s.carcT>0)&&s.carcM>0)s.carcT=Math.round(s.carcM*s.cab*10)/10;if(!(s.pesoVT>0)&&s.peso>0)s.pesoVT=Math.round(s.peso*s.cab*10)/10;if(s.pesoVT>0&&s.carcT>0)s.rc=Math.round(s.carcT/s.pesoVT*1000)/10;s.unid=fv('unid');s.preco=fn('preco');s.desc=fn('desc')||0;if(!(s.peso>0))return toast('Coloque o peso de saída');if(!(s.rc>0&&s.rc<100))s.rc=50;   // vendeu em peso vivo / sem rendimento: considera 50%
+    if(!m){s.peso=fn('peso');s.rc=fn('rc');s.pesoVT=fn('pesoVT')||null;s.carcT=fn('carcT')||null;s.carcM=fn('carcM')||null;if(!(s.carcT>0)&&s.carcM>0)s.carcT=Math.round(s.carcM*s.cab*10)/10;if(!(s.pesoVT>0)&&s.peso>0)s.pesoVT=Math.round(s.peso*s.cab*10)/10;if(s.pesoVT>0&&s.carcT>0)s.rc=Math.round(s.carcT/s.pesoVT*1000)/10;s.unid=fv('unid');s.preco=fn('preco');s.desc=fn('desc')||0;s.vTot=fn('vTot')||null;if(!(s.peso>0))return toast('Coloque o peso de saída');if(!(s.rc>0&&s.rc<100))s.rc=50;   // vendeu em peso vivo / sem rendimento: considera 50%
       let cp=fv('comp');if(cp==='__novo'){const nm=(($('gf_cprNome')||{}).value||'').trim();if(!nm)return toast('Digite o nome do novo comprador');
         const ja=gTodos('comprador').find(c=>alfa(c.nome,nm)===0);if(ja)cp=ja.uid;else{cp=novoId('cpr');gPut({uid:cp,tipo:'comprador',nome:nm,cat:$('gf_cprCat').value});}}
       s.comp=cp||'';if(!(s.preco>0)&&!confirm('Salvar sem o preço de venda?'))return;}
@@ -2079,13 +2087,8 @@ function fcAuto(t){try{const q=s=>document.querySelector('#gBox '+s),g=s=>{const
     if(k==='pesoT')put(`[data-ft="${i}|peso"]`,g(`[data-ft="${i}|pesoT"]`)/c);else if(k==='peso'||k==='cab')put(`[data-ft="${i}|pesoT"]`,c*g(`[data-ft="${i}|peso"]`));return;}
   if(!fc)return;
   if(['falta','fpeso','fpesoT'].includes(fc)){const c=g('[data-fc="falta"]');if(!(c>0))return;if(fc==='fpesoT')put('[data-fc="fpeso"]',g('[data-fc="fpesoT"]')/c);else put('[data-fc="fpesoT"]',c*g('[data-fc="fpeso"]'));return;}
-  const c=g('[data-fc="cab"]');
-  if(fc==='pesoT'){if(c>0)put('[data-fc="peso"]',g('[data-fc="pesoT"]')/c);}else if((fc==='peso'||fc==='cab')&&c>0)put('[data-fc="pesoT"]',c*g('[data-fc="peso"]'));
-  if(fc==='carcT'){if(c>0)put('[data-fc="carcM"]',g('[data-fc="carcT"]')/c);}else if((fc==='carcM'||fc==='cab')&&c>0)put('[data-fc="carcT"]',c*g('[data-fc="carcM"]'));
-  const vt=g('[data-fc="pesoT"]'),vm=g('[data-fc="peso"]');
-  if(fc==='rc'){const r=g('[data-fc="rc"]');if(r>0&&r<100){if(vt>0)put('[data-fc="carcT"]',vt*r/100);if(vm>0)put('[data-fc="carcM"]',vm*r/100);}return;}
-  const ct=g('[data-fc="carcT"]'),cm=g('[data-fc="carcM"]'),rc=vt>0&&ct>0?ct/vt*100:vm>0&&cm>0?cm/vm*100:NaN;
-  if(['cab','peso','pesoT','carcM','carcT'].includes(fc)&&ok(rc)&&rc>0&&rc<100){const e=q('[data-fc="rc"]');if(e)e.value=vIn(Math.round(rc*10)/10);}}catch(x){}}
+  const M=Object.assign({},VENDA_K,{vt:'pesoT'}),R={};Object.keys(M).forEach(k=>R[M[k]]=k);if(!R[fc])return;
+  vendaLiga(k=>q(`[data-fc="${M[k]}"]`),null,R[fc]);}catch(x){}}
 $('gBox').addEventListener('input',e=>{if(GT.t==='transfForm')trPrevia();if(GT.t==='fechaForm'){fcAuto(e.target);fcLer();fcPrevia();}});
 $('gBox').addEventListener('change',e=>{if(GT.t==='fechaForm'){fcLer();fcPrevia();}});
 $('gBox').addEventListener('change',e=>{if(GT.t==='transfForm')trPrevia();if(GT.t==='achouForm'&&e.target.id==='gf_aDest'&&$('gAchNovo'))$('gAchNovo').hidden=e.target.value!=='__novo';});
@@ -2098,7 +2101,7 @@ $('gBox').addEventListener('input',e=>{
   if(GT.t==='rel'&&/^gf_s/.test(t.id))calcSimul();
   if(GT.t==='pesForm'&&(t.id==='gf_peso'||t.id==='gf_dia'))calcPes();
   if(GT.t==='entForm'&&/^gf_(cab|peso|pesoT|dia)$/.test(t.id))calcEnt(t.id.slice(3));
-  if(GT.t==='saiForm'&&/^gf_(cab|peso|pesoVT|carcT|carcM|rc)$/.test(t.id))calcSai(t.id.slice(3));
+  if(GT.t==='saiForm'&&/^gf_(cab|peso|pesoVT|carcT|carcM|arrT|rc|unid|preco|vTot|desc)$/.test(t.id))calcSai(t.id.slice(3));
 });
 /* leitura de cocho: % IMS digitado → calcula na hora o trato do dia (kg de matéria natural) e põe no campo kg */
 /* kg digitado → mostra na hora o % de IMS (e vale como leitura mesmo sem nota) */
