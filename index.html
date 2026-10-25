@@ -207,7 +207,7 @@ button.fFinal{margin-top:8px!important;background:#f2b705!important;border-color
 :is(#cBox,#acBox,.fornSetup) .gLocal{margin:0}
 :is(#cBox,#acBox,.fornSetup) .tSeta{margin:0}
 :is(#cBox,#acBox,.fornSetup) select{margin:0}
-.cJunto{margin:6px 0 0}.cJtTog{padding:5px 10px;font-size:.8rem}#acBox .cExpTog,#cBox .cExpTog{display:inline-block!important;width:auto!important;max-width:max-content!important;align-self:flex-start!important;margin:6px 0 0!important;padding:3px 10px!important;font-size:.72rem!important;min-height:0!important;background:#fff!important;color:#2e6b2f!important;border:1px solid #2e6b2f!important;font-weight:700}.cExpLista button:not(.sel){background:#f3f3f3!important;color:#888!important;text-decoration:line-through}.cExpLista button em{font-style:normal;font-size:.68rem;font-weight:700;text-decoration:none!important;display:block}.cExpLista button.cJaCarr{text-decoration:none!important;background:#e8f1fb!important;color:#3f6f9f!important;border-color:#9dbbe0!important}.cExpLista button.cJaCarr span,.cExpLista button.cJaCarr small{text-decoration:line-through}
+.tPvRl{display:flex;flex-direction:column;align-items:center;line-height:1.15}.tPvRl i{display:block;width:70%;height:1px;background:rgba(255,255,255,.75);margin:1px 0}.cJunto{margin:6px 0 0}.cJtTog{padding:5px 10px;font-size:.8rem}#acBox .cExpTog,#cBox .cExpTog{display:inline-block!important;width:auto!important;max-width:max-content!important;align-self:flex-start!important;margin:6px 0 0!important;padding:3px 10px!important;font-size:.72rem!important;min-height:0!important;background:#fff!important;color:#2e6b2f!important;border:1px solid #2e6b2f!important;font-weight:700}.cExpLista button:not(.sel){background:#f3f3f3!important;color:#888!important;text-decoration:line-through}.cExpLista button em{font-style:normal;font-size:.68rem;font-weight:700;text-decoration:none!important;display:block}.cExpLista button.cJaCarr{text-decoration:none!important;background:#e8f1fb!important;color:#3f6f9f!important;border-color:#9dbbe0!important}.cExpLista button.cJaCarr span,.cExpLista button.cJaCarr small{text-decoration:line-through}
 .cAvulso{display:block;margin:8px 0 0;font-size:.8rem;padding:6px 10px}.cAvulso.sel{background:#fff3cd;border-color:#b26a00}
 .cAvInfo{padding:10px;border-radius:10px;background:#fff3cd;font-weight:700}
 .cTotWrap{position:relative}.cTotWrap input{padding-right:118px}
@@ -927,7 +927,7 @@ body.naInicio .topoTxt h1{font-size:clamp(16px,5vw,28px)!important}
   </nav>
   <div class="subtabs sub6" id="subTrato" hidden>
     <button id="tabLeit" aria-selected="false">🔍 Leitura</button>
-    <button id="tabPrev" aria-selected="false">🕒 Previsto</button>
+    <button id="tabPrev" aria-selected="false" hidden>🕒 Previsto</button>
     <button id="tabFez" aria-selected="false">💩<small>Fezes</small></button><button id="tabMS" aria-selected="false" title="Atualizar % de matéria seca">💧<small>% MS</small></button>
     <button id="tabModoAuto" aria-selected="false">⚡ Automação</button>
     <button id="tabHist" aria-selected="false">📖 Previsto/Realizado</button>
@@ -935,14 +935,13 @@ body.naInicio .topoTxt h1{font-size:clamp(16px,5vw,28px)!important}
   </div>
   <div class="tTiles" id="tratoTiles">
     <button type="button" id="avBtn" class="avBtn" hidden>● AO VIVO</button>
-    <button type="button" data-tt="leit" style="--c:#7d8a92"><span class="gIc">🔍</span><span>Leitura</span></button>
-    <button type="button" data-tt="prev" style="--c:#5f6b73"><span class="gIc">🕒</span><span>Previsto</span></button>
+    <button type="button" data-tt="leit" style="--c:#3f80c4"><span class="gIc">🔍</span><span>Leitura</span></button>
+    <button type="button" data-tt="hist" style="--c:#24507f"><span class="gIc">📖</span><span class="tPvRl">Previsto<i></i>Realizado</span></button>
     <button type="button" data-tt="autoc" style="--c:#2e8b3d"><small>⚡ Automação</small><span class="gIc"><span class="tStk"><svg viewBox="0 0 24 24" width="34" height="34" aria-hidden="true"><path d="M3 12h16M12 5l7 7-7 7" stroke="#fff" stroke-width="3.6" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg><i>🚛</i></span></span><span>Carregar</span></button>
     <button type="button" data-tt="auto" style="--c:#c62828"><small>⚡ Automação</small><span class="gIc"><span class="tStk"><svg viewBox="0 0 24 24" width="34" height="34" aria-hidden="true"><path d="M3 12h16M12 5l7 7-7 7" stroke="#fff" stroke-width="3.6" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg><i class="tBoi">🐂</i></span></span><span>Fornecer</span></button>
-    <button type="button" data-tt="hist" style="--c:#3f80c4"><span class="gIc">📖</span><span>Previsto / Realizado</span></button>
-    <button type="button" data-tt="man" style="--c:#24507f"><span class="gIc">✋</span><span>Trato Manual</span></button>
-    <button type="button" data-tt="fez" style="--c:#8a6a4a"><span class="gIc"><span class="tFz">💩</span></span><span>Fezes</span></button>
+    <button type="button" data-tt="fez" style="--c:#8a6a4a"><span class="gIc"><span class="tFz">💩</span></span><span>Escore de fezes</span></button>
     <button type="button" data-tt="ms" style="--c:#2f8fa8"><span class="gIc">💧</span><span>% MS</span></button>
+    <button type="button" data-tt="man" style="--c:#7d8a92"><span class="gIc">✋</span><span>Trato Manual</span></button>
   </div>
   <div class="subModo" id="subModo" hidden>
     <span id="modoTit">Manual</span>
@@ -1221,7 +1220,7 @@ body.naInicio .topoTxt h1{font-size:clamp(16px,5vw,28px)!important}
 <div class="toast" id="toast" hidden></div>
 <script>
 'use strict';
-const APP_VERSAO='172';
+const APP_VERSAO='173';
 const APP_DATA='19/10/2026';
 const KEY='confinamento-completo-v1';
 const $=id=>document.getElementById(id);
@@ -2745,7 +2744,8 @@ function renderHist(){try{aplicarRenomesHist();}catch(e){}
       const linhas=cs.map(c=>{const rs=rk.filter(r=>r.curral===c).sort((a,b)=>a.ts-b.ts);
         if(rs.length){rs.forEach(r=>{gp+=r.prev||0;gt+=r.prev||0;gf+=r.forn||0;});return rs.map(linhaR).join('');}
         const pv=pk[c];if(+pv>0)gp+=+pv;
-        return `<tr class="naoTratado"><td class="hora"></td><td class="c">${esc(c)}</td><td>${+pv>0?fmt(+pv):'—'}</td><td>—</td><td></td></tr>`;}).join('');
+        const edP=window.hEdModo&&!modoVer&&dia===hojeKey();
+        return `<tr class="naoTratado"><td class="hora"></td><td class="c">${esc(c)}</td><td>${edP?`<input class="hEdIn num" inputmode="numeric" data-hedprev="${k}|${esc(c)}" value="${+pv>0?Math.round(+pv):''}" placeholder="—" aria-label="Previsto do ${esc(c)} no Trato ${k}">`:+pv>0?fmt(+pv):'—'}</td><td>—</td><td></td></tr>`;}).join('');
       TP+=gp;TF+=gf;TT+=gt;
       return `<tr class="grp"><td colspan="5">${diaBR(dia)} · Trato ${k}</td></tr>`+totHTML(gp,gf,gt?gf-gt:null)+linhas;}).join('');
     const topo=ks.length>1?`<tr class="grp"><td colspan="5">${diaBR(dia)} · Todos os tratos</td></tr>`+totHTML(TP,TF,TT?TF-TT:null):'';
@@ -2774,21 +2774,25 @@ $('tbHist').addEventListener('click',e=>{if(!selModo)return;const tr=e.target.cl
 /* Histórico › Tratos: ✎/✕ só aparecem depois de tocar no botão pequeno "Editar / excluir" no fim da lista */
 window.hEdModo=false;
 function pintarHEd(){const el=$('hEdFim');if(!el)return;if(modoVer||!HIST.length){el.innerHTML='';return;}
-  el.innerHTML=window.hEdModo?`<div class="gBatFim gbSel"><span>Mude o <b>realizado</b> direto na linha</span><button class="mini" data-hedmodo="0">Concluir</button></div>`
-    :`<div class="gBatFim"><button class="mini btEdVerm" data-hedmodo="1">🔒 Editar</button></div>`;}
+  /* o botão "Editar previsto / realizado" fica junto dos outros (pintarHPv); aqui só a faixa de quando está editando */
+  el.innerHTML=window.hEdModo?`<div class="gBatFim gbSel"><span>Mude o <b>previsto</b> (curral ainda não tratado hoje) ou o <b>realizado</b> direto na linha</span><button class="mini" data-hedmodo="0">Concluir</button></div>`:'';}
 /* ---- Previsto/Realizado: os botões do Previsto (alterar previsto, ordem, incluir) também aqui.
    Eles usam a própria tela do Previsto, trazida para dentro desta aba enquanto altera; ao terminar, volta tudo para cá ---- */
 window.HPV=null;let hpvCasa=null;
 function hpvPode(){try{return !modoVer&&!HD.per&&hModo==='T'&&(HD.dia===hojeKey()||(HD.dia===amanhaKey()&&temLeitura(HD.dia)));}catch(e){return false;}}
-function pintarHPv(){const el=$('hPvBtns');if(!el)return;if(window.HPV||!hpvPode()){el.innerHTML='';return;}const hj=HD.dia===hojeKey();
-  el.innerHTML=`<button class="lima" data-hpv="ims">${HD.t>0?`Alterar previsto do Trato ${HD.t}`:'Alterar previsto <small style="font-size:.82em;font-weight:600;white-space:nowrap">(% IMS ou kg/dia)</small>'}</button>`+
-    (hj?'<button data-hpv="ordem">↕ Alterar ordem</button><button data-hpv="incl">＋ Incluir previsto</button>':'');}
+/* Dia todo: Alterar previsto (% IMS ou kg/dia), Alterar ordem e Incluir previsto · Todos os tratos / Trato N: Editar previsto / realizado (todos com a senha) */
+function pintarHPv(){const el=$('hPvBtns');if(!el)return;if(window.HPV||modoVer||HD.per||hModo!=='T'){el.innerHTML='';return;}
+  if(HD.t>=0){el.innerHTML=window.hEdModo?'':'<button class="dangerfill" data-hedmodo="1">✎ Editar previsto / realizado</button>';return;}
+  if(window.hEdModo)window.hEdModo=false;  /* Dia todo é só o total: não edita na linha */
+  if(!hpvPode()){el.innerHTML='';return;}const hj=HD.dia===hojeKey();
+  el.innerHTML='<button class="dangerfill" data-hpv="ims">✎ Editar previsto <small style="font-size:.82em;font-weight:600;white-space:nowrap">(% IMS ou kg/dia)</small></button>'+
+    (hj?'<button data-hpv="ordem">↕ Alterar ordem</button>':'');}
 function hpvAbrir(m){if(!hpvPode()||window.HPV)return;if(typeof fecharTeclado==='function')fecharTeclado();
   PV.dia=PV.ini=PV.fim=HD.dia;PV.per=false;PV.am=null;PV.t=HD.t>0?HD.t:0;PV.ed={};PV.ims=false;PV.incl=false;linhaSel=localSel||'T';
   const v=$('viewPrev');if(!hpvCasa)hpvCasa={p:v.parentNode,n:v.nextSibling};$('hPvBox').appendChild(v);v.hidden=false;v.dataset.aberta='1';
   window.HPV=m;$('viewHist').classList.add('hpvOn');renderPrev();
   if(m==='ims')$('btnIms').click();else if(m==='ordem')modoOrdem(true);else if(m==='incl')$('btnInclPrev').click();
-  $('hPvTxt').textContent=m==='ordem'?'Alterando a ordem':m==='incl'?'Incluindo previsto':'Alterando o previsto';window.scrollTo({top:0});}
+  $('hPvTxt').textContent=m==='ordem'?'Alterando a ordem':m==='incl'?'Incluindo previsto':'Editando o previsto';window.scrollTo({top:0});}
 function hpvFechar(){if(!window.HPV)return;const m=window.HPV;window.HPV=null;
   try{if(typeof fecharTeclado==='function')fecharTeclado();if(PV.ims)pvEdSair();modoOrdem(false);if(PV.incl){PV.incl=false;}}catch(e){}
   /* o que escolheu lá (data, trato, local) vale aqui também */
@@ -2796,13 +2800,22 @@ function hpvFechar(){if(!window.HPV)return;const m=window.HPV;window.HPV=null;
   const v=$('viewPrev');v.hidden=true;v.dataset.aberta='';if(hpvCasa)hpvCasa.p.insertBefore(v,hpvCasa.n);
   $('viewHist').classList.remove('hpvOn');try{pintarFiltrosHist();}catch(e){}renderHist();window.scrollTo({top:0});}
 window.hpvFechar=hpvFechar;
-document.addEventListener('click',e=>{const b=e.target.closest('[data-hpv]');if(b){if(bloqueado())return;hpvAbrir(b.dataset.hpv);return;}
+document.addEventListener('click',async e=>{const b=e.target.closest('[data-hpv]');if(b){if(bloqueado())return;const m=b.dataset.hpv;
+    if(!await pedirSenhaAcao(m==='ordem'?'Senha para alterar a ordem':m==='incl'?'Senha para incluir previsto':'Senha para editar o previsto'))return;hpvAbrir(m);return;}
   if(e.target.closest('[data-hpvfim]'))hpvFechar();});
 /* botão vermelho: pede a senha 1010 SEMPRE (toda vez que toca) e libera editar/excluir até tocar em Concluir */
 document.addEventListener('click',async e=>{const b=e.target.closest('[data-hedmodo]');if(!b)return;
-  if(b.dataset.hedmodo==='1'){if(bloqueado())return;if(!await pedirSenhaAcao('Senha para editar'))return;}
+  if(b.dataset.hedmodo==='1'){if(bloqueado())return;if(!await pedirSenhaAcao('Senha para editar previsto / realizado'))return;}
   window.hEdModo=b.dataset.hedmodo==='1';renderHist();});
 /* editou o realizado na própria linha */
+/* editou o previsto de um curral ainda não tratado (hoje), direto na linha */
+document.addEventListener('change',e=>{const i=e.target.closest&&e.target.closest('#tbHist [data-hedprev]');if(!i||!window.hEdModo)return;
+  const [k,c]=i.dataset.hedprev.split('|'),t=i.value.trim(),v=t===''?0:parseNum(t),m=(S.prev[k]=S.prev[k]||{}),antes=+m[c]||0;
+  if(isNaN(v)||v<0||v>30000){toast('Digite uma quantidade válida');i.value=antes?Math.round(antes):'';return;}
+  if(HIST.some(r=>r.dia===hojeKey()&&r.curral===c&&+r.trato===+k)){toast(`${c} já foi tratado no Trato ${k}: o previsto não muda mais`);renderHist();return;}
+  if(Math.round(v)===Math.round(antes))return;if(v>0)m[c]=Math.round(v);else delete m[c];
+  try{desfPrev.push({d:hojeKey(),k:String(k),nome:c,antes:antes||undefined});}catch(x){}
+  marcarPrev();editandoPrev=true;try{render();}finally{editandoPrev=false;}renderHist();toast(`Previsto do ${c} · Trato ${k}: ${v>0?fmt(Math.round(v))+' kg':'sem previsto'}`);});
 document.addEventListener('change',e=>{const i=e.target.closest&&e.target.closest('#tbHist [data-hedin]');if(!i||!window.hEdModo)return;salvarQtd(i.dataset.hedin,parseNum(i.value),i);});
 document.addEventListener('click',async e=>{const be=e.target.closest('#tbHist [data-hed]'),bd=e.target.closest('#tbHist [data-hdel]');if(!be&&!bd)return;if(bloqueado())return;
   const r=HIST.find(x=>x.uid===(be||bd).dataset[be?'hed':'hdel']);if(!r)return;
