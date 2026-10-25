@@ -2270,7 +2270,7 @@ function contaLocalPrev(k,modo){try{const hj=hojeKey(),P=S.prev||{},tot=cochoCur
 function escolhaLocal(attr,sel){const modo=attr==='data-floc'?'forn':'carga';return `<div class="gLocal">${['C','P'].map(l=>`<button type="button" ${attr}="${l}" class="${sel===l?'sel':''}">${l==='C'?ICO_C+' Confinamento':'🌿 Pasto'}</button>`).join('')}</div>`;}
 window.escolhaLocal=escolhaLocal;
 /* tela de início em passos: escolhe o local → abre a ração → abre o trato → abre o total e o botão de iniciar */
-function cTelaNova(){let h=cTelaNova0();if(CG.local&&!CG.ativa){const i=h.lastIndexOf('</section>');const bt='<button type="button" class="cCancelar" data-ccancel="1">✕ Cancelar batida</button>';h=i>=0?h.slice(0,i)+bt+h.slice(i):h+bt;}return h;}
+function cTelaNova(){let h=cTelaNova0();if(CG.local&&!CG.ativa){const i=h.lastIndexOf('</section>');const bt='<button type="button" class="cCancelar" data-ccancel="1">✕ Cancelar carregamento</button>';h=i>=0?h.slice(0,i)+bt+h.slice(i):h+bt;}return h;}
 function cTelaNova0(){if(!CG.passo){CG.passo=1;CG.local=null;}if(!CG.local)CG.passo=1;
   const ps=CG.passo,cont=n=>`<button type="button" class="lima cCont" data-cpasso="${n}">Continuar ▶</button>`;
   if(ps<=1||!CG.local)return `<section class="panel"><h2>Carregar vagão</h2><label>1. Local</label>${escolhaLocal('data-cloc',null)}<p class="note">Escolha o local para continuar.</p></section>`;
@@ -2300,16 +2300,16 @@ function cTelaNova0(){if(!CG.passo){CG.passo=1;CG.local=null;}if(!CG.local)CG.pa
   const passoTrato=passoRac+(CG.avulso?`
     <label>3. Trato</label><div class="cAvInfo">✳ Trato avulso · sem previsto, você digita a quantidade</div>
     <div class="cBotoes c4"><button type="button" class="mini cAvulso sel" data-cavulso="1">✳ Avulso</button>${cBotAjuste()}</div>`:`
-    <label for="cTrato">3. Trato</label><div class="cTrLin">${window.tratoSeta?tratoSeta('cTrato',CG.trato,'',trC):''}<button type="button" class="mini cJtTog${CG.juntoAberto?' sel':''}" data-cjtog="1">＋ Trato</button></div>${CG.trato?cExpHTML(trs):''}
+    <label for="cTrato">3. Trato</label><div class="cTrLin">${window.tratoSeta?tratoSeta('cTrato',CG.trato,'',trC):''}<button type="button" class="mini cJtTog${CG.juntoAberto?' sel':''}" data-cjtog="1">＋ Trato</button></div>${CG.avulso?'':cJaTratadoHTML(trs)}${CG.trato?cExpHTML(trs):''}
     <div class="cJuntoLista">${CG.juntoAberto?tratosAtivos().filter(k=>k!==+CG.trato&&(CG.juntos.includes(k)||cTratoPendente(k))).map(k=>{const t=sugestaoCarga(k,CG.rac,CG.local).tot;return `<button type="button" data-cjunto="${k}" class="${CG.juntos.includes(k)?'sel':''}"${t||CG.juntos.includes(k)?'':' disabled'}><span>${CG.juntos.includes(k)?'✓ ':''}Trato ${k}</span>${t?`<small>${nf(t)} kg</small>`:''}</button>`;}).join('')||'<p class="note">Nenhum outro trato pendente para juntar.</p>':''}</div>
     <div class="cBotoes c4"><button type="button" class="mini cAvulso" data-cavulso="1">✳ Avulso</button>${cBotAjuste()}</div>`)+
-    (CG.avulso?'':cJaTratadoHTML(trs));
+    '';
   if(!CG.avulso&&!CG.trato)return passoTrato+'</section>';  // escolhe o trato antes de mostrar o total
   return passoTrato+`
     <div><label>4. Total a carregar (kg)${CG.avulso?' · digite':' · pode mudar'}</label><div class="campoX cTotWrap"><input class="big num" id="cTotal" type="text" readonly inputmode="none" value="${CG.total?nf(CG.total):''}" placeholder="${CG.avulso?'digite':''}" data-ct="total"><div class="cSetas"><button type="button" data-ctot="-50" aria-label="Menos 50 kg">▼</button><button type="button" data-ctot="50" aria-label="Mais 50 kg">▲</button></div></div>
 </div>
     ${its.length&&CG.total>0?cTabelaCarga(its):''}
-    <button class="primary" data-c="iniciar"${CG.total>0&&its.length?'':' disabled'}>▶ Iniciar batida</button></section>`;}
+    <button class="primary" data-c="iniciar"${CG.total>0&&its.length?'':' disabled'}>▶ Iniciar carregamento</button></section>`;}
 /* batida em andamento: mostra quando começou e dá para cancelar e começar outra */
 function barraBatida(A){const h=A.ts0?new Date(A.ts0).toTimeString().slice(0,5):'';const outroDia=A.dia!==hojeKey();
   return `<div class="fBar${outroDia?' fBarVelha':''}"><span>${outroDia?'⚠ Batida de '+diaBR(A.dia).slice(0,5)+' ainda aberta':'Batida em andamento'}${h?' · iniciada '+h:''}${A.local?' · '+(A.local==='C'?'Confinamento':'Pasto'):''}${A.tratos&&A.tratos.length>1?' · Tratos '+A.tratos.join('+'):''}</span></div>`;}
@@ -2333,7 +2333,7 @@ function cTelaBatida(){const A=cAtiva(),i=A.atual,it=A.itens[i],alvo=it&&ok(it.i
     ${A.itens.map((x,k)=>{const d=ok(x.real)?x.real-x.prev:NaN;return `<tr class="${k===i?'cur':''} gClic" data-c="ir" data-i="${k}"><td class="c">${ok(x.real)?'✓ ':''}${esc(x.nome)}</td><td>${nf(x.prev)}</td><td>${ok(x.real)?nf(x.real):'—'}</td><td class="${ok(d)?cls(d,x.prev):''}">${ok(d)?(d>0?'+':'')+nf(d):''}</td></tr>`;}).join('')}
     <tr class="grp"><td>Total</td><td>${nf(tp)}</td><td>${nf(tr)}</td><td>${feitos?(tr-tpf>0?'+':'')+nf(tr-tpf):''}</td></tr></tbody></table></div>
     ${manNotaAtiva(A)}<button class="primary" data-c="concluir"${feitos?'':' disabled'}>✓ Finalizar batida</button>
-    <div class="row"><button data-c="desfazer"${feitos?'':' disabled'}>Desfazer último</button><button class="danger" data-c="cancelar">Cancelar batida</button></div></section>`;}
+    <div class="row"><button data-c="desfazer"${feitos?'':' disabled'}>Desfazer último</button><button class="danger" data-c="cancelar">Cancelar carregamento</button></div></section>`;}
 /* batida com carregamento manual: o produto fica com previsto e carregado = balança + manual (é o que sai do estoque);
    guarda separado: bal (balança) e man (manual). Produto todo manual entra também. */
 /* insumo marcado "registra sempre o previsto" (núcleo): no carregamento vale o previsto, não a balança */
@@ -2389,8 +2389,8 @@ function cConfirma(){const v=cBuf===''?null:+cBuf,A=cAtiva();
 function cClique(e){
   const lb=e.target.closest('[data-cloc]');if(lb){const loc=lb.dataset.cloc;cLimparSetup();CG.local=loc;CG.passo=2;cSave();return cRender();}
   const cp=e.target.closest('[data-cpasso]');if(cp){CG.passo=+cp.dataset.cpasso;cSave();return cRender();}
-  if(e.target.closest('[data-ccancel]')){const fz=()=>{cLimparSetup();cRender();window.scrollTo({top:0});toast('Batida cancelada');};
-    (typeof confirmaVermelho==='function'?confirmaVermelho('Deseja realmente cancelar a batida?','O que você escolheu para esta batida será descartado.','Sim, cancelar batida','Não, voltar'):Promise.resolve(confirm('Deseja realmente cancelar a batida?'))).then(sim=>{if(sim)fz();});return;}
+  if(e.target.closest('[data-ccancel]')){const fz=()=>{cLimparSetup();cRender();window.scrollTo({top:0});toast('Carregamento cancelado');};
+    (typeof confirmaVermelho==='function'?confirmaVermelho('Deseja realmente cancelar o carregamento?','O que você escolheu para este carregamento será descartado.','Sim, cancelar carregamento','Não, voltar'):Promise.resolve(confirm('Deseja realmente cancelar o carregamento?'))).then(sim=>{if(sim)fz();});return;}
   {const ab=e.target.closest('[data-cexpall]');if(ab){const trs=[+CG.trato].concat(CG.juntos||[]);CG.desm=ab.dataset.cexpall==='1'?[]:cCurrCarga(trs).map(x=>x.c);cExpAplicar();cSave();return cRender();}}
   if(e.target.closest('[data-cexp]')){CG.expAberto=!CG.expAberto;cSave();return cRender();}
   {const xb=e.target.closest('[data-cexpc]');if(xb){const c=xb.dataset.cexpc;CG.desm=CG.desm||[];CG.desm=CG.desm.includes(c)?CG.desm.filter(x=>x!==c):CG.desm.concat(c);cExpAplicar();cSave();return cRender();}}
@@ -2446,7 +2446,7 @@ function cClique(e){
   if(a==='desfazer'){(async()=>{const ult=A.itens.filter(x=>ok(x.real)).sort((p,q)=>(q.tsReg||0)-(p.tsReg||0)||(q.hora||'').localeCompare(p.hora||''))[0];if(!ult)return;if(!await confirmaVermelho('Deseja realmente desfazer o último produto?',`${ult.nome} (${nf(ult.real)} kg) volta a ficar para carregar.`,'Sim, desfazer','Não, manter'))return;if(CG.ativa!==A)return;const feitos=A.itens.map((x,j)=>[x,j]).filter(([x])=>ok(x.real)).sort((p,q)=>((q[0].tsReg||0)-(p[0].tsReg||0))||(q[0].hora||'').localeCompare(p[0].hora||'')||(q[1]-p[1]));if(!feitos.length)return;
     const [x,j]=feitos[0];x.real=null;x.fim=null;x.lib=false;A.atual=j;cSave();cRender();})();return;}
   if(a==='cancelar'){const feitos=A.itens.filter(x=>ok(x.real)).length;
-    confirmaVermelho('Deseja realmente cancelar a batida?',`${feitos?`Os ${feitos} produto(s) já carregado(s) nesta batida serão perdidos.`:'Esta batida será descartada.'} Nada dela será salvo e não dá para desfazer.`,'Sim, cancelar batida','Não, continuar carregando').then(sim=>{if(!sim)return;if(CG.ativa!==A)return;CG.passo=1;CG.local=null;CG.juntos=[];CG.avulso=false;CG.juntoAberto=false;try{window.diagLog&&diagLog('batida_cancelada',{trato:A.trato,itens:A.itens.map(x=>[x.nome,x.prev,x.real])});}catch(e){}CG.ativa=null;cLimparSetup();cRender();toast('Batida cancelada');window.scrollTo({top:0});});return;}
+    confirmaVermelho('Deseja realmente cancelar o carregamento?',`${feitos?`Os ${feitos} produto(s) já carregado(s) neste carregamento serão perdidos.`:'Este carregamento será descartado.'} Nada dele será salvo e não dá para desfazer.`,'Sim, cancelar carregamento','Não, continuar carregando').then(sim=>{if(!sim)return;if(CG.ativa!==A)return;CG.passo=1;CG.local=null;CG.juntos=[];CG.avulso=false;CG.juntoAberto=false;try{window.diagLog&&diagLog('batida_cancelada',{trato:A.trato,itens:A.itens.map(x=>[x.nome,x.prev,x.real])});}catch(e){}CG.ativa=null;cLimparSetup();cRender();toast('Batida cancelada');window.scrollTo({top:0});});return;}
   if(a==='concluir'){(async()=>{if(CG.conclAberto)return;CG.conclAberto=true;
     /* igual ao Finalizar fornecimento: tudo carregado → caixa verde; faltando produto → caixa vermelha (alerta) */
     let sim;try{A.itens.forEach(x=>regFixo(A,x,null));const F=A.itens.filter(x=>!ok(x.real)),n=A.itens.length-F.length;
@@ -3363,7 +3363,7 @@ function cExpAplicar(){const trs=[+CG.trato].concat(CG.juntos||[]),L=cCurrCarga(
 function cJaTratadoHTML(trs){if(typeof fornCurrais!=='function'||typeof fornPendentes!=='function')return '';
   const feitos=trs.filter(k=>k>0&&fornCurrais(CG.local,CG.rac,k).length&&!fornPendentes(CG.local,CG.rac,k).length);if(!feitos.length)return '';
   const prox=tratosAtivos().map(Number).find(k=>!trs.includes(k)&&fornPendentes(CG.local,CG.rac,k).length);
-  return `<div class="cJaFeito">⚠ ${feitos.length>1?'TRATOS '+feitos.join(' E '):'TRATO '+feitos[0]} (${NOMELOC[CG.local].toUpperCase()}): TODOS JÁ FORAM TRATADOS<small>${prox?`O próximo é o Trato ${prox}. `:''}Se precisar, pode carregar mesmo assim.</small></div>`;}
+  return `<div class="cJaFeito">⚠ ${feitos.length>1?'Tratos '+feitos.join(' e '):'Trato '+feitos[0]} / ${NOMELOC[CG.local]} já ${feitos.length>1?'realizados':'realizado'}<small>${prox?`O próximo é o Trato ${prox}, mas, se`:'Se'} precisar, pode carregar mesmo assim. Continue abaixo.</small></div>`;}
 /* % IMS do PV de um curral num dia ou período (média dos dias com trato, ponderada pelas cabeças dos lotes) */
 window.pvCurral=(c,ini,fim)=>{try{const X=gCtx();let s=0,w=0;X.L.forEach(l=>{if(!l.ent)return;for(let d=ini,i=0;d<=fim&&i<400;d=somaDias(d,1),i++){const y=diaLote(l,d,X);if(!y||nAt(y.c)!==nAt(c)||!(y.mn>0)||!ok(y.pv))continue;s+=y.pv*y.cab;w+=y.cab;}});return w?s/w:NaN;}catch(e){return NaN;}};
 /* PDF simples: cada página é uma imagem JPEG em folha A4 */
