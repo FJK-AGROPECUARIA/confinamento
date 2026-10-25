@@ -241,13 +241,13 @@ function gRender(){
   if(window.abaAtual==='gest'&&RAIZ[GT.t]==='cocho'&&!document.body.classList.contains('modoGest')){aba('leit');return;}  // leitura abre no menu Tratos
   if(window.abaAtual==='leit'&&RAIZ[GT.t]!=='cocho'){aba('gest');return;}
   const f={home:tHome,estoque:tEstoque,estIns:tEstIns,estForm:tEstForm,estNF:tEstNF,fornec:tFornec,fornForm:tFornForm,entRel:tEntRel,currais:tCurrais,curForm:tCurForm,lotes:tLotes,lote:tLote,loteForm:tLoteForm,pesForm:tPesForm,entForm:tEntForm,apartForm:tApartForm,transfForm:tTransfForm,fechaForm:tFechaForm,achouForm:tAchouForm,saiForm:tSaiForm,mudForm:tMudForm,rel:tRelLote,custoForm:tCustoForm,
-    cocho:tCocho,cochoGraf:tCochoGraf,fezes:t=>tFezes(t),rels:tRels,dia:tDia,indices:tIndices,confBal:()=>`${voltar('Relatórios')}${confBatHTML()}`,periodo:tPeriodo,comp:tComp,vendas:tVendas,compradores:tCompradores,cprForm:tCprForm,racoes:tRacoes,racForm:tRacForm,insumos:tInsumos,insForm:tInsForm,insMS:tInsMS,ms:tInsMS,cfg:tCfg}[GT.t]||tHome;
+    cocho:tCocho,cochoGraf:tCochoGraf,fezes:t=>tFezes(t),rels:tRels,dia:tDia,indices:tIndices,periodo:tPeriodo,comp:tComp,vendas:tVendas,compradores:tCompradores,cprForm:tCprForm,racoes:tRacoes,racForm:tRacForm,insumos:tInsumos,insForm:tInsForm,insMS:tInsMS,ms:tInsMS,cfg:tCfg}[GT.t]||tHome;
   const raiz=RAIZ[GT.t]||'home';document.querySelectorAll('#subGest button[data-gt]').forEach(x=>x.setAttribute('aria-selected',String(x.dataset.gt===raiz)));
   const cb=$('cfgTBox');if(cb&&$('cfgTParque')&&cb.parentNode!==$('cfgTParque'))$('cfgTParque').appendChild(cb); // ajustes da balança: guarda antes de redesenhar
   b.innerHTML=f(GT);
   try{const fz=GT.t==='fezes',ms=GT.t==='ms',lt=window.abaAtual==='leit';if($('tabFez'))$('tabFez').setAttribute('aria-selected',String(fz&&lt));if($('tabMS'))$('tabMS').setAttribute('aria-selected',String(ms&&lt));if($('tabLeit')&&lt)$('tabLeit').setAttribute('aria-selected',String(!fz&&!ms));}catch(e){}
   if(GT.t==='cfg'&&cb&&$('cfgBalHost')){$('cfgBalHost').appendChild(cb);if(window.cfgTAoAbrir)cfgTAoAbrir();}
-  if(GT.t==='cfg')cfgMinimizar();
+  if(GT.t==='cfg'&&GT.cfgSel!=='confbal')cfgMinimizar();   // Conf. balança: a lista de relatórios já aparece aberta
   if(GT.t==='racForm')calcRacao();
   if(GT.t==='rel')calcSimul();
   if(GT.t==='pesForm')calcPes();
@@ -1536,23 +1536,32 @@ function xlsGraf(){const D=dadosGraf(GT.dia);const cab=['Curral'].concat(D.dias.
     ['Kg do dia',cab.slice(0,-1),D.linhas.map(o=>[xc(o.c)].concat(o.cel.map(x=>x&&ok(x.novo)?xc(x.novo,'int'):xc('')))),[16].concat(D.dias.map(()=>9))]]);}
 
 /* ---------- relatórios ---------- */
-const REL_ABRE={relDia:'dia',indices:'indices',confBal:'confBal',confRes:'confBal',saltos:'confBal',perLote:'periodo',vendas:'vendas',comp:'comp'};
+const REL_ABRE={relDia:'dia',indices:'indices',perLote:'periodo',vendas:'vendas',comp:'comp'};
 /* relatórios por período (De … Até) */
 const REL_PER=[
   ['tratosPC','Tratos do período por curral','soma de cada curral no período (previsto, realizado e diferença)'],
   ['tratosPJ','Tratos do período dia a dia','todos os tratos de cada dia do período'],
   ['batidasP','Carregamentos do vagão','carregamentos do período com os insumos e o total'],
-  ['confResP','Balanço do vagão','uma linha por carregamento do período: já tinha, carregado, fornecido, devia sobrar, sobrou e a mais'],
-  ['saltosP','Saltos da balança por curral','em quais currais a balança mais sobe ou desce no trajeto (média, maior, soma)'],
-  ['confBalP','Conferência da balança dia a dia','a conferência completa de cada dia do período (uma página por dia)'],
   ['perLote','Consumo e custo por lote','MN, MS/cab/dia, % IMS e custo de cada lote; insumos usados'],
   ['estMov','Estoque · movimentações','entradas, saídas e consumo de cada produto no período'],
   ['vendas','Vendas por comprador','vendas do período: preço, rendimento e R$/cab'],
   ['comp','Comparativo de lotes','todos os lotes lado a lado (não depende da data)']];
 function relModo(){return GT&&GT.relModo==='per'?'per':'dia';}
-function relLista(){return relModo()==='per'?REL_PER:REL_DIA;}
+/* Config › Conf. balança: a mesma lista de relatórios, só com os da balança */
+const REL_BAL_DIA=[
+  ['confBal','Conferência da balança','carregamentos e tratos com a balança no início e no fim, e o balanço do vagão'],
+  ['confRes','Balanço do vagão','uma linha por carregamento: já tinha, carregado, fornecido, devia sobrar, sobrou e a mais'],
+  ['saltos','Saltos da balança por curral','quanto a balança subiu ou desceu antes de cada curral, sem descarregar']];
+const REL_BAL_PER=[
+  ['confResP','Balanço do vagão','uma linha por carregamento do período: já tinha, carregado, fornecido, devia sobrar, sobrou e a mais'],
+  ['saltosP','Saltos da balança por curral','em quais currais a balança mais sobe ou desce no trajeto (média, maior, soma)'],
+  ['confBalP','Conferência da balança dia a dia','a conferência completa de cada dia do período (uma página por dia)']];
+function relBal(){return !!(GT&&GT.t==='cfg'&&GT.cfgSel==='confbal');}
+function relLista(){return relBal()?(relModo()==='per'?REL_BAL_PER:REL_BAL_DIA):relModo()==='per'?REL_PER:REL_DIA;}
+function relSelK(){return (relBal()?'relExpB':'relExp')+(relModo()==='per'?'P':'');}
 function relFaixa(){const hj=hojeKey(),b=GT.rFim||hj,a=GT.rIni||somaDias(b,-6);return a<=b?[a,b]:[b,a];}
-function relExpSel(){const per=relModo()==='per',k=per?'relExpP':'relExp';if(window.__relExpVer&&window.__relExpVer[k])return window.__relExpVer[k];const c=gCfg();return Array.isArray(c[k])?c[k]:(per?['tratosPC','perLote']:['tratosC','indices','estoque']);}
+function relExpSel(){const ks=new Set(relLista().map(x=>x[0]));return relExpSel0().filter(x=>ks.has(x));}
+function relExpSel0(){const per=relModo()==='per',k=relSelK();if(window.__relExpVer&&window.__relExpVer[k])return window.__relExpVer[k];const c=gCfg();return Array.isArray(c[k])?c[k]:relBal()?relLista().map(x=>x[0]):(per?['tratosPC','perLote']:['tratosC','indices','estoque']);}
 function tRels(t){const per=relModo()==='per',dia=(t&&t.dia)||hojeKey(),[ini,fim]=relFaixa(),sel=relExpSel(),selM=!!(t&&t.relSel),ab=t&&t.relAb,LST=relLista(),ck=per?ini+'|'+fim:dia;
   if(ab&&!selM&&relVerCache.k!==ab+'|'+ck)setTimeout(relVerCarregar,60);
   const abre=k=>REL_ABRE[k]?`<button type="button" class="mini gRelAbre" data-g="ir" data-t="${REL_ABRE[k]}"${per?` data-ini="${ini}" data-fim="${fim}"`:` data-dia="${dia}"`}>abrir a tela completa ›</button>`:'';
@@ -1560,7 +1569,8 @@ function tRels(t){const per=relModo()==='per',dia=(t&&t.dia)||hojeKey(),[ini,fim
     :LST.map(([k,tt,d])=>`<div class="gRelBloco${ab===k?' ab':''}"><button type="button" class="gRelIt gRelVerBt" data-g="relVer" data-k="${k}"><span><b>${tt}</b><small>${ab===k?'toque para fechar':d}</small></span><i>${ab===k?'▲':'▼'}</i></button>
       ${ab===k?`<div class="gRelVer" id="gRelVer" title="Toque para ver em tela cheia">${relVerCache.k===k+'|'+ck?relVerCache.h:'<p class="note">Carregando o relatório…</p>'}</div>`:''}</div>`).join('');
   const atalho=(n,r)=>`<button type="button" class="mini" data-g="relAtalho" data-n="${n}">${r}</button>`;
-  return `<section class="panel"><h2>Relatórios</h2>
+  const bal=relBal();
+  return `<section class="panel"><h2>${bal?'Conferência da balança':'Relatórios'}</h2>${bal?'<p class="note">Relatórios para conferir a balança e o vagão: o que entrou, o que saiu e o que sobrou, e onde a balança sobe ou desce sem carregar.</p>':''}
   <div class="gRelModo"><button type="button" class="${per?'':'on'}" data-g="relModo" data-m="dia">📅 Por dia</button><button type="button" class="${per?'on':''}" data-g="relModo" data-m="per">📆 Por período</button></div>
   ${per?`<div class="gPerDatas gRelDatas"><label>De<input type="date" id="gRelIni" value="${ini}"></label><label>Até<input type="date" id="gRelFim" value="${fim}"></label></div>
     <div class="row gRelAtalhos">${atalho(7,'7 dias')}${atalho(15,'15 dias')}${atalho(30,'30 dias')}${atalho('mes','Este mês')}</div>`:navData('gRelDia',dia,'Data')}
@@ -1569,8 +1579,8 @@ function tRels(t){const per=relModo()==='per',dia=(t&&t.dia)||hojeKey(),[ini,fim
   <p class="note">Marque os relatórios e toque em <b>PDF</b>, <b>Foto</b> ou <b>Excel</b>: sai tudo junto, ${per?'do período escolhido':'da data escolhida'}. <b id="gRelN">${sel.length} marcado(s)</b></p>`
   :`<p class="note">Toque num relatório para ver aqui embaixo. Para enviar, use <b>Selecionar para exportar</b>.</p>`}
   <div class="gRelLista gRelExpL">${lista}</div>
-  <button type="button" class="mini gRelCpr" data-g="ir" data-t="compradores">🤝 Cadastro de compradores</button>
-  <p class="note">O relatório de um lote fica dentro do lote: Lotes → escolha o lote → Resultado.</p></section>`;}
+  ${bal?'':`<button type="button" class="mini gRelCpr" data-g="ir" data-t="compradores">🤝 Cadastro de compradores</button>
+  <p class="note">O relatório de um lote fica dentro do lote: Lotes → escolha o lote → Resultado.</p>`}</section>`;}
 function linhasDia(dia){const X=gCtx();return X.L.map(l=>({l,x:diaLote(l,dia,X)})).filter(o=>o.x).sort((a,b)=>porCurral(a.l,b.l));}
 function tDia(t){
   const dia=t.dia||hojeKey(),ls=linhasDia(dia),T={cab:0,mn:0,ms:0,cr:0,co:0,pvP:0},ins={};
@@ -1821,11 +1831,11 @@ function salvaIns(id){const nome=fv('nome'),ms=Math.round(fn('ms')*10)/10,preco=
 
 /* ---------- configurações ---------- */
 /* Config. da Gestão separado em botões: Custo · Notas · Raça · Tratos · Balança */
-const gCfgGrpAb=new Set(),CFG_ICO={rels:'📤',custo:'💲',venda:'🏷',notas:'📝',raca:'🐂',tratos:'🌾',balanca:'⚖️',senha:'🔑',backup:'💾'};
+const gCfgGrpAb=new Set(),CFG_ICO={confbal:'📊',rels:'📤',custo:'💲',venda:'🏷',notas:'📝',raca:'🐂',tratos:'🌾',balanca:'⚖️',senha:'🔑',backup:'💾'};
 /* ordem e cor dos quadrados: pelo tipo do menu */
-const CFG_TILES=['notas','tratos','balanca','custo','venda','raca','rels','senha','backup'];
-const CFG_TIPO={notas:['Tratos','#4f9a52'],tratos:['Tratos','#3d8442'],balanca:['Tratos','#2e7d32'],custo:['Gestão','#b8860b'],venda:['Gestão','#946a0c'],raca:['Gestão','#8a6a4a'],rels:['Relatórios','#3f80c4'],senha:['Sistema','#5f6b73'],backup:['Sistema','#455a64']};
-const CFG_ABAS=[['custo','Custo'],['venda','Venda'],['notas','Leitura de cocho'],['raca','Animais'],['tratos','Tratos'],['balanca','Balança'],['senha','Senha'],['rels','Relatórios'],['backup','Backup']];
+const CFG_TILES=['notas','tratos','balanca','custo','venda','raca','rels','senha','backup','confbal'];
+const CFG_TIPO={notas:['Tratos','#4f9a52'],tratos:['Tratos','#3d8442'],balanca:['Tratos','#2e7d32'],custo:['Gestão','#b8860b'],venda:['Gestão','#946a0c'],raca:['Gestão','#8a6a4a'],rels:['Relatórios','#3f80c4'],confbal:['Relatórios','#2c6aa8'],senha:['Sistema','#5f6b73'],backup:['Sistema','#455a64']};
+const CFG_ABAS=[['custo','Custo'],['venda','Venda'],['notas','Leitura de cocho'],['raca','Animais'],['tratos','Tratos'],['balanca','Balança'],['senha','Senha'],['rels','Relatórios'],['backup','Backup'],['confbal','Conf. balança']];
 function tCfg(){const c=gCfg(),hj=hojeKey(),tx=vig(c.taxa,hj),ab=GT.cab||'custo';
   if(!GT.racasEd)GT.racasEd=c.racas.slice().sort(alfa);if(!GT.catsEd)GT.catsEd=c.cats.slice();
   if(!GT.notasEd)GT.notasEd=c.notas.slice().sort((a,b)=>a.n-b.n).map(x=>Object.assign({},x));
@@ -1867,7 +1877,8 @@ function tCfg(){const c=gCfg(),hj=hojeKey(),tx=vig(c.taxa,hj),ab=GT.cab||'custo'
     <p class="note">O que for a mais ou a menos nos tratos do dia é ajustado no último trato do curral, para fechar o total do dia. Ex.: total 2.000 (1.000 + 1.000); tratou 1.200 no 1º → o 2º vira 800.</p>
     <select id="cfgComp"><option value="1"${c.compensa===false?'':' selected'}>Ligado (recomendado)</option><option value="0"${c.compensa===false?' selected':''}>Desligado</option></select></section>
   <section class="panel gCfgP"><h2>Arredondamento</h2><div class="gForm">${campo({k:'arred',l:'Arredondar o previsto de',suf:'kg',t:'num',v:c.arred,meia:1})}</div>${salvar}</section>`;}
-  if(ab==='balanca')h='<div id="cfgBalHost"></div>'+confBatHTML();
+  if(ab==='balanca')h='<div id="cfgBalHost"></div>';
+  if(ab==='confbal')h=tRels(GT);
   if(ab==='senha'){const tu=c.senhaTurno===true;
     h=`<section class="panel gCfgP"><h2>Senha para entrar</h2>
     <div class="linhas gFiltro"><button data-g="senhaTurno" data-v="0" class="${tu?'':'sel'}">Pedir sempre</button><button data-g="senhaTurno" data-v="1" class="${tu?'sel':''}">1 vez de manhã e 1 vez à tarde</button></div>
@@ -3515,14 +3526,11 @@ const REL_DIA=[
   ['resumo','Resumo do dia','o resumo da Gestão (cabeças, consumo, custo, alertas)'],
   ['relDia','Relatório do dia por lote','consumo e custo de cada lote e insumos usados'],
   ['indices','Índices do dia','MN, MS, % PV e custo por curral'],
-  ['confBal','Conferência da balança','carregamentos e tratos com a balança no início e no fim, e o balanço do vagão'],
-  ['confRes','Balanço do vagão','uma linha por carregamento: já tinha, carregado, fornecido, devia sobrar, sobrou e a mais'],
-  ['saltos','Saltos da balança por curral','quanto a balança subiu ou desceu antes de cada curral, sem descarregar'],
   ['fezes','Escore de fezes','avaliações do dia'],
   ['estoque','Estoque','os quadros coloridos de cada produto (saldo, finaliza em, consumo, mínimo)'],
   ['lotes','Lotes ativos','lista dos lotes com custo, venda e previsão de abate'],
   ['insumos','Insumos','preço e estoque de cada insumo']];
-function relDiaSel(){const c=gCfg();return Array.isArray(c.relDia)?c.relDia:['tratosC','indices','estoque'];}
+function relDiaSel(){const c=gCfg(),ks=new Set(REL_DIA.map(x=>x[0]));return (Array.isArray(c.relDia)?c.relDia:['tratosC','indices','estoque']).filter(k=>ks.has(k));}
 window.relDiaSel=relDiaSel;
 $('gBox').addEventListener('change',e=>{const t=e.target;if(!t.matches||!t.matches('input[data-reld]'))return;if(typeof bloqueado==='function'&&bloqueado()){t.checked=!t.checked;return;}
   const c=JSON.parse(JSON.stringify(gCfg())),v=new Set(relDiaSel());t.checked?v.add(t.dataset.reld):v.delete(t.dataset.reld);c.relDia=REL_DIA.map(x=>x[0]).filter(k=>v.has(k));gPut(c);toast(`${c.relDia.length} relatório(s) marcado(s)`);});
@@ -3580,7 +3588,7 @@ async function relExpGerar(k,dia,fmt,ini,fim){const GT0=GT,gL=gLoc,cap=window.__
   return cap.length>n0;}
 /* ver o relatório na tela: gera a imagem (igual à exportada) e mostra embaixo do nome */
 var relVerSeq=0,relVerCache={k:"",h:""};
-async function relVerCarregar(){const box=document.getElementById('gRelVer');if(!box||!GT||GT.t!=='rels'||!GT.relAb)return;
+async function relVerCarregar(){const box=document.getElementById('gRelVer');if(!box||!GT||(GT.t!=='rels'&&!relBal())||!GT.relAb)return;
   const k=GT.relAb,dia=GT.dia||hojeKey(),per=relModo()==='per',[ini,fim]=relFaixa(),ck=per?ini+'|'+fim:dia,seq=++relVerSeq;
   while(window.__capArq)await new Promise(r=>setTimeout(r,200));
   const cap=[];window.__capArq=cap;const t0=window.toast;window.toast=()=>{};let F=[];
@@ -3624,7 +3632,7 @@ async function relExpEnviar(fmt){if(relExpRodando)return;const dia=GT.dia||hojeK
   }finally{window.toast=toast0;window.__capArq=null;relExpRodando=false;}}
 window.relExpEnviar=relExpEnviar;
 $('gBox').addEventListener('change',e=>{const t=e.target;if(!t.matches||!t.matches('input[data-relx]'))return;
-  const ck=relModo()==='per'?'relExpP':'relExp',c=JSON.parse(JSON.stringify(gCfg())),v=new Set(relExpSel());t.checked?v.add(t.dataset.relx):v.delete(t.dataset.relx);c[ck]=relLista().map(x=>x[0]).filter(k=>v.has(k));
+  const ck=relSelK(),c=JSON.parse(JSON.stringify(gCfg())),v=new Set(relExpSel());t.checked?v.add(t.dataset.relx):v.delete(t.dataset.relx);c[ck]=relLista().map(x=>x[0]).filter(k=>v.has(k));
   if(typeof modoVer!=='undefined'&&modoVer){window.__relExpVer=Object.assign(window.__relExpVer||{},{[ck]:c[ck]});}else gPut(c);const n=document.getElementById('gRelN');if(n)n.textContent=c[ck].length+' marcado(s)';});
 let relDiaRodando=false;
 async function relDiaEnviar(){if(relDiaRodando)return;let dia=hojeKey();const sel=relDiaSel();
