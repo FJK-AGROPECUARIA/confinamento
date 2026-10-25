@@ -759,7 +759,7 @@ button.primary{background:#2e6b2f;border-color:#2e6b2f}
 #subTrato{display:none!important}#subTrato[hidden]+#tratoTiles{display:none}
 #tratoTiles{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
 #tratoTiles button{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;min-height:112px;padding:10px 6px;border-radius:18px;border:0;background:var(--c);color:#fff;font-size:1.25rem;font-weight:800;box-shadow:0 2px 6px rgba(0,0,0,.12)}
-#tratoTiles button[hidden]{display:none}
+#tratoTiles button[hidden]{display:none}.tTiles button:focus,.tTiles button:focus-visible{outline:none!important}
 #tratoTiles .avBtn{grid-column:1/-1;min-height:0;flex-direction:row;gap:8px;padding:9px 12px;font-size:.92rem;letter-spacing:.04em;background:#c62828;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:block;text-align:center;border-radius:12px}
 #tratoTiles .avBtn.on{background:#1e9e45;animation:avPulso 1.6s ease-in-out infinite}
 body:not(.somenteVer) #avBtn{display:none!important}
@@ -1222,7 +1222,7 @@ body.naInicio .topoTxt h1{font-size:clamp(16px,5vw,28px)!important}
 <div class="toast" id="toast" hidden></div>
 <script>
 'use strict';
-const APP_VERSAO='174';
+const APP_VERSAO='175';
 const APP_DATA='19/10/2026';
 const KEY='confinamento-completo-v1';
 const $=id=>document.getElementById(id);
@@ -1585,7 +1585,7 @@ document.addEventListener('click',e=>{const lb=e.target.closest('[data-floc]');i
     FS.fim=`✓ Fornecimento finalizado · ${f.local==='C'?'Confinamento':'Pasto'} · Trato ${S.tratoSel} · ${feitos} de ${L.length} curral(is)`;toast(FS.fim);
     try{window.diagLog&&diagLog('forn_finalizado',{local:f.local,trato:S.tratoSel,n:feitos,de:L.length,prev:tk});}catch(e){}
     /* fecha tudo: volta para o começo (escolher local), balança recolhida; pronto para outro trato se quiser */
-    FS.local=null;FS.rac=null;FS.trato=null;FS.passo=1;S.forn=Object.assign({},f,{ativo:false});save();render();mostrarFornecimento();try{window.recolherBal&&recolherBal();}catch(e){}if(window.aRenderFora)aRenderFora();window.scrollTo({top:0});})();return;}
+    FS.local=null;FS.rac=null;FS.trato=null;FS.passo=1;S.forn=Object.assign({},f,{ativo:false});save();render();mostrarFornecimento();try{window.recolherBal&&recolherBal();}catch(e){}if(window.aRenderFora)aRenderFora();window.scrollTo({top:0});try{atualizarAoFinalizar();}catch(e){}})();return;}
   if(e.target.closest('[data-fcancforn]')){(async()=>{const f=filtroForn();if(!f)return;
     const L=lista(),regs=regsAtuais(),falta=L.filter(x=>!feito(x.nome,regs)).length,feitos=L.length-falta,meio=!!(window.AUTO&&(AUTO.est==='descarregando'||(AUTO.pausa&&!AUTO.pausa.trava)));
     if(!await perg('Deseja realmente cancelar o fornecimento?',`Trato ${S.tratoSel}: ${feitos} de ${L.length} currais feitos, ${falta} ainda sem fornecer.${feitos?' Os currais já registrados continuam salvos.':''}${meio?' O curral que está em andamento NÃO é registrado.':''}`,'Sim, cancelar','Não, continuar fornecendo'))return;
@@ -3951,6 +3951,13 @@ function recarregarQuandoPuder(){
   if(!podeAtualizar()){if(!atualizarPend){atualizarPend=true;const t=setInterval(()=>{if(podeAtualizar()){clearInterval(t);recarregarQuandoPuder();}},5000);}return;}
   try{save();sessionStorage.setItem('voltarPara',modoVer?'ver':document.body.classList.contains('naInicio')?'':document.body.classList.contains('modoGest')?'gest':'exec');}catch(e){}
   guardarRascunho();location.reload();}
+/* terminou uma batida ou um fornecimento: se tem versão nova do app, atualiza sozinho agora (só se não ficou outra batida/fornecimento aberto) */
+async function atualizarAoFinalizar(){try{if(!navigator.onLine||modoVer)return;
+  const v=String((await (await fetch('versao.json?t='+Date.now(),{cache:'no-store'})).json()).versao||'');if(!v||v===APP_VERSAO)return;
+  const aberto=()=>{try{return !!((typeof filtroForn==='function'&&filtroForn())||(typeof CG!=='undefined'&&CG&&CG.ativa));}catch(e){return true;}};if(aberto())return;
+  toast('Versão nova '+v+': atualizando o app…');
+  setTimeout(()=>{if(aberto())return;try{save();sessionStorage.setItem('voltarPara',modoVer?'ver':document.body.classList.contains('naInicio')?'':document.body.classList.contains('modoGest')?'gest':'exec');sessionStorage.setItem('recarregadoPara',v+'|'+Date.now());}catch(e){}guardarRascunho();location.reload();},2500);}catch(e){}}
+window.atualizarAoFinalizar=atualizarAoFinalizar;
 // Quando colocarmos melhoria: troque APP_VERSAO aqui, o número em versao.json e o CACHE do sw.js
 async function checarVersao(){
   if(!navigator.onLine)return;

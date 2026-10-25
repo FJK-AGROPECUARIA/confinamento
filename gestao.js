@@ -2420,7 +2420,7 @@ function cClique(e){
     if(!its.length&&manIt.length){if(!confirm('Tudo foi lançado no manual: nada para a balança. Salvar a batida assim?'))return;   // só manual: salva direto
       const now=Date.now();gPut({uid:novoId('carga'),tipo:'carga',dia:hojeKey(),local:CG.local||'',avulso:!!CG.avulso,trato:CG.avulso?0:+CG.trato,tratos:CG.avulso?[]:[+CG.trato].concat(CG.juntos||[]).sort((a,b)=>a-b),racao:CG.rac,racNome:r.nome,total:manIt.reduce((a,m)=>a+m.kg,0),ts0:now,hora:new Date(now).toTimeString().slice(0,5),
         itens:manIt.map(m=>({ins:m.ins,nome:m.nome,pMN:m.pMN,prev:m.prec,real:m.kg,man:m.kg,bal:0,hora:'manual'})),origem:'manual'});
-      CG.verDia=hojeKey();cLimparSetup();toast('Batida salva (manual)');cRender();window.scrollTo({top:0});return;}
+      CG.verDia=hojeKey();cLimparSetup();toast('Batida salva (manual)');cRender();window.scrollTo({top:0});if(window.atualizarAoFinalizar)atualizarAoFinalizar();return;}
     if(!its.length)return toast('Tudo já está no vagão: nada para carregar');
     CG.ativa={dia:hojeKey(),local:CG.local||'',avulso:!!CG.avulso,trato:CG.avulso?0:+CG.trato,tratos:CG.avulso?[]:[+CG.trato].concat(CG.juntos||[]).sort((a,b)=>a-b),rac:CG.rac,racNome:r.nome,total:its.reduce((a,i)=>a+i.prev,0),totalMistura:CG.total,cur:CG.avulso?null:cCurrCarga([+CG.trato].concat(CG.juntos||[])).filter(x=>!(CG.desm||[]).includes(x.c)).map(x=>x.c),jaNoVagao:jaIt,manual:manIt,itens:its,atual:0,ts0:Date.now(),origem:cAuto()?'balanca':'manual'};cSave();cRender();window.scrollTo({top:0});if(cAuto()){if(window.acIniciou)acIniciou();return;}return cTeclado('ini');}
   if(a==='contRem')return cContinuarRem(b.dataset.ap);
@@ -2450,7 +2450,7 @@ function cClique(e){
     if(!sim||CG.ativa!==A)return;
     gPut({uid:novoId('carga'),tipo:'carga',dia:A.dia,local:A.local||'',avulso:!!A.avulso,trato:A.trato,tratos:A.tratos||[A.trato],racao:A.rac,racNome:A.racNome,total:A.total,ts0:A.ts0,hora:new Date(A.ts0).toTimeString().slice(0,5),
       itens:juntaManual(A),origem:A.origem||'',...(Array.isArray(A.cur)?{cur:A.cur}:{})});
-    CG.ativa=null;CG.verDia=A.dia;cLimparSetup();toast('Batida salva');cRender();window.scrollTo({top:0});})();return;}
+    CG.ativa=null;CG.verDia=A.dia;cLimparSetup();toast('Batida salva');cRender();window.scrollTo({top:0});if(window.atualizarAoFinalizar)atualizarAoFinalizar();})();return;}
   if(a==='apagaCarga'){if(!confirm('Apagar esta batida?'))return;gDel(b.dataset.id);return cRender();}
 }
 $('cBox').addEventListener('click',cClique);$('acBox').addEventListener('click',cClique);
