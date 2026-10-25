@@ -826,7 +826,12 @@ function aRenderLeve(){if(leveT)return;leveT=setTimeout(()=>{leveT=null;pintarPe
 /* o que está na tela do operador (para o Visualizar mostrar igual) */
 window.telaAuto=p=>{const t=id=>{const e=$(p+id);return e?e.textContent.trim():'';},c=id=>{const e=$(p+id);return e?e.className:'';};
   return {peso:t('Peso'),pesoTxt:t('EstTxt'),etapa:t('Etapa'),etCl:c('Etapa'),fCl:c('FaltaBox'),fTit:t('FaltaTit'),fVal:t('Falta'),fTxt:t('FaltaTxt'),
-    feito:t(p==='ac'?'Carr':'Caiu'),ini:t('Ini'),alvo:t('Alvo')};};
+    feito:t(p==='ac'?'Carr':'Caiu'),ini:t('Ini'),alvo:t('Alvo'),azul:telaAzul(p)};};
+/* quadro azul que o operador está vendo (travado esperando liberar, ou pausado no trajeto): vai junto para o Visualizar */
+function telaAzul(p){try{if(p==='ac'){const it=acItem();if(!it||ok(it.real))return null;
+    if(AC.pausa)return {t:'pausa'};if(AC.trava)return {t:'trava',txt:'▶ CARREGAR',nome:it.nome,em:'Toque para carregar'};return null;}
+  if(!A.pausa)return null;const cur=curralAtual();
+  return A.pausa.trava?{t:'trava',txt:'▶ FORNECER',nome:cur?cur.nome:'',em:'Toque para fornecer'}:{t:'pausa'};}catch(e){return null;}}
 window.aEstadoAoVivo=()=>{const L=lista(),c=L[S.atual],regs=regsAtuais();
   const ff=window.filtroForn?filtroForn():null;return {pausa:!!A.pausa,tela:$('viewAuto')&&!$('viewAuto').hidden&&ff?telaAuto('a'):null,modo:'trato',origem:'auto',local:ff?ff.local:'',rac:ff?ff.rac:'',fimForn:!ff,deAp:ff&&ff.deAp||'',contTs:ff&&ff.contTs||0,fts0:ff&&ff.ts0||0,dia:diaAtivo(),trato:S.tratoSel,curral:c?c.nome:'',prev:c?c.prev:null,ini:A.base!=null?Math.round(A.base):'',fim:A.peso!=null?Math.round(A.peso):'',
     ...contaLocalTrato(L,regs)};};

@@ -1136,9 +1136,39 @@ function confBatDados(dia){const H=(typeof HIST!=='undefined'?HIST:[]).filter(r=
       prevForn:soma(rs,'prev'),fimFinal:ult?ult.fim:null,apareceu:sProd+s1+sCur,tratos:[...new Set(rs.map(r=>r.trato))].sort(),lc:g.b?(g.b.local||''):(g.regs[0]?loc(g.regs[0].curral):'')};});
   /* salto entre o fim do último curral (do vagão anterior) e o começo desta batida */
   Z.forEach((g,i)=>{g.sAnt=null;g.antTxt='';if(!g.b||!g.its.length||!ok(g.ini0))return;
-    for(let j=i-1;j>=0;j--){const a=Z[j];if(g.lc&&a.lc&&a.lc!==g.lc)continue;const u=[...a.rs].reverse().find(x=>ok(x.fim))||(!a.rs.length?[...a.its].reverse().find(x=>ok(x.fim)):null);
+    /* o "último" é o que o MESMO vagão (mesmo aparelho) fez antes, seja no Confinamento ou no Pasto (antes só olhava o mesmo local e pegava o curral da manhã) */
+    const ap=x=>x&&x.uid?String(x.uid).split('-')[1]||'':'';
+    for(let j=i-1;j>=0;j--){const a=Z[j];if(a.b&&ap(a.b)&&ap(g.b)&&ap(a.b)!==ap(g.b))continue;if(!a.b&&g.lc&&a.lc&&a.lc!==g.lc)continue;const u=[...a.rs].reverse().find(x=>ok(x.fim))||(!a.rs.length?[...a.its].reverse().find(x=>ok(x.fim)):null);
       if(u){g.sAnt=g.ini0-u.fim;g.antTxt=u.nome;g.its[0].salto=g.sAnt;g.apareceu+=g.sAnt;}break;}});
+  /* balanço do vagão: o que já tinha + carregado − fornecido = o que DEVIA sobrar; comparado com o que a balança mostrou no fim.
+     A diferença se explica pelos saltos (entre produtos, da carga ao 1º curral, entre currais) e pelo que foi registrado diferente da balança. */
+  /* dois carregamentos seguidos sem fornecer entre eles (ex.: 07:47 e 08:06 para o mesmo trato) contam como um só no balanço */
+  const apG=x=>x&&x.uid?String(x.uid).split('-')[1]||'':'';let pend={};
+  Z.forEach(g=>{g.dev=null;g.dif=null;g.outros=null;g.junto=false;g.iniR=g.ini0;g.carR=g.carregado;g.sProdR=g.sProd;g.nCar=1;if(!g.b)return;
+    const k=apG(g.b)+'|'+(g.b.local||''),a=pend[k];
+    if(a&&ok(a.iniR)){g.iniR=a.iniR;g.carR=a.carR+g.carregado;g.sProdR=a.sProdR+g.sProd+(g.sAnt||0);g.nCar=a.nCar+1;a.junto=true;}
+    pend[k]=g.rs.length?null:g;
+    if(!ok(g.iniR)||!g.rs.length||!ok(g.fimFinal))return;
+    g.dev=g.iniR+g.carR-g.fornecido;g.dif=g.fimFinal-g.dev;
+    /* de onde vem a diferença: carregamento (balança subiu mais que o registrado), trajeto (carga → 1º curral e entre currais) e fornecimento (registrado ≠ o que a balança mostrou saindo) */
+    g.entR=ok(g.fimCarga)?g.fimCarga-g.iniR:null;g.difCar=g.entR!=null?g.entR-g.carR:null;
+    g.fornBal=g.rs.reduce((a,x)=>a+(ok(x.ini)&&ok(x.fim)?x.ini-x.fim:x.real||0),0);g.difForn=g.fornecido-g.fornBal;
+    g.outros=g.dif-((g.difCar||0)+(g.s1||0)+g.sCur+g.difForn);});
   return Z;}
+/* linhas do balanço (tela, foto e Excel): [texto, valor, éSalto] */
+function confBalLinhas(g){const L=[];if(g.sAnt!=null)L.push([g.nCar>1?`Salto: carregamento anterior → este (${g.antTxt})`:`Salto: último (${g.antTxt}) → este carregamento`,g.sAnt,1]);
+  if(g.junto){L.push(['Já estava no vagão antes de carregar',g.ini0],['+ Carregado (registrado)',g.carregado],['Balança no fim da carga',g.fimCarga],['O fornecimento foi junto com o carregamento seguinte',null]);return L.filter(x=>x[1]!=null||/seguinte/.test(x[0]));}
+  L.push([(g.iniR>100?'⚠ ':'')+'Já estava no vagão antes de carregar'+(g.nCar>1?` (antes do 1º dos ${g.nCar} carregamentos)`:''),g.iniR]);if(g.b)L.push([g.nCar>1?`+ Carregado nos ${g.nCar} carregamentos (registrado)`:'+ Carregado (registrado)',g.carR]);
+  if(g.dev==null){L.push(['Balança no fim da carga',g.fimCarga]);if(g.rs.length)L.push(['Fornecido (registrado)',g.fornecido],['Sobra no vagão (fim)',g.fimFinal]);return L.filter(x=>x[1]!=null);}
+  L.push(['− Fornecido (registrado)',g.fornecido],['= Devia sobrar no vagão',g.dev],['Sobrou de verdade (balança no fim)',g.fimFinal]);
+  if(g.difCar)L.push([`↳ carregamento: a balança subiu ${nf(g.entR)}, o registrado foi ${nf(g.carR)}`,g.difCar,1]);
+  if(g.s1)L.push(['↳ trajeto: do fim da carga ao 1º curral',g.s1,1]);if(g.sCur)L.push(['↳ trajeto: entre os currais',g.sCur,1]);
+  if(g.difForn)L.push([`↳ fornecimento: registrado ${nf(g.fornecido)}, a balança mostrou sair ${nf(g.fornBal)}`,g.difForn,1]);
+  if(Math.abs(g.outros||0)>=5)L.push(['↳ outros',g.outros,1]);return L;}
+/* resumo por carregamento (para o dia ou vários dias) */
+function confResumo(dias){const R=[];dias.forEach(d=>{const Z=confBatDados(d);Z.forEach((g,i)=>{if(!g.b||g.junto)return;
+  const hs=Z.filter(x=>x.b&&(x===g||(x.junto&&Z.indexOf(x)<i&&(x.b.local||'')===(g.b.local||'')))).slice(-(g.nCar||1)).map(x=>x.b.hora||'');
+  R.push({dia:d,hora:hs[0]+(hs.length>1?` (+${hs.length-1})`:''),loc:g.b.local==='P'?'Pasto':g.b.local==='C'?'Conf.':'',rac:g.b.racNome||'',ini0:g.iniR,car:g.carR,forn:g.rs.length?g.fornecido:null,dev:g.dev,fim:g.rs.length?g.fimFinal:null,dif:g.dif,sProd:g.difCar,s1:g.s1,sCur:g.sCur,dForn:g.difForn});});});return R;}
 /* divide o fornecimento em trechos seguidos do mesmo trato (ex.: Trato 2 e depois Trato 3 com a sobra) */
 const runsT=rs=>{const o=[];rs.forEach(x=>{const u=o[o.length-1];if(u&&u[0].trato===x.trato)u.push(x);else o.push([x]);});return o;};
 const sg_=v=>v==null||!ok(v)?'':(v>0?'+':'')+nf(v);
@@ -1152,14 +1182,20 @@ function confBatHTML(){const dia=GT.cbDia||hojeKey(),D=confBatDados(dia);
   return `<section class="panel gCfgP"><h2>Conferência do carregamento</h2>
     <p class="note">Cada carregamento e o trato feito logo depois, com o peso da balança no início e no final de cada produto e curral. <b>Salto</b> = quanto a balança mudou entre o fim de um e o começo do próximo (sem carregar nem descarregar).</p>
     ${navData('gCbDia',dia,'Data')}
-    ${D.length?`<div class="row compart fz3"><button class="verde" data-g="cbExp" data-o="pdf">📄 PDF</button><button class="verde" data-g="cbExp" data-o="img">🖼 Foto</button><button class="verde" data-g="cbExp" data-o="xls">📊 Excel</button></div><p class="note">${D.filter(g=>g.b).length} carregamento(s) e ${D.reduce((x,g)=>x+g.rs.length,0)} curral(is) tratados nesse dia. Os dados aparecem no PDF, na Foto e no Excel.</p>`:'<p class="note">Nenhum carregamento nem trato nesse dia.</p>'}</section>`;}
+    ${D.length?`<div class="row compart fz3"><button class="verde" data-g="cbExp" data-o="pdf">📄 PDF</button><button class="verde" data-g="cbExp" data-o="img">🖼 Foto</button><button class="verde" data-g="cbExp" data-o="xls">📊 Excel</button></div><p class="note">${D.filter(g=>g.b).length} carregamento(s) e ${D.reduce((x,g)=>x+g.rs.length,0)} curral(is) tratados nesse dia. Os dados aparecem no PDF, na Foto e no Excel.</p>${confResumoTela(confResumo([dia]))}`:'<p class="note">Nenhum carregamento nem trato nesse dia.</p>'}
+    <h3 class="gSubT">Balanço do vagão · últimos 7 dias</h3><p class="note">Uma linha por carregamento até a data escolhida: o que já tinha no vagão, carregado, fornecido, quanto devia sobrar e quanto sobrou de verdade.</p>
+    <div class="row compart fz3"><button class="verde" data-g="cbRes" data-o="pdf">📄 PDF</button><button class="verde" data-g="cbRes" data-o="img">🖼 Foto</button><button class="verde" data-g="cbRes" data-o="xls">📊 Excel</button></div></section>`;}
+function confResumoTela(RS){if(!RS.length)return '';const n=v=>v==null||!ok(v)?'—':nf(v);
+  return `<h3 class="gSubT">Balanço do vagão · neste dia</h3><div class="tablebox"><table class="gTab gCbTab"><thead><tr><th>Hora</th><th>Carregamento</th><th>Já tinha</th><th>Carreg.</th><th>Forn.</th><th>Devia sobrar</th><th>Sobrou</th><th>A mais</th></tr></thead><tbody>${RS.map(x=>`<tr><td>${esc(x.hora)}</td><td class="c">${esc(x.loc)}<small> ${esc(x.rac)}</small></td><td class="${x.ini0>100?'gCbMais':''}">${n(x.ini0)}</td><td>${n(x.car)}</td><td>${n(x.forn)}</td><td>${n(x.dev)}</td><td>${n(x.fim)}</td><td class="${x.dif>=100?'gCbMais':x.dif<=-100?'gCbMenos':''}"><b>${x.dif==null?'—':sg_(x.dif)||'0'}</b></td></tr>`).join('')}</tbody></table></div>
+  <p class="note"><b>Já tinha</b> = ração que estava no vagão antes de carregar (se não usar ⚖ Sobra no Carregar, ela vai a mais). <b>A mais</b> = sobrou de verdade − devia sobrar: vem da balança subindo entre os currais, da carga até o 1º curral ou de produto que entrou sem registrar. Detalhes no PDF/Foto.</p>`;}
 async function confBatExp(o){const dia=GT.cbDia||hojeKey(),D=confBatDados(dia);if(!D.length)return toast('Nada nesse dia');
   const nome=`FJK - Conferência do carregamento - ${dB(dia).replace(/\//g,'-')}`;
   if(o==='xls'){const H=t=>({v:t,s:1}),rows=[[H('Carregamento'),H('Tipo'),H('Hora'),H('Produto / curral'),H('Trato'),H('Previsto'),H('Realizado'),H('Balança início'),H('Balança final'),H('Salto')]];
     const num=v=>ok(v)?{v,s:4}:{v:''};
     D.forEach(g=>{const bt=g.b?`${g.b.hora||''} ${g.b.racNome||''}`:'sem carregamento';g.its.forEach(x=>rows.push([{v:bt},{v:'Carregamento'},{v:x.hora||''},{v:x.nome},{v:''},num(x.prev),num(x.real),num(x.ini),num(x.fim),num(x.salto)]));
       g.rs.forEach(x=>rows.push([{v:bt},{v:'Fornecimento'},{v:x.hora||''},{v:x.nome},{v:x.trato||''},num(x.prev),num(x.real),num(x.ini),num(x.fim),num(x.salto)]));
-      rows.push([{v:bt,s:9},{v:'Resumo',s:9},{v:'',s:9},{v:'Balança ganhou sem carregar',s:9},{v:'',s:9},{v:g.prevForn,s:7},{v:g.fornecido,s:7},{v:'',s:9},{v:'',s:9},{v:g.apareceu,s:7}]);});
+      confBalLinhas(g).forEach(x=>rows.push([{v:bt,s:9},{v:'Balanço',s:9},{v:'',s:9},{v:x[0],s:9},{v:'',s:9},{v:'',s:9},{v:'',s:9},{v:'',s:9},{v:'',s:9},x[1]==null?{v:'',s:9}:{v:x[1],s:7}]));
+      rows.push([{v:bt,s:9},{v:'Balanço',s:9},{v:'',s:9},{v:g.dif!=null?'SOBROU A MAIS DO QUE DEVIA':'Balança ganhou sem carregar',s:9},{v:'',s:9},{v:'',s:9},{v:'',s:9},{v:'',s:9},{v:'',s:9},{v:g.dif!=null?g.dif:g.apareceu,s:7}]);});
     return compartilharArquivo(montarXlsx([['Conferência',rows,[18,14,8,24,7,11,11,13,13,10]]]),nome+'.xlsx',XT);}
   const cols=[['Hora',90,'c'],['Produto / curral',230,'c'],['Previsto',120,'r'],['Realizado',130,'r'],['Dif.',100,'r'],['Início',130,'r'],['Final',130,'r'],['Salto',110,'r']];
   const lin=x=>{const dif=ok(x.real)&&ok(x.prev)?x.real-x.prev:null;return {v:[x.hora||'',x.nome+(x.trato?' · T'+x.trato:''),ok(x.prev)?nf(x.prev):'',ok(x.real)?nf(x.real):'—',dif==null?'':sg_(dif),ok(x.ini)?nf(x.ini):'—',ok(x.fim)?nf(x.fim):'—',sg_(x.salto)],prev:x.prev,dif,neg:[1,3]};};
@@ -1167,10 +1203,30 @@ async function confBatExp(o){const dia=GT.cbDia||hojeKey(),D=confBatDados(dia);i
     if(b&&g.its.length)secs.push({cab:`${b.hora||''} · Carregamento · `+cb.replace(/^Carregamento [^·]*· /,''),cols,linhas:g.its.map(lin),total:['CARREGADO','',nf(g.its.reduce((a,x)=>a+(x.prev||0),0)),nf(g.carregado),'','',ok(g.fimCarga)?nf(g.fimCarga):'',g.sProd?sg_(g.sProd):'']});
     runsT(g.rs).forEach(L=>{const pv=L.reduce((a,x)=>a+(x.prev||0),0),fo=L.reduce((a,x)=>a+(x.real||0),0),sl=L.reduce((a,x)=>a+(ok(x.salto)?x.salto:0),0),uf=[...L].reverse().find(x=>ok(x.fim));
       secs.push({cab:`${L[0].hora||''} · Fornecimento · Trato ${L[0].trato}`+(g.b?` (carregamento das ${g.b.hora||''})`:' (sem carregamento antes)'),cols,linhas:L.map(lin),total:['FORNECIDO','',nf(pv),nf(fo),sg_(fo-pv),'',uf?nf(uf.fim):'',sl?sg_(sl):'']});});
-    secs.push({cab:cb+' · conferência',cols,linhas:[...(g.sAnt!=null?[[`Salto: último (${g.antTxt}) → este carregamento`,g.sAnt,1]]:[]),['Balança antes de carregar',g.ini0],['Balança no fim da carga',g.fimCarga],['Balança no 1º curral',g.ini1],['Diferença carga → 1º curral',g.s1,1],['Saltos entre produtos',g.sProd,1],['Saltos entre currais',g.sCur,1],['Sobra no vagão (fim)',g.fimFinal]].filter(x=>x[1]!=null).map(x=>({v:['',x[0],'','','','','',x[2]?sg_(x[1]):nf(x[1])],neg:[1]})),total:['BALANÇA GANHOU SEM CARREGAR','','','','','','',(sg_(g.apareceu)||'0')+' kg']});});
+    const corS=v=>v>=50?'#b3261e':v<=-50?'#1565c0':null;
+    secs.push({cab:cb+' · balanço do vagão',cols,linhas:confBalLinhas(g).map(x=>({v:['',x[0],'','','','','',x[1]==null?'':x[2]?sg_(x[1]):nf(x[1])],neg:[1],cor:x[2]?[null,null,null,null,null,null,null,corS(x[1])]:x[0].startsWith('⚠')?[null,'#b3261e',null,null,null,null,null,'#b3261e']:null})),
+      total:g.dif!=null?['SOBROU A MAIS DO QUE DEVIA','','','','','','',(sg_(g.dif)||'0')+' kg']:g.junto?['BALANÇO NO CARREGAMENTO SEGUINTE','','','','','','','']:['BALANÇA GANHOU SEM CARREGAR','','','','','','',(sg_(g.apareceu)||'0')+' kg']});});
+  /* resumo do dia no topo: uma linha por carregamento */
+  const RS=confResumo([dia]);if(RS.length)secs.unshift(secResumo(RS,'Resumo do dia · balanço de cada carregamento',false));
   const blob=await desenharTabela(secs,`FJK - Conferência do carregamento - ${dB(dia)}`);
   if(o==='pdf')return compartilharArquivo(await pngsParaPdf([blob]),nome+'.pdf','application/pdf');
   return compartilharVarios([blob],[nome+'.png']);}
+function secResumo(RS,cab,comDia){const cols=[['Hora',90,'c'],['Produto / curral',230,'c'],['Previsto',120,'r'],['Realizado',130,'r'],['Dif.',100,'r'],['Início',130,'r'],['Final',130,'r'],['Salto',110,'r']];
+  const n=v=>v==null||!ok(v)?'—':nf(v),soma=k=>RS.reduce((a,x)=>a+(ok(x[k])?x[k]:0),0);
+  return {cab,cols,tit:['Hora','Carregamento','Já tinha','Carregado','Fornecido','Devia sobrar','Sobrou','A mais'],
+    linhas:RS.map(x=>({v:[(comDia?dB(x.dia).slice(0,5)+' ':'')+x.hora,`${x.loc} · ${x.rac}`,n(x.ini0),n(x.car),n(x.forn),n(x.dev),n(x.fim),x.dif==null?'—':sg_(x.dif)||'0'],neg:[7],
+      cor:[null,null,x.ini0>100?'#b3261e':null,null,null,null,null,x.dif>=100?'#b3261e':x.dif<=-100?'#1565c0':'#5f7a00']})),
+    total:['TOTAL','','',nf(soma('car')),nf(soma('forn')),'','',(sg_(RS.reduce((a,x)=>a+(ok(x.dif)?x.dif:0),0))||'0')+' kg']};}
+/* resumo de vários dias: foto/PDF/Excel com uma linha por carregamento */
+async function confResumoExp(o,nd){const hj=GT.cbDia||hojeKey(),dias=[];for(let i=nd-1;i>=0;i--){const d=new Date(hj+'T12:00:00');d.setDate(d.getDate()-i);dias.push(d.toISOString().slice(0,10));}
+  const RS=confResumo(dias);if(!RS.length)return toast('Nenhum carregamento nesses dias');const rot=`${dB(dias[0])} a ${dB(dias[dias.length-1])}`,nome=`FJK - Balanço do vagão - ${rot.replace(/\//g,'-')}`;
+  if(o==='xls'){const H=t=>({v:t,s:1}),num=v=>ok(v)?{v,s:4}:{v:''};
+    const rows=[[H('Dia'),H('Hora'),H('Local'),H('Ração'),H('Já tinha no vagão'),H('Carregado'),H('Fornecido'),H('Devia sobrar'),H('Sobrou (balança)'),H('A mais'),H('No carregamento'),H('Carga → 1º curral'),H('Entre currais'),H('No fornecimento')]];
+    RS.forEach(x=>rows.push([{v:dB(x.dia)},{v:x.hora},{v:x.loc},{v:x.rac},num(x.ini0),num(x.car),num(x.forn),num(x.dev),num(x.fim),num(x.dif),num(x.sProd),num(x.s1),num(x.sCur),num(x.dForn)]));
+    return compartilharArquivo(montarXlsx([['Balanço do vagão',rows,[11,11,8,16,12,11,11,12,13,9,14,13,11,13]]]),nome+'.xlsx',XT);}
+  const blob=await desenharTabela([secResumo(RS,`Balanço do vagão · ${rot}`,true)],`FJK - Balanço do vagão - ${rot}`);
+  if(o==='pdf')return compartilharArquivo(await pngsParaPdf([blob]),nome+'.pdf','application/pdf');return compartilharVarios([blob],[nome+'.png']);}
+window.confResumoExp=confResumoExp;
 const arred=(v,a)=>a>0?Math.round(v/a)*a:Math.round(v);
 /* % de MS da ração do curral num dia (média pelas cabeças, com a MS dos insumos que valia naquele dia) */
 function msRacCurral(c,dia){let w=0,t=0;gTodos('lote').forEach(l=>{if(curralEm(l,dia)!==c)return;const cb=cabPres(l,dia);if(!(cb>0))return;const r=racaoEm(l,dia),cp=r&&compRacao(r,dia);if(cp&&cp.ms>0){w+=cb;t+=cb*cp.ms;}});return w?t/w:NaN;}
@@ -1856,7 +1912,7 @@ function salvaCfg(){const c=JSON.parse(JSON.stringify(gCfg()));const t=fn('taxa'
 /* =====================================================================================
    EVENTOS
    ===================================================================================== */
-const SO_VER=new Set(['cfgSel','relExp','relSel','relVer','relModo','relAtalho','estFilP','estFilLimpa','estIrRel','estVerMov','fornec','pgN','pgP','cfgGrp','perP','cfgAbaP','estInsExp','cbExp','lotLocP','loteTog','lotTodos','curGrp','coLocP','fzLocP','fzFotoVer','fzHN','fzHPdf','fzHImg','resPdf','resImg','resXls','insPdf','insImg','insXls','estPdf','estImg','estXls','estPerE','estOrd','nfVer','fzPdf','fzImgG','fzCur','fzLoc','fzImg','fzXls','fzXlsHist','cfgAba','coLoc','coAbre','coFecha','estPer','evLoc','evolN','imgDia','imgPer','imgComp','imgLote','pdfLote','imgVendas','pdfVendas','xlsVendas','pdfComp','xlsGraf','pdfGraf','racaAdd','racaRm','grafLoc','grafCur','celGraf','imgGraf','filtroLoc','dataPasso','dataHoje','voltar','ir','lote','raiz','compRel','compDia','xlsDia','xlsPer','xlsComp','xlsLote','perAtalho','nota','racAdd','racRm','notaAdd','notaRm','notaPadrao']);
+const SO_VER=new Set(['cfgSel','relExp','relSel','relVer','relModo','relAtalho','estFilP','estFilLimpa','estIrRel','estVerMov','fornec','pgN','pgP','cfgGrp','perP','cfgAbaP','estInsExp','cbExp','cbRes','lotLocP','loteTog','lotTodos','curGrp','coLocP','fzLocP','fzFotoVer','fzHN','fzHPdf','fzHImg','resPdf','resImg','resXls','insPdf','insImg','insXls','estPdf','estImg','estXls','estPerE','estOrd','nfVer','fzPdf','fzImgG','fzCur','fzLoc','fzImg','fzXls','fzXlsHist','cfgAba','coLoc','coAbre','coFecha','estPer','evLoc','evolN','imgDia','imgPer','imgComp','imgLote','pdfLote','imgVendas','pdfVendas','xlsVendas','pdfComp','xlsGraf','pdfGraf','racaAdd','racaRm','grafLoc','grafCur','celGraf','imgGraf','filtroLoc','dataPasso','dataHoje','voltar','ir','lote','raiz','compRel','compDia','xlsDia','xlsPer','xlsComp','xlsLote','perAtalho','nota','racAdd','racRm','notaAdd','notaRm','notaPadrao']);
 /* ---------- apagar: sempre com senha (1010) e só o que ainda não foi usado ---------- */
 const H_=()=>typeof HIST!=='undefined'?HIST:[];
 function racUsoTxt(id){const r=G.it[id];if(!r)return '';const L=gTodos('lote').filter(l=>(l.rac||[]).some(h=>h.r===id)),B=gTodos('carga').filter(c=>c.racao===id||(r.nome&&c.racNome===r.nome));
@@ -2022,6 +2078,7 @@ $('gBox').addEventListener('click',e=>{
   if(a==='salvaCocho')return salvaCocho();
   if(a==='salvaCocho1')return salvaCocho(b.dataset.c);
   if(a==='cbExp')return confBatExp(b.dataset.o);
+  if(a==='cbRes')return confResumoExp(b.dataset.o,7);
   if(a==='curAtiva'){const A=window.curraisApi,inf=A.info(id),novo=!inf.inativo;A.salvar(id,id,Object.assign({},inf,{inativo:novo}));toast(novo?`${id} inativo (pausado)`:`${id} ativo de novo`);if(typeof render==='function')try{render();}catch(e){}return gRender();}
   if(a==='apagaCur'){if(curUsoTxt(id))return toast('Este curral já foi usado: não pode apagar.');if(!confirm(`Deseja realmente apagar o curral ${id}?`))return;
     const r=window.curraisApi&&curraisApi.apagar?curraisApi.apagar(id):'';if(r)return toast(r);toast(`${id} apagado`);return gVoltar();}
@@ -3341,7 +3398,10 @@ function cTabelaCarga(its){const temJa=CG.jaAberto||its.some(i=>i.ja>0),tot=its.
       ${fora.length?`<p class="cAviso">⚠ Na sobra tem produto que esta ração não usa: ${fora.join(', ')}. Ele vai junto na mistura.</p>`:''}
       ${demais.length?`<p class="cAviso">⚠ Sobra maior que o necessário: ${demais.join('; ')}.</p>`:''}
       <p class="note">A fórmula da ração não muda; o estoque baixa só o que for carregado agora.</p></div>`;}
-  return ord+jaNota+manNota+`<div class="tablebox"><table class="gTab"><thead><tr><th>Produto</th><th>% MN</th>${temJa?'<th>Sobra</th>':''}${temMan?'<th>Manual</th>':''}<th>Carregar (kg)</th></tr></thead><tbody>${its.map(i=>`<tr><td class="c">${esc(i.nome)}${i.ja>0?`<small>mistura: ${nf(i.prevOrig)} kg</small>`:''}</td><td>${nf(i.pMN,1)}</td>${temJa?`<td>${CG.jaAberto&&(CG.sobModo||'rac')!=='rac'?`<input type="text" readonly inputmode="none" data-tecin="1" data-tecnome="Sobra · ${esc(i.nome)} (kg)" class="cJaIn" data-cja="${esc(i.ins)}" value="${i.ja?String(i.ja).replace('.',','):''}" placeholder="0">`:nf(i.ja)}</td>`:''}${temMan?`<td>${CG.manAberto?`<input type="text" readonly inputmode="none" data-tecin="1" data-tecnome="Manual · ${esc(i.nome)} (kg)" class="cJaIn" data-cman="${esc(i.ins)}" value="${i.man?String(i.man).replace('.',','):''}" placeholder="0">`:nf(i.man||0)}</td>`:''}<td><b>${nf(i.prev)}</b>${i.ja>0&&i.prev===0?'<small>já tem tudo</small>':i.man>0&&i.prev===0?'<small>tudo manual</small>':''}</td></tr>`).join('')}
+  /* vagão não está vazio (balança da Automação mostra peso) e a sobra não foi descontada: avisa */
+  let vazNota='';try{const pv=window.AUTO&&AUTO.fonte&&AUTO.peso!=null&&$('viewAutoC')&&!$('viewAutoC').hidden?Math.round(AUTO.peso):null;
+    if(pv!=null&&pv>100&&!Object.values(sobraPorIns()).some(v=>v>0))vazNota=`<p class="cAviso">⚠ A balança mostra <b>${nf(pv)} kg</b> no vagão antes de carregar. Se for ração que sobrou, toque em <b>⚖ Sobra</b> e informe, para não carregar a mais.</p>`;}catch(e){}
+  return vazNota+ord+jaNota+manNota+`<div class="tablebox"><table class="gTab"><thead><tr><th>Produto</th><th>% MN</th>${temJa?'<th>Sobra</th>':''}${temMan?'<th>Manual</th>':''}<th>Carregar (kg)</th></tr></thead><tbody>${its.map(i=>`<tr><td class="c">${esc(i.nome)}${i.ja>0?`<small>mistura: ${nf(i.prevOrig)} kg</small>`:''}</td><td>${nf(i.pMN,1)}</td>${temJa?`<td>${CG.jaAberto&&(CG.sobModo||'rac')!=='rac'?`<input type="text" readonly inputmode="none" data-tecin="1" data-tecnome="Sobra · ${esc(i.nome)} (kg)" class="cJaIn" data-cja="${esc(i.ins)}" value="${i.ja?String(i.ja).replace('.',','):''}" placeholder="0">`:nf(i.ja)}</td>`:''}${temMan?`<td>${CG.manAberto?`<input type="text" readonly inputmode="none" data-tecin="1" data-tecnome="Manual · ${esc(i.nome)} (kg)" class="cJaIn" data-cman="${esc(i.ins)}" value="${i.man?String(i.man).replace('.',','):''}" placeholder="0">`:nf(i.man||0)}</td>`:''}<td><b>${nf(i.prev)}</b>${i.ja>0&&i.prev===0?'<small>já tem tudo</small>':i.man>0&&i.prev===0?'<small>tudo manual</small>':''}</td></tr>`).join('')}
       <tr class="grp"><td>Total</td><td>100,0</td>${temJa?`<td>${nf(totJa)}</td>`:''}${temMan?`<td>${nf(totMan)}</td>`:''}<td>${nf(tot)}</td></tr></tbody></table></div>
     ${totMan>0?`<p class="note">✋ Manual: <b>${nf(totMan)} kg</b> já colocado à mão · a balança carrega <b>${nf(tot)} kg</b>.</p>`:''}${totJa>0?(()=>{const sobT=Object.values(sobraPorIns()).reduce((a,v)=>a+(+v||0),0),fin=sobT+tot;return `<p class="note">Mistura final no vagão: <b>${nf(fin)} kg</b> = ${nf(sobT)} kg de sobra + ${nf(tot)} kg a carregar${Math.abs(fin-CG.total)>1?` (o previsto era ${nf(CG.total)} kg)`:''}.</p>`;})():''}`;}
 /* Carregar: avisa (sem bloquear) quando todos os currais do trato escolhido já foram tratados hoje */

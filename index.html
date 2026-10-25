@@ -112,6 +112,7 @@ body.somenteVer.verCarga #viewTrato>section:not(#painel),body.somenteVer.verCarg
 #avCargaBox tr.atual td{background:#eef4e0}
 .contRem{border:3px solid #1565c0}.contRem h2{color:#1565c0}.contIt{display:grid;gap:4px;padding:8px 0;border-top:1px solid #dde3ea}.contIt span{font-size:.9rem;color:var(--muted)}.contIt button{margin-top:4px}
 .avSub{font-weight:800;font-size:1rem;color:var(--fg);padding:2px 4px 0;display:flex;flex-wrap:wrap;gap:2px 8px;align-items:baseline}.avSub em{white-space:nowrap;font-style:normal;font-weight:600;font-size:.85rem;color:var(--muted)}
+.avEspelho .avAzul{box-sizing:border-box;width:100%;border-radius:18px;padding:22px 12px;text-align:center;background:#1565c0;color:#fff;display:grid;gap:6px;border:4px solid #0d47a1;min-width:0;overflow:hidden}.avEspelho .avAzul b{font-family:var(--display);font-stretch:condensed;font-size:clamp(1.8rem,9vw,3.2rem);line-height:1;letter-spacing:.04em}.avEspelho .avAzul strong{font-family:var(--display);font-stretch:condensed;font-size:clamp(1.8rem,10vw,3.6rem);line-height:1.05;font-weight:800;overflow-wrap:anywhere}.avEspelho .avAzul span{font-size:1rem;font-weight:600}.avEspelho .avAzul em{display:block;font-style:normal;font-weight:800;font-size:1.1rem;background:#fff;color:#0d47a1;border-radius:12px;padding:10px;margin-top:6px}
 .avEspelho{display:grid;grid-template-columns:minmax(0,1fr);gap:8px;margin-top:6px;min-width:0}.avEspelho .curBox2{display:grid!important;grid-template-columns:minmax(0,1fr) minmax(0,36%)}.avEspelho .curBox2>div{min-width:0!important;overflow:hidden}.avEspelho .cbPrev b{font-size:clamp(1.5rem,7.5vw,2.3rem)!important}.avEspelho .cbPrev{padding:8px 8px!important}.avEspelho .cbPrev b{width:auto!important;min-width:0!important;max-width:100%}.avEspelho .cbPrev span{font-size:.68rem!important;letter-spacing:.05em!important;white-space:nowrap}.avEspelho .cbCur{min-width:0}.avEspelho .cbCur b{white-space:nowrap;overflow:hidden;line-height:1.1}.avBatTot{text-align:center;font-weight:600;color:var(--muted)}.avBatTot b{color:var(--fg)}
 .avGeo{display:flex;align-items:baseline;gap:6px;flex-wrap:nowrap;white-space:nowrap;overflow:hidden;margin:4px 4px 0;font-weight:700;font-size:.9rem;color:#1565c0;text-decoration:none}.avGeo.semGeo{color:var(--muted);font-weight:600}.avGeo small{overflow:hidden;text-overflow:ellipsis;min-width:0;font-weight:600;color:var(--muted)}
 body.somenteVer details.gCarga,body.somenteVer #viewGest details:not([hidden]){display:block!important}
@@ -1225,7 +1226,7 @@ body.naInicio .topoTxt h1{font-size:clamp(16px,5vw,28px)!important}
 <div class="toast" id="toast" hidden></div>
 <script>
 'use strict';
-const APP_VERSAO='188';
+const APP_VERSAO='189';
 const APP_DATA='19/10/2026';
 const KEY='confinamento-completo-v1';
 const $=id=>document.getElementById(id);
@@ -2395,11 +2396,11 @@ function desenharTabela(secoes,titulo,totalGeral){window.__tituloImg=titulo||(()
   secoes.forEach(s=>{
     c.fillStyle='#f3f7dc';c.fillRect(M,y,W-2*M,44);c.fillStyle='#11253d';c.font=`700 24px ${F}`;c.textAlign='left';c.fillText(s.cab,M+12,y+22);y+=50;
     c.font=`700 16px ${F}`;c.fillStyle='#5d6b7a';
-    cols.forEach(([t,w,a],k)=>{c.textAlign=a==='l'?'left':a==='c'?'center':'right';c.fillText(t.toUpperCase(),px(k,a),y+20);});
+    cols.forEach(([t,w,a],k)=>{c.textAlign=a==='l'?'left':a==='c'?'center':'right';c.fillText(String((s.tit||[])[k]??t).toUpperCase(),px(k,a),y+20);});   /* s.tit: outros títulos de coluna só nesta seção */
     y+=40;c.fillStyle='#dde3ea';c.fillRect(M,y-2,W-2*M,2);
     s.linhas.forEach((l,i)=>{if(i%2){c.fillStyle='#f7f9fb';c.fillRect(M,y,W-2*M,RH);}
       cols.forEach(([t,w,a],k)=>{c.textAlign=a==='l'?'left':a==='c'?'center':'right';c.font=((l.neg||[0]).includes(k)?'700 ':'500 ')+'21px '+F;
-        c.fillStyle=k===(cols.findIndex(x=>x[0]==='Dif.')>=0?cols.findIndex(x=>x[0]==='Dif.'):cols.length-1)?cor(l.dif,l.prev):'#11253d';
+        c.fillStyle=l.cor&&l.cor[k]?l.cor[k]:s.tit?'#11253d':k===(cols.findIndex(x=>x[0]==='Dif.')>=0?cols.findIndex(x=>x[0]==='Dif.'):cols.length-1)?cor(l.dif,l.prev):'#11253d';
         const tx=String(l.v[k]??'');let x=px(k,a);
         /* texto maior que a coluna (ex.: "Salto: último (SILAGEM DE MILHO) → este carregamento"): usa as colunas vazias do lado, sem sair da tabela nem passar por cima de outro número */
         if(tx&&c.measureText(tx).width>w-16){const vaz=j=>j>=0&&j<cols.length&&(l.v[j]==null||l.v[j]==='');let i0=k,i1=k;while(vaz(i0-1))i0--;while(vaz(i1+1))i1++;
@@ -3811,7 +3812,12 @@ function avTelaSint(d,carga){const ini=parseFloat(d.ini),fim=parseFloat(d.fim),p
   return {peso:isNaN(fim)?'—':fmt(fim),pesoTxt:'',etapa:feito>0?(carga?`▲ Carregando ${d.prod||''}`:`▼ Fornecendo no ${d.curral||''}`):(carga?`Pronto pra carregar ${d.prod||''}`:`Pronto pra fornecer no ${d.curral||''}`),
     etCl:'aEtapa '+(feito>0?'desc':'pronto'),fCl:'aFalta '+cor,fTit:falta<0?'PASSOU':(carga?'Carregar':'Fornecer'),fVal:falta<0?'-'+fmt(-falta):fmt(falta),
     fTxt:falta<0?'DO PREVISTO':'\u00a0',feito:fmt(Math.max(0,feito)),ini:fmt(ini),alvo:fmt(alvo)};}
-function avTelaHTML(d,carga){const T=d.tela;
+function avTelaHTML(d,carga){const T=d.tela,Z=T.azul;
+  /* igual ao tablet: quadro azul de travado (esperando liberar) ou pausado no trajeto, no lugar dos números */
+  const azul=Z?`<div class="avAzul">${Z.t==='trava'?`<b>${esc(Z.txt||'')}</b><strong>${esc(Z.nome||'')}</strong><em>${esc(Z.em||'')}</em>`:`<b>⏸ PAUSADO</b><span>No trajeto: a balança não está contando nada.</span><em>▶ Toque aqui para continuar</em>`}</div>`:'';
+  if(Z)return `<div class="avEspelho"><div class="aPeso"><div><small>Balança (kg)</small><em>${esc(T.pesoTxt||'')}</em></div><b class="num">${esc(T.peso||'—')}</b></div>
+    <div class="curBox2"><div class="cbCur"><span>${carga?`Produto ${d.iProd||'—'}${d.nProd?' de '+d.nProd:''}`:'Curral atual'}</span><b>${esc((carga?d.prod:d.curral)||'—')}</b></div><div class="cbPrev"><span>${carga?'Carregar':'Previsto'}</span><b class="num">${d.prev!=null?fmt(d.prev):'—'}</b></div></div>
+    <div class="aEtapa pausa">${Z.t==='trava'?'⏸ Balança pausada · esperando liberar':'⏸ Pausado no trajeto'}</div>${azul}</div>`;
   return `<div class="avEspelho"><div class="aPeso"><div><small>Balança (kg)</small><em>${esc(T.pesoTxt||'')}</em></div><b class="num">${esc(T.peso||'—')}</b></div>
     <div class="curBox2"><div class="cbCur"><span>${carga?`Produto ${d.iProd||'—'}${d.nProd?' de '+d.nProd:''}`:'Curral atual'}</span><b>${esc((carga?d.prod:d.curral)||'—')}</b></div><div class="cbPrev"><span>${carga?'Carregar':'Previsto'}</span><b class="num">${d.prev!=null?fmt(d.prev):'—'}</b></div></div>
     <div class="${esc(T.etCl||'aEtapa')}">${esc(T.etapa||'')}</div>
