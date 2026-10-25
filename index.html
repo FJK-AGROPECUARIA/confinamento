@@ -1224,7 +1224,7 @@ body.naInicio .topoTxt h1{font-size:clamp(16px,5vw,28px)!important}
 <div class="toast" id="toast" hidden></div>
 <script>
 'use strict';
-const APP_VERSAO='186';
+const APP_VERSAO='187';
 const APP_DATA='19/10/2026';
 const KEY='confinamento-completo-v1';
 const $=id=>document.getElementById(id);
@@ -2398,7 +2398,14 @@ function desenharTabela(secoes,titulo,totalGeral){window.__tituloImg=titulo||(()
     y+=40;c.fillStyle='#dde3ea';c.fillRect(M,y-2,W-2*M,2);
     s.linhas.forEach((l,i)=>{if(i%2){c.fillStyle='#f7f9fb';c.fillRect(M,y,W-2*M,RH);}
       cols.forEach(([t,w,a],k)=>{c.textAlign=a==='l'?'left':a==='c'?'center':'right';c.font=((l.neg||[0]).includes(k)?'700 ':'500 ')+'21px '+F;
-        c.fillStyle=k===(cols.findIndex(x=>x[0]==='Dif.')>=0?cols.findIndex(x=>x[0]==='Dif.'):cols.length-1)?cor(l.dif,l.prev):'#11253d';c.fillText(String(l.v[k]??''),px(k,a),y+RH/2);});
+        c.fillStyle=k===(cols.findIndex(x=>x[0]==='Dif.')>=0?cols.findIndex(x=>x[0]==='Dif.'):cols.length-1)?cor(l.dif,l.prev):'#11253d';
+        const tx=String(l.v[k]??'');let x=px(k,a);
+        /* texto maior que a coluna (ex.: "Salto: último (SILAGEM DE MILHO) → este carregamento"): usa as colunas vazias do lado, sem sair da tabela nem passar por cima de outro número */
+        if(tx&&c.measureText(tx).width>w-16){const vaz=j=>j>=0&&j<cols.length&&(l.v[j]==null||l.v[j]==='');let i0=k,i1=k;while(vaz(i0-1))i0--;while(vaz(i1+1))i1++;
+          let L0=M;for(let i=0;i<i0;i++)L0+=cols[i][1];let L1=L0;for(let i=i0;i<=i1;i++)L1+=cols[i][1];
+          const larg=L1-L0-16;let fs=21;while(c.measureText(tx).width>larg&&fs>12){fs--;c.font=((l.neg||[0]).includes(k)?'700 ':'500 ')+fs+'px '+F;}
+          const tw=c.measureText(tx).width;c.textAlign='center';x=Math.min(Math.max(px(k,'c'),L0+8+tw/2),L1-8-tw/2);}
+        c.fillText(tx,x,y+RH/2);});
       y+=RH;c.fillStyle='#dde3ea';c.fillRect(M,y-1,W-2*M,1);});
     const sub=s.total&&s.total[0]==='SUBTOTAL';c.fillStyle=sub?'#4a7fbf':'#11253d';c.fillRect(M,y+6,W-2*M,44);c.font=`700 21px ${F}`;
     cols.forEach(([t,w,a],k)=>{const v=s.total[k];if(v==null||v==='')return;c.textAlign=a==='l'?'left':a==='c'?'center':'right';
