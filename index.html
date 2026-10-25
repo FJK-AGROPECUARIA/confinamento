@@ -207,7 +207,7 @@ button.fFinal{margin-top:8px!important;background:#f2b705!important;border-color
 :is(#cBox,#acBox,.fornSetup) .gLocal{margin:0}
 :is(#cBox,#acBox,.fornSetup) .tSeta{margin:0}
 :is(#cBox,#acBox,.fornSetup) select{margin:0}
-.cJunto{margin:6px 0 0}.cJtTog{padding:5px 10px;font-size:.8rem}#acBox .cExpTog,#cBox .cExpTog{display:inline-block!important;width:auto!important;max-width:max-content!important;align-self:flex-start!important;margin:6px 0 0!important;padding:3px 10px!important;font-size:.72rem!important;min-height:0!important;background:#fff!important;color:#2e6b2f!important;border:1px solid #2e6b2f!important;font-weight:700}.cExpLista button:not(.sel){background:#f3f3f3!important;color:#888!important;text-decoration:line-through}
+.cJunto{margin:6px 0 0}.cJtTog{padding:5px 10px;font-size:.8rem}#acBox .cExpTog,#cBox .cExpTog{display:inline-block!important;width:auto!important;max-width:max-content!important;align-self:flex-start!important;margin:6px 0 0!important;padding:3px 10px!important;font-size:.72rem!important;min-height:0!important;background:#fff!important;color:#2e6b2f!important;border:1px solid #2e6b2f!important;font-weight:700}.cExpLista button:not(.sel){background:#f3f3f3!important;color:#888!important;text-decoration:line-through}.cExpLista button em{font-style:normal;font-size:.68rem;font-weight:700;text-decoration:none!important;display:block}.cExpLista button.cJaCarr{text-decoration:none!important;background:#e8f1fb!important;color:#3f6f9f!important;border-color:#9dbbe0!important}.cExpLista button.cJaCarr span,.cExpLista button.cJaCarr small{text-decoration:line-through}
 .cAvulso{display:block;margin:8px 0 0;font-size:.8rem;padding:6px 10px}.cAvulso.sel{background:#fff3cd;border-color:#b26a00}
 .cAvInfo{padding:10px;border-radius:10px;background:#fff3cd;font-weight:700}
 .cTotWrap{position:relative}.cTotWrap input{padding-right:118px}
@@ -1221,7 +1221,7 @@ body.naInicio .topoTxt h1{font-size:clamp(16px,5vw,28px)!important}
 <div class="toast" id="toast" hidden></div>
 <script>
 'use strict';
-const APP_VERSAO='171';
+const APP_VERSAO='172';
 const APP_DATA='19/10/2026';
 const KEY='confinamento-completo-v1';
 const $=id=>document.getElementById(id);
@@ -1411,11 +1411,18 @@ function prevPelosRegistros(d){const o={};HIST.filter(r=>r.dia===d).forEach(r=>{
 function prevDoDia(d){if(d===hojeKey())return S.prev;return prevGuardado(d)||(d<hojeKey()?prevPelosRegistros(d):{});}
 let snapTimer=null;
 function guardarPrevHoje(){clearTimeout(snapTimer);snapTimer=setTimeout(()=>{try{if(gOk()&&typeof gPut==='function')gPut({uid:idPrevDia(hojeKey()),tipo:'prevdia',dia:hojeKey(),prev:JSON.parse(JSON.stringify(S.prev||{}))});}catch(e){}},1500);}
-function guardarPrevDia(d,obj){if(gOk()&&typeof gPut==='function')gPut({uid:idPrevDia(d),tipo:'prevdia',dia:d,prev:JSON.parse(JSON.stringify(obj||{}))});}
+/* curral inativo (sem gado) não tem previsto: tira ele de todos os tratos. Devolve quantos tirou */
+function semInativos(obj){let n=0;try{if(!obj||!gOk()||!G.it.currais)return 0;Object.values(obj).forEach(m=>{if(!m||typeof m!=='object')return;Object.keys(m).forEach(c=>{if(!curralAtivo(c)){delete m[c];n++;}});});}catch(e){}return n;}
+/* previsto de hoje com curral inativo (ex.: inativou depois da leitura): tira e manda para a nuvem */
+function limparInativosHoje(){try{if(!S||(typeof modoVer!=='undefined'&&modoVer)||!gOk())return;const hj=hojeKey();
+  const temRealHoje=c=>(typeof HIST!=='undefined'?HIST:[]).some(r=>r.dia===hj&&r.curral===c);
+  let n=0;Object.values(S.prev||{}).forEach(m=>{if(!m||typeof m!=='object')return;Object.keys(m).forEach(c=>{if(!curralAtivo(c)&&!temRealHoje(c)&&+m[c]>0){delete m[c];n++;}});});
+  if(n){marcarPrev();try{render();}catch(e){}}}catch(e){}}
+function guardarPrevDia(d,obj){if(gOk()&&typeof gPut==='function'){const o=JSON.parse(JSON.stringify(obj||{}));semInativos(o);gPut({uid:idPrevDia(d),tipo:'prevdia',dia:d,prev:o});}}
 /* virou o dia: se o previsto de hoje já foi feito ontem (pela leitura de amanhã), ele passa a valer */
 function virarDiaPrev(){if(!S)return;const hj=hojeKey();if(S.prevDia===hj)return;
   /* virou o dia: NÃO manda nada para a nuvem (outro aparelho pode já ter feito a leitura de hoje); só busca o previsto da nuvem */
-  if(S.prevDia&&S.prevDia<hj){const g=prevGuardado(hj);S.prev=g?JSON.parse(JSON.stringify(g)):{};S.prevOrig=null;S.prevPend=false;
+  if(S.prevDia&&S.prevDia<hj){const g=prevGuardado(hj);S.prev=g?JSON.parse(JSON.stringify(g)):{};semInativos(S.prev);S.prevOrig=null;S.prevPend=false;
     S.prevSnap=JSON.stringify(S.prev);S.prevSyncTs=0;S.prevTs=0;if(typeof render==='function')render();
     if(navigator.onLine)setTimeout(()=>{try{puxarPrevisto(true).catch(()=>{});}catch(e){}},300);}
   S.prevDia=hj;save();}
@@ -3931,7 +3938,7 @@ async function checarVersao(){
     try{sessionStorage.setItem('recarregadoPara',v+'|'+Date.now());}catch(e){}recarregarQuandoPuder();
   }catch(e){}
 }
-setTimeout(checarVersao,3000);setTimeout(()=>{try{virarDiaPrev();}catch(e){}},2500);setInterval(()=>{try{virarDiaPrev();}catch(e){}},60000);setInterval(checarVersao,3*60000);
+setTimeout(checarVersao,3000);setTimeout(()=>{try{virarDiaPrev();}catch(e){}},2500);setInterval(()=>{try{virarDiaPrev();}catch(e){}try{limparInativosHoje();}catch(e){}},60000);setTimeout(()=>{try{limparInativosHoje();}catch(e){}},8000);setInterval(checarVersao,3*60000);
 $('btnAtualizarApp').onclick=()=>{if(window.autoOcupado&&autoOcupado()&&!confirm('A balança está conectada. Atualizar agora vai desconectar. Continuar?'))return;try{save();sessionStorage.setItem('voltarPara',modoVer?'ver':document.body.classList.contains('naInicio')?'':document.body.classList.contains('modoGest')?'gest':'exec');}catch(e){}guardarRascunho();location.reload();};
 document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')checarVersao();});
 if('serviceWorker' in navigator){

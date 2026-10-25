@@ -2202,7 +2202,7 @@ window.cEstadoAoVivo=auto=>{const B=CG.ativa,base={modo:'carga',origem:auto?'aut
 let cTec=null,cBuf='';
 /* currais do trato que usam a ração (pelo lote) e o total previsto deles */
 function sugestaoCarga(trato,racId,loc){const hj=hojeKey(),m=(S.prev||{})[String(trato)]||{},cs=[];let tot=0;
-  gTodos('lote').filter(l=>cabPres(l,hj)>0).forEach(l=>{const r=racaoEm(l,hj),c=curralEm(l,hj);if(r&&r.uid===racId&&(!loc||linhaDe(c)===loc)&&typeof m[c]==='number'&&m[c]>0&&!cs.includes(c)){cs.push(c);tot+=m[c];}});
+  gTodos('lote').filter(l=>cabPres(l,hj)>0).forEach(l=>{const r=racaoEm(l,hj),c=curralEm(l,hj);if(r&&r.uid===racId&&(!loc||linhaDe(c)===loc)&&(typeof curralAtivo!=='function'||curralAtivo(c))&&typeof m[c]==='number'&&m[c]>0&&!cs.includes(c)){cs.push(c);tot+=m[c];}});
   return {cs:cs.sort(alfa),tot};}
 function itensCarga(racId,total){const r=G.it[racId];const cp=r&&!r.del?compRacao(r,hojeKey()):null;if(!cp)return [];
   let resto=Math.round(total);return ordenarRac(r,cp.itens,i=>i.ins?i.ins.uid:'').map((i,k,a)=>{const kg=k===a.length-1?resto:Math.round(total*i.pMN/100);resto-=kg;return {ins:i.ins?i.ins.uid:'',nome:i.nome,pMN:i.pMN,prev:kg,ini:null,fim:null,real:null};});}
@@ -2286,7 +2286,10 @@ function cTelaNova0(){if(!CG.passo){CG.passo=1;CG.local=null;}if(!CG.local)CG.pa
   CG.juntos=CG.avulso?[]:(CG.juntos||[]).filter(k=>k!==+CG.trato);const trs=[+CG.trato].concat(CG.juntos).sort((a,b)=>a-b);
   const partes=trs.map(k=>({k,sg:sugestaoCarga(k,CG.rac,CG.local)})),sg={tot:partes.reduce((a,p)=>a+p.sg.tot,0),cs:[...new Set(partes.flatMap(p=>p.sg.cs))]};
   const chave=CG.avulso?'avulso|'+CG.rac:CG.local+'|'+trs.join('+')+'|'+CG.rac;if(CG.totalDe!==chave){const mesmaRac=CG.totalDe!=null&&String(CG.totalDe).split('|').pop()===String(CG.rac);CG.total=CG.avulso?0:(sg.tot||0);CG.totalDe=chave;if(!mesmaRac)CG.ordem=null;  /* a Ordem é independente: continua valendo se a ração é a mesma */
-    CG.ja={};CG.sobModo='rac';CG.sobRac=null;CG.sobKg=0;CG.ordAberto=false;CG.jaAberto=false;CG.man={};CG.manAberto=false;CG.desm=[];cSave();}
+    CG.ja={};CG.sobModo='rac';CG.sobRac=null;CG.sobKg=0;CG.ordAberto=false;CG.jaAberto=false;CG.man={};CG.manAberto=false;CG.desm=[];
+    /* currais deste trato que já foram carregados hoje em outra batida: já vêm desmarcados (fica só o que falta) */
+    if(!CG.avulso&&CG.trato){const ja=cJaCarr(trs),L=cCurrCarga(trs);CG.desm=L.filter(x=>ja.has(x.c)).map(x=>x.c);if(CG.desm.length){CG.expAberto=true;cExpAplicar();}}
+    cSave();}
   if(CG.abrirDepois){if(CG.abrirDepois==='man')CG.manAberto=true;else CG.jaAberto=true;CG.abrirDepois=null;cSave();}
   const its=itensAjust(itensCarga(CG.rac,CG.total||0));
   const passoTrato=passoRac+(CG.avulso?`
@@ -2419,7 +2422,7 @@ function cClique(e){
         itens:manIt.map(m=>({ins:m.ins,nome:m.nome,pMN:m.pMN,prev:m.prec,real:m.kg,man:m.kg,bal:0,hora:'manual'})),origem:'manual'});
       CG.verDia=hojeKey();cLimparSetup();toast('Batida salva (manual)');cRender();window.scrollTo({top:0});return;}
     if(!its.length)return toast('Tudo já está no vagão: nada para carregar');
-    CG.ativa={dia:hojeKey(),local:CG.local||'',avulso:!!CG.avulso,trato:CG.avulso?0:+CG.trato,tratos:CG.avulso?[]:[+CG.trato].concat(CG.juntos||[]).sort((a,b)=>a-b),rac:CG.rac,racNome:r.nome,total:its.reduce((a,i)=>a+i.prev,0),totalMistura:CG.total,jaNoVagao:jaIt,manual:manIt,itens:its,atual:0,ts0:Date.now(),origem:cAuto()?'balanca':'manual'};cSave();cRender();window.scrollTo({top:0});if(cAuto()){if(window.acIniciou)acIniciou();return;}return cTeclado('ini');}
+    CG.ativa={dia:hojeKey(),local:CG.local||'',avulso:!!CG.avulso,trato:CG.avulso?0:+CG.trato,tratos:CG.avulso?[]:[+CG.trato].concat(CG.juntos||[]).sort((a,b)=>a-b),rac:CG.rac,racNome:r.nome,total:its.reduce((a,i)=>a+i.prev,0),totalMistura:CG.total,cur:CG.avulso?null:cCurrCarga([+CG.trato].concat(CG.juntos||[])).filter(x=>!(CG.desm||[]).includes(x.c)).map(x=>x.c),jaNoVagao:jaIt,manual:manIt,itens:its,atual:0,ts0:Date.now(),origem:cAuto()?'balanca':'manual'};cSave();cRender();window.scrollTo({top:0});if(cAuto()){if(window.acIniciou)acIniciou();return;}return cTeclado('ini');}
   if(a==='contRem')return cContinuarRem(b.dataset.ap);
   if(!A&&a!=='apagaCarga')return;
   if(a==='escolher'){A.escolha=!A.escolha;cSave();return cRender();}
@@ -2446,7 +2449,7 @@ function cClique(e){
         'Sim, finalizar','Não, continuar carregando',!F.length);}finally{CG.conclAberto=false;}
     if(!sim||CG.ativa!==A)return;
     gPut({uid:novoId('carga'),tipo:'carga',dia:A.dia,local:A.local||'',avulso:!!A.avulso,trato:A.trato,tratos:A.tratos||[A.trato],racao:A.rac,racNome:A.racNome,total:A.total,ts0:A.ts0,hora:new Date(A.ts0).toTimeString().slice(0,5),
-      itens:juntaManual(A),origem:A.origem||''});
+      itens:juntaManual(A),origem:A.origem||'',...(Array.isArray(A.cur)?{cur:A.cur}:{})});
     CG.ativa=null;CG.verDia=A.dia;cLimparSetup();toast('Batida salva');cRender();window.scrollTo({top:0});})();return;}
   if(a==='apagaCarga'){if(!confirm('Apagar esta batida?'))return;gDel(b.dataset.id);return cRender();}
 }
@@ -3332,9 +3335,12 @@ function cTratoPendente(k){const hj=hojeKey();if(typeof fornPendentes==='functio
 /* Expandir tratos: mostra os currais que entram no total da batida; todos marcados; desmarcar tira a quantidade daquele curral */
 function cCurrCarga(trs){const mp=new Map();trs.forEach(k=>{const m=(S.prev||{})[String(k)]||{};sugestaoCarga(k,CG.rac,CG.local).cs.forEach(c=>mp.set(c,(mp.get(c)||0)+(+m[c]||0)));});
   const ord=c=>{const i=(S.cadastro||[]).indexOf(c);return i<0?999:i;};return [...mp].map(([c,kg])=>({c,kg})).sort((a,b)=>ord(a.c)-ord(b.c));}
-function cExpHTML(trs){const L=cCurrCarga(trs);if(!L.length)return '';const ds=CG.desm||[],nM=L.filter(x=>!ds.includes(x.c)).length;
+/* currais já carregados hoje (batidas finalizadas do mesmo local e ração, num destes tratos) → hora da batida */
+function cJaCarr(trs){const m=new Map(),hj=hojeKey();try{gTodos('carga').filter(c=>c.dia===hj&&Array.isArray(c.cur)&&(c.local||'')===(CG.local||'')&&c.racao===CG.rac&&(c.tratos||[c.trato]).some(k=>trs.includes(+k)))
+  .sort((a,b)=>(a.ts0||0)-(b.ts0||0)).forEach(c=>c.cur.forEach(n=>{if(!m.has(n))m.set(n,c.hora||'');}));}catch(e){}return m;}
+function cExpHTML(trs){const L=cCurrCarga(trs);if(!L.length)return '';const ds=CG.desm||[],nM=L.filter(x=>!ds.includes(x.c)).length,ja=cJaCarr(trs);
   return `<button type="button" class="mini cExpTog${CG.expAberto?' sel':''}" data-cexp="1">${CG.expAberto?'▲ Recolher tratos':'▼ Expandir tratos'}${ds.length?` · ${nM} de ${L.length} currais`:''}</button>`+
-    (CG.expAberto?`<div class="cJuntoLista cExpLista">${L.map(x=>{const on=!ds.includes(x.c);return `<button type="button" data-cexpc="${esc(x.c)}" class="${on?'sel':''}"><span>${on?'✓ ':''}${esc(x.c)}</span><small>${nf(x.kg)} kg</small></button>`;}).join('')}</div><p class="note">Toque no curral para tirar (ou pôr de volta) a quantidade dele da batida.</p>`:'');}
+    (CG.expAberto?`<div class="cJuntoLista cExpLista">${L.map(x=>{const on=!ds.includes(x.c);const jh=ja.get(x.c);return `<button type="button" data-cexpc="${esc(x.c)}" class="${on?'sel':''}${jh!=null&&!on?' cJaCarr':''}"><span>${on?'✓ ':''}${esc(x.c)}</span><small>${nf(x.kg)} kg</small>${jh!=null?`<em>já carregado${jh?' '+esc(jh):''}</em>`:''}</button>`;}).join('')}</div>${ja.size?`<p class="note">Os marcados como <b>já carregado</b> foram numa batida anterior de hoje; ficam fora desta. Toque para pôr de volta se precisar.</p>`:''}<p class="note">Toque no curral para tirar (ou pôr de volta) a quantidade dele da batida.</p>`:'');}
 function cExpAplicar(){const trs=[+CG.trato].concat(CG.juntos||[]),L=cCurrCarga(trs),ds=CG.desm||[];CG.total=L.filter(x=>!ds.includes(x.c)).reduce((a,x)=>a+x.kg,0);}
 function cJaTratadoHTML(trs){if(typeof fornCurrais!=='function'||typeof fornPendentes!=='function')return '';
   const feitos=trs.filter(k=>k>0&&fornCurrais(CG.local,CG.rac,k).length&&!fornPendentes(CG.local,CG.rac,k).length);if(!feitos.length)return '';
