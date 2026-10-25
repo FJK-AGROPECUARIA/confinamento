@@ -1224,7 +1224,7 @@ body.naInicio .topoTxt h1{font-size:clamp(16px,5vw,28px)!important}
 <div class="toast" id="toast" hidden></div>
 <script>
 'use strict';
-const APP_VERSAO='184';
+const APP_VERSAO='185';
 const APP_DATA='19/10/2026';
 const KEY='confinamento-completo-v1';
 const $=id=>document.getElementById(id);
@@ -3759,7 +3759,7 @@ try{navigator.getBattery&&navigator.getBattery().then(bt=>{let av=0;const ver=()
 /* cartão ao vivo do Carregar (batida do vagão), manual ou pela balança */
 function cardCargaAoVivo(d){const ini=parseFloat(d.ini),fim=parseFloat(d.fim),pv=d.prev,auto=d.origem==='auto';
   const t0=+d.ts0||(d.bat&&+d.bat.ts0)||0;
-  const topo=avTopoHTML(d,t0)+(d.semBatida?'':`<div class="avSub">${auto?'⚡':'✋'} Carregar · ${d.trato?'Trato '+esc(d.trato):'Avulsa'}${d.rac?' · '+esc(d.rac):''}${d.nProd?` <em>${d.feitos||0} de ${d.nProd} produtos</em>`:''}</div>`);
+  const topo=avTopoHTML(d,t0)+(d.semBatida?'':`<div class="avSub">${auto?'⚡':'✋'} Carregar · ${d.trato?'Trato '+esc(d.trato):'Avulso'}${d.rac?' · '+esc(d.rac):''}${d.nProd?` <em>${d.feitos||0} de ${d.nProd} produtos</em>`:''}</div>`);
   if(d.semBatida)return `<div class="avCard${d.idade>70000?' parado':''}">${topo}<div class="avVazio">Na tela de carregar, sem carregamento começado</div></div>`;
   if(!(d.tela&&d.tela.fCl)&&auto){const t=avTelaSint(d,true);if(t)d=Object.assign({},d,{tela:t});}
   if(d.tela&&d.tela.fCl)return `<div class="avCard${d.idade>70000?' parado':''}">${topo}${avTelaHTML(d,true)}</div>`;

@@ -1494,7 +1494,7 @@ function tDia(t){
 /* batidas (carregamentos do vagão) do dia: previsto × carregado de cada uma; o realizado é o que sai do estoque */
 function batidasDiaCard(dia){const B=gTodos('carga').filter(c=>c.dia===dia).sort((a,b)=>(a.ts0||0)-(b.ts0||0));if(!B.length)return '';
   const kg=(c,k)=>(c.itens||[]).reduce((a,x)=>a+(k==='real'?(ok(+x.real)&&x.real!==null?+x.real:0):(+x.prev||0)),0);
-  const rows=B.map(c=>{const p=kg(c,'prev'),r=kg(c,'real');return `<tr><td class="hora">${esc(c.hora||'')}</td><td class="c">${c.avulso?'Avulsa':'Trato '+esc((c.tratos||[c.trato]).join('+'))}<small>${esc(c.racNome||'')}</small></td><td>${nf(p)}</td><td><b>${r?nf(r):'—'}</b></td><td class="${r?classeDesv(r-p,p):''}">${r?sgn(r-p):''}</td></tr>`;}).join('');
+  const rows=B.map(c=>{const p=kg(c,'prev'),r=kg(c,'real');return `<tr><td class="hora">${esc(c.hora||'')}</td><td class="c">${c.avulso?'Avulso':'Trato '+esc((c.tratos||[c.trato]).join('+'))}<small>${esc(c.racNome||'')}</small></td><td>${nf(p)}</td><td><b>${r?nf(r):'—'}</b></td><td class="${r?classeDesv(r-p,p):''}">${r?sgn(r-p):''}</td></tr>`;}).join('');
   const tp=B.reduce((a,c)=>a+kg(c,'prev'),0),tr=B.reduce((a,c)=>a+kg(c,'real'),0);
   return card('Carregamentos do dia',`<div class="tablebox"><table class="gTab"><thead><tr><th>Hora</th><th>Carregamento</th><th>Previsto</th><th>Carregado</th><th>Dif.</th></tr></thead><tbody>${rows}<tr class="grp"><td></td><td>Total · ${B.length} carregamento(s)</td><td>${nf(tp)}</td><td>${nf(tr)}</td><td>${tr?sgn(tr-tp):''}</td></tr></tbody></table></div>
     <p class="note">Carregado = soma do realizado de cada produto no carregamento. É o que sai do Estoque.</p>`);}
@@ -2232,7 +2232,7 @@ window.cBuscarRemoto=cBuscarRemoto;
 setInterval(()=>{if(!modoVer&&['carga','autoc'].includes(window.abaAtual)&&!cAtiva()&&document.visibilityState==='visible')cBuscarRemoto();},8000);
 function cRemHTML(){if(!cRem.length)return '';
   return `<section class="panel contRem"><h2>🔄 Carregamento em aberto em outro aparelho</h2>${cRem.map(d=>{const B=d.bat,f=B.itens.filter(x=>ok(x.real)).length,kg=B.itens.reduce((a,x)=>a+(ok(x.real)?x.real:0),0),s=Math.round(d.idade/1000);
-    return `<div class="contIt"><b>${B.avulso?'Avulsa':'Trato '+esc((B.tratos||[B.trato]).join('+'))} · ${esc(B.racNome||'')}${B.local?' · '+(B.local==='C'?'Confinamento':'Pasto'):''}</b>
+    return `<div class="contIt"><b>${B.avulso?'Avulso':'Trato '+esc((B.tratos||[B.trato]).join('+'))} · ${esc(B.racNome||'')}${B.local?' · '+(B.local==='C'?'Confinamento':'Pasto'):''}</b>
       <span>${f} de ${B.itens.length} produtos · ${nf(kg)} de ${nf(B.total)} kg · ${s<20?'🟢 aparelho ativo agora':'parou há '+(s<60?s+' s':Math.round(s/60)+' min')}</span>
       <button class="primary" data-c="contRem" data-ap="${esc(d.ap)}">▶ Continuar este carregamento</button></div>`;}).join('')}
     <p class="note">Continua do produto em que parou, com o peso inicial que já estava marcado. O outro aparelho fecha o carregamento dele.</p></section>`;}
@@ -2318,7 +2318,7 @@ window.barraBatida=barraBatida;
 function cTelaBatida(){const A=cAtiva(),i=A.atual,it=A.itens[i],alvo=it&&ok(it.ini)?it.ini+it.prev:NaN,real=it&&ok(it.ini)&&ok(it.fim)?it.fim-it.ini:NaN,dif=real-(it?it.prev:0);
   const feitos=A.itens.filter(x=>ok(x.real)).length,tp=A.itens.reduce((a,x)=>a+x.prev,0),tr=A.itens.reduce((a,x)=>a+(ok(x.real)?x.real:0),0),tpf=A.itens.reduce((a,x)=>a+(ok(x.real)?x.prev:0),0);
   const cls=(d,p)=>typeof classeDesv==='function'?classeDesv(d,p):'';
-  return `${barraBatida(A)}<section class="panel"><div class="curhead"><h2>Carregamento · ${A.avulso?'Avulsa':'Trato '+A.trato}</h2><span class="note">${esc(A.racNome)} · ${nf(A.total)} kg</span></div>
+  return `${barraBatida(A)}<section class="panel"><div class="curhead"><h2>Carregamento · ${A.avulso?'Avulso':'Trato '+A.trato}</h2><span class="note">${esc(A.racNome)} · ${nf(A.total)} kg</span></div>
     <div class="curBox2"><div class="cbCur" data-c="escolher" role="button"><span>Produto ${i+1} de ${A.itens.length} <i class="seta">▼</i></span><b>${esc(it?it.nome:'—')}</b></div>
       <div class="cbPrev"><span>Carregar</span><b class="num">${it?nf(it.prev):'—'}</b></div></div>
     ${A.escolha?`<div class="escolha">${A.itens.map((x,k)=>`<button data-c="ir" data-i="${k}" class="${k===i?'sel':''}">${ok(x.real)?'✓ ':''}${esc(x.nome)} · ${nf(x.prev)} kg</button>`).join('')}</div>`:''}
@@ -2513,7 +2513,7 @@ window.batidasHTML=(L,mostrarDia,semApagar)=>{if(!L.length)return '<p class="not
     :'<button class="dangerfill" type="button" data-hbmodo="ed">✎ Editar realizado</button>'}</div>`:'';
   const PE=window.HBPEND||{};
   return L.map(c=>{const tp=c.itens.reduce((a,x)=>a+(+x.prev||0),0),tr=c.itens.reduce((a,x)=>a+(+x.real||0),0),d=tr-tp,cls=(dd,p)=>typeof classeDesv==='function'?classeDesv(dd,p):'';
-    return `<details class="gMais gCarga" open><summary><b>${mostrarDia?diaBR(c.dia).slice(0,5)+' ':''}${esc(c.hora||'')}</b> · ${c.avulso?'Avulsa':c.tratos&&c.tratos.length>1?'Tratos '+c.tratos.join('+'):'Trato '+c.trato}${c.local?' · '+(c.local==='C'?'Confinamento':'Pasto'):''} · ${esc(c.racNome||'')} <span class="num">${nf(tr)} kg <i class="${cls(d,tp)}">(${d>0?'+':''}${nf(d)})</i></span></summary>
+    return `<details class="gMais gCarga" open><summary><b>${mostrarDia?diaBR(c.dia).slice(0,5)+' ':''}${esc(c.hora||'')}</b> · ${c.avulso?'Avulso':c.tratos&&c.tratos.length>1?'Tratos '+c.tratos.join('+'):'Trato '+c.trato}${c.local?' · '+(c.local==='C'?'Confinamento':'Pasto'):''} · ${esc(c.racNome||'')} <span class="num">${nf(tr)} kg <i class="${cls(d,tp)}">(${d>0?'+':''}${nf(d)})</i></span></summary>
       <div class="tablebox"><table class="gTab"><thead><tr><th>Hora</th><th>Insumos</th><th>Previsto</th><th>Carreg.</th><th>Dif.</th></tr></thead><tbody>${c.itens.map((x,ci)=>{const dd=x.real-x.prev;return `<tr><td>${esc(x.hora||'')}</td><td class="c">${nomeMan(x)}</td><td>${nf(x.prev)}</td><td>${sel==='ed'?`<input class="bEdIn num" inputmode="numeric" data-hbreal="${c.uid}|${ci}" value="${(c.uid+'|'+ci) in PE?esc(PE[c.uid+'|'+ci]):ok(+x.real)?Math.round(+x.real):''}">`:ok(+x.real)?nf(+x.real):'—'}</td><td class="${ok(+x.real)?cls(dd,x.prev):''}">${ok(+x.real)?(dd>0?'+':'')+nf(dd):''}</td></tr>`;}).join('')}
       <tr class="grp"><td></td><td>Total</td><td>${nf(tp)}</td><td>${nf(tr)}</td><td>${(d>0?'+':'')+nf(d)}</td></tr></tbody></table></div>
       </details>`;}).join('')+fim;};

@@ -13,7 +13,7 @@ const A={fonte:null,status:'Desconectado',peso:null,amostras:[],estavel:false,va
   est:'aguardando',base:null,menor:null,avisou1:false,avisou2:false,bruto:[],buf:'',
   bt:null,btChars:[],ws:null,sim:null,wake:null,ultDado:0};
 window.AUTO=A;
-const CFG_PADRAO={bleUuid:'',bleCmd:'',tol:10,tempo:4,minDesc:30,amarelo:100,vermelho:50,continuo:20,antecipa:1,ws:'ws://10.10.100.254:6432',som:true,tagOn:1,filtro:3,enq:1,prever:1,fornInst:1,passo:5};
+const CFG_PADRAO={bleUuid:'',bleCmd:'',tol:10,tempo:4,minDesc:30,amarelo:100,vermelho:50,continuo:20,antecipa:1,ws:'ws://10.10.100.254:6432',som:true,holdAuto:1,tagOn:1,filtro:3,enq:1,prever:1,fornInst:1,passo:5};
 /* Ajustes da balança: ficam na nuvem (item 'cfgBalanca' da Gestão), então mudar num aparelho muda em todos */
 function cfgNuvem(){try{return (typeof G!=='undefined'&&G.it&&G.it.cfgBalanca)||null;}catch(e){return null;}}
 function cfg(){if(!S.auto)S.auto={};
@@ -279,6 +279,7 @@ function aplicarBalRec(){[['aBox',$('aBox')&&$('aBox').querySelector(':scope>sec
 document.addEventListener('click',e=>{if(!e.target.closest('[data-baltog]'))return;A.balRec=!A.balRec;aplicarBalRec();});
 setInterval(pintarSinal,700);
 function desconectar(manual){if(manual){A.btGen=(A.btGen||0)+1;A.btReconectando=false;}
+  try{if(A.holdApp&&A.digiStar&&A.dsEsc){A.dsEsc.writeValue(new Uint8Array([0x1b,0x47,0x68,0x44,0x04])).catch(()=>{});holdGrava(false);}}catch(e){}   // vai desconectar: solta o HOLD antes
   try{if(A.bt&&A.bt.gatt&&A.bt.gatt.connected){A.bt._manual=true;A.bt.gatt.disconnect();}}catch(e){}
   try{if(A.ws){A.ws._manual=true;A.ws.close();}}catch(e){}
   if(A.sim){clearInterval(A.sim.t);A.sim=null;}
@@ -394,7 +395,7 @@ async function btAbrir(dev){
 
 /* Teclas da Digi-Star EZ, iguais às do app TAP Feed: SUB (1A) + código da tecla + nº de sequência 01..99.
    Zero "43", Tara "40", Líquido/Bruto "10", Imprimir "23" (descobertos no registro HCI do tablet). */
-const TECLAS={'43':'Zero','40':'Tara','10':'Líquido/Bruto','23':'Imprimir'};
+const TECLAS={'43':'Zero','40':'Tara','10':'Líquido/Bruto','23':'Imprimir','20':'Hold'};
 async function teclaBalanca(cod){
   if(!(A.fonte==='bt'&&A.digiStar&&A.dsEsc)){toast('Conecte a balança pelo 🔷 Balança Bluetooth');return;}
   if((cod==='43'||cod==='40')&&!confirm(TECLAS[cod]+' na balança: o peso do visor vai para 0. Confirmar?'))return;
@@ -404,6 +405,32 @@ async function teclaBalanca(cod){
   catch(e){toast('Não consegui mandar '+TECLAS[cod]+': '+(e.message||e));}
 }
 window.teclaBalanca=teclaBalanca;
+/* HOLD automático (Digi-Star): com o fornecimento PAUSADO ou TRAVADO no tablet (trajeto até o próximo curral)
+   a balança fica em HOLD; ao tocar em liberar/continuar, o HOLD sai. Assim o balanço dos buracos não muda o peso.
+   holdAuto 1 = comando direto do manual EZII (ESC G h E = ligar, ESC G h D = soltar): não é liga/desliga, então VALE O TABLET.
+     Enquanto estiver no Fornecer, o app repete o comando a cada 4 s: se alguém apertar HOLD na balança, o tablet corrige.
+   holdAuto 2 = tecla HOLD ("20"), que liga e desliga com o mesmo toque (reserva, se a balança não aceitar o comando).
+   holdAuto 0 = desligado. */
+A.holdApp=(()=>{try{return localStorage.getItem('fjkHoldApp')==='1';}catch(e){return false;}})();
+function holdGrava(v){A.holdApp=v;A.holdTs=Date.now();try{localStorage.setItem('fjkHoldApp',v?'1':'0');}catch(e){}}
+let holdMandando=false;
+async function holdSync(){if(holdMandando)return;
+  if(!(A.fonte==='bt'&&A.digiStar&&A.dsEsc)){   // sem Bluetooth não dá para soltar: avisa o operador para soltar na mão
+    if(A.holdApp&&!A.pausa&&Date.now()-(A.holdAvisoTs||0)>10000){A.holdAvisoTs=Date.now();toast('⚠ Balança sem Bluetooth e pode estar em HOLD: se o visor mostrar HOLD, aperte HOLD na balança para soltar');}
+    return;}
+  let modo=1,noForn=false;try{modo=+cfg().holdAuto||0;noForn=!!(window.filtroForn&&filtroForn()&&!naCargaAuto());}catch(e){}
+  const quer=!!(modo&&noForn&&A.pausa);
+  const repetir=modo===1&&noForn&&Date.now()-(A.holdTs||0)>4000;   // comando direto: reforça o estado do tablet
+  if(quer===A.holdApp&&!repetir)return;
+  if(!modo&&!A.holdApp)return;
+  holdMandando=true;
+  try{let b;if(modo===2||(!modo&&A.holdAppTecla)){A.dsSeq=(A.dsSeq%99)+1;const txt='20'+String(A.dsSeq).padStart(2,'0');b=new Uint8Array([0x1a,...Array.from(txt).map(c=>c.charCodeAt(0))]);}
+    else b=new Uint8Array([0x1b,0x47,0x68,quer?0x45:0x44,0x04]);   // ESC G h E|D EOT
+    await A.dsEsc.writeValue(b);const mudou=quer!==A.holdApp;A.holdAppTecla=modo===2;holdGrava(quer);
+    if(mudou){bruto('HOLD '+(quer?'ligado':'solto')+' pelo tablet: '+hexDe(b));try{diagLog(quer?'hold_liga':'hold_solta',{modo,peso:A.peso,visor:A.visor,anunc:A.anunc});}catch(e){}}}
+  catch(e){bruto('HOLD não foi: '+(e.message||e));}   // não mudou o estado: tenta de novo na próxima volta
+  finally{holdMandando=false;}}
+window.holdSync=holdSync;setInterval(holdSync,700);
 document.addEventListener('click',e=>{const b=e.target.closest('.aTeclas [data-tecla]');if(b){e.preventDefault();e.stopPropagation();teclaBalanca(b.dataset.tecla);}},true);
 
 /* Caixinha Wi-Fi (USR-W610) em modo WebSocket. Tenta o endereço dos Ajustes e, se não abrir,
@@ -496,7 +523,8 @@ function receber(v,origem){
      Quando o visor mostra mensagem (ex.: "PRESS TARE") não é número e é ignorado. */
   if(typeof v!=='string'){const u=v instanceof DataView?new Uint8Array(v.buffer,v.byteOffset,v.byteLength):new Uint8Array(v);
     if(u.length>5&&u[0]===0x1b&&u[1]===0x4f){A.temFim=true;
-      for(let i=0;i<u.length-2;i++){if(u[i]===0x1b&&u[i+1]===0x4f&&u[i+2]===0x6d){const a=u.indexOf(2,i+3),b=a>=0?u.indexOf(4,a+1):-1;
+      for(let i=0;i<u.length-2;i++){if(u[i]===0x1b&&u[i+1]===0x4f&&u[i+2]===0x61){const e=u.indexOf(4,i+3);if(e>i)A.anunc=hexDe(u.slice(i+3,e));}
+        if(u[i]===0x1b&&u[i+1]===0x4f&&u[i+2]===0x6d){const a=u.indexOf(2,i+3),b=a>=0?u.indexOf(4,a+1):-1;
         if(a>=0&&b>a){const vis=String.fromCharCode(...u.slice(a+1,b)).trim();A.visor=vis;
           if(/^-?\s*\d+([.,]\d+)?$/.test(vis)){const n=parseFloat(vis.replace(/\s/g,'').replace(',','.'));if(!isNaN(n))novoPeso(n);}}}}
       return;}}
@@ -616,7 +644,7 @@ function novoCurral(manterPeso,semTravar){A.posPausa=false;A.baseFix=false;A.est
 function pesoVisor(){const c=A.crus||[];return rP(c.length?c[c.length-1].v:A.peso);}
 function pesoAgora(){const t=Date.now(),v=(A.crus||[]).filter(q=>q.t>=t-1500).map(q=>q.v).sort((x,y)=>x-y);return rP(v.length?v[Math.floor((v.length-1)/2)]:A.peso);}
 function travarCurral(){try{if(!window.filtroForn||!filtroForn()||naCargaAuto()){if(A.pausa&&A.pausa.trava)A.pausa=null;return;}const cur=curralAtual();if(!cur){A.pausa=null;return;}
-  A.pausa={est:'aguardando',base:null,ts:Date.now(),falta:cur.prev,caiu:0,trava:true};}catch(e){}}
+  A.pausa={est:'aguardando',base:null,ts:Date.now(),falta:cur.prev,caiu:0,trava:true};}catch(e){}setTimeout(()=>window.holdSync&&holdSync(),0);}
 window.travarCurral=travarCurral;
 function maquina(){
   if(A.pausa)return; // pausado no trajeto: o peso que varia nos buracos não conta
@@ -812,12 +840,12 @@ function pintarPausa(){const p=!!A.pausa;if(!$('aPausaBox'))return;$('aPausaBox'
   ['aFaltaBox','aReg'].forEach(i=>{const e=$(i);if(e)e.style.display=p?'none':'';});const m=document.querySelector('#aBox .aMini');if(m)m.style.display=p?'none':'';}
 function aPausar(){if(A.pausa)return;const z0=zona(),cur0=curralAtual();A.pausa={est:A.est,base:A.base,ts:Date.now(),
     falta:A.est==='descarregando'&&z0?Math.max(0,z0.falta):(cur0?cur0.prev:null),caiu:A.est==='descarregando'&&A.base!=null&&A.peso!=null?Math.max(0,A.base-A.peso):0};pararSom();diagLog('pausou',{est:A.est,base:A.base,peso:A.peso});
-  toast('⏸ Pausado: a balança não conta até você continuar');pintarPeso();if(typeof agendarAoVivo==='function')agendarAoVivo();}
+  toast('⏸ Pausado: a balança não conta até você continuar');pintarPeso();holdSync();if(typeof agendarAoVivo==='function')agendarAoVivo();}
 function aContinuarPausa(){const P=A.pausa;if(!P)return;A.pausa=null;
   /* estava no meio do curral: o que já caiu fica guardado; a conta recomeça pela balança de AGORA (o que mudou no trajeto não conta) */
   if(P.est==='descarregando'){const atual=pesoVisor();A.est='descarregando';A.base=(atual!=null?atual:P.base)+(+P.caiu||0);A.baseConf=true;A.baseFix=true;A.baseCur=(curralAtual()||{}).nome||null;A.ancV=null;A.ancT=Date.now();A.fpMin=null;A.menor=A.peso;}
   else{novoCurral(true,true);const pa=pesoVisor();if(pa!=null){A.base=pa;A.baseConf=true;A.baseFix=true;A.baseCur=(curralAtual()||{}).nome||null;}else A.baseConf=false;A.posPausa=true;}  // liberou o curral: a balança EXATA do momento do toque vira o peso inicial (não troca depois pela média)  // liberou o curral: o peso de agora vira o inicial  // ainda não tinha começado: o peso de agora vira o inicial (e acerta quando a balança firmar)
-  diagLog('despausou',{est:A.est,base:A.base,peso:A.peso,seg:Math.round((Date.now()-P.ts)/1000)});
+  diagLog('despausou',{est:A.est,base:A.base,peso:A.peso,seg:Math.round((Date.now()-P.ts)/1000)});holdSync();
   const cN=curralAtual();toast(P.trava?`▶ Fornecendo no ${cN?cN.nome:''}`:P.est==='descarregando'?'▶ Continuando o mesmo curral':'▶ Continuando: deixe o vagão parado para pegar o peso inicial');pintarPeso();aRender();
   if(typeof agendarAoVivo==='function')agendarAoVivo();}
 window.aPausar=aPausar;window.aContinuarPausa=aContinuarPausa;
@@ -1007,7 +1035,7 @@ window.acTela=(nova,dia)=>{
   const B=acB(),i=B.atual,it=B.itens[i];
   const pend=B.itens.filter(x=>!ok(x.real)).length,todosC=!pend,ultimoC=pend===1&&it&&!ok(it.real);
   const h=cTelaBatida(),k=h.indexOf('<section',h.indexOf('<section')+8),tabela=k>0?h.slice(k):'';
-  return topo+(window.barraBatida?barraBatida(B):'')+`<section class="panel"><div class="curhead"><h2>Carregamento · ${B.avulso?'Avulsa':'Trato '+B.trato}</h2><span class="note">${esc(B.racNome)} · ${nf(B.total)} kg</span></div>
+  return topo+(window.barraBatida?barraBatida(B):'')+`<section class="panel"><div class="curhead"><h2>Carregamento · ${B.avulso?'Avulso':'Trato '+B.trato}</h2><span class="note">${esc(B.racNome)} · ${nf(B.total)} kg</span></div>
     <div class="fCols"><div class="fColE">
     <div class="curBox2"><div class="cbCur" data-c="escolher" role="button"><span>Produto ${i+1} de ${B.itens.length} <i class="seta">▼</i></span><b>${esc(it?it.nome:'—')}</b></div>
       <div class="cbPrev"><span>Carregar</span><b class="num">${it?nf(it.prev):'—'}</b></div></div>
@@ -1150,6 +1178,12 @@ function montarCfgT(){const box=$('cfgTBox');if(!box||box.dataset.ok)return;box.
     <p class="note">Leitor aceito: Bluetooth BLE (serial) ou leitor tipo teclado (HID), que digita o código e dá Enter.</p>
   </section>
   <section class="panel">
+    <div class="curhead"><h2>⏸ Hold da balança</h2></div>
+    <label>Hold automático no trajeto (Digi-Star)</label>
+    <select id="cfgT_hold"><option value="1">Ligado: vale o tablet (recomendado)</option><option value="2">Ligado pela tecla HOLD (reserva)</option><option value="0">Desligado</option></select>
+    <p class="note">No Fornecer, com o quadro azul na tela (pausado ou esperando liberar o próximo curral), a balança fica em <b>HOLD</b>. Ao tocar para liberar ou continuar, o HOLD sai. Assim o balanço do trajeto não muda o peso.<br><b>Vale o tablet:</b> o app manda "ligar" ou "soltar" (não é liga/desliga) e repete a cada 4 segundos. Se alguém apertar HOLD na balança, o tablet volta ao certo.<br><b>Pela tecla HOLD:</b> use só se a balança não obedecer ao modo recomendado. Nesse modo não aperte HOLD na balança na mão.</p>
+  </section>
+  <section class="panel">
     <div class="curhead"><h2>🔊 Apito</h2></div>
     <label class="aChk"><input type="checkbox" id="cfgT_som"> Apito ligado (sem vibração)</label>
     <p class="note">Funciona como sensor de ré: começa espaçado no amarelo e vai apertando até o direto, que é um bip bem rápido. Quando o peso para de cair, o apito para na hora.</p>
@@ -1171,6 +1205,7 @@ function montarCfgT(){const box=$('cfgTBox');if(!box||box.dataset.ok)return;box.
   $('cfgT_ws').onchange=e=>{const c=cfg();c.ws=e.target.value.trim()||CFG_PADRAO.ws;e.target.value=c.ws;salvarCfg();avisoCfg();};
   $('cfgT_som').onchange=e=>{const c=cfg();c.som=e.target.checked;salvarCfg();avisoCfg();if(c.som){liberarSom();tocar('lento');}};
   $('cfgT_teste').onclick=testarSom;
+  if($('cfgT_hold'))$('cfgT_hold').onchange=e=>{const c=cfg();c.holdAuto=+e.target.value||0;salvarCfg();avisoCfg();holdSync();};
   if($('cfgT_inst'))$('cfgT_inst').onchange=e=>{const c=cfg();c.fornInst=e.target.checked?1:0;salvarCfg();avisoCfg();};
   $('cfgT_tag').onchange=e=>{const c=cfg();c.tagOn=e.target.checked?1:0;salvarCfg();avisoCfg();pintarTag();};
   $('cfgT_padrao').onclick=()=>{if(!confirm('Voltar todos os ajustes da balança ao padrão (em todos os aparelhos)?'))return;
@@ -1188,7 +1223,7 @@ function pintarCores(){const el=$('cfgT_cores');if(!el)return;const c=cfg();
   <div><i class="pisca2" style="background:#000"></i>Preto piscando · passou do previsto (mostra quanto passou com sinal de menos), apito bem rápido</div>`;}
 function preencherCfgT(){if(!$('cfgT_tol'))return;const c=cfg();pintarCores();
   CAMPOS.forEach(([k])=>{const el=$('cfgT_'+k);if(document.activeElement!==el)el.value=c[k];});
-  if(document.activeElement!==$('cfgT_ws'))$('cfgT_ws').value=c.ws;if(document.activeElement!==$('cfgT_ble'))$('cfgT_ble').value=c.bleUuid||'';if(document.activeElement!==$('cfgT_cmd'))$('cfgT_cmd').value=c.bleCmd||'';$('cfgT_som').checked=!!c.som;if($('cfgT_tag'))$('cfgT_tag').checked=!!c.tagOn;if($('cfgT_inst'))$('cfgT_inst').checked=+c.fornInst!==0;}
+  if(document.activeElement!==$('cfgT_ws'))$('cfgT_ws').value=c.ws;if(document.activeElement!==$('cfgT_ble'))$('cfgT_ble').value=c.bleUuid||'';if(document.activeElement!==$('cfgT_cmd'))$('cfgT_cmd').value=c.bleCmd||'';$('cfgT_som').checked=!!c.som;if($('cfgT_hold'))$('cfgT_hold').value=String(+c.holdAuto||0);if($('cfgT_tag'))$('cfgT_tag').checked=!!c.tagOn;if($('cfgT_inst'))$('cfgT_inst').checked=+c.fornInst!==0;}
 window.cfgTAoAbrir=()=>{montarCfgT();preencherCfgT();avisoCfg();
   try{if(typeof gSync==='function')gSync(true).then(()=>{if(!cfgNuvem())salvarCfg();preencherCfgT();avisoCfg();}).catch(()=>{});}catch(e){}};
 /* puxa da nuvem ao abrir a Automação também, para pegar ajustes feitos em outro aparelho */
