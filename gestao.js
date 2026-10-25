@@ -2808,8 +2808,9 @@ function estCor(e){if(e.saldo==null)return '';if(e.saldo<=0)return 'r';if(!ok(e.
 function tEstoque(){const I=gTodos('insumo').filter(i=>!i.inativo).sort(porNome),hj=hojeKey();
   const L=I.map(i=>({i,e:estoqueIns(i)}));
   const item=({i,e})=>{const cor=estCor(e),baixo=cor==='r',abMin=e.saldo!=null&&e.min&&e.saldo<e.min;
-    return `<button class="gItem gEstIt${cor?' gEstC'+cor:''}" data-g="ir" data-t="estIns" data-id="${i.uid}"><div class="gItemTopo"><b>${esc(i.nome)}</b><span class="gEstSaldo">${e.saldo==null?'sem lançamento':'<small class="gEstSL">saldo</small>'+nf(e.saldo)+' kg'}</span></div>
-      <small class="gEstLin">${e.saldo==null?'Lance uma entrada ou uma contagem para começar o controle.':`<span class="gEstSt">${cor==='r'?'⚠ Estoque baixo':cor==='a'?'⚠ Estoque atenção':'✓ Estoque ok'}</span><span class="gEstFz">finaliza em</span><span class="gEstDias">${ok(e.dias)?`~${nf(e.dias,1)} dia${Math.round(e.dias*10)===10?'':'s'}`:'—'}</span><span class="gEstRest">${[abMin&&!baixo?'abaixo do mínimo':'',e.cons>0?`consumo ${nf(e.cons)} kg/dia (média 7 dias)`:'sem consumo nos últimos 7 dias',e.min?`mínimo ${nf(e.min)} kg`:''].filter(Boolean).join(' · ')}</span>`}</small></button>`;};
+    const neg=e.saldo!=null&&e.saldo<0;   /* estoque negativo: quadro todo vermelho, letras brancas */
+    return `<button class="gItem gEstIt${cor?' gEstC'+cor:''}${neg?' gEstNeg':''}" data-g="ir" data-t="estIns" data-id="${i.uid}"><div class="gItemTopo"><b>${esc(i.nome)}</b><span class="gEstSaldo">${e.saldo==null?'sem lançamento':'<small class="gEstSL">saldo</small>'+nf(e.saldo)+' kg'}</span></div>
+      <small class="gEstLin">${e.saldo==null?'Lance uma entrada ou uma contagem para começar o controle.':`<span class="gEstSt">${neg?'⛔ Estoque negativo':cor==='r'?'⚠ Estoque baixo':cor==='a'?'⚠ Estoque atenção':'✓ Estoque ok'}</span><span class="gEstFz">finaliza em</span><span class="gEstDias">${ok(e.dias)?`~${nf(e.dias,1)} dia${Math.round(e.dias*10)===10?'':'s'}`:'—'}</span><span class="gEstRest">${[abMin&&!baixo?'abaixo do mínimo':'',e.cons>0?`consumo ${nf(e.cons)} kg/dia (média 7 dias)`:'sem consumo nos últimos 7 dias',e.min?`mínimo ${nf(e.min)} kg`:''].filter(Boolean).join(' · ')}</span>`}</small></button>`;};
   return `<section class="panel"><div class="curhead"><h2>Estoque</h2><span class="note">${dB(hj)}</span></div>
     <div class="gEstBtns gEst4"><button class="gBtV" data-g="ir" data-t="estForm" data-mov="ent">＋ Entrada</button><button class="gBtV" data-g="nfNova">📎 ＋ NF</button><button class="gBtR" data-g="ir" data-t="estForm" data-mov="sai">－ Saída</button><button class="gBtA" data-g="ir" data-t="estForm" data-mov="inv">Contagem</button></div>
     <div class="gEstBtns gEst3"><button class="gBtC" data-g="ir" data-t="insumos">🌽 Insumos</button><button class="gBtC" data-g="ir" data-t="fornec">🏢 Fornecedores</button><button class="gBtA" data-g="estIrRel">📋 Relatório</button></div>
@@ -3670,7 +3671,7 @@ async function estCardsPdf(dia,fmt){const I=gTodos('insumo').filter(i=>!i.inativ
   const cv=document.createElement('canvas'),x=cv.getContext('2d');
   /* monta as linhas de cada quadro (com quebra) para saber a altura */
   const linhas=o=>{const e=o.e,cor=estCor(e),baixo=cor==='r',abMin=e.min&&e.saldo<e.min;const P=[];
-    if(baixo)P.push({t:'⚠ Estoque baixo'});else if(abMin)P.push({t:'Abaixo do mínimo'});
+    if(e.saldo<0)P.push({t:'⛔ Estoque negativo'});else if(baixo)P.push({t:'⚠ Estoque baixo'});else if(abMin)P.push({t:'Abaixo do mínimo'});
     if(ok(e.dias))P.push({t:P.length?'finaliza em':'Finaliza em'},{t:`~${nf(e.dias,1)} dia${Math.round(e.dias*10)===10?'':'s'}`,badge:1});
     P.push({t:e.cons>0?`consumo ${nf(e.cons)} kg/dia (média 7 dias)`:'sem consumo nos últimos 7 dias'});if(e.min)P.push({t:`mínimo ${nf(e.min)} kg`});
     /* palavras com separador · */
@@ -3688,13 +3689,13 @@ async function estCardsPdf(dia,fmt){const I=gTodos('insumo').filter(i=>!i.inativ
   x.fillStyle='#2e6b31';x.fillRect(0,0,W,110);x.fillStyle='#fff';x.font=`800 40px ${FN}`;x.textBaseline='middle';x.fillText('FJK · Estoque',M,55);
   x.font=`500 30px ${FN}`;x.textAlign='right';x.fillText(dB(dia||hojeKey()),W-M,55);x.textAlign='left';
   const rr=(X,Y,w,h,r)=>{x.beginPath();x.moveTo(X+r,Y);x.arcTo(X+w,Y,X+w,Y+h,r);x.arcTo(X+w,Y+h,X,Y+h,r);x.arcTo(X,Y+h,X,Y,r);x.arcTo(X,Y,X+w,Y,r);x.closePath();};
-  let y=TOP;blocos.forEach(b=>{const e=b.o.e,c=CORES[estCor(e)],h=hB(b);
+  let y=TOP;blocos.forEach(b=>{const e=b.o.e,neg=e.saldo<0,c=neg?['#c62828','#8e0000','#ffffff']:CORES[estCor(e)],h=hB(b);   /* negativo: quadro todo vermelho, letras brancas */
     rr(M,y,W-2*M,h,22);x.fillStyle=c[0];x.fill();x.lineWidth=5;x.strokeStyle=c[1];x.stroke();
-    let yy=y+PAD+23;x.font=`800 42px ${FN}`;x.fillStyle=estCor(e)==='r'?c[2]:'#11253d';x.textAlign='left';x.fillText(b.o.i.nome,M+PAD,yy);
-    x.textAlign='right';x.fillStyle=c[2];const sT=nf(e.saldo)+' kg';x.fillText(sT,W-M-PAD,yy);const sW=x.measureText(sT).width;x.font=`500 22px ${FN}`;x.fillStyle='#78909c';x.fillText('saldo',W-M-PAD-sW-12,yy+6);x.textAlign='left';yy+=23+14+26;
+    let yy=y+PAD+23;x.font=`800 42px ${FN}`;x.fillStyle=neg?'#fff':estCor(e)==='r'?c[2]:'#11253d';x.textAlign='left';x.fillText(b.o.i.nome,M+PAD,yy);
+    x.textAlign='right';x.fillStyle=c[2];const sT=nf(e.saldo)+' kg';x.fillText(sT,W-M-PAD,yy);const sW=x.measureText(sT).width;x.font=`500 22px ${FN}`;x.fillStyle=neg?'#fff':'#78909c';x.fillText('saldo',W-M-PAD-sW-12,yy+6);x.textAlign='left';yy+=23+14+26;
     b.L.forEach(lin=>{let xx=M+PAD;lin.forEach((tk,k)=>{if(k)xx+=8;
-      if(tk.badge){x.font=`800 32px ${FN}`;const bw=tk.w,bh=46;rr(xx,yy-bh/2,bw,bh,23);x.fillStyle=estCor(e)==='a'?'#f2b600':c[1];x.fill();x.fillStyle=estCor(e)==='a'?'#3a2a00':'#fff';x.fillText(tk.t,xx+14,yy+1);}
-      else{x.font=`500 30px ${FN}`;x.fillStyle='#3d4a3d';x.fillText(tk.t,xx,yy);}xx+=tk.w;});yy+=52;});
+      if(tk.badge){x.font=`800 32px ${FN}`;const bw=tk.w,bh=46;rr(xx,yy-bh/2,bw,bh,23);x.fillStyle=neg?'#fff':estCor(e)==='a'?'#f2b600':c[1];x.fill();x.fillStyle=neg?'#c62828':estCor(e)==='a'?'#3a2a00':'#fff';x.fillText(tk.t,xx+14,yy+1);}
+      else{x.font=`500 30px ${FN}`;x.fillStyle=neg?'#fff':'#3d4a3d';x.fillText(tk.t,xx,yy);}xx+=tk.w;});yy+=52;});
     y+=h+24;});
   x.font=`400 22px ${FN}`;x.fillStyle='#78909c';x.fillText('Vermelho: menos de 7 dias · Amarelo: 7 a 15 dias · Verde: 15 dias ou mais',M,y+4);y+=44;
   /* tabela: consumo do estoque no dia */
