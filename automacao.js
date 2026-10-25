@@ -1007,7 +1007,7 @@ window.acTela=(nova,dia)=>{
   const B=acB(),i=B.atual,it=B.itens[i];
   const pend=B.itens.filter(x=>!ok(x.real)).length,todosC=!pend,ultimoC=pend===1&&it&&!ok(it.real);
   const h=cTelaBatida(),k=h.indexOf('<section',h.indexOf('<section')+8),tabela=k>0?h.slice(k):'';
-  return topo+(window.barraBatida?barraBatida(B):'')+`<section class="panel"><div class="curhead"><h2>Batida · ${B.avulso?'Avulsa':'Trato '+B.trato}</h2><span class="note">${esc(B.racNome)} · ${nf(B.total)} kg</span></div>
+  return topo+(window.barraBatida?barraBatida(B):'')+`<section class="panel"><div class="curhead"><h2>Carregamento · ${B.avulso?'Avulsa':'Trato '+B.trato}</h2><span class="note">${esc(B.racNome)} · ${nf(B.total)} kg</span></div>
     <div class="fCols"><div class="fColE">
     <div class="curBox2"><div class="cbCur" data-c="escolher" role="button"><span>Produto ${i+1} de ${B.itens.length} <i class="seta">▼</i></span><b>${esc(it?it.nome:'—')}</b></div>
       <div class="cbPrev"><span>Carregar</span><b class="num">${it?nf(it.prev):'—'}</b></div></div>
@@ -1023,14 +1023,14 @@ window.acTela=(nova,dia)=>{
       <div><small>Parar com</small><b class="num" id="acAlvo">—</b></div>
     </div>
     ${window.manNotaAtiva?manNotaAtiva(B):''}
-    ${todosC?`<p class="avisoJa">✓ Todos os produtos foram carregados.</p><button class="primary" data-c="concluir">✓ Finalizar batida</button>`
+    ${todosC?`<p class="avisoJa">✓ Todos os produtos foram carregados.</p><button class="primary" data-c="concluir">✓ Finalizar carregamento</button>`
       :`<button class="primary" data-c="registrar" id="acReg" disabled>${ultimoC?'✓ Registrar último produto':'✓ Registrar e ir para o próximo ▶'}</button>`}
     </div></div>
     <div class="row"><button data-c="ant"${i>0?'':' disabled'}>◀ Produto anterior</button><button class="lima" data-c="prox"${i<B.itens.length-1?'':' disabled'}>Próximo produto ▶</button></div>
   </section>`+tabela+dia;};
 window.acDepois=()=>{acSyncTopo();try{pintarSinal();}catch(e){}  /* já desenha a balança recolhida/aberta junto (antes abria e fechava num piscar e a tela tremia) */
   const B=acB();if(B&&AC.idx!==B.atual){const volta=AC.idx==null;AC.idx=B.atual;acNovoProduto();
-    const it=acItem();if(volta&&it&&it.lib&&ok(it.ini)&&!ok(it.real))toast(`↩ Batida continuando: ${it.nome} com peso inicial ${fmt(it.ini)} kg (o que já foi carregado não se perdeu)`);}pintarCarga();};
+    const it=acItem();if(volta&&it&&it.lib&&ok(it.ini)&&!ok(it.real))toast(`↩ Carregamento continuando: ${it.nome} com peso inicial ${fmt(it.ini)} kg (o que já foi carregado não se perdeu)`);}pintarCarga();};
 window.acIniciou=()=>{acNovoProduto();   // o primeiro produto também começa travado (azul)
   const B=acB();AC.idx=B?B.atual:null;const it=acItem();if(it&&A.estavel){it.ini=A.valEst;cSave();}pintarCarga();
   if(!A.fonte)toast('Conecte a balança para carregar pela Automação');};
@@ -1047,7 +1047,7 @@ window.acRegistrar=async()=>{const B=acB(),it=acItem();if(!B||!it)return;if(AC.r
   const k=B.itens.findIndex((x,j)=>j>B.atual&&!ok(x.real)),nx=k>=0?k:B.itens.findIndex(x=>!ok(x.real));
   if(nx>=0){B.atual=nx;const n=B.itens[nx];if(!ok(n.real)){n.ini=fim;n.fim=null;}}
   AC.idx=B.atual;acNovoProduto();pararSom();cSave();toast(`${it.nome}: ${nf(it.real)} kg`);cRender();
-  if(nx<0)toast('Todos os produtos carregados. Toque em ✓ Finalizar batida.');};
+  if(nx<0)toast('Todos os produtos carregados. Toque em ✓ Finalizar carregamento.');};
 /* "Próximo produto": se já carregou este produto, registra (e vai para o próximo); senão só passa para o próximo */
 window.acProximo=()=>{const B=acB(),it=acItem();if(!B||!it)return;const c=cfg();
   if(!ok(it.real)&&window.insFixo&&insFixo(it.ins))return acRegistrar();   // registra o previsto ao passar para o próximo

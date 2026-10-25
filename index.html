@@ -1097,7 +1097,7 @@ body.naInicio .topoTxt h1{font-size:clamp(16px,5vw,28px)!important}
 
   <section class="panel hColap" id="hBatSec" data-hcol="B" hidden>
     <div class="row compart fz3 expTopo"><button class="verde" id="hBatPdf">📄 PDF</button><button class="verde" id="hBatImg">🖼 Foto</button><button class="verde" id="hBatXls">📊 Excel</button></div>
-    <div class="curhead hColCab"><h2>Batidas do vagão</h2><span class="note num" id="hBatN"></span><span class="hColSeta">▼</span></div>
+    <div class="curhead hColCab"><h2>Carregamentos do vagão</h2><span class="note num" id="hBatN"></span><span class="hColSeta">▼</span></div>
     <div id="hBat"></div>
   </section>
   <section class="panel hSoTratos hColap" data-hcol="T">
@@ -1224,7 +1224,7 @@ body.naInicio .topoTxt h1{font-size:clamp(16px,5vw,28px)!important}
 <div class="toast" id="toast" hidden></div>
 <script>
 'use strict';
-const APP_VERSAO='183';
+const APP_VERSAO='184';
 const APP_DATA='19/10/2026';
 const KEY='confinamento-completo-v1';
 const $=id=>document.getElementById(id);
@@ -2470,11 +2470,11 @@ async function histGerar(tipo,pdfH){
 }
 $('hModo').addEventListener('click',e=>{const b=e.target.closest('[data-hm]');if(!b)return;hModo=b.dataset.hm;hColFechar();if(hModo==='T'&&HD.t===0)HD.t=-1;renderHist();});
 /* batidas: um relatório só (batidas com subtotal, total geral e o quadro de total dos insumos embaixo) */
-function expBat(pdf){const [pa,pb]=intervaloHist();const L=batidasLista(pa,pb,localSel,HD.per||HD.t<0?0:HD.t);if(!L.length)return toast('Nenhuma batida');
+function expBat(pdf){const [pa,pb]=intervaloHist();const L=batidasLista(pa,pb,localSel,HD.per||HD.t<0?0:HD.t);if(!L.length)return toast('Nenhum carregamento');
   window.__expPdf=!!pdf;imgBatidas(L,pa===pb?diaBR(pa):diaBR(pa)+' a '+diaBR(pb),'juntas');}
 $('hBatPdf').onclick=()=>expBat(true);
 $('hBatImg').onclick=()=>expBat(false);
-$('hBatXls').onclick=()=>{const [pa,pb]=intervaloHist();const L=batidasLista(pa,pb,localSel,HD.per||HD.t<0?0:HD.t);if(!L.length)return toast('Nenhuma batida');xlsBatidas(L,pa===pb?diaBR(pa):diaBR(pa)+' a '+diaBR(pb));};
+$('hBatXls').onclick=()=>{const [pa,pb]=intervaloHist();const L=batidasLista(pa,pb,localSel,HD.per||HD.t<0?0:HD.t);if(!L.length)return toast('Nenhum carregamento');xlsBatidas(L,pa===pb?diaBR(pa):diaBR(pa)+' a '+diaBR(pb));};
 $('hXls').onclick=()=>{const f=filtrados();if(f.length)compartilharArquivo(gerarXlsx(f),nomeArquivo(f),XT);};
 /* ---------- Relatório completo: carregamento + fornecimento com balança início/final ---------- */
 const COLS_COMP=[['Hora',90,'c'],['Curral / produto',230,'c'],['Previsto',130,'r'],['Realizado',140,'r'],['Dif.',110,'r'],['Balança início',160,'r'],['Balança final',160,'r']];
@@ -2721,7 +2721,7 @@ function renderHist(){try{aplicarRenomesHist();}catch(e){}
     const tp=L.reduce((a,c)=>a+c.itens.reduce((s,x)=>s+(+x.prev||0),0),0),tr=L.reduce((a,c)=>a+c.itens.reduce((s,x)=>s+(+x.real||0),0),0);
     $('hFaltaBox').hidden=true;$('hStat').classList.remove('st4');$('hPrevLbl').textContent='Previsto';$('hDifLbl').textContent='Diferença';
     $('hPrev').textContent=L.length?fmt(tp):'—';$('hReal').textContent=L.length?fmt(tr):'—';$('hDif').textContent=L.length?sgn(tr-tp):'—';$('hDif').className='num '+(L.length?classeDesv(tr-tp,tp):'');
-    $('hBatN').textContent=L.length?`${L.length} batida(s)`:'';$('hBat').innerHTML=window.batidasHTML?batidasHTML(L,pa!==pb):'';return;}
+    $('hBatN').textContent=L.length?`${L.length} carregamento(s)`:'';$('hBat').innerHTML=window.batidasHTML?batidasHTML(L,pa!==pb):'';return;}
   document.querySelectorAll('#hLocal button[data-loc]').forEach(b=>b.classList.toggle('sel',b.dataset.loc===localSel));
   const regs=filtrados();
   const p=regs.reduce((a,r)=>a+r.prev,0),f=regs.reduce((a,r)=>a+r.forn,0);
@@ -3760,7 +3760,7 @@ try{navigator.getBattery&&navigator.getBattery().then(bt=>{let av=0;const ver=()
 function cardCargaAoVivo(d){const ini=parseFloat(d.ini),fim=parseFloat(d.fim),pv=d.prev,auto=d.origem==='auto';
   const t0=+d.ts0||(d.bat&&+d.bat.ts0)||0;
   const topo=avTopoHTML(d,t0)+(d.semBatida?'':`<div class="avSub">${auto?'⚡':'✋'} Carregar · ${d.trato?'Trato '+esc(d.trato):'Avulsa'}${d.rac?' · '+esc(d.rac):''}${d.nProd?` <em>${d.feitos||0} de ${d.nProd} produtos</em>`:''}</div>`);
-  if(d.semBatida)return `<div class="avCard${d.idade>70000?' parado':''}">${topo}<div class="avVazio">Na tela de carregar, sem batida começada</div></div>`;
+  if(d.semBatida)return `<div class="avCard${d.idade>70000?' parado':''}">${topo}<div class="avVazio">Na tela de carregar, sem carregamento começado</div></div>`;
   if(!(d.tela&&d.tela.fCl)&&auto){const t=avTelaSint(d,true);if(t)d=Object.assign({},d,{tela:t});}
   if(d.tela&&d.tela.fCl)return `<div class="avCard${d.idade>70000?' parado':''}">${topo}${avTelaHTML(d,true)}</div>`;
   let real='—',dif='—',cls='',fl=false;if(!isNaN(ini)&&!isNaN(fim)){const f=fim-ini;real=fmt(f);if(pv!=null){const x=f-pv;fl=auto&&x<0;dif=fl?fmt(-x):sgn(x);cls=fl?'':classeDesv(x,pv);}}
@@ -3772,7 +3772,7 @@ function cardCargaAoVivo(d){const ini=parseFloat(d.ini),fim=parseFloat(d.fim),pv
       <div><small>${auto?'Bal. agora':'Bal. final'}</small><b class="num">${!isNaN(fim)?fmt(fim):'—'}</b></div>
       <div><small>Carregado</small><b class="num">${real}</b></div>
       <div><small>${fl?'Falta':'Diferença'}</small><b class="num ${cls}">${dif}</b></div>
-      <div><small>Batida</small><b class="num">${fmt((d.carregado||0)+(!isNaN(ini)&&!isNaN(fim)&&fim>ini&&!(d.its&&d.its[(d.iProd||1)-1]&&d.its[(d.iProd||1)-1][2]!=null)?fim-ini:0))}<small style="display:inline;font-size:.7rem"> / ${fmt(d.totalPrev||0)}</small></b></div>
+      <div><small>Carregamento</small><b class="num">${fmt((d.carregado||0)+(!isNaN(ini)&&!isNaN(fim)&&fim>ini&&!(d.its&&d.its[(d.iProd||1)-1]&&d.its[(d.iProd||1)-1][2]!=null)?fim-ini:0))}<small style="display:inline;font-size:.7rem"> / ${fmt(d.totalPrev||0)}</small></b></div>
     </div></div>`;}
 /* Automação: o quadro do Visualizar é igual à tela do operador */
 function avTelaSint(d,carga){const ini=parseFloat(d.ini),fim=parseFloat(d.fim),pv=+d.prev;if(isNaN(ini)||!(pv>0))return null;
@@ -3787,7 +3787,7 @@ function avTelaHTML(d,carga){const T=d.tela;
     <div class="${esc(T.etCl||'aEtapa')}">${esc(T.etapa||'')}</div>
     <div class="${esc(T.fCl||'aFalta')}"><small>${esc(T.fTit||'')}</small><b class="num">${esc(T.fVal||'—')}</b><em>${esc(T.fTxt||'')}</em></div>
     <div class="aMini"><div class="caiu"><small>${carga?'Carregado':'Fornecido'}</small><b class="num">${esc(T.feito||'—')}</b></div><div><small>Peso inicial</small><b class="num">${esc(T.ini||'—')}</b></div><div><small>Parar com</small><b class="num">${esc(T.alvo||'—')}</b></div></div>
-    ${carga?`<div class="avBatTot">Batida: <b>${fmt((d.carregado||0)+(parseFloat(String(T.feito||'0').replace(/\./g,'').replace(',','.'))||0))}</b> de ${fmt(d.totalPrev||0)} kg</div>`:''}</div>`;}
+    ${carga?`<div class="avBatTot">Carregamento: <b>${fmt((d.carregado||0)+(parseFloat(String(T.feito||'0').replace(/\./g,'').replace(',','.'))||0))}</b> de ${fmt(d.totalPrev||0)} kg</div>`:''}</div>`;}
 /* abre o mapa fora do sistema: no app do Google Maps se tiver; senão no navegador (o sistema continua aberto) */
 document.addEventListener('click',e=>{const a=e.target.closest('a[data-geo]');if(!a)return;e.preventDefault();const q=a.dataset.geo,web='https://www.google.com/maps/search/?api=1&query='+q;
   const ua=navigator.userAgent||'',ios=/iPad|iPhone|iPod/.test(ua)||(navigator.platform==='MacIntel'&&navigator.maxTouchPoints>1),and=/Android/i.test(ua);
@@ -3807,14 +3807,14 @@ function idadeTxt(ms){const s=Math.max(0,Math.round(ms/1000));return s<60?`há $
 /* Visualizar › Carregar: embaixo, a batida em andamento produto por produto e as batidas feitas hoje */
 function pintarAvCarga(L){const el=$('avCargaBox');if(!el)return;const on=modoVer&&document.body.classList.contains('verCarga');el.hidden=!on;if(!on){el.innerHTML='';return;}
   const tab=d=>{const its=d.its||[];if(!its.length){if(!d.nProd)return '';const ini=parseFloat(d.ini),fim=parseFloat(d.fim),agora=!isNaN(ini)&&!isNaN(fim)&&fim>ini?fim-ini:0;
-      return `<section class="panel"><div class="curhead"><h2>Batida em andamento · Trato ${esc(d.trato)}</h2><span class="note">${esc(d.rac||'')}</span></div>
+      return `<section class="panel"><div class="curhead"><h2>Carregamento em andamento · Trato ${esc(d.trato)}</h2><span class="note">${esc(d.rac||'')}</span></div>
       <div class="tablebox"><table class="trat"><thead><tr><th>Produto</th><th>Previsto</th><th>Realiz.</th><th>Dif.</th></tr></thead><tbody>
       <tr><td class="c">Já carregados (${d.feitos||0})</td><td></td><td><b>${fmt(d.carregado||0)}</b></td><td></td></tr>
       <tr class="atual"><td class="c">${esc(d.prod||'')}</td><td>${d.prev!=null?fmt(d.prev):''}</td><td><b>${agora?fmt(agora):'agora'}</b></td><td></td></tr>
       <tr class="grp"><td>Total</td><td>${fmt(d.totalPrev||0)}</td><td>${fmt((d.carregado||0)+agora)}</td><td></td></tr></tbody></table></div>
       <p class="note">O aparelho que está carregando está numa versão antiga: atualizando ele, aparece produto por produto.</p></section>`;}let tp=0,tr=0,tpr=0;
     const rows=its.map(([n,p,r],i)=>{tp+=p;if(r!=null){tr+=r;tpr+=p;}const at=r==null&&i+1===+d.iProd;return `<tr${at?' class="atual"':''}><td class="c">${esc(n)}</td><td>${fmt(p)}</td><td><b>${r!=null?fmt(r):at?'agora':'—'}</b></td><td class="${r!=null?classeDesv(r-p,p):''}">${r!=null?sgn(r-p):''}</td></tr>`;}).join('');
-    return `<section class="panel"><div class="curhead"><h2>Batida em andamento · Trato ${esc(d.trato)}</h2><span class="note">${esc(d.rac||'')}</span></div>
+    return `<section class="panel"><div class="curhead"><h2>Carregamento em andamento · Trato ${esc(d.trato)}</h2><span class="note">${esc(d.rac||'')}</span></div>
       <div class="tablebox"><table class="trat"><thead><tr><th>Produto</th><th>Previsto</th><th>Realiz.</th><th>Dif.</th></tr></thead><tbody>${rows}
       <tr class="grp"><td>Total</td><td>${fmt(tp)}</td><td>${tr?fmt(tr):'—'}</td><td class="${tr?classeDesv(tr-tpr,tpr):''}">${tr?sgn(tr-tpr):''}</td></tr></tbody></table></div></section>`;};
   el.innerHTML=L.filter(d=>d.modo==='carga'&&!d.semBatida).map(tab).join('');} /* Visualizar: só a batida ao vivo; as feitas ficam no Histórico */
@@ -3824,7 +3824,7 @@ function avCurralAgora(){if(!avDados)return null;const passou=Date.now()-avReceb
 let avSel=null;
 /* texto curto de um fornecimento/batida aberto (barra e quadrinhos) */
 function avMiniTxt(d){const au=d.origem==='auto'||!!d.tela||!!(d.bat&&d.bat.origem==='balanca'),sem=d.idade>3*60000?` · sem sinal ${idadeTxt(d.idade)}`:'';
-  if(d.modo==='carga'){const b=d.bat||{};return `🚜 Batida${d.trato||b.trato?' · Trato '+esc(d.trato||b.trato):''}${b.rac||d.rac?' · '+esc(b.rac||d.rac):''} ${au?'⚡':'✋'}${sem}`;}
+  if(d.modo==='carga'){const b=d.bat||{};return `🚜 Carregamento${d.trato||b.trato?' · Trato '+esc(d.trato||b.trato):''}${b.rac||d.rac?' · '+esc(b.rac||d.rac):''} ${au?'⚡':'✋'}${sem}`;}
   return `${au?'⚡':'✋'} Fornecer · Trato ${esc(d.trato)}${d.curral?' · '+esc(d.curral):''} <em>${d.feitos||0}/${d.total||0}</em>${sem}`;}
 document.addEventListener('click',e=>{const b=e.target.closest&&e.target.closest('[data-avir]');if(!b||!modoVer)return;avVer(true);const [ab,...k]=b.dataset.avir.split('|');avSel=k.join('|');
   if(window.abaAtual!==ab)aba(ab);else renderAoVivo();setTimeout(()=>{try{renderAoVivo();$('aoVivo').scrollIntoView({block:'start',behavior:'smooth'});}catch(x){}},50);});
@@ -3862,11 +3862,11 @@ function renderAoVivo(){const box=$('aoVivo');window.avTodos=[];pintarAvBtn();if
   const ehAuto=d=>d.origem==='auto'||!!d.tela||!!(d.bat&&d.bat.origem==='balanca'),abaAuto=['auto','autoc'].includes(window.abaAtual);
   const outroModo=window.abaAtual?lst.filter(d=>(d.modo==='carga')===naCarga&&ehAuto(d)!==abaAuto):[];
   if(window.abaAtual)lst=lst.filter(d=>(d.modo==='carga')===naCarga&&ehAuto(d)===abaAuto);
-  const outTxt=barra?'':(outros.length&&window.abaAtual?`<div class="avVer" style="text-align:center">${naCarga?'🚜 Tem fornecimento acontecendo: veja em Fornecer':'🚜 Tem batida acontecendo: veja em Carregar'}</div>`:'')
+  const outTxt=barra?'':(outros.length&&window.abaAtual?`<div class="avVer" style="text-align:center">${naCarga?'🚜 Tem fornecimento acontecendo: veja em Fornecer':'🚜 Tem carregamento acontecendo: veja em Carregar'}</div>`:'')
     +(outroModo.length?`<div class="avVer" style="text-align:center">${abaAuto?'✋ Tem trato sendo feito no Manual: veja em Manual':'⚡ Está sendo feito na Automação: veja em Automação'}</div>`:'');
   pintarAvCarga(naCarga?lst:[]);
   document.body.classList.toggle('verSemTrato',!naCarga&&!lst.some(d=>d.modo==='trato'));
-  if(!lst.length){box.innerHTML=verTxt+barra+`<div class="avVazio">${window.abaAtual?(naCarga?`Nenhuma batida ${abaAuto?'na Automação':'no Manual'} agora`:`Nenhum trato ${abaAuto?'na Automação':'no Manual'} sendo feito agora`):(naCarga?'Ninguém carregando agora':'Ninguém fornecendo agora')}</div>`+outTxt;return;}
+  if(!lst.length){box.innerHTML=verTxt+barra+`<div class="avVazio">${window.abaAtual?(naCarga?`Nenhum carregamento ${abaAuto?'na Automação':'no Manual'} agora`:`Nenhum trato ${abaAuto?'na Automação':'no Manual'} sendo feito agora`):(naCarga?'Ninguém carregando agora':'Ninguém fornecendo agora')}</div>`+outTxt;return;}
   /* não abre sozinho: o Ao vivo só aparece quando a pessoa toca no botão AO VIVO */
   /* mais de um aberto nesta tela: mostra o escolhido completo e os outros como quadrinho (toca para abrir) */
   if(lst.length>1&&!lst.some(d=>chave(d)===avSel))avSel=chave(lst[0]);
