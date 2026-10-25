@@ -2211,8 +2211,12 @@ const cAtiva=()=>CG.ativa||null;
 const cAuto=()=>!!($('viewAutoC')&&!$('viewAutoC').hidden);
 const cCaixa=()=>$(cAuto()?'acBox':'cBox');
 function cRender(){const auto=cAuto(),b=$(auto?'acBox':'cBox'),o=$(auto?'cBox':'acBox');if(!b)return;if(o)o.innerHTML='';
-  if(auto&&window.acTela){b.innerHTML=acTela(cAtiva()?null:cRemHTML()+cTelaNova(),cAtiva()?'':NOTA_BAT)+(cAtiva()?C_NOVA:'')+cBatidasHoje();if(window.acDepois)acDepois();return;}
-  b.innerHTML=(cAtiva()?cTelaBatida()+C_NOVA:cRemHTML()+cTelaNova())+(cAtiva()?'':NOTA_BAT)+cBatidasHoje();}
+  /* outro aparelho com batida aberta: primeiro só ela + "Abrir novo carregamento"; ao abrir novo, recolhe numa faixa em cima */
+  const rem=cAtiva()?'':cRemHTML(),remSo=!!rem&&!(window.REMNOVO&&REMNOVO.c);
+  if(remSo){b.innerHTML=rem+'<button type="button" class="primary remNovoBt" data-remnovo="c">＋ Abrir novo carregamento</button>'+cBatidasHoje();return;}
+  const faixa=rem?'<button type="button" class="remFaixa" data-remver="c">🔄 Batida em aberto em outro aparelho <b>ver ▼</b></button>':'';
+  if(auto&&window.acTela){b.innerHTML=faixa+acTela(cAtiva()?null:cTelaNova(),cAtiva()?'':NOTA_BAT)+(cAtiva()?C_NOVA:'')+cBatidasHoje();if(window.acDepois)acDepois();return;}
+  b.innerHTML=faixa+(cAtiva()?cTelaBatida()+C_NOVA:cTelaNova())+(cAtiva()?'':NOTA_BAT)+cBatidasHoje();}
 const C_NOVA=''; /* sem "Abrir nova batida": abre uma, finaliza (ou cancela) e só então começa outra */
 /* ---------- continuar em outro aparelho: batida aberta em outro celular/tablet (acabou bateria, travou) ---------- */
 let cRem=[];
@@ -2229,14 +2233,14 @@ function cRemHTML(){if(!cRem.length)return '';
   return `<section class="panel contRem"><h2>🔄 Batida em aberto em outro aparelho</h2>${cRem.map(d=>{const B=d.bat,f=B.itens.filter(x=>ok(x.real)).length,kg=B.itens.reduce((a,x)=>a+(ok(x.real)?x.real:0),0),s=Math.round(d.idade/1000);
     return `<div class="contIt"><b>${B.avulso?'Avulsa':'Trato '+esc((B.tratos||[B.trato]).join('+'))} · ${esc(B.racNome||'')}${B.local?' · '+(B.local==='C'?'Confinamento':'Pasto'):''}</b>
       <span>${f} de ${B.itens.length} produtos · ${nf(kg)} de ${nf(B.total)} kg · ${s<20?'🟢 aparelho ativo agora':'parou há '+(s<60?s+' s':Math.round(s/60)+' min')}</span>
-      <button class="primary" data-c="contRem" data-ap="${esc(d.ap)}">▶ Continuar esta batida daqui</button></div>`;}).join('')}
+      <button class="primary" data-c="contRem" data-ap="${esc(d.ap)}">▶ Continuar este carregamento</button></div>`;}).join('')}
     <p class="note">Continua do produto em que parou, com o peso inicial que já estava marcado. O outro aparelho fecha a batida dele.</p></section>`;}
 function cContinuarRem(ap){const d=cRem.find(x=>x.ap===ap);if(!d)return;
   const go=()=>{const B=JSON.parse(JSON.stringify(d.bat));B.deAp=d.ap;B.contTs=Date.now();B.escolha=false;CG.ativa=B;CG.local=B.local||null;CG.trato=B.trato;CG.rac=B.rac;CG.total=B.total;cRem=[];
     try{window.diagLog&&diagLog('batida_continuada',{de:d.ap,trato:B.trato,feitos:B.itens.filter(x=>ok(x.real)).length});}catch(e){}
     cSave();if(typeof enviarAoVivo==='function')enviarAoVivo(true);cRender();window.scrollTo({top:0});
     const it=B.itens[B.atual];toast(`Continuando a batida · ${it?it.nome:''}${it&&ok(it.ini)?' · início '+nf(it.ini)+' kg':''}`);};
-  if(d.idade<20000&&!confirm('O outro aparelho ainda parece ativo (mandou sinal há menos de 20 s). Continuar a batida aqui mesmo assim?'))return;go();}
+  confirmaVermelho('Deseja realmente continuar este carregamento?','O carregamento vai ser fechado no outro aparelho e continua aqui.'+(d.idade<20000?'\n⚠ O outro aparelho ainda parece ativo agora.':''),'Sim, continuar','Cancelar',true).then(v=>{if(v)go();});}
 /* o aparelho original: se outro continuou a batida dele, fecha a dele */
 async function cVerTomado(){try{const A=cAtiva();if(!A||modoVer||!navigator.onLine||!apiUrl())return;
   const j=await (await fetch(apiUrl()+'?acao=aovivo',{cache:'no-store'})).json();if(!j||!j.ok)return;

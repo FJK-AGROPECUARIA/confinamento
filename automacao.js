@@ -144,6 +144,7 @@ const css=`
 function montar(){
   if($('aBox').dataset.ok)return;$('aBox').dataset.ok='1';
   $('aBox').innerHTML=`
+  <div id="fRemA" hidden></div>
   <section class="panel">
     <div class="curhead balHead"><button type="button" class="mini balTog" data-baltog="1" aria-label="Mostrar ou esconder a conexão">▲</button><h2>Balança</h2><span class="note" id="aData" hidden></span><span class="balMini" id="aBalMini"></span></div>
     <div class="aStatus" id="aStatus"><i></i><span id="aStatusTxt">Desconectado</span></div>

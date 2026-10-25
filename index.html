@@ -105,7 +105,7 @@ tr.grp td span{float:right;font-variant-numeric:tabular-nums}
 #tbHist tr.tot td{background:var(--chip);font-weight:800;border-top:0;font-variant-numeric:tabular-nums}#tbHist tr.tot td.c{text-align:left}#tbHist tr.grp+tr.tot td{padding-top:2px}
 .danger{border-color:var(--bad);color:var(--bad)}
 .emSetup>section:not(.fornSetup){display:none!important}
-#aBox.emSetup>section:first-of-type{display:block!important}
+#aBox.emSetup>section:first-of-type{display:block!important}#aBox.remSo>section,#aBox.remSo.emSetup>section:first-of-type{display:none!important}#fRemA{margin-bottom:12px}.remNovoBt{width:100%;margin:10px 0 0}.remFaixa{width:100%;margin:0 0 10px;text-align:left;background:#eef5e4;border:1px solid #2e6b2f;color:#2e6b2f;font-weight:700;font-size:.85rem;padding:8px 12px;border-radius:10px;display:flex;justify-content:space-between;gap:8px}.remFaixa b{white-space:nowrap}
 .fFim{background:#e6f4d7;border:2px solid #6aa121;border-radius:12px;padding:10px 12px;margin-bottom:12px;font-weight:800;color:#2e5a12;text-align:center}.fFim small{display:block;font-weight:600;color:#4b5b3f;margin-top:4px}
 body.somenteVer #dataLinha,body.somenteVer #cal,body.somenteVer #painel>.tSetaFixa,body.somenteVer #painel .navtrato{display:none!important} /* no Visualizar é sempre o dia de hoje (ao vivo) */
 body.somenteVer.verCarga #viewTrato>section:not(#painel),body.somenteVer.verCarga #dataLinha,body.somenteVer.verCarga #painel>.tSetaFixa,body.somenteVer.verCarga .navtrato,body.somenteVer.verCarga #cal{display:none!important}
@@ -1224,7 +1224,7 @@ body.naInicio .topoTxt h1{font-size:clamp(16px,5vw,28px)!important}
 <div class="toast" id="toast" hidden></div>
 <script>
 'use strict';
-const APP_VERSAO='178';
+const APP_VERSAO='179';
 const APP_DATA='19/10/2026';
 const KEY='confinamento-completo-v1';
 const $=id=>document.getElementById(id);
@@ -1545,8 +1545,11 @@ function fornBarHTML(){const f=filtroForn();if(!f)return '';const r=f.rac&&typeo
   return `<span>${f.local==='C'?ICO_C+' Confinamento':'🌿 Pasto'} · ${r?esc(r.nome):'Todas as rações'} · Trato ${S.tratoSel}</span>`;}
 function mostrarFornecimento(){try{const setup=!modoVer&&!filtroForn();
   const vm=$('viewTrato'),va=$('aBox');
-  if(vm){vm.classList.toggle('emSetup',setup);$('fSetupM').hidden=!setup;if(setup)$('fSetupM').innerHTML=fRemHTML()+fornSetupHTML();$('fBarM').hidden=setup||modoVer;$('fBarM').innerHTML=fornBarHTML();if($('fNovoM')){$('fNovoM').hidden=setup||modoVer||!FORN_NOVO_TXT();$('fNovoM').innerHTML=FORN_NOVO;}if($('fCancM'))$('fCancM').hidden=setup||modoVer;}
-  if(va&&$('fSetupA')){va.classList.toggle('emSetup',setup);$('fSetupA').hidden=!setup;if(setup)$('fSetupA').innerHTML=fRemHTML()+fornSetupHTML();$('fBarA').hidden=setup;$('fBarA').innerHTML=fornBarHTML();if($('fNovoA')){$('fNovoA').hidden=setup||modoVer||!FORN_NOVO_TXT();$('fNovoA').innerHTML=FORN_NOVO;}if($('fCancA'))$('fCancA').hidden=setup||modoVer;}
+  /* outro aparelho com fornecimento aberto: primeiro só ele + "Abrir novo fornecimento"; ao abrir novo, ele recolhe numa faixa em cima */
+  const rem=setup?fRemHTML():'',remSo=!!rem&&!(window.REMNOVO&&REMNOVO.f);
+  const remTopo=!rem?'':remSo?rem+'<button type="button" class="primary remNovoBt" data-remnovo="f">＋ Abrir novo fornecimento</button>':'<button type="button" class="remFaixa" data-remver="f">🔄 Fornecimento em aberto em outro aparelho <b>ver ▼</b></button>';
+  if(vm){vm.classList.toggle('emSetup',setup);$('fSetupM').hidden=!setup;if(setup)$('fSetupM').innerHTML=remTopo+(remSo?'':fornSetupHTML());$('fBarM').hidden=setup||modoVer;$('fBarM').innerHTML=fornBarHTML();if($('fNovoM')){$('fNovoM').hidden=setup||modoVer||!FORN_NOVO_TXT();$('fNovoM').innerHTML=FORN_NOVO;}if($('fCancM'))$('fCancM').hidden=setup||modoVer;}
+  if(va&&$('fSetupA')){va.classList.toggle('emSetup',setup);va.classList.toggle('remSo',remSo);if($('fRemA')){$('fRemA').hidden=!rem;$('fRemA').innerHTML=remTopo;}$('fSetupA').hidden=!setup||remSo;if(setup)$('fSetupA').innerHTML=fornSetupHTML();$('fBarA').hidden=setup;$('fBarA').innerHTML=fornBarHTML();if($('fNovoA')){$('fNovoA').hidden=setup||modoVer||!FORN_NOVO_TXT();$('fNovoA').innerHTML=FORN_NOVO;}if($('fCancA'))$('fCancA').hidden=setup||modoVer;}
 }catch(e){}}
 window.mostrarFornecimento=mostrarFornecimento;
 /* tratos juntos no fornecimento: o previsto dos currais pendentes vai todo para o trato maior (ex.: 2 + 3 → Trato 3) */
@@ -2499,7 +2502,7 @@ if($('hcXls'))$('hcXls').onclick=()=>{const G_=compDados();if(!G_.length)return 
   const [pa,pb]=intervaloHist();compartilharArquivo(montarXlsx([['Relatório completo',rows,[12,15,7,8,22,13,14,14,14,14]]]),`FJK - Relatório completo - ${dataArq(pa)}${pa!==pb?' a '+dataArq(pb):''}.xlsx`,XT);};
 
 /* ---------- Abas ---------- */
-function aba(qual){if(window.HPV&&window.hpvFechar)hpvFechar();setTimeout(()=>{if(window.semTela)semTela();},0);const vq=qual;if(modoVer&&(qual==='auto'||qual==='autoc'||qual==='carga'))qual='trato';
+function aba(qual){if(window.REMNOVO&&window.abaAtual!==qual){REMNOVO.f=false;REMNOVO.c=false;}if(window.HPV&&window.hpvFechar)hpvFechar();setTimeout(()=>{if(window.semTela)semTela();},0);const vq=qual;if(modoVer&&(qual==='auto'||qual==='autoc'||qual==='carga'))qual='trato';
   if(!modoVer&&['trato','auto'].includes(qual)&&window.abaAtual!==qual)fLimparSetup();  // entrou no Fornecer: começa limpo (se não tiver fornecimento aberto) // no Visualizar, todas mostram o Ao vivo (manual e automação, carregar e fornecer)
   try{if((qual==='carga'||qual==='autoc')&&typeof CG!=='undefined'&&!CG.ativa){CG.passo=1;CG.local=null;CG.trato=null;CG.juntos=[];CG.avulso=false;CG.juntoAberto=false;}
     if((qual==='trato'||qual==='auto')&&window.abaAtual!==qual&&typeof filtroForn==='function'&&!filtroForn()){FS.local=null;FS.rac=null;FS.trato=null;FS.passo=1;FS.fim='';}}catch(e){}
@@ -3688,7 +3691,9 @@ async function continuarForn(d,tela){tela=tela||window.abaAtual;
   fRem=[];mostrarFornecimento();enviarAoVivo(true);window.scrollTo({top:0});
   const c=L[S.atual];toast(meio>=0?`Continuando ${d.curral} · início ${fmt(+d.ini)} kg · parar em ${fmt(+d.ini-(c?c.prev:0))} kg`:`Continuando o fornecimento · próximo: ${c?c.nome:'—'}`);}
 /* fornecimentos abertos em outros aparelhos (para mostrar na tela de escolher) */
-let fRem=[];
+let fRem=[];window.REMNOVO={f:false,c:false};
+document.addEventListener('click',e=>{const b=e.target.closest('[data-remnovo],[data-remver]');if(!b)return;const k=b.dataset.remnovo||b.dataset.remver;REMNOVO[k]=!!b.dataset.remnovo;
+  if(k==='f')mostrarFornecimento();else if(typeof cRender==='function')cRender();window.scrollTo({top:0});});
 async function fBuscarRemoto(){try{if(modoVer||!navigator.onLine||!apiUrl()||filtroForn())return;
   const j=await (await fetch(apiUrl()+'?acao=aovivo',{cache:'no-store'})).json();if(!j||!j.ok)return;
   const agora=+j.agora||Date.now(),T=Object.entries(j.dados||{}).map(([ap,d])=>Object.assign({ap},d,{idade:agora-(+d.tsServ||0)}));
@@ -3703,11 +3708,12 @@ function fRemHTML(){if(!fRem.length)return '';
   return `<section class="panel contRem"><h2>🔄 Fornecimento em aberto em outro aparelho</h2>${fRem.map(d=>{const s=Math.round(d.idade/1000),ini=+d.ini,fim=+d.fim,cai=ini>0&&fim>=0&&d.fim!==''?ini-fim:null;
     return `<div class="contIt"><b>${d.local==='C'?'Confinamento':'Pasto'} · Trato ${esc(d.trato)} · ${d.feitos||0} de ${d.total||0} currais</b>
       <span>${d.curral&&ini>0?`Parou no ${esc(d.curral)}: início ${fmt(ini)} kg${cai!=null?` · já caiu ${fmt(cai)} de ${fmt(d.prev||0)} kg`:''}`:'Entre um curral e outro'} · ${s<20?'🟢 aparelho ativo agora':'parou há '+(s<60?s+' s':Math.round(s/60)+' min')}</span>
-      <button class="primary" data-fcont="${esc(d.ap)}">▶ Continuar este fornecimento daqui</button></div>`;}).join('')}
+      <button class="primary" data-fcont="${esc(d.ap)}">▶ Continuar este fornecimento</button></div>`;}).join('')}
     <p class="note">Segue do curral em que parou: o fornecido e o que falta são calculados pelo peso de início de lá e pela balança daqui. O outro aparelho fecha o fornecimento dele.</p></section>`;}
-document.addEventListener('click',e=>{const b=e.target.closest('[data-fcont]');if(!b||modoVer)return;const d=fRem.find(x=>x.ap===b.dataset.fcont);if(!d)return;
+document.addEventListener('click',async e=>{const b=e.target.closest('[data-fcont]');if(!b||modoVer)return;const d=fRem.find(x=>x.ap===b.dataset.fcont);if(!d)return;
   if(window.fContAndando)return;
-  if(d.idade<20000&&!confirm('O outro aparelho ainda parece ativo (mandou sinal há menos de 20 s). Continuar aqui mesmo assim?'))return;
+  if(!await confirmaVermelho('Deseja realmente continuar este fornecimento?','O fornecimento vai ser fechado no outro aparelho e continua aqui.'+(d.idade<20000?'\n⚠ O outro aparelho ainda parece ativo agora.':''),'Sim, continuar','Cancelar',true))return;
+  if(window.fContAndando||!fRem.includes(d))return;
   /* resposta na hora: trava os botões e mostra que está abrindo (antes parecia que não tinha pegado e tinha que tocar várias vezes) */
   window.fContAndando=true;document.querySelectorAll('[data-fcont]').forEach(x=>{if(x!==b)x.disabled=true;});b.style.pointerEvents='none';b.textContent='⏳ Abrindo o fornecimento…';
   continuarForn(d).catch(()=>{}).finally(()=>{window.fContAndando=false;try{mostrarFornecimento();}catch(e){}});});
