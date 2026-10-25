@@ -2275,8 +2275,8 @@ function cTelaNova0(){if(!CG.passo){CG.passo=1;CG.local=null;}if(!CG.local)CG.pa
   if(CG.rac&&!R.some(r=>r.uid===CG.rac))CG.rac=null;if(!CG.rac&&R.length===1)CG.rac=R[0].uid;
   const passoRac=`<section class="panel"><h2>Carregar vagão</h2>
     <label>1. Local</label>${escolhaLocal('data-cloc',CG.local)}
-    <div><label for="cRac">2. Ração</label><select id="cRac">${CG.rac?'':'<option value="" selected>— escolha a ração —</option>'}${R.map(r=>`<option value="${r.uid}"${r.uid===CG.rac?' selected':''}>${esc(r.nome)}</option>`).join('')}</select>
-      ${doLocal.length===1?`<p class="note">Única ração ativa no ${NOMELOC[CG.local].toLowerCase()}: já selecionada.</p>`:!doLocal.length?`<p class="note">Nenhum lote com ração no ${NOMELOC[CG.local].toLowerCase()}: mostrando todas.</p>`:''}</div>`;
+    <div><label for="cRac">2. Ração</label><div class="racLin"><select id="cRac">${CG.rac?'':'<option value="" selected>— escolha a ração —</option>'}${R.map(r=>`<option value="${r.uid}"${r.uid===CG.rac?' selected':''}>${esc(r.nome)}</option>`).join('')}</select>
+      ${doLocal.length===1?`<p class="note">Única ração ativa no ${NOMELOC[CG.local].toLowerCase()}: já selecionada.</p>`:!doLocal.length?`<p class="note">Nenhum lote com ração no ${NOMELOC[CG.local].toLowerCase()}: mostrando todas.</p>`:''}</div></div>`;
   if(!CG.rac)return passoRac+'</section>';
   const trC=tratosAtivos().filter(k=>sugestaoCarga(k,CG.rac,CG.local).tot>0);
   /* já vem escolhido o próximo trato a fazer (o 1º com currais pendentes); a pessoa pode voltar pela setinha */
@@ -2288,7 +2288,8 @@ function cTelaNova0(){if(!CG.passo){CG.passo=1;CG.local=null;}if(!CG.local)CG.pa
   const chave=CG.avulso?'avulso|'+CG.rac:CG.local+'|'+trs.join('+')+'|'+CG.rac;if(CG.totalDe!==chave){const mesmaRac=CG.totalDe!=null&&String(CG.totalDe).split('|').pop()===String(CG.rac);CG.total=CG.avulso?0:(sg.tot||0);CG.totalDe=chave;if(!mesmaRac)CG.ordem=null;  /* a Ordem é independente: continua valendo se a ração é a mesma */
     CG.ja={};CG.sobModo='rac';CG.sobRac=null;CG.sobKg=0;CG.ordAberto=false;CG.jaAberto=false;CG.man={};CG.manAberto=false;CG.desm=[];
     /* currais deste trato que já foram carregados hoje em outra batida: já vêm desmarcados (fica só o que falta) */
-    if(!CG.avulso&&CG.trato){const ja=cJaCarr(trs),L=cCurrCarga(trs);CG.desm=L.filter(x=>ja.has(x.c)).map(x=>x.c);if(CG.desm.length){CG.expAberto=true;cExpAplicar();}}
+    if(!CG.avulso&&CG.trato){const ja=cJaCarr(trs),L=cCurrCarga(trs);CG.desm=L.filter(x=>ja.has(x.c)).map(x=>x.c);if(CG.desm.length)cExpAplicar();}
+    CG.expAberto=false;  /* a lista de currais começa recolhida; abre no Expandir tratos */
     cSave();}
   if(CG.abrirDepois){if(CG.abrirDepois==='man')CG.manAberto=true;else CG.jaAberto=true;CG.abrirDepois=null;cSave();}
   const its=itensAjust(itensCarga(CG.rac,CG.total||0));
@@ -2501,16 +2502,18 @@ window.batidasLista=(pa,pb,loc,t)=>gTodos('carga').filter(c=>c.dia>=pa&&c.dia<=p
 window.HBSEL=null;
 window.batidasHTML=(L,mostrarDia,semApagar)=>{if(!L.length)return '<p class="note">Nenhuma batida neste filtro.</p>';
   const podeMexer=!semApagar&&!(typeof modoVer!=='undefined'&&modoVer),sel=podeMexer?window.HBSEL:null;
-  const fim=podeMexer?(sel?`<div class="gBatFim gbSel"><span>Mude o <b>carregado</b> direto na linha</span><button class="mini" data-hbmodo="">Concluir</button></div>`
-    :`<div class="gBatFim"><button class="mini btEdVerm" data-hbmodo="ed">🔒 Editar</button></div>`):'';
-  return (sel?`<div class="gBatFim gbSel gbTopo"><span>Editando as batidas: mude o carregado na linha</span><button class="mini" data-hbmodo="">Concluir</button></div>`:'')+L.map(c=>{const tp=c.itens.reduce((a,x)=>a+(+x.prev||0),0),tr=c.itens.reduce((a,x)=>a+(+x.real||0),0),d=tr-tp,cls=(dd,p)=>typeof classeDesv==='function'?classeDesv(dd,p):'';
+  /* Editar realizado (senha): vira Aplicar (verde) e Cancelar (vermelho); nada é gravado até Aplicar */
+  const fim=podeMexer?`<div class="hPvBtns">${sel?'<div class="row pvImsBtns"><button class="primary" type="button" data-hbap="ok">✓ Aplicar</button><button class="dangerfill" type="button" data-hbap="canc">✕ Cancelar</button></div>'
+    :'<button class="dangerfill" type="button" data-hbmodo="ed">✎ Editar realizado</button>'}</div>`:'';
+  const PE=window.HBPEND||{};
+  return L.map(c=>{const tp=c.itens.reduce((a,x)=>a+(+x.prev||0),0),tr=c.itens.reduce((a,x)=>a+(+x.real||0),0),d=tr-tp,cls=(dd,p)=>typeof classeDesv==='function'?classeDesv(dd,p):'';
     return `<details class="gMais gCarga" open><summary><b>${mostrarDia?diaBR(c.dia).slice(0,5)+' ':''}${esc(c.hora||'')}</b> · ${c.avulso?'Avulsa':c.tratos&&c.tratos.length>1?'Tratos '+c.tratos.join('+'):'Trato '+c.trato}${c.local?' · '+(c.local==='C'?'Confinamento':'Pasto'):''} · ${esc(c.racNome||'')} <span class="num">${nf(tr)} kg <i class="${cls(d,tp)}">(${d>0?'+':''}${nf(d)})</i></span></summary>
-      <div class="tablebox"><table class="gTab"><thead><tr><th>Hora</th><th>Insumos</th><th>Previsto</th><th>Carreg.</th><th>Dif.</th></tr></thead><tbody>${c.itens.map((x,ci)=>{const dd=x.real-x.prev;return `<tr><td>${esc(x.hora||'')}</td><td class="c">${nomeMan(x)}</td><td>${nf(x.prev)}</td><td>${sel==='ed'?`<input class="bEdIn num" inputmode="numeric" data-hbreal="${c.uid}|${ci}" value="${ok(+x.real)?Math.round(+x.real):''}">`:ok(+x.real)?nf(+x.real):'—'}</td><td class="${ok(+x.real)?cls(dd,x.prev):''}">${ok(+x.real)?(dd>0?'+':'')+nf(dd):''}</td></tr>`;}).join('')}
+      <div class="tablebox"><table class="gTab"><thead><tr><th>Hora</th><th>Insumos</th><th>Previsto</th><th>Carreg.</th><th>Dif.</th></tr></thead><tbody>${c.itens.map((x,ci)=>{const dd=x.real-x.prev;return `<tr><td>${esc(x.hora||'')}</td><td class="c">${nomeMan(x)}</td><td>${nf(x.prev)}</td><td>${sel==='ed'?`<input class="bEdIn num" inputmode="numeric" data-hbreal="${c.uid}|${ci}" value="${(c.uid+'|'+ci) in PE?esc(PE[c.uid+'|'+ci]):ok(+x.real)?Math.round(+x.real):''}">`:ok(+x.real)?nf(+x.real):'—'}</td><td class="${ok(+x.real)?cls(dd,x.prev):''}">${ok(+x.real)?(dd>0?'+':'')+nf(dd):''}</td></tr>`;}).join('')}
       <tr class="grp"><td></td><td>Total</td><td>${nf(tp)}</td><td>${nf(tr)}</td><td>${(d>0?'+':'')+nf(d)}</td></tr></tbody></table></div>
       </details>`;}).join('')+fim;};
 document.addEventListener('click',async e=>{const b=e.target.closest('[data-hbmodo]');if(!b)return;
   /* botão vermelho: senha 1010 SEMPRE (toda vez que toca) */
-  if(b.dataset.hbmodo){if(typeof bloqueado==='function'&&bloqueado())return;if(!await pedirSenhaAcao('Senha para editar'))return;}
+  if(b.dataset.hbmodo){if(typeof bloqueado==='function'&&bloqueado())return;if(!await pedirSenhaAcao('Senha para editar o realizado'))return;}window.HBPEND={};
   window.HBSEL=b.dataset.hbmodo||null;if(typeof renderHist==='function')renderHist();
   if(window.HBSEL){const t=document.querySelector('#hBat .gBatFim.gbTopo');if(t)t.scrollIntoView({behavior:'smooth',block:'start'});}});
 /* relatório de batidas — tipo: 'sep' (uma imagem por batida), 'juntas' (todas numa imagem, subtotal azul claro + total geral), 'insumo' (total de cada insumo), 'todos' */
@@ -2552,7 +2555,14 @@ document.addEventListener('click',async e=>{const b=e.target.closest('[data-hbde
 document.addEventListener('change',e=>{const i=e.target.closest&&e.target.closest('[data-hbreal]');if(!i||window.HBSEL!=='ed')return;
   const [uid,ix]=i.dataset.hbreal.split('|'),c=G.it[uid];if(!c||c.del)return;const x=JSON.parse(JSON.stringify(c)),it=x.itens[+ix];if(!it)return;
   const v=gNum(i.value);if(i.value.trim()!==''&&!(v>=0&&v<=60000)){toast('Digite uma quantidade válida');i.value=ok(+it.real)?Math.round(+it.real):'';return;}
-  it.real=i.value.trim()===''?null:v;gPut(x);toast(`${it.nome}: ${it.real==null?'sem carregado':nf(it.real)+' kg'}`);if(typeof renderHist==='function')renderHist();});
+  window.HBPEND=window.HBPEND||{};window.HBPEND[i.dataset.hbreal]=i.value.trim();i.classList.add('mudou');});
+/* Aplicar: grava o que mudou · Cancelar: volta tudo como estava */
+document.addEventListener('click',e=>{const b=e.target.closest('[data-hbap]');if(!b)return;const P=window.HBPEND||{};let n=0;
+  if(b.dataset.hbap==='ok'){const por={};Object.entries(P).forEach(([k,t])=>{const [uid,ix]=k.split('|');const c=G.it[uid];if(!c||c.del)return;
+      if(!por[uid])por[uid]=JSON.parse(JSON.stringify(c));const it=por[uid].itens[+ix];if(!it)return;const v=t===''?null:gNum(t);if((ok(+it.real)?Math.round(+it.real):null)===(v==null?null:Math.round(v)))return;it.real=v;n++;});
+    Object.values(por).forEach(x=>gPut(x));toast(n?`Realizado alterado em ${n} produto(s)`:'Nada foi alterado');}
+  else toast(Object.keys(P).length?'Alteração cancelada: ficou como estava':'Cancelado');
+  window.HBPEND={};window.HBSEL=null;if(typeof renderHist==='function')renderHist();});
 document.addEventListener('click',async e=>{const b=e.target.closest('[data-hbrmit]');if(!b||window.HBSEL!=='ed')return;
   const [uid,ix]=b.dataset.hbrmit.split('|'),c=G.it[uid];if(!c||c.del)return;const it=c.itens[+ix];if(!it)return;
   if(!await confirmaVermelho(`Deseja realmente excluir ${it.nome} desta batida?`,`${nf(+it.real||0)} kg carregado. Some do histórico, dos relatórios e do estoque.`,'Sim, excluir','Não'))return;

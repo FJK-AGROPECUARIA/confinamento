@@ -166,7 +166,9 @@ body.somenteVer .fBar{display:none!important}
 /* telas de início (Carregar e Fornecer): título e campo bem juntos */
 :is(#cBox,#acBox,.fornSetup) label{margin:12px 0 4px}
 :is(#cBox,#acBox,.fornSetup) h2+label{margin-top:4px}
-:is(#cBox,#acBox) section.panel>label+*,.fornSetup>label+*{margin-top:-14px!important}
+:is(#cBox,#acBox) section.panel,.fornSetup{gap:8px}:is(#cBox,#acBox,.fornSetup) label{margin:10px 0 0;line-height:1.1}:is(#cBox,#acBox,.fornSetup) h2+label{margin-top:0}
+:is(#cBox,#acBox) section.panel>label+*,.fornSetup>label+*{margin-top:-6px!important}.cJuntoLista:empty{display:none}
+#fSetupM.panel>label+div.racLin.racLin,#fSetupA.panel>label+div.racLin.racLin{margin-top:-6px!important}:is(#cBox,#acBox) label+.racLin{margin-top:2px}.racLin{display:flex;align-items:flex-start;gap:8px}.racLin .gSelCaixa{align-items:flex-start;min-height:0!important}.racLin .gSelCaixa .gDataBox{margin:0!important}.racLin>:first-child{flex:0 0 52%;min-width:0}.racLin>.note{flex:1;margin:0!important;font-size:.74rem;line-height:1.2}
 .cTrLin{display:flex;gap:8px;align-items:stretch}.cTrLin .tSeta{flex:1;min-width:0}.cTrLin>button{flex:none;width:auto!important;margin:0!important;padding:0 14px;font-size:.85rem;white-space:nowrap}
 .cBotoes.c4{display:flex;gap:5px}.cBotoes.c4>button{flex:1 1 auto;width:auto!important;font-size:.74rem;padding:9px 6px;white-space:nowrap;line-height:1.15}.cSobra{margin:10px 0;padding:10px;border:1px dashed #b9c7a5;border-radius:12px}.cSobra .linhas button{margin:0;padding:6px 14px;min-height:0;border-radius:99px}.cSobra .linhas button.sel{background:var(--accent);border-color:var(--accent);color:#fff}.cSobLin{display:grid;grid-template-columns:1fr 110px;gap:8px;margin-top:8px}.cSobLin select,.cSobLin input{margin:0}.cAviso{color:#b3261e;font-weight:700;font-size:.85rem;margin:6px 0}
 .cCancelar{display:block;width:100%;margin-top:10px;background:#fff;color:#b3261e;border:2px solid #e3b4ae;font-weight:700}
@@ -774,7 +776,7 @@ body.somenteVer #tratoTiles .avBtn{min-height:112px;display:flex;flex-direction:
 #tratoTiles small{font-size:.66rem;letter-spacing:.12em;font-weight:800;opacity:.9;text-transform:uppercase}
 #tratoTiles .gIc{font-size:2.1rem;line-height:1}.tStk{display:flex;align-items:center;gap:6px}.tStk i{font-style:normal;font-size:1.9rem}.tStk svg{display:block}
 .tBoi{filter:brightness(0) invert(1)}.tFz{display:inline-block;filter:brightness(.5) contrast(1.3) drop-shadow(0 0 3px rgba(255,255,255,.55))}
-#tratoTiles button.sel{outline:3px solid #9bc31c;outline-offset:2px}
+#tratoTiles button.sel{outline:none}
 #subModo.soAuto{display:none!important}
 body.modoTrato:not(.menuFechado):not(.naInicio) #viewPrev,body.modoTrato:not(.menuFechado):not(.naInicio) #viewTrato,body.modoTrato:not(.menuFechado):not(.naInicio) #viewHist,body.modoTrato:not(.menuFechado):not(.naInicio) #viewGest,body.modoTrato:not(.menuFechado):not(.naInicio) #viewCarga,body.modoTrato:not(.menuFechado):not(.naInicio) #viewAuto,body.modoTrato:not(.menuFechado):not(.naInicio) #viewAutoC,body.modoTrato:not(.menuFechado):not(.naInicio) #viewEscolha,body.modoTrato:not(.menuFechado):not(.naInicio) .menuSeta{display:none!important}
 .gCfgTiles{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
@@ -785,7 +787,7 @@ body.modoTrato:not(.menuFechado):not(.naInicio) #viewPrev,body.modoTrato:not(.me
 #subGest.gTiles{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}#subGest.gTiles[hidden]{display:none}
 #subGest.gTiles button{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;min-height:118px;padding:14px 8px;border-radius:18px;border:0;background:var(--c);color:#fff;font-size:1.3rem;font-weight:800;box-shadow:0 2px 6px rgba(0,0,0,.12)}
 #subGest.gTiles .gIc{font-size:2.3rem;line-height:1}#subGest.gTiles .gIc svg{width:2.6rem;height:2.6rem;display:block}
-#subGest.gTiles button[aria-selected="true"]{outline:3px solid #9bc31c;outline-offset:2px}
+#subGest.gTiles button[aria-selected="true"]{outline:none}
 body.modoGest:not(.menuFechado):not(.naInicio) #viewGest,body.modoGest:not(.menuFechado):not(.naInicio) #viewEscolha,body.modoGest:not(.menuFechado):not(.naInicio) .menuSeta{display:none!important}
 .menuSeta{align-self:stretch;border:0;background:transparent;padding:4px 8px 0;font-size:.85rem;font-weight:700;color:#5d6b7a;line-height:1.2;border-radius:10px;text-align:center}
 body.menuFechado .wrap>.menu{position:sticky;top:env(safe-area-inset-top,0px);z-index:30;padding:4px;box-shadow:0 3px 10px rgba(17,37,61,.18)}
@@ -1222,7 +1224,7 @@ body.naInicio .topoTxt h1{font-size:clamp(16px,5vw,28px)!important}
 <div class="toast" id="toast" hidden></div>
 <script>
 'use strict';
-const APP_VERSAO='175';
+const APP_VERSAO='176';
 const APP_DATA='19/10/2026';
 const KEY='confinamento-completo-v1';
 const $=id=>document.getElementById(id);
@@ -1509,8 +1511,8 @@ function fornSetupHTML0(){if(!FS.local)FS.passo=1;const cont=n=>`<button type="b
   if(FS.rac&&!R.some(r=>r.uid===FS.rac))FS.rac=null;if(FS.rac==null&&R.length===1)FS.rac=R[0].uid;
   const passoRac=`<h2>Fornecer no cocho</h2>
     <label>1. Local</label>${window.escolhaLocal?escolhaLocal('data-floc',FS.local):''}
-    <label for="fRac">2. Ração que vai distribuir</label><select id="fRac">${FS.rac==null?'<option value="-" selected>— escolha a ração —</option>':''}${R.map(r=>`<option value="${r.uid}"${r.uid===FS.rac?' selected':''}>${esc(r.nome)}</option>`).join('')}<option value=""${FS.rac===''?' selected':''}>Todas as rações</option></select>
-    ${R.length===1?`<p class="note">Única ração ativa no ${FS.local==='C'?'confinamento':'pasto'}: já selecionada.</p>`:''}`;
+    <label for="fRac">2. Ração que vai distribuir</label><div class="racLin"><select id="fRac">${FS.rac==null?'<option value="-" selected>— escolha a ração —</option>':''}${R.map(r=>`<option value="${r.uid}"${r.uid===FS.rac?' selected':''}>${esc(r.nome)}</option>`).join('')}<option value=""${FS.rac===''?' selected':''}>Todas as rações</option></select>
+    ${R.length===1?`<p class="note">Única ração ativa no ${FS.local==='C'?'confinamento':'pasto'}: já selecionada.</p>`:''}</div>`;
   if(FS.rac==null)return passoRac;
   const trF=tratosAtivos().filter(k=>fornCurrais(FS.local,FS.rac,k).length);
   /* já vem escolhido o próximo trato a fazer (o 1º com currais pendentes); a pessoa pode voltar pela setinha */
