@@ -254,8 +254,15 @@ function gRender(){
   if(GT.t==='apartForm')apPrevia();
   if(GT.t==='transfForm')trPrevia();
   if(GT.t==='fechaForm')fcPrevia();
-  requestAnimationFrame(caberSelos);
+  requestAnimationFrame(caberSelos);requestAnimationFrame(alinharCampos);
 }
+/* campos lado a lado: o título mais curto ganha a mesma altura do vizinho, assim as caixas de escrever ficam alinhadas */
+function alinharCampos(){try{document.querySelectorAll('#gBox .gForm').forEach(f=>{const L=[...f.children].filter(c=>c.classList&&c.classList.contains('gCampo')&&c.classList.contains('meia')&&c.offsetParent);
+  L.forEach(c=>{const l=c.querySelector(':scope>label');if(l)l.style.minHeight='';});
+  const rows={};L.forEach(c=>{const k=Math.round(c.offsetTop);(rows[k]=rows[k]||[]).push(c);});
+  Object.values(rows).forEach(r=>{if(r.length<2)return;const ls=r.map(c=>c.querySelector(':scope>label')).filter(Boolean),h=Math.max(...ls.map(l=>l.offsetHeight));ls.forEach(l=>{if(l.offsetHeight<h){l.style.minHeight=h+'px';l.style.display='flex';l.style.alignItems='flex-end';}});});});}catch(e){}}
+window.addEventListener('resize',()=>requestAnimationFrame(alinharCampos));
+document.addEventListener('change',e=>{if(e.target.closest&&e.target.closest('#gBox'))setTimeout(()=>requestAnimationFrame(alinharCampos),30);},true);
 /* nome do curral/pasto no quadro verde: o maior que couber */
 function caberSelos(){document.querySelectorAll('#gBox .gLoteV .gSelo b').forEach(b=>{if(!b.offsetParent||b.parentNode.clientWidth<30)return;  /* tela escondida (menu aberto): não mede agora, mede quando aparecer */
   b.style.fontSize='';let f=parseFloat(getComputedStyle(b).fontSize),w=b.parentNode.clientWidth-12;
