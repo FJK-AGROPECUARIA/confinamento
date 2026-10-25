@@ -1325,17 +1325,20 @@ window.gImsDe=(c,dia,mn)=>{const b=baseIms(c,dia||hojeKey());return b&&mn>0?mn/b
 /* ---------- gráfico da leitura de cocho (10 dias) ---------- */
 /* cores divergentes: azul = aumentar, vermelho = diminuir, cinza = manter (o número vai escrito em cada quadro) */
 const COR_MAIS=['#dbe9f8','#a9c9ef','#6ea4e3','#2a78d6'],COR_MENOS=['#f9dcdb','#f1aaa9','#ea7877','#e34948'],COR_ZERO='#f0efec';
-function corNota(pct){if(!ok(pct)||pct===0)return [COR_ZERO,'#11253d'];const a=Math.abs(pct),i=a<=3?0:a<=6?1:a<=10?2:3;return [(pct>0?COR_MAIS:COR_MENOS)[i],i>=2?'#fff':'#11253d'];}
+function corNota(pct){if(!ok(pct)||pct===0)return ['#e9ecef','#11253d'];return pct>0?['#dff3dc','#1b5e20']:['#fde3e1','#b3261e'];}   /* gráfico de notas: aumentou = verde claro, diminuiu = vermelho claro, manteve = cinza */
 let gLocG='T',gGrafOff=new Set();
-function dadosGraf(fim){const dias=[];for(let i=9;i>=0;i--)dias.push(somaDias(fim,-i));
+function dadosGraf(fim){const dias=[];for(let i=gGrafN-1;i>=0;i--)dias.push(somaDias(fim,-i));
   const set=new Set();gTodos('leitura').forEach(x=>{if(x.dia>=dias[0]&&x.dia<=fim)set.add(x.curral);});dias.forEach(d=>cochoCurrais(d).forEach(c=>set.add(c)));
   const todos=[...set].filter(c=>(gLocG==='T'||linhaDe(c)===gLocG)&&(typeof curralAtivo!=='function'||curralAtivo(c))).sort(alfa);   // só currais ativos
   const linhas=todos.filter(c=>!gGrafOff.has(c)).map(c=>({c,cel:dias.map(d=>{const x=G.it[idLeit(d,c)];return x&&!x.del?x:null;})}));
   return {dias,todos,linhas};}
+/* quantos dias os gráficos mostram (7, 10 ou 15) */
+var gGrafN=10;
+const grafNBts=()=>`<div class="row gRelAtalhos gGrafNBts">${[7,10,15].map(n=>`<button type="button" class="mini${gGrafN===n?' sel':''}" data-g="grafN" data-n="${n}">${n} dias</button>`).join('')}</div>`;
 /* filtro de Local dos gráficos: igual ao da Leitura (◀ Local ▶) */
 function grafLocNav(){return typeof selSetas==='function'&&window.LOC_OPS?`<div class="gCoLocNav">${selSetas('Local',LOC_OPS,Math.max(0,LOC_OPS.findIndex(o=>o[0]===gLocG)),'data-g="grafLocP" data-n','data-grafsel')}</div>`:`<div class="gForm gGrafFil">${campo({k:'grafLocF',l:'Local',t:'sel',op:[['T','Todos'],['C','Confinamento'],['P','Pasto']],v:gLocG,meia:1})}</div>`;}
 /* gráfico de % IMS realizado: o que o curral comeu no dia (realizado, em MS) ÷ peso vivo — dia a dia, para acompanhar o consumo */
-function dadosGrafIms(fim){const dias=[];for(let i=9;i>=0;i--)dias.push(somaDias(fim,-i));const ix=gIndice(),set=new Set();
+function dadosGrafIms(fim){const dias=[];for(let i=gGrafN-1;i>=0;i--)dias.push(somaDias(fim,-i));const ix=gIndice(),set=new Set();
   (typeof HIST!=='undefined'?HIST:[]).forEach(r=>{if(r.dia>=dias[0]&&r.dia<=fim)set.add(nAt(r.curral));});dias.forEach(d=>cochoCurrais(d).forEach(c=>set.add(c)));
   const todos=[...set].filter(c=>(gLocG==='T'||linhaDe(c)===gLocG)&&(typeof curralAtivo!=='function'||curralAtivo(c))).sort(alfa);   // só currais ativos
   const linhas=todos.filter(c=>!gGrafOff.has(c)).map(c=>{let ant=NaN;const cel=dias.map(d=>{const kg=ix.get(d+'|'+c)||0,bi=kg?baseIms(c,d):0,im=kg&&bi?kg/bi:NaN;
@@ -1344,30 +1347,31 @@ function dadosGrafIms(fim){const dias=[];for(let i=9;i>=0;i--)dias.push(somaDias
   return {dias,todos,linhas};}
 const gImsTxt=v=>nf(v,2);
 /* gráfico de %IMS: só duas cores — subiu do dia anterior = verde claro, baixou = vermelho claro (igual ou 1º dia = sem cor) */
-const corIms=ch=>ch>0?['#dff3dc','#1b5e20']:ch<0?['#fde3e1','#b3261e']:['#f1f3f5','#11253d'];
+const corIms=ch=>ch>0?['#dff3dc','#1b5e20']:ch<0?['#fde3e1','#b3261e']:['#e9ecef','#11253d'];
 function tCochoGrafIms(fim){const D=dadosGrafIms(fim);setTimeout(()=>{const t=document.querySelector('#gBox .gHeatIms');const bx=t&&t.closest('.tablebox');if(bx)bx.scrollLeft=bx.scrollWidth;},30);   // abre mostrando os dias mais recentes
   const cab=D.dias.map(d=>`<th>${d.slice(8)}<small>${d.slice(5,7)}</small></th>`).join('');
   const rows=D.linhas.map(o=>`<tr><th class="gHc${/^P-/.test(o.c)?' p':''}" title="${esc(o.c)}">${esc(o.c.replace(/^P-/,''))}</th>${o.cel.map((x,i)=>{if(!x)return `<td class="vazio" data-g="celGraf" data-c="${esc(o.c)}" data-d="${D.dias[i]}">·</td>`;const [bg,fg]=corIms(x.ch);
       return `<td class="gHims" style="background:${bg};color:${fg}" data-g="celGraf" data-c="${esc(o.c)}" data-d="${D.dias[i]}">${gImsTxt(x.im)}</td>`;}).join('')}<td class="gHm">${ok(o.med)?gImsTxt(o.med):'—'}</td></tr>`).join('');
   const cw=Math.max(5,Math.min(18,Math.max(...D.linhas.map(o=>o.c.replace(/^P-/,'').length),4)+1));
-  return `${voltar('Leitura')}<section class="panel"><h2>Gráfico de %IMS · 10 dias</h2>
+  return `${voltar('Leitura')}<section class="panel"><h2>Gráfico de %IMS · ${gGrafN} dias</h2>
     ${navData('gGrafDia',fim,'Até o dia')}
     ${grafLocNav()}
+    ${grafNBts()}
     ${rows?`<div class="row compart fz3"><button class="verde" data-g="pdfGraf">📄 PDF</button><button class="verde" data-g="imgGraf">🖼 Foto</button><button class="verde" data-g="xlsGraf">📊 Excel</button></div>`:''}
     <div class="gChips">${D.todos.map(c=>`<button data-g="grafCur" data-c="${esc(c)}" class="${gGrafOff.has(c)?'':'sel'}">${esc(c)}</button>`).join('')}</div>
     ${rows?`<div class="tablebox"><table class="gHeat gHeatIms" style="--cw:${cw}ch"><colgroup><col class="cC">${D.dias.map(()=>'<col class="cD">').join('')}<col class="cM"></colgroup><thead><tr><th class="gHc">Local</th>${cab}<th class="gHm">Méd.</th></tr></thead><tbody>${rows}</tbody></table></div>
-    <p class="note">% IMS = matéria seca realizada no dia ÷ peso vivo projetado × 100. Verde = comeu mais que no dia anterior · vermelho = comeu menos · ponto = sem trato. Toque num quadro para ver os kg.</p>`:'<p class="note">Nenhum trato nesse período.</p>'}</section>`;}
+    <p class="note">% IMS = matéria seca realizada no dia ÷ peso vivo projetado × 100. Verde = comeu mais que no dia anterior · vermelho = comeu menos · cinza = igual · ponto = sem trato. Toque num quadro para ver os kg.</p>`:'<p class="note">Nenhum trato nesse período.</p>'}</section>`;}
 function imagemGrafIms(pdf){const fim=GT.dia,D=dadosGrafIms(fim);if(!D.linhas.length)return toast('Nada para mostrar');
-  const mc=document.createElement('canvas').getContext('2d');mc.font='bold 15px Arial';const esq=Math.max(120,Math.ceil(Math.max(...D.linhas.map(o=>mc.measureText(o.c).width)))+30),cw=52,ch=34,top=112,W=esq+cw*10+70+20,H=top+ch*D.linhas.length+80,cv=document.createElement('canvas'),s=2;cv.width=W*s;cv.height=H*s;
+  const mc=document.createElement('canvas').getContext('2d');mc.font='bold 15px Arial';const esq=Math.max(120,Math.ceil(Math.max(...D.linhas.map(o=>mc.measureText(o.c).width)))+30),cw=52,ch=34,top=112,W=esq+cw*gGrafN+70+20,H=top+ch*D.linhas.length+80,cv=document.createElement('canvas'),s=2;cv.width=W*s;cv.height=H*s;
   const x=cv.getContext('2d');x.scale(s,s);x.fillStyle='#fff';x.fillRect(0,0,W,H);x.fillStyle='#11253d';x.fillRect(0,0,W,72);x.fillStyle='#a7bc09';x.fillRect(0,72,W,5);
-  x.fillStyle='#fff';x.font='bold 22px Arial';x.fillText('Gráfico de %IMS · 10 dias',16,32);x.font='bold 13px Arial';x.fillStyle='#c8dd1e';x.fillText(`${dB(D.dias[0])} a ${dB(fim)} · Gestão de Tratos · FJK`,16,56);
-  x.textAlign='center';x.font='bold 13px Arial';D.dias.forEach((d,i)=>{x.fillStyle='#5d6b7a';x.fillText(d.slice(8)+'/'+d.slice(5,7),esq+cw*i+cw/2,top-10);});x.fillText('Média',esq+cw*10+35,top-10);
+  x.fillStyle='#fff';x.font='bold 22px Arial';x.fillText(`Gráfico de %IMS · ${gGrafN} dias`,16,32);x.font='bold 13px Arial';x.fillStyle='#c8dd1e';x.fillText(`${dB(D.dias[0])} a ${dB(fim)} · Gestão de Tratos · FJK`,16,56);
+  x.textAlign='center';x.font='bold 13px Arial';D.dias.forEach((d,i)=>{x.fillStyle='#5d6b7a';x.fillText(d.slice(8)+'/'+d.slice(5,7),esq+cw*i+cw/2,top-10);});x.fillText('Média',esq+cw*gGrafN+35,top-10);
   D.linhas.forEach((o,r)=>{const y=top+ch*r;x.textAlign='left';x.fillStyle='#11253d';x.font='bold 15px Arial';x.fillText(o.c,16,y+ch/2+5);
     o.cel.forEach((c,i)=>{const cx=esq+cw*i;if(c){const [bg,fg]=corIms(c.ch);x.fillStyle=bg;x.beginPath();x.roundRect?x.roundRect(cx+2,y+2,cw-4,ch-4,5):x.rect(cx+2,y+2,cw-4,ch-4);x.fill();x.fillStyle=fg;x.font='bold 14px Arial';}else{x.fillStyle='#c4ccd5';x.font='15px Arial';}
       x.textAlign='center';x.fillText(c?gImsTxt(c.im):'·',cx+cw/2,y+ch/2+5);});
-    x.fillStyle='#11253d';x.font='bold 15px Arial';x.fillText(ok(o.med)?gImsTxt(o.med):'—',esq+cw*10+35,y+ch/2+5);});
+    x.fillStyle='#11253d';x.font='bold 15px Arial';x.fillText(ok(o.med)?gImsTxt(o.med):'—',esq+cw*gGrafN+35,y+ch/2+5);});
   x.textAlign='left';x.fillStyle='#5d6b7a';x.font='12px Arial';const ly=top+ch*D.linhas.length+26;
-  x.fillText('% IMS = MS realizada no dia ÷ peso vivo projetado × 100',16,ly);x.fillText('Verde = comeu mais que no dia anterior · vermelho = comeu menos · ponto = sem trato',16,ly+18);
+  x.fillText('% IMS = MS realizada no dia ÷ peso vivo projetado × 100',16,ly);x.fillText('Verde = comeu mais que no dia anterior · vermelho = comeu menos · cinza = igual · ponto = sem trato',16,ly+18);
   cv.toBlob(async b=>{const n=`Gráfico de IMS ${dB(fim).replace(/\//g,'-')}`;try{if(pdf)return await compartilharArquivo(await pngsParaPdf([b]),n+'.pdf','application/pdf');await compartilharArquivo(b,n+'.png','image/png');}catch(e){toast(pdf?'Não consegui gerar o PDF':'Não consegui gerar a imagem');}},'image/png');}
 function xlsGrafIms(){const D=dadosGrafIms(GT.dia);const cab=['Curral'].concat(D.dias.map(d=>dB(d).slice(0,5)),['Média']);
   gExcel(`IMS realizado ate ${dB(GT.dia).replace(/\//g,'-')}`,[['% IMS',cab,D.linhas.map(o=>[xc(o.c)].concat(o.cel.map(x=>x?xc(x.im,'dec'):xc('')),[xc(o.med,'dec')])),[16].concat(D.dias.map(()=>8),[9])],
@@ -1379,26 +1383,27 @@ function tCochoGraf(t){if(t.o)GT.o=t.o;const fim=t.dia||GT.dia||hojeKey();GT.dia
       return `<td style="background:${bg};color:${fg}" data-g="celGraf" data-c="${esc(o.c)}" data-d="${D.dias[i]}">${notaTxt(x.nota)}</td>`;}).join('')}<td class="gHm">${ok(med)?(med>0?'+':'')+nf(med,1):'—'}</td></tr>`;}).join('');
   const notas=gCfg().notas.slice().sort((a,b)=>a.n-b.n);
   const cw=Math.max(5,Math.min(18,Math.max(...D.linhas.map(o=>o.c.replace(/^P-/,'').length),4)+1));
-  return `${voltar('Leitura')}<section class="panel"><h2>Gráfico de notas · 10 dias</h2>
+  return `${voltar('Leitura')}<section class="panel"><h2>Gráfico de notas · ${gGrafN} dias</h2>
     ${navData('gGrafDia',fim,'Até o dia')}
     ${grafLocNav()}
+    ${grafNBts()}
     ${rows?`<div class="row compart fz3"><button class="verde" data-g="pdfGraf">📄 PDF</button><button class="verde" data-g="imgGraf">🖼 Foto</button><button class="verde" data-g="xlsGraf">📊 Excel</button></div>`:''}
     <div class="gChips">${D.todos.map(c=>`<button data-g="grafCur" data-c="${esc(c)}" class="${gGrafOff.has(c)?'':'sel'}">${esc(c)}</button>`).join('')}</div>
     ${rows?`<div class="tablebox"><table class="gHeat" style="--cw:${cw}ch"><colgroup><col class="cC">${D.dias.map(()=>'<col class="cD">').join('')}<col class="cM"></colgroup><thead><tr><th class="gHc">Local</th>${cab}<th class="gHm">Méd.</th></tr></thead><tbody>${rows}</tbody></table></div>
     <div class="gLegNota">${notas.map(x=>{const [bg,fg]=corNota(x.p);return `<span style="background:${bg};color:${fg}">${notaTxt(x.n)}<small>${x.p>0?'+':''}${nf(x.p,0)}%</small></span>`;}).join('')}</div>
-    <p class="note">Azul = aumentou o trato · vermelho = diminuiu · cinza = manteve · ponto = sem leitura. Toque num quadro para ver os kg.</p>`:'<p class="note">Nenhuma leitura nesse período.</p>'}</section>`;}
+    <p class="note">Verde = aumentou o trato · vermelho = diminuiu · cinza = manteve · ponto = sem leitura. Toque num quadro para ver os kg.</p>`:'<p class="note">Nenhuma leitura nesse período.</p>'}</section>`;}
 function imagemGraf(pdf){const fim=GT.dia,D=dadosGraf(fim);if(!D.linhas.length)return toast('Nada para mostrar');
-  const mc=document.createElement('canvas').getContext('2d');mc.font='bold 15px Arial';const esq=Math.max(120,Math.ceil(Math.max(...D.linhas.map(o=>mc.measureText(o.c).width)))+30),cw=46,ch=34,top=112,W=esq+cw*10+70+20,H=top+ch*D.linhas.length+110,cv=document.createElement('canvas'),s=2;cv.width=W*s;cv.height=H*s;
+  const mc=document.createElement('canvas').getContext('2d');mc.font='bold 15px Arial';const esq=Math.max(120,Math.ceil(Math.max(...D.linhas.map(o=>mc.measureText(o.c).width)))+30),cw=46,ch=34,top=112,W=esq+cw*gGrafN+70+20,H=top+ch*D.linhas.length+110,cv=document.createElement('canvas'),s=2;cv.width=W*s;cv.height=H*s;
   const x=cv.getContext('2d');x.scale(s,s);x.fillStyle='#fff';x.fillRect(0,0,W,H);x.fillStyle='#11253d';x.fillRect(0,0,W,72);x.fillStyle='#a7bc09';x.fillRect(0,72,W,5);
-  x.fillStyle='#fff';x.font='bold 22px Arial';x.fillText('Gráfico de notas · 10 dias',16,32);x.font='bold 13px Arial';x.fillStyle='#c8dd1e';x.fillText(`${dB(D.dias[0])} a ${dB(fim)} · Gestão de Tratos · FJK`,16,56);
-  x.textAlign='center';x.font='bold 13px Arial';D.dias.forEach((d,i)=>{x.fillStyle='#5d6b7a';x.fillText(d.slice(8)+'/'+d.slice(5,7),esq+cw*i+cw/2,top-10);});x.fillText('Média',esq+cw*10+35,top-10);
+  x.fillStyle='#fff';x.font='bold 22px Arial';x.fillText(`Gráfico de notas · ${gGrafN} dias`,16,32);x.font='bold 13px Arial';x.fillStyle='#c8dd1e';x.fillText(`${dB(D.dias[0])} a ${dB(fim)} · Gestão de Tratos · FJK`,16,56);
+  x.textAlign='center';x.font='bold 13px Arial';D.dias.forEach((d,i)=>{x.fillStyle='#5d6b7a';x.fillText(d.slice(8)+'/'+d.slice(5,7),esq+cw*i+cw/2,top-10);});x.fillText('Média',esq+cw*gGrafN+35,top-10);
   D.linhas.forEach((o,r)=>{const y=top+ch*r;x.textAlign='left';x.fillStyle='#11253d';x.font='bold 15px Arial';x.fillText(o.c,16,y+ch/2+5);
     o.cel.forEach((c,i)=>{const cx=esq+cw*i;if(c){const [bg,fg]=corNota(c.pct);x.fillStyle=bg;x.beginPath();x.roundRect?x.roundRect(cx+2,y+2,cw-4,ch-4,5):x.rect(cx+2,y+2,cw-4,ch-4);x.fill();x.fillStyle=fg;x.font='bold 15px Arial';}else{x.fillStyle='#c4ccd5';x.font='15px Arial';}
       x.textAlign='center';x.fillText(c?notaTxt(c.nota):'·',cx+cw/2,y+ch/2+5);});
-    const ns=o.cel.filter(Boolean),m=ns.length?ns.reduce((a,c)=>a+c.nota,0)/ns.length:NaN;x.fillStyle='#11253d';x.font='bold 15px Arial';x.fillText(ok(m)?(m>0?'+':'')+nf(m,1):'—',esq+cw*10+35,y+ch/2+5);});
+    const ns=o.cel.filter(Boolean),m=ns.length?ns.reduce((a,c)=>a+c.nota,0)/ns.length:NaN;x.fillStyle='#11253d';x.font='bold 15px Arial';x.fillText(ok(m)?(m>0?'+':'')+nf(m,1):'—',esq+cw*gGrafN+35,y+ch/2+5);});
   const ns=gCfg().notas.slice().sort((a,b)=>a.n-b.n),ly=top+ch*D.linhas.length+30,lw=Math.min(54,(W-32)/ns.length);
   ns.forEach((n,i)=>{const [bg,fg]=corNota(n.p),lx=16+lw*i;x.fillStyle=bg;x.fillRect(lx,ly,lw-3,30);x.fillStyle=fg;x.textAlign='center';x.font='bold 13px Arial';x.fillText(notaTxt(n.n),lx+lw/2-1,ly+14);x.font='10px Arial';x.fillText((n.p>0?'+':'')+nf(n.p,0)+'%',lx+lw/2-1,ly+26);});
-  x.textAlign='left';x.fillStyle='#5d6b7a';x.font='12px Arial';x.fillText('Azul = aumentou o trato · vermelho = diminuiu · cinza = manteve · ponto = sem leitura',16,ly+52);
+  x.textAlign='left';x.fillStyle='#5d6b7a';x.font='12px Arial';x.fillText('Verde = aumentou o trato · vermelho = diminuiu · cinza = manteve · ponto = sem leitura',16,ly+52);
   cv.toBlob(async b=>{const n=`Gráfico de notas ${dB(fim).replace(/\//g,'-')}`;try{if(pdf)return await compartilharArquivo(await pngsParaPdf([b]),n+'.pdf','application/pdf');await compartilharArquivo(b,n+'.png','image/png');}catch(e){toast(pdf?'Não consegui gerar o PDF':'Não consegui gerar a imagem');}},'image/png');}
 
 /* ---------- Excel ---------- */
@@ -2010,7 +2015,7 @@ function salvaCfg(){const c=JSON.parse(JSON.stringify(gCfg()));const t=fn('taxa'
 /* =====================================================================================
    EVENTOS
    ===================================================================================== */
-const SO_VER=new Set(['cfgSel','relExp','relSel','relVer','relModo','relAtalho','estFilP','estFilLimpa','estIrRel','estVerMov','fornec','pgN','pgP','cfgGrp','perP','cfgAbaP','estInsExp','cbExp','cbRes','cbN','cbSal','cbPer','grafLocP','lotLocP','loteTog','lotTodos','curGrp','coLocP','fzLocP','fzFotoVer','fzHN','fzHPdf','fzHImg','resPdf','resImg','resXls','insPdf','insImg','insXls','estPdf','estImg','estXls','estPerE','estOrd','nfVer','fzPdf','fzImgG','fzCur','fzLoc','fzImg','fzXls','fzXlsHist','cfgAba','coLoc','coAbre','coFecha','estPer','evLoc','evolN','imgDia','imgPer','imgComp','imgLote','pdfLote','imgVendas','pdfVendas','xlsVendas','pdfComp','xlsGraf','pdfGraf','racaAdd','racaRm','grafLoc','grafCur','celGraf','imgGraf','filtroLoc','dataPasso','dataHoje','voltar','ir','lote','raiz','compRel','compDia','xlsDia','xlsPer','xlsComp','xlsLote','perAtalho','nota','racAdd','racRm','notaAdd','notaRm','notaPadrao']);
+const SO_VER=new Set(['cfgSel','relExp','relSel','relVer','relModo','relAtalho','estFilP','estFilLimpa','estIrRel','estVerMov','fornec','pgN','pgP','cfgGrp','perP','cfgAbaP','estInsExp','cbExp','cbRes','cbN','cbSal','cbPer','grafLocP','grafN','lotLocP','loteTog','lotTodos','curGrp','coLocP','fzLocP','fzFotoVer','fzHN','fzHPdf','fzHImg','resPdf','resImg','resXls','insPdf','insImg','insXls','estPdf','estImg','estXls','estPerE','estOrd','nfVer','fzPdf','fzImgG','fzCur','fzLoc','fzImg','fzXls','fzXlsHist','cfgAba','coLoc','coAbre','coFecha','estPer','evLoc','evolN','imgDia','imgPer','imgComp','imgLote','pdfLote','imgVendas','pdfVendas','xlsVendas','pdfComp','xlsGraf','pdfGraf','racaAdd','racaRm','grafLoc','grafCur','celGraf','imgGraf','filtroLoc','dataPasso','dataHoje','voltar','ir','lote','raiz','compRel','compDia','xlsDia','xlsPer','xlsComp','xlsLote','perAtalho','nota','racAdd','racRm','notaAdd','notaRm','notaPadrao']);
 /* ---------- apagar: sempre com senha (1010) e só o que ainda não foi usado ---------- */
 const H_=()=>typeof HIST!=='undefined'?HIST:[];
 function racUsoTxt(id){const r=G.it[id];if(!r)return '';const L=gTodos('lote').filter(l=>(l.rac||[]).some(h=>h.r===id)),B=gTodos('carga').filter(c=>c.racao===id||(r.nome&&c.racNome===r.nome));
@@ -2055,6 +2060,7 @@ $('gBox').addEventListener('click',e=>{
   if(a==='coFecha'){if(GT.coAberto)delete GT.coAberto[b.dataset.c];if(GT.sel)delete GT.sel[b.dataset.c];const y=window.scrollY;gRender();window.scrollTo({top:y});return;}
   if(a==='baseM'){const c=b.dataset.c,m=b.dataset.m;GT.base=GT.base||{};GT.base[c]=m==='dia'?{m:'dia',d:null}:{m};if(GT.sel&&GT.sel[c])delete GT.sel[c].kg;const y=window.scrollY;gRender();window.scrollTo({top:y});return;}
   if(a==='coAbre'){GT.coAberto=GT.coAberto||{};GT.coAberto[b.dataset.c]=1;const y=window.scrollY;gRender();window.scrollTo({top:y});return;}
+  if(a==='grafN'){gGrafN=+b.dataset.n||10;return gRender();}
   if(a==='grafLocP'){const L=['T','C','P'];const i=Math.max(0,L.indexOf(gLocG||'T'));gLocG=L[Math.max(0,Math.min(2,i+(+b.dataset.n||0)))];return gRender();}
   if(a==='coLocP'){const L=['T','C','P'];let i=Math.max(0,L.indexOf(GT.coLoc||'T'));document.querySelectorAll('#gBox .gCocho').forEach(el=>{const x=el.querySelector('input[data-kg]'),c=el.dataset.c;if(x&&GT.sel&&GT.sel[c]&&x.value)GT.sel[c].kg=gNum(x.value);});GT.coLoc=L[Math.max(0,Math.min(2,i+(+b.dataset.n)))];return gRender();}
   if(a==='coLoc'){document.querySelectorAll('#gBox .gCocho').forEach(el=>{const i=el.querySelector('input[data-kg]'),c=el.dataset.c;if(i&&GT.sel&&GT.sel[c]&&i.value)GT.sel[c].kg=gNum(i.value);});GT.coLoc=b.dataset.l;return gRender();}
@@ -3572,8 +3578,8 @@ const REL_DIA=[
   ['tratosJ','Tratos do dia','todos os tratos numa tabela só (hora, curral, previsto, realizado e diferença)'],
   ['tratosC','Tratos do dia por curral','soma do dia por curral, com % PV'],
   ['batidas','Carregamentos do vagão','carregamentos do dia com os insumos e o total'],
-  ['grafNota','Gráfico de notas','notas da leitura de cocho de cada curral nos últimos 10 dias'],
-  ['grafIms','Gráfico de %IMS','% IMS realizado de cada curral nos últimos 10 dias'],
+  ['grafNota','Gráfico de notas','notas da leitura de cocho de cada curral (últimos 7, 10 ou 15 dias, como escolhido no gráfico)'],
+  ['grafIms','Gráfico de %IMS','% IMS realizado de cada curral (últimos 7, 10 ou 15 dias, como escolhido no gráfico)'],
   ['fezes','Escore de fezes','avaliações do dia'],
   ['resumo','Resumo do dia','o resumo da Gestão (cabeças, consumo, custo, alertas)'],
   ['indices','Índices do dia','MN, MS, % PV e custo por curral'],
