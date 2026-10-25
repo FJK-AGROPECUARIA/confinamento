@@ -1343,9 +1343,11 @@ function dadosGrafIms(fim){const dias=[];for(let i=9;i>=0;i--)dias.push(somaDias
     const v=cel.filter(Boolean),med=v.length?v.reduce((a,x)=>a+x.im,0)/v.length:NaN;return {c,cel,med};});
   return {dias,todos,linhas};}
 const gImsTxt=v=>nf(v,2);
+/* gráfico de %IMS: só duas cores — subiu do dia anterior = verde claro, baixou = vermelho claro (igual ou 1º dia = sem cor) */
+const corIms=ch=>ch>0?['#dff3dc','#1b5e20']:ch<0?['#fde3e1','#b3261e']:['#f1f3f5','#11253d'];
 function tCochoGrafIms(fim){const D=dadosGrafIms(fim);setTimeout(()=>{const t=document.querySelector('#gBox .gHeatIms');const bx=t&&t.closest('.tablebox');if(bx)bx.scrollLeft=bx.scrollWidth;},30);   // abre mostrando os dias mais recentes
   const cab=D.dias.map(d=>`<th>${d.slice(8)}<small>${d.slice(5,7)}</small></th>`).join('');
-  const rows=D.linhas.map(o=>`<tr><th class="gHc${/^P-/.test(o.c)?' p':''}" title="${esc(o.c)}">${esc(o.c.replace(/^P-/,''))}</th>${o.cel.map((x,i)=>{if(!x)return `<td class="vazio" data-g="celGraf" data-c="${esc(o.c)}" data-d="${D.dias[i]}">·</td>`;const [bg,fg]=corNota(x.ch);
+  const rows=D.linhas.map(o=>`<tr><th class="gHc${/^P-/.test(o.c)?' p':''}" title="${esc(o.c)}">${esc(o.c.replace(/^P-/,''))}</th>${o.cel.map((x,i)=>{if(!x)return `<td class="vazio" data-g="celGraf" data-c="${esc(o.c)}" data-d="${D.dias[i]}">·</td>`;const [bg,fg]=corIms(x.ch);
       return `<td class="gHims" style="background:${bg};color:${fg}" data-g="celGraf" data-c="${esc(o.c)}" data-d="${D.dias[i]}">${gImsTxt(x.im)}</td>`;}).join('')}<td class="gHm">${ok(o.med)?gImsTxt(o.med):'—'}</td></tr>`).join('');
   const cw=Math.max(5,Math.min(18,Math.max(...D.linhas.map(o=>o.c.replace(/^P-/,'').length),4)+1));
   return `${voltar('Leitura')}<section class="panel"><h2>Gráfico de %IMS · 10 dias</h2>
@@ -1354,18 +1356,18 @@ function tCochoGrafIms(fim){const D=dadosGrafIms(fim);setTimeout(()=>{const t=do
     ${rows?`<div class="row compart fz3"><button class="verde" data-g="pdfGraf">📄 PDF</button><button class="verde" data-g="imgGraf">🖼 Foto</button><button class="verde" data-g="xlsGraf">📊 Excel</button></div>`:''}
     <div class="gChips">${D.todos.map(c=>`<button data-g="grafCur" data-c="${esc(c)}" class="${gGrafOff.has(c)?'':'sel'}">${esc(c)}</button>`).join('')}</div>
     ${rows?`<div class="tablebox"><table class="gHeat gHeatIms" style="--cw:${cw}ch"><colgroup><col class="cC">${D.dias.map(()=>'<col class="cD">').join('')}<col class="cM"></colgroup><thead><tr><th class="gHc">Local</th>${cab}<th class="gHm">Méd.</th></tr></thead><tbody>${rows}</tbody></table></div>
-    <p class="note">% IMS = matéria seca realizada no dia ÷ peso vivo projetado × 100. Azul = comeu mais que no dia anterior · vermelho = comeu menos · cinza = igual · ponto = sem trato. Toque num quadro para ver os kg.</p>`:'<p class="note">Nenhum trato nesse período.</p>'}</section>`;}
+    <p class="note">% IMS = matéria seca realizada no dia ÷ peso vivo projetado × 100. Verde = comeu mais que no dia anterior · vermelho = comeu menos · ponto = sem trato. Toque num quadro para ver os kg.</p>`:'<p class="note">Nenhum trato nesse período.</p>'}</section>`;}
 function imagemGrafIms(pdf){const fim=GT.dia,D=dadosGrafIms(fim);if(!D.linhas.length)return toast('Nada para mostrar');
   const mc=document.createElement('canvas').getContext('2d');mc.font='bold 15px Arial';const esq=Math.max(120,Math.ceil(Math.max(...D.linhas.map(o=>mc.measureText(o.c).width)))+30),cw=52,ch=34,top=112,W=esq+cw*10+70+20,H=top+ch*D.linhas.length+80,cv=document.createElement('canvas'),s=2;cv.width=W*s;cv.height=H*s;
   const x=cv.getContext('2d');x.scale(s,s);x.fillStyle='#fff';x.fillRect(0,0,W,H);x.fillStyle='#11253d';x.fillRect(0,0,W,72);x.fillStyle='#a7bc09';x.fillRect(0,72,W,5);
   x.fillStyle='#fff';x.font='bold 22px Arial';x.fillText('Gráfico de %IMS · 10 dias',16,32);x.font='bold 13px Arial';x.fillStyle='#c8dd1e';x.fillText(`${dB(D.dias[0])} a ${dB(fim)} · Gestão de Tratos · FJK`,16,56);
   x.textAlign='center';x.font='bold 13px Arial';D.dias.forEach((d,i)=>{x.fillStyle='#5d6b7a';x.fillText(d.slice(8)+'/'+d.slice(5,7),esq+cw*i+cw/2,top-10);});x.fillText('Média',esq+cw*10+35,top-10);
   D.linhas.forEach((o,r)=>{const y=top+ch*r;x.textAlign='left';x.fillStyle='#11253d';x.font='bold 15px Arial';x.fillText(o.c,16,y+ch/2+5);
-    o.cel.forEach((c,i)=>{const cx=esq+cw*i;if(c){const [bg,fg]=corNota(c.ch);x.fillStyle=bg;x.beginPath();x.roundRect?x.roundRect(cx+2,y+2,cw-4,ch-4,5):x.rect(cx+2,y+2,cw-4,ch-4);x.fill();x.fillStyle=fg;x.font='bold 14px Arial';}else{x.fillStyle='#c4ccd5';x.font='15px Arial';}
+    o.cel.forEach((c,i)=>{const cx=esq+cw*i;if(c){const [bg,fg]=corIms(c.ch);x.fillStyle=bg;x.beginPath();x.roundRect?x.roundRect(cx+2,y+2,cw-4,ch-4,5):x.rect(cx+2,y+2,cw-4,ch-4);x.fill();x.fillStyle=fg;x.font='bold 14px Arial';}else{x.fillStyle='#c4ccd5';x.font='15px Arial';}
       x.textAlign='center';x.fillText(c?gImsTxt(c.im):'·',cx+cw/2,y+ch/2+5);});
     x.fillStyle='#11253d';x.font='bold 15px Arial';x.fillText(ok(o.med)?gImsTxt(o.med):'—',esq+cw*10+35,y+ch/2+5);});
   x.textAlign='left';x.fillStyle='#5d6b7a';x.font='12px Arial';const ly=top+ch*D.linhas.length+26;
-  x.fillText('% IMS = MS realizada no dia ÷ peso vivo projetado × 100',16,ly);x.fillText('Azul = comeu mais que no dia anterior · vermelho = comeu menos · cinza = igual · ponto = sem trato',16,ly+18);
+  x.fillText('% IMS = MS realizada no dia ÷ peso vivo projetado × 100',16,ly);x.fillText('Verde = comeu mais que no dia anterior · vermelho = comeu menos · ponto = sem trato',16,ly+18);
   cv.toBlob(async b=>{const n=`Gráfico de IMS ${dB(fim).replace(/\//g,'-')}`;try{if(pdf)return await compartilharArquivo(await pngsParaPdf([b]),n+'.pdf','application/pdf');await compartilharArquivo(b,n+'.png','image/png');}catch(e){toast(pdf?'Não consegui gerar o PDF':'Não consegui gerar a imagem');}},'image/png');}
 function xlsGrafIms(){const D=dadosGrafIms(GT.dia);const cab=['Curral'].concat(D.dias.map(d=>dB(d).slice(0,5)),['Média']);
   gExcel(`IMS realizado ate ${dB(GT.dia).replace(/\//g,'-')}`,[['% IMS',cab,D.linhas.map(o=>[xc(o.c)].concat(o.cel.map(x=>x?xc(x.im,'dec'):xc('')),[xc(o.med,'dec')])),[16].concat(D.dias.map(()=>8),[9])],
