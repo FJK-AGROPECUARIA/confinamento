@@ -817,13 +817,14 @@ function fcCalc(l,F){const d=F.dia||hojeKey(),tem=cabPres(l,d),cabV=gNum(F.cab)|
   const cabTot=cabV+cabF+T.reduce((a,g)=>a+g.cab,0),shF=FC.fixo!=null?fixo:(kgTot?kgF/kgTot:0),custoF=K.total*shF,cstF={};['compra','alim','op','outros'].forEach(k=>cstF[k]=K[k]*shF);const custoV=K.total-T.reduce((a,g)=>a+g.custo,0)-custoF+extraD;
   const rc=gNum(F.rc)>0&&gNum(F.rc)<100?gNum(F.rc):50,s={cab:cabV,peso:pV,rc,unid:F.unid,preco:gNum(F.preco)||0,desc:gNum(F.desc)||0,vTot:gNum(F.vTot)||0},rec=valorVenda(s);
   return {d,tem,cabV,cabF,pF,shF,custoF,cstF,pV,deLote,kgV,T,kgTot,K,cabTot,custoV,rc,rec,res:rec-custoV};}
+/* resumo da venda + sobra: um quadro por destino (cabe na tela do celular) */
+const fcL=(nome,sub,q,p,pct,cu,dest)=>`<div class="fcItem${dest?' fcVend':''}"><div class="fcNome"><b>${esc(nome)}</b>${sub?`<small>${esc(sub)}</small>`:''}<span>${nf(q)} animais · ${ok(p)&&p>0?nf(p,1)+' kg':'— kg'} · ${pc(pct,1)} do peso</span></div><div class="fcCusto"><b>${rs(cu)}</b><small>${rs(q?cu/q:NaN)}/cab</small></div></div>`;
 function fcPrevia(){const box=$('gFcRes'),l=G.it[GT.id];if(!box||!l||!GT.f)return;const X=fcCalc(l,GT.f);
   box.innerHTML=`<div class="stat gStat3">${st('Quantidade',`${nf(X.cabTot)} de ${nf(X.tem)}`,X.cabTot===X.tem?'':'bad')}${st('Peso dos vendidos',X.pV>0?nf(X.pV,1)+` kg<small>${X.deLote?'pelo peso do lote inteiro':'média'}</small>`:'—')}${st('Peso total',nf(X.kgTot)+' kg')}</div>
     ${X.cabTot!==X.tem?`<p class="aviso warn">Em ${dB(X.d)} o lote tem ${nf(X.tem)} animais: vendidos + os que vão para outros lotes + os que faltaram precisam dar ${nf(X.tem)} (${X.cabTot<X.tem?'faltam '+nf(X.tem-X.cabTot):'sobram '+nf(X.cabTot-X.tem)}).</p>`:''}
-    <div class="tablebox"><table><thead><tr><th>Para onde</th><th>Qtd.</th><th>Peso</th><th>% peso</th><th>Custo</th></tr></thead><tbody>
-    <tr><td><b>Vendidos</b></td><td>${nf(X.cabV)}</td><td>${nf(X.pV,1)}</td><td>${pc(X.kgTot?X.kgV/X.kgTot*100*(1-(GT.f.fmodo==='entrada'?X.shF:0)):NaN,1)}</td><td>${rs(X.custoV)}<small>${rs(X.cabV?X.custoV/X.cabV:NaN)}/cab</small></td></tr>
-    ${X.cabF?`<tr><td>Faltaram<small>custo fica separado</small></td><td>${nf(X.cabF)}</td><td>${nf(X.pF,1)}<small>${GT.f.fmodo==='entrada'?'entrada':'agora'}</small></td><td>${pc(X.shF*100,1)}</td><td>${rs(X.custoF)}<small>${rs(X.cabF?X.custoF/X.cabF:NaN)}/cab</small></td></tr>`:''}
-    ${X.T.map(g=>`<tr><td>${esc(g.l?g.l.nome:'(escolha o lote)')}</td><td>${nf(g.cab)}</td><td>${nf(g.peso,1)}</td><td>${pc(g.sh*100,1)}</td><td>${rs(g.custo)}<small>${rs(g.cab?g.custo/g.cab:NaN)}/cab</small></td></tr>`).join('')}</tbody></table></div>
+    <div class="fcLista">${fcL('Vendidos','',X.cabV,X.pV,X.kgTot?X.kgV/X.kgTot*100*(1-(GT.f.fmodo==='entrada'?X.shF:0)):NaN,X.custoV,1)}
+    ${X.cabF?fcL('Faltaram',`custo fica separado · peso ${GT.f.fmodo==='entrada'?'de entrada':'de agora'}`,X.cabF,X.pF,X.shF*100,X.custoF):''}
+    ${X.T.map(g=>fcL(g.l?g.l.nome:'(escolha o lote)','vai para este lote',g.cab,g.peso,g.sh*100,g.custo)).join('')}</div>
     <div class="gLinhas">${lin('Custo do lote até a data',rs(X.K.total))}${lin('Receita da venda',X.rec>0?rs(X.rec):'—')}${lin(X.res>=0?'Lucro (vendidos)':'Prejuízo (vendidos)',X.rec>0?rs(X.res):'—',X.rec>0?(X.res>=0?'ok':'bad'):'')}</div>`;}
 function salvaFecha(id){fcLer();const l=G.it[id],F=GT.f,X=fcCalc(l,F),d=X.d;
   if(!F.dia)return toast('Coloque a data');if(d<l.ent.dia)return toast('A data é antes da entrada do lote');if(d>hojeKey())return toast('A data não pode ser depois de hoje');
