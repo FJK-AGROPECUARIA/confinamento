@@ -2286,13 +2286,13 @@ function cTelaNova0(){if(!CG.passo){CG.passo=1;CG.local=null;}if(!CG.local)CG.pa
   CG.juntos=CG.avulso?[]:(CG.juntos||[]).filter(k=>k!==+CG.trato);const trs=[+CG.trato].concat(CG.juntos).sort((a,b)=>a-b);
   const partes=trs.map(k=>({k,sg:sugestaoCarga(k,CG.rac,CG.local)})),sg={tot:partes.reduce((a,p)=>a+p.sg.tot,0),cs:[...new Set(partes.flatMap(p=>p.sg.cs))]};
   const chave=CG.avulso?'avulso|'+CG.rac:CG.local+'|'+trs.join('+')+'|'+CG.rac;if(CG.totalDe!==chave){const mesmaRac=CG.totalDe!=null&&String(CG.totalDe).split('|').pop()===String(CG.rac);CG.total=CG.avulso?0:(sg.tot||0);CG.totalDe=chave;if(!mesmaRac)CG.ordem=null;  /* a Ordem é independente: continua valendo se a ração é a mesma */
-    CG.ja={};CG.sobModo='rac';CG.sobRac=null;CG.sobKg=0;CG.ordAberto=false;CG.jaAberto=false;CG.man={};CG.manAberto=false;cSave();}
+    CG.ja={};CG.sobModo='rac';CG.sobRac=null;CG.sobKg=0;CG.ordAberto=false;CG.jaAberto=false;CG.man={};CG.manAberto=false;CG.desm=[];cSave();}
   if(CG.abrirDepois){if(CG.abrirDepois==='man')CG.manAberto=true;else CG.jaAberto=true;CG.abrirDepois=null;cSave();}
   const its=itensAjust(itensCarga(CG.rac,CG.total||0));
   const passoTrato=passoRac+(CG.avulso?`
     <label>3. Trato</label><div class="cAvInfo">✳ Trato avulso · sem previsto, você digita a quantidade</div>
     <div class="cBotoes c4"><button type="button" class="mini cAvulso sel" data-cavulso="1">✳ Avulso</button>${cBotAjuste()}</div>`:`
-    <label for="cTrato">3. Trato</label><div class="cTrLin">${window.tratoSeta?tratoSeta('cTrato',CG.trato,'',trC):''}<button type="button" class="mini cJtTog${CG.juntoAberto?' sel':''}" data-cjtog="1">＋ Trato</button></div>
+    <label for="cTrato">3. Trato</label><div class="cTrLin">${window.tratoSeta?tratoSeta('cTrato',CG.trato,'',trC):''}<button type="button" class="mini cJtTog${CG.juntoAberto?' sel':''}" data-cjtog="1">＋ Trato</button></div>${CG.trato?cExpHTML(trs):''}
     <div class="cJuntoLista">${CG.juntoAberto?tratosAtivos().filter(k=>k!==+CG.trato&&(CG.juntos.includes(k)||cTratoPendente(k))).map(k=>{const t=sugestaoCarga(k,CG.rac,CG.local).tot;return `<button type="button" data-cjunto="${k}" class="${CG.juntos.includes(k)?'sel':''}"${t||CG.juntos.includes(k)?'':' disabled'}><span>${CG.juntos.includes(k)?'✓ ':''}Trato ${k}</span>${t?`<small>${nf(t)} kg</small>`:''}</button>`;}).join('')||'<p class="note">Nenhum outro trato pendente para juntar.</p>':''}</div>
     <div class="cBotoes c4"><button type="button" class="mini cAvulso" data-cavulso="1">✳ Avulso</button>${cBotAjuste()}</div>`)+
     (CG.avulso?'':cJaTratadoHTML(trs));
@@ -2383,6 +2383,8 @@ function cClique(e){
   const cp=e.target.closest('[data-cpasso]');if(cp){CG.passo=+cp.dataset.cpasso;cSave();return cRender();}
   if(e.target.closest('[data-ccancel]')){const fz=()=>{cLimparSetup();cRender();window.scrollTo({top:0});toast('Batida cancelada');};
     (typeof confirmaVermelho==='function'?confirmaVermelho('Deseja realmente cancelar a batida?','O que você escolheu para esta batida será descartado.','Sim, cancelar batida','Não, voltar'):Promise.resolve(confirm('Deseja realmente cancelar a batida?'))).then(sim=>{if(sim)fz();});return;}
+  if(e.target.closest('[data-cexp]')){CG.expAberto=!CG.expAberto;cSave();return cRender();}
+  {const xb=e.target.closest('[data-cexpc]');if(xb){const c=xb.dataset.cexpc;CG.desm=CG.desm||[];CG.desm=CG.desm.includes(c)?CG.desm.filter(x=>x!==c):CG.desm.concat(c);cExpAplicar();cSave();return cRender();}}
   if(e.target.closest('[data-cjtog]')){if(CG.juntoAberto){CG.juntoAberto=false;CG.juntos=[];}else CG.juntoAberto=true;cSave();return cRender();}  // fechar = tira os tratos juntos
   if(e.target.closest('[data-cordtog]')){CG.ordAberto=!CG.ordAberto;cSave();return cRender();}
   if(e.target.closest('[data-cmantog]')){if(CG.manAberto){CG.manAberto=false;CG.man={};}else{CG.jaAberto=false;CG.ja={};CG.sobRac=null;CG.sobKg=0;CG.sobModo='rac';
@@ -3327,6 +3329,13 @@ function cTabelaCarga(its){const temJa=CG.jaAberto||its.some(i=>i.ja>0),tot=its.
 /* trato que ainda pode entrar junto na batida: tem curral pendente e ainda não foi carregado hoje (mesmo local e ração) */
 function cTratoPendente(k){const hj=hojeKey();if(typeof fornPendentes==='function'&&!fornPendentes(CG.local,CG.rac,k).length)return false;
   return !gTodos('carga').some(c=>c.dia===hj&&(c.local||'')===(CG.local||'')&&(!CG.rac||c.racao===CG.rac)&&((c.tratos&&c.tratos.length?c.tratos:[c.trato]).map(Number).includes(+k)));}
+/* Expandir tratos: mostra os currais que entram no total da batida; todos marcados; desmarcar tira a quantidade daquele curral */
+function cCurrCarga(trs){const mp=new Map();trs.forEach(k=>{const m=(S.prev||{})[String(k)]||{};sugestaoCarga(k,CG.rac,CG.local).cs.forEach(c=>mp.set(c,(mp.get(c)||0)+(+m[c]||0)));});
+  const ord=c=>{const i=(S.cadastro||[]).indexOf(c);return i<0?999:i;};return [...mp].map(([c,kg])=>({c,kg})).sort((a,b)=>ord(a.c)-ord(b.c));}
+function cExpHTML(trs){const L=cCurrCarga(trs);if(!L.length)return '';const ds=CG.desm||[],nM=L.filter(x=>!ds.includes(x.c)).length;
+  return `<button type="button" class="mini cExpTog${CG.expAberto?' sel':''}" data-cexp="1">${CG.expAberto?'▲ Recolher tratos':'▼ Expandir tratos'}${ds.length?` · ${nM} de ${L.length} currais`:''}</button>`+
+    (CG.expAberto?`<div class="cJuntoLista cExpLista">${L.map(x=>{const on=!ds.includes(x.c);return `<button type="button" data-cexpc="${esc(x.c)}" class="${on?'sel':''}"><span>${on?'✓ ':''}${esc(x.c)}</span><small>${nf(x.kg)} kg</small></button>`;}).join('')}</div><p class="note">Toque no curral para tirar (ou pôr de volta) a quantidade dele da batida.</p>`:'');}
+function cExpAplicar(){const trs=[+CG.trato].concat(CG.juntos||[]),L=cCurrCarga(trs),ds=CG.desm||[];CG.total=L.filter(x=>!ds.includes(x.c)).reduce((a,x)=>a+x.kg,0);}
 function cJaTratadoHTML(trs){if(typeof fornCurrais!=='function'||typeof fornPendentes!=='function')return '';
   const feitos=trs.filter(k=>k>0&&fornCurrais(CG.local,CG.rac,k).length&&!fornPendentes(CG.local,CG.rac,k).length);if(!feitos.length)return '';
   const prox=tratosAtivos().map(Number).find(k=>!trs.includes(k)&&fornPendentes(CG.local,CG.rac,k).length);
