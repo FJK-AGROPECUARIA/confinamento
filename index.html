@@ -780,6 +780,7 @@ body.somenteVer #tratoTiles .avBtn{min-height:112px;display:flex;flex-direction:
 #tratoTiles button.sel{outline:none}
 #subModo.soAuto{display:none!important}
 body.modoTrato:not(.menuFechado):not(.naInicio) #viewPrev,body.modoTrato:not(.menuFechado):not(.naInicio) #viewTrato,body.modoTrato:not(.menuFechado):not(.naInicio) #viewHist,body.modoTrato:not(.menuFechado):not(.naInicio) #viewGest,body.modoTrato:not(.menuFechado):not(.naInicio) #viewCarga,body.modoTrato:not(.menuFechado):not(.naInicio) #viewAuto,body.modoTrato:not(.menuFechado):not(.naInicio) #viewAutoC,body.modoTrato:not(.menuFechado):not(.naInicio) #viewEscolha,body.modoTrato:not(.menuFechado):not(.naInicio) .menuSeta{display:none!important}
+body.somenteVer:not(.menuFechado):not(.naInicio) #viewPrev,body.somenteVer:not(.menuFechado):not(.naInicio) #viewTrato,body.somenteVer:not(.menuFechado):not(.naInicio) #viewHist,body.somenteVer:not(.menuFechado):not(.naInicio) #viewGest,body.somenteVer:not(.menuFechado):not(.naInicio) #viewCarga,body.somenteVer:not(.menuFechado):not(.naInicio) #viewAuto,body.somenteVer:not(.menuFechado):not(.naInicio) #viewAutoC,body.somenteVer:not(.menuFechado):not(.naInicio) #viewEscolha{display:none!important}   /* Visualizar: com o menu aberto, a tela de baixo some (igual nos Tratos) */
 .gCfgTiles{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
 .gCfgTiles button{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;min-height:108px;padding:10px 6px;border-radius:18px;border:0;background:var(--c);color:#fff;font-size:1.15rem;font-weight:800;box-shadow:0 2px 6px rgba(0,0,0,.12)}
 .gCfgTiles small{font-size:.62rem;letter-spacing:.12em;font-weight:800;opacity:.9;text-transform:uppercase}.gCfgTiles .gIc{font-size:2rem;line-height:1}
@@ -1224,7 +1225,7 @@ body.naInicio .topoTxt h1{font-size:clamp(16px,5vw,28px)!important}
 <div class="toast" id="toast" hidden></div>
 <script>
 'use strict';
-const APP_VERSAO='187';
+const APP_VERSAO='188';
 const APP_DATA='19/10/2026';
 const KEY='confinamento-completo-v1';
 const $=id=>document.getElementById(id);
