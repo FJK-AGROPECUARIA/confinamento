@@ -3477,7 +3477,7 @@ async function relVerCarregar(){const box=document.getElementById('gRelVer');if(
 window.relVerCarregar=relVerCarregar;
 /* tocou na imagem do relatório: abre em tela cheia, só para ver (aproxima com dois dedos ou dois toques; ◀ Voltar fecha) */
 function verImagens(srcs){if(!srcs.length)return;const f=document.createElement('div');f.className='zoomFundo';
-  f.innerHTML=`<div class="zoomArea"><div class="zoomMeio"><div class="zoomCont">${srcs.map(u=>`<img src="${u}" alt="">`).join('')}</div></div></div>`;
+  f.innerHTML=`<div class="zoomArea"><div class="zoomMeio"><div class="zoomCont"><div class="zoomBar"><button type="button" class="zoomVolta">◀ Voltar</button></div>${srcs.map(u=>`<img src="${u}" alt="">`).join('')}</div></div></div>`;
   document.body.appendChild(f);document.documentElement.classList.add('zoomAberto');
   const area=f.querySelector('.zoomArea'),cont=f.querySelector('.zoomCont');let z=1;
   const aplica=(n,cx,cy)=>{n=Math.max(1,Math.min(6,n));const r=area.getBoundingClientRect();if(cx==null){cx=r.width/2;cy=r.height/2;}
