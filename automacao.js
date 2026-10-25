@@ -88,9 +88,11 @@ const css=`
 :is(#aBox,#acBox,#aoVivo) .aFalta.continuo{background:#c62828;animation:aPisca .5s steps(2) infinite}
 :is(#aBox,#acBox,#aoVivo) .aFalta.cinza{background:#7c8794}
 #aBox .aChkGeo{display:flex;align-items:center;gap:8px;font-weight:600;margin:4px 0 8px}#aBox .aChkGeo input{width:22px;height:22px}
-#aBox #aFaltaBox{position:relative}
+#aBox #aFaltaBox,#acBox #acFaltaBox{position:relative}
 #aBox .aPausaBt{position:absolute;top:8px;right:8px;padding:6px 10px;font-size:.9rem;width:auto!important;margin:0!important;display:block;background:#fff;color:#11253d;border:2px solid rgba(0,0,0,.15);border-radius:10px;font-weight:700;z-index:2}
 #aBox .aPausaBt[hidden]{display:none}
+#acBox .aPausaBt{position:absolute;top:8px;right:8px;padding:6px 10px;font-size:.9rem;width:auto!important;margin:0!important;display:block;background:#fff;color:#11253d;border:2px solid rgba(0,0,0,.15);border-radius:10px;font-weight:700;z-index:2}#acBox .aPausaBt[hidden]{display:none}
+#acBox #acPausaBox span{white-space:normal;font-size:1.05rem;font-weight:600;opacity:.95}
 #acBox .aPausaBox{box-sizing:border-box;width:100%;border-radius:18px;padding:30px 16px;text-align:center;background:#1565c0;color:#fff;display:grid;gap:8px;cursor:pointer;min-height:260px;align-content:center;border:4px solid #0d47a1}#acBox .aPausaBox[hidden]{display:none}#acBox .aPausaBox b{font-family:var(--display);font-stretch:condensed;font-size:clamp(2.4rem,11vw,4rem);line-height:1;letter-spacing:.04em}#acBox .aPausaBox .pzCur{font-family:var(--display);font-stretch:condensed;font-size:clamp(2.2rem,10vw,4.2rem);line-height:1.05;font-weight:800}#acBox .aPausaBox em{display:block;font-style:normal;font-weight:800;font-size:1.3rem;background:#fff;color:#0d47a1;border-radius:12px;padding:12px;margin-top:8px}
 #aBox .aPausaBox{box-sizing:border-box;width:100%;max-width:100%;min-width:0;overflow:hidden;border-radius:18px;padding:34px 16px;text-align:center;background:#1565c0;color:#fff;display:grid;gap:8px;cursor:pointer;min-height:300px;align-content:center;border:4px solid #0d47a1}
 #aBox .aPausaBox[hidden]{display:none}
@@ -243,7 +245,7 @@ function ligar(){
     setAtual(nx);save();novoCurral(true);render();aRender();};
   $('aDesfazer').onclick=async()=>{try{await $('btnDesfazer').onclick();}catch(e){}aRender();};
   $('aTestarSom').onclick=testarSom;
-  if(!window._acTravaL){window._acTravaL=1;document.addEventListener('click',e=>{if(e.target.closest&&e.target.closest('#acTravaBox')&&!bloqueado())acLiberar();});}
+  if(!window._acTravaL){window._acTravaL=1;document.addEventListener('click',e=>{if(!e.target.closest||bloqueado())return;if(e.target.closest('#acTravaBox'))acLiberar();else if(e.target.closest('#acPausar'))acPausar();else if(e.target.closest('#acPausaBox'))acContinuarPausa();});}
   $('aPausar').onclick=()=>{if(!bloqueado())aPausar();};$('aPausaBox').onclick=()=>{if(!bloqueado())aContinuarPausa();};
   $('aCopiarBruto').onclick=()=>copiar(A.bruto.join('\n')+'\n\n'+($('aBtInfo').textContent||''),'Dados copiados');
   document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible'&&A.fonte)pedirTelaLigada();});
@@ -418,9 +420,10 @@ async function holdSync(){if(holdMandando)return;
   if(!(A.fonte==='bt'&&A.digiStar&&A.dsEsc)){   // sem Bluetooth não dá para soltar: avisa o operador para soltar na mão
     if(A.holdApp&&!A.pausa&&Date.now()-(A.holdAvisoTs||0)>10000){A.holdAvisoTs=Date.now();toast('⚠ Balança sem Bluetooth e pode estar em HOLD: se o visor mostrar HOLD, aperte HOLD na balança para soltar');}
     return;}
-  let modo=1,noForn=false;try{modo=+cfg().holdAuto||0;noForn=!!(window.filtroForn&&filtroForn()&&!naCargaAuto());}catch(e){}
-  const quer=!!(modo&&noForn&&A.pausa);
-  const repetir=modo===1&&noForn&&Date.now()-(A.holdTs||0)>4000;   // comando direto: reforça o estado do tablet
+  let modo=1,noForn=false,noCarr=false,carrAzul=false;try{modo=+cfg().holdAuto||0;noForn=!!(window.filtroForn&&filtroForn()&&!naCargaAuto());
+    noCarr=!!(naCargaAuto()&&acB());const it=noCarr?acItem():null;carrAzul=noCarr&&!!(AC.pausa||(AC.trava&&it&&!ok(it.real)));}catch(e){}
+  const quer=!!(modo&&((noForn&&A.pausa)||carrAzul));   // quadro azul na tela (Fornecer ou Carregar) = balança em HOLD
+  const repetir=modo===1&&(noForn||noCarr)&&Date.now()-(A.holdTs||0)>4000;   // comando direto: reforça o estado do tablet
   if(quer===A.holdApp&&!repetir)return;
   if(!modo&&!A.holdApp)return;
   holdMandando=true;
@@ -996,14 +999,26 @@ const acB=()=>(typeof CG!=='undefined'&&CG.ativa)||null;
 function acItem(){const B=acB();return B?B.itens[B.atual]:null;}
 /* todo produto novo começa TRAVADO (quadro azul "▶ CARREGAR SILAGEM"): a balança só conta depois de tocar; o peso de agora vira o inicial */
 /* produto já liberado (tocou em CARREGAR) e ainda não registrado — ex.: o app fechou e voltou no meio da batida: não trava de novo e continua com o peso inicial guardado */
-function acNovoProduto(semTravar){AC.est='aguardando';AC.ancV=null;AC.ancT=0;AC.fpMin=null;const it=acItem();AC.trava=!semTravar&&!!(it&&!ok(it.real)&&!(it.lib&&ok(it.ini)));}
+function acNovoProduto(semTravar){AC.est='aguardando';AC.ancV=null;AC.ancT=0;AC.fpMin=null;AC.pausa=null;const it=acItem();AC.trava=!semTravar&&!!(it&&!ok(it.real)&&!(it.lib&&ok(it.ini)));setTimeout(holdSync,0);}
 window.acLiberar=()=>{const it=acItem();if(!it)return;AC.trava=false;const pa=pesoVisor();if(pa!=null){it.ini=pa;it.fim=null;it.iniFix=true;it.lib=true;}  /* início = balança EXATA no toque (não muda depois) */
-  AC.est='aguardando';AC.ancV=null;AC.ancT=0;cSave();cRender();toast(`▶ Carregando ${it.nome}`);};
+  AC.est='aguardando';AC.ancV=null;AC.ancT=0;cSave();cRender();toast(`▶ Carregando ${it.nome}`);holdSync();};
+/* ⏸ Pausar no carregamento (trajeto no meio de um produto): a balança não conta; o que já foi carregado fica guardado.
+   Ao continuar, o peso inicial é recalculado pela balança de agora (o que mudou no trajeto não conta). */
+window.acPausar=()=>{const it=acItem();if(AC.pausa||AC.trava||!it||ok(it.real))return;
+  const pv=A.peso!=null?pesoVisor():null,carr=ok(it.ini)&&pv!=null?Math.max(0,pv-it.ini):0;
+  AC.pausa={carr,ts:Date.now()};pararSom();diagLog('pausou_carga',{produto:it.nome,ini:it.ini,peso:pv,carr});
+  toast('⏸ Pausado: a balança não conta até você continuar');pintarCarga();holdSync();};
+window.acContinuarPausa=()=>{const P=AC.pausa,it=acItem();if(!P)return;AC.pausa=null;
+  const pa=A.peso!=null?pesoVisor():null;
+  if(it&&!ok(it.real)&&pa!=null&&(ok(it.ini)||P.carr>0)){it.ini=pa-(+P.carr||0);it.fim=null;it.iniFix=true;it.lib=true;cSave();}
+  AC.est='aguardando';AC.ancV=null;AC.ancT=0;AC.fpMin=null;
+  diagLog('despausou_carga',{produto:it?it.nome:'',ini:it?it.ini:null,peso:pa,carr:P.carr,seg:Math.round((Date.now()-P.ts)/1000)});
+  toast(it?`▶ Continuando ${it.nome}`:'▶ Continuando');holdSync();cRender();};
 const naCargaAuto=()=>!!($('viewAutoC')&&!$('viewAutoC').hidden);
 function maquinaCarga(){
   if(!naCargaAuto())return;const B=acB(),it=acItem(),c=cfg();if(!B||!it||A.peso==null||ok(it.real))return;
   if(AC.idx!==B.atual){AC.idx=B.atual;acNovoProduto();}
-  if(AC.trava)return;   // travado: no caminho até o próximo produto a balança não conta
+  if(AC.trava||AC.pausa)return;   // travado ou pausado: no caminho a balança não conta
   if(AC.est==='aguardando'){
     const lim=Math.min(c.minDesc,Math.max(c.tol,it.prev/2)); // produto pequeno (núcleo): começa com menos
     if(ok(it.ini)&&A.suave>it.ini+lim){AC.est='carregando';AC.ancV=A.suave;AC.ancT=Date.now();AC.fpMin=null;return;}
@@ -1016,7 +1031,7 @@ function maquinaCarga(){
   }
 }
 function subindoAgora(){return AC.est==='carregando'&&AC.ancT>0&&Date.now()-AC.ancT<jCaindo()&&Date.now()-A.ultDado<jVivo();}
-function zonaC(){const it=acItem();if(AC.trava||!naCargaAuto()||!it||!ok(it.ini)||A.peso==null||ok(it.real))return null;
+function zonaC(){const it=acItem();if(AC.trava||AC.pausa||!naCargaAuto()||!it||!ok(it.ini)||A.peso==null||ok(it.real))return null;
   const c=cfg(),carregado=Math.max(0,A.peso-it.ini),falta=it.prev-carregado,sub=subindoAgora(),taxa=sub?taxaQueda(-1):0;
   let fp=falta;
   if(sub){fp=falta-taxa*(+c.antecipa||0);if(AC.fpMin!=null&&AC.fpMin<fp)fp=AC.fpMin;AC.fpMin=fp;}else AC.fpMin=null;
@@ -1044,7 +1059,8 @@ window.acTela=(nova,dia)=>{
     ${window.fixoNota?fixoNota(it):''}<div class="aEtapa" id="acEtapa"></div>
     </div><div class="fColD">
     <div class="aPausaBox acTravaBox" id="acTravaBox" hidden role="button" tabindex="0"><b>▶ CARREGAR</b><strong class="pzCur" id="acTravaNome"></strong><em>Toque para carregar</em></div>
-    <div class="aFalta" id="acFaltaBox"><small id="acFaltaTit">Carregar</small><b class="num" id="acFalta">—</b><em id="acFaltaTxt">&nbsp;</em></div>
+    <div class="aPausaBox" id="acPausaBox" hidden role="button" tabindex="0"><b>⏸ PAUSADO</b><span>No trajeto: a balança não está contando nada.</span><em>▶ Toque aqui para continuar</em></div>
+    <div class="aFalta" id="acFaltaBox"><button type="button" class="aPausaBt" id="acPausar" hidden>⏸ Pausar (trajeto)</button><small id="acFaltaTit">Carregar</small><b class="num" id="acFalta">—</b><em id="acFaltaTxt">&nbsp;</em></div>
     <div class="aMini">
       <div class="caiu"><small>Carregado</small><b class="num" id="acCarr">—</b></div>
       <div><small>Peso inicial</small><b class="num" id="acIni">—</b></div>
@@ -1095,6 +1111,10 @@ function pintarCarga0(){
   const e=$('acEstTxt');e.textContent=(A.peso==null?'sem leitura':A.estavel?'● Estável':'○ Oscilando')+idadeLeitura();e.className=atrasada()?'atraso':A.estavel?'est':'';
   if(!$('acFaltaBox'))return;
   const it=acItem(),z=zonaC(),fb=$('acFaltaBox');
+  {const pz=!!(AC.pausa&&it&&!ok(it.real)),pb=$('acPausaBox');if(pb)pb.hidden=!pz;
+    if($('acPausar'))$('acPausar').hidden=pz||!!AC.trava||!it||ok(it.real)||!A.fonte;
+    if(pz){if($('acTravaBox'))$('acTravaBox').hidden=true;fb.style.display='none';const mi=document.querySelector('#acBox .aMini');if(mi)mi.style.display='none';if($('acReg'))$('acReg').style.display='none';
+      $('acEtapa').textContent='⏸ Pausado no trajeto · toque no azul para continuar';$('acEtapa').className='aEtapa pausa';$('acEtapa').hidden=false;return;}}
   {const tv=!!(AC.trava&&it&&!ok(it.real)),bx=$('acTravaBox');if(bx){bx.hidden=!tv;if(tv&&$('acTravaNome').textContent!==it.nome){$('acTravaNome').textContent=it.nome;requestAnimationFrame(()=>caberTexto(bx));}}
     fb.style.display=tv?'none':'';const mi=document.querySelector('#acBox .aMini');if(mi)mi.style.display=tv?'none':'';if($('acReg'))$('acReg').style.display=tv?'none':'';
     if(tv){$('acEtapa').textContent='⏸ Balança pausada · toque no azul quando chegar no produto';$('acEtapa').className='aEtapa pausa';$('acEtapa').hidden=false;return;}}
@@ -1181,7 +1201,7 @@ function montarCfgT(){const box=$('cfgTBox');if(!box||box.dataset.ok)return;box.
     <div class="curhead"><h2>⏸ Hold da balança</h2></div>
     <label>Hold automático no trajeto (Digi-Star)</label>
     <select id="cfgT_hold"><option value="1">Ligado: vale o tablet (recomendado)</option><option value="2">Ligado pela tecla HOLD (reserva)</option><option value="0">Desligado</option></select>
-    <p class="note">No Fornecer, com o quadro azul na tela (pausado ou esperando liberar o próximo curral), a balança fica em <b>HOLD</b>. Ao tocar para liberar ou continuar, o HOLD sai. Assim o balanço do trajeto não muda o peso.<br><b>Vale o tablet:</b> o app manda "ligar" ou "soltar" (não é liga/desliga) e repete a cada 4 segundos. Se alguém apertar HOLD na balança, o tablet volta ao certo.<br><b>Pela tecla HOLD:</b> use só se a balança não obedecer ao modo recomendado. Nesse modo não aperte HOLD na balança na mão.</p>
+    <p class="note">No Fornecer, com o quadro azul na tela (pausado ou esperando liberar o próximo curral), a balança fica em <b>HOLD</b>. Ao tocar para liberar ou continuar, o HOLD sai. Assim o balanço do trajeto não muda o peso.<br>No Carregar é igual: com o quadro azul do próximo produto (ou pausado), a balança fica em HOLD.<br><b>Vale o tablet:</b> o app manda "ligar" ou "soltar" (não é liga/desliga) e repete a cada 4 segundos. Se alguém apertar HOLD na balança, o tablet volta ao certo.<br><b>Pela tecla HOLD:</b> use só se a balança não obedecer ao modo recomendado. Nesse modo não aperte HOLD na balança na mão.</p>
   </section>
   <section class="panel">
     <div class="curhead"><h2>🔊 Apito</h2></div>
