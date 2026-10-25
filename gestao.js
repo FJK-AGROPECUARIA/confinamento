@@ -3347,12 +3347,12 @@ const ZCOLS=[ // [chave, título, grupo, casas, largura no PDF]
   ['dias','Dias','id2',0,60],['rac','Dieta','id2',null,80],['msRac','MS dieta','id2',1,95],
   ['pE','Entrada','pes',0,90],['pP','Projetado','pes',0,105],['gmd','GMD','pes',2,70],
   ['nota','','nt',0,55],
+  ['pvG','Geral','pv',2,75],['pvD','Dia','pv',2,75],['pv1','D-1','pv',2,75],['pv5','5 dias','pv',2,75],
   ['mnG','Geral','mn',2,85],['mnD','Dia','mn',2,85],
   ['msG','Geral','ms',2,80],['msD','Dia','ms',2,80],['ms1','D-1','ms',2,80],['ms5','5 dias','ms',2,80],
-  ['pvG','Geral','pv',2,75],['pvD','Dia','pv',2,75],['pv1','D-1','pv',2,75],['pv5','5 dias','pv',2,75],
   ['fD','Diária','fin','rs',95],['fA','Acumulado','fin','rs',115]];
 const ZGRP={id:'Identificação',id2:'Trato',nt:'Nota',fin:'R$/cab',pes:'Peso (kg)',mn:'MN kg/cab/dia',ms:'MS kg/cab/dia',pv:'% IMS do PV'};
-const ZCOR={id:'#24502a',id2:'#5b8f3e',pes:'#24502a',nt:'#5b8f3e',mn:'#24502a',ms:'#5b8f3e',pv:'#24502a',fin:'#1f5fa8'};
+const ZCOR={id:'#24502a',id2:'#5b8f3e',pes:'#24502a',nt:'#5b8f3e',pv:'#24502a',mn:'#5b8f3e',ms:'#24502a',fin:'#1f5fa8'};
 const zVal=(r,k,d)=>{const v=r[k];if(d==='dia')return v?dB(v):'';if(d==='rs')return ok(+v)?nf(+v,2):'—';if(d==null)return v==null?'':String(v);return ok(+v)&&v!==null&&v!==''?nf(+v,d):'—';};
 function zootCards(T){return [['Cabeças',nf(T.cab)],['Peso entrada',nf(T.pE,1)+' kg'],['Peso projetado',nf(T.pP,1)+' kg'],['GMD',nf(T.gmd,2)],['Dias (média)',nf(T.dias)],['MN dia',nf(T.mnD,2)+' kg/cab'],['MS dia',nf(T.msD,2)+' kg/cab'],['% PV dia',pc(T.pvD,2)]];}
 /* estado único do relatório de índices: o mesmo em Tratos › Histórico › Relatório e em Gestão › Relatórios › Índices do dia */
