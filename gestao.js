@@ -2210,7 +2210,8 @@ const cAtiva=()=>CG.ativa||null;
 /* a mesma batida aparece no Carregar manual (#cBox) e no Carregar da Automação (#acBox) */
 const cAuto=()=>!!($('viewAutoC')&&!$('viewAutoC').hidden);
 const cCaixa=()=>$(cAuto()?'acBox':'cBox');
-function cRender(){const auto=cAuto(),b=$(auto?'acBox':'cBox'),o=$(auto?'cBox':'acBox');if(!b)return;if(o)o.innerHTML='';
+function cRender(){const y0=window.scrollY;try{cRender0();}finally{if(Math.abs(window.scrollY-y0)>1)window.scrollTo(0,y0);}}  /* redesenha sem a tela pular */
+function cRender0(){const auto=cAuto(),b=$(auto?'acBox':'cBox'),o=$(auto?'cBox':'acBox');if(!b)return;if(o)o.innerHTML='';
   /* outro aparelho com batida aberta: primeiro só ela + "Abrir novo carregamento"; ao abrir novo, recolhe numa faixa em cima */
   const rem=cAtiva()?'':cRemHTML(),remSo=!!rem&&!(window.REMNOVO&&REMNOVO.c);
   if(remSo){b.innerHTML=rem+'<button type="button" class="primary remNovoBt" data-remnovo="c">＋ Abrir novo carregamento</button>'+cBatidasHoje();return;}

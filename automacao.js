@@ -1028,7 +1028,8 @@ window.acTela=(nova,dia)=>{
     </div></div>
     <div class="row"><button data-c="ant"${i>0?'':' disabled'}>◀ Produto anterior</button><button class="lima" data-c="prox"${i<B.itens.length-1?'':' disabled'}>Próximo produto ▶</button></div>
   </section>`+tabela+dia;};
-window.acDepois=()=>{acSyncTopo();const B=acB();if(B&&AC.idx!==B.atual){const volta=AC.idx==null;AC.idx=B.atual;acNovoProduto();
+window.acDepois=()=>{acSyncTopo();try{pintarSinal();}catch(e){}  /* já desenha a balança recolhida/aberta junto (antes abria e fechava num piscar e a tela tremia) */
+  const B=acB();if(B&&AC.idx!==B.atual){const volta=AC.idx==null;AC.idx=B.atual;acNovoProduto();
     const it=acItem();if(volta&&it&&it.lib&&ok(it.ini)&&!ok(it.real))toast(`↩ Batida continuando: ${it.nome} com peso inicial ${fmt(it.ini)} kg (o que já foi carregado não se perdeu)`);}pintarCarga();};
 window.acIniciou=()=>{acNovoProduto();   // o primeiro produto também começa travado (azul)
   const B=acB();AC.idx=B?B.atual:null;const it=acItem();if(it&&A.estavel){it.ini=A.valEst;cSave();}pintarCarga();
