@@ -1093,9 +1093,9 @@ function tCocho(t){
     /* últimos 3 dias: leitura, kg/dia e % IMS de cada dia · tocar repete a matéria seca daquele dia */
     const podeRep=pode.ok&&!trv,repD=sel&&sel.rep;
     const ult3=`<div class="gUlt3">${[3,2,1].map(i=>{const d=somaDias(dia,-i),x=G.it[idLeit(d,c)],lx=x&&!x.del?x:null,kgd=ix.get(d+'|'+c)||0,bi=baseIms(c,d),im=kgd&&bi?kgd/bi:NaN;
-      const cn_=lx&&lx.nota!=null?notas.find(o=>o.n===+lx.nota):null,[bg,fg]=lx&&lx.nota!=null?corNota(cn_?cn_.p:0):['#f1f3f5','#11253d'];
+      const cn_=lx&&lx.nota!=null?notas.find(o=>o.n===+lx.nota):null,[bg,fg]=['#eceff1','#11253d'];   /* histórico dos 3 dias: sempre cinza; o escolhido ganha a borda preta e a nota aproximada fica verde embaixo */
       return `<button type="button" class="gU3${repD===d?' sel':''}" style="background:${bg};color:${fg}"${podeRep&&kgd?` data-g="repDia" data-c="${esc(c)}" data-d="${d}"`:' disabled'}><small>${diaBR(d).slice(0,5)}</small><b>${lx&&lx.nota!=null?notaTxt(+lx.nota):'·'}</b><i>${kgd?nf(kgd)+' kg':'sem trato'}</i><em>${ok(im)?pc(im,2)+' IMS':'—'}</em></button>`;}).join('')}</div>`;
-    if(trv&&!(lt&&!lt.del))return `<div class="gCochoMin gCoTrav">${seloCurral(c)}<span><b>Sem leitura</b><small>🔒 já teve trato neste dia · a leitura não pode ser feita</small></span></div>`;
+    if(trv&&!(lt&&!lt.del))return `<div class="gCochoMin gCoTrav" data-c="${esc(c)}">${seloCurral(c)}<span><b>Sem leitura</b><small>🔒 já teve trato neste dia · a leitura não pode ser feita</small></span></div>`;
     if(lt&&!lt.del&&!GT.sel[c]&&!(GT.coAberto||{})[c])return `<button class="gCochoMin${trv?' gCoTrav':''}" data-g="coAbre" data-c="${esc(c)}">${seloCurral(c)}<span><b>${lt.nota!=null?'Nota '+notaTxt(lt.nota):''}${lt.ims>0?(lt.nota!=null?' · ':'')+'IMS '+pc(+lt.ims,2):''}</b>${ok(+lt.novo)?nf(+lt.novo)+' kg':'—'}<small>${trv?'✓ feita · 🔒 já teve trato · toque para ver':'✓ feita · toque para alterar'}</small></span><em class="gMinBase">${(()=>{const h=lt.hora||(lt.ts?new Date(+lt.ts).toTimeString().slice(0,5):'');return h?`<i class="gMinHora">🕒 ${esc(h)}</i>`:'';})()}</em></button>`;  // feita: fica recolhida
     return `<div class="gCocho${lt&&!lt.del?' feito':''}${trv?' gCoRO':''}" data-c="${esc(c)}" data-base="${base}" data-msf="${msFator}">
       <div class="gCoTopo">${seloCurral(c)}<div><span><b>${esc([...new Set(L.map(l=>catNorm(l.cat)||l.nome))].join(', '))}</b> · ${(()=>{const pm=cab?L.reduce((a,l)=>a+cabPres(l,dia)*pesoEm(l,dia),0)/cab:NaN;return ok(pm)&&pm>0?nf(pm)+' kg projetado':nf(cab)+' cab';})()}</span>${ult3}</div>${lt&&!lt.del&&(GT.coAberto||{})[c]?`<button type="button" class="mini gCoFecha" data-g="coFecha" data-c="${esc(c)}" aria-label="Recolher">▲</button>`:''}</div>
@@ -1105,13 +1105,14 @@ function tCocho(t){
   return `<section class="panel"><h2 class="gH2Bt"><span>Leitura de cocho</span>${rows&&pode.ok?'<button type="button" class="gSalvaTop" data-g="salvaCocho">💾 Salvar leitura de cocho</button>':''}</h2>
     ${navData('gCoDia',dia,'')}
     ${typeof selSetas==='function'&&window.LOC_OPS?`<div class="gCoLocNav">${selSetas('Local',LOC_OPS,Math.max(0,LOC_OPS.findIndex(o=>o[0]===lc)),'data-g="coLocP" data-n','data-colsel')}</div>`:locBotoes('coLoc',lc)}
+    <div class="gCoGrafRow"><button class="verde gCoGrafBt" data-g="ir" data-t="cochoGraf" data-o="nota">📈 Gráfico de notas</button><button class="verde gCoGrafBt" data-g="ir" data-t="cochoGraf" data-o="ims">📈 Gráfico de %IMS</button></div>
     <details class="gLeg"><summary class="note">Ver as notas</summary>${notas.map(x=>`<p class="note"><b>${notaTxt(x.n)}</b> — ${esc(x.t)}: ${x.p>0?'+':''}${nf(x.p,0)}%</p>`).join('')}<p class="note">Para mudar as notas: Config.</p></details>
     ${pode.ok?'':`<p class="aviso">${esc(pode.msg)}${pode.falta&&pode.falta.length?`<br><b>Ainda sem registro hoje:</b><br>${pode.falta.map(esc).join('<br>')}`:''}</p>
       ${pode.lib?`<p class="note">Se algum desses currais não vai ser tratado hoje (ex.: pasto, curral vazio), libere a leitura assim mesmo.</p><button class="lima" data-g="libLeit">🔓 Liberar a leitura de amanhã</button>`:''}`}
     <div class="${pode.ok?'':'gLeitTrava'}">${rows||'<p class="note">Nenhum lote ativo nesta data. Cadastre os lotes primeiro.</p>'}</div>
     ${rows&&pode.ok?`<button class="primary" data-g="salvaCocho">💾 Salvar leitura de cocho</button>
     <p class="note">O total do dia de cada curral (realizado de ontem ± a nota) é dividido nos tratos pela quantidade de tratos do curral e pela divisão em % do Config.${amanha?' O previsto de amanhã fica guardado e passa a valer quando virar o dia.':''}</p>`:''}
-    <button class="verde" data-g="ir" data-t="cochoGraf">📈 Gráfico dos últimos 10 dias</button></section>`;
+</section>`;
 }
 /* leitura travada: o curral já recebeu trato no dia da leitura (não pode mudar o previsto do dia no meio) */
 const leitTravada=(dia,c)=>(typeof HIST!=='undefined'?HIST:[]).some(r=>r.dia===dia&&nAt(r.curral)===c);
@@ -1287,6 +1288,9 @@ setTimeout(ajustarLeiturasMS,9000);setInterval(ajustarLeiturasMS,5*60000);
 function salvaCocho(so){
   const dia=GT.dia,hoje=dia===hojeKey(),cfg=gCfg();let n=0,ap=0,rm=0;
   const pode=leitPode(dia);if(!pode.ok)return toast(pode.msg);
+  /* todos os currais da lista já tiveram trato neste dia: não tem leitura nova para salvar */
+  {const els=[...document.querySelectorAll('#gBox .gCocho[data-c],#gBox .gCochoMin[data-c]')].filter(el=>!so||el.dataset.c===so);
+    if(els.length&&els.every(el=>leitTravada(dia,el.dataset.c)))return toast(so?`🔒 Não é possível salvar nova leitura: o ${so} já teve trato neste dia`:'🔒 Não é possível salvar nova leitura: todos os currais já tiveram trato neste dia');}
   const amanha=dia===somaDias(hojeKey(),1),obj=hoje?S.prev:JSON.parse(JSON.stringify(prevApi.prevGuardado(dia)||S.prev||{}));
   const feitosC=new Set();document.querySelectorAll('#gBox .gCocho').forEach(el=>{const c=el.dataset.c,s=GT.sel[c];if(so&&c!==so)return;if(leitTravada(dia,c))return;feitosC.add(c);const inp=el.querySelector('input[data-kg]');const kg=gNum(inp.value);
     const lt=G.it[idLeit(dia,c)];if(s&&s.n==null&&!(s.ims>0)){if(lt&&!lt.del){gDel(lt.uid);rm++;
@@ -1325,19 +1329,57 @@ function corNota(pct){if(!ok(pct)||pct===0)return [COR_ZERO,'#11253d'];const a=M
 let gLocG='T',gGrafOff=new Set();
 function dadosGraf(fim){const dias=[];for(let i=9;i>=0;i--)dias.push(somaDias(fim,-i));
   const set=new Set();gTodos('leitura').forEach(x=>{if(x.dia>=dias[0]&&x.dia<=fim)set.add(x.curral);});dias.forEach(d=>cochoCurrais(d).forEach(c=>set.add(c)));
-  const todos=[...set].filter(c=>gLocG==='T'||linhaDe(c)===gLocG).sort(alfa);
+  const todos=[...set].filter(c=>(gLocG==='T'||linhaDe(c)===gLocG)&&(typeof curralAtivo!=='function'||curralAtivo(c))).sort(alfa);   // só currais ativos
   const linhas=todos.filter(c=>!gGrafOff.has(c)).map(c=>({c,cel:dias.map(d=>{const x=G.it[idLeit(d,c)];return x&&!x.del?x:null;})}));
   return {dias,todos,linhas};}
-function tCochoGraf(t){const fim=t.dia||GT.dia||hojeKey();GT.dia=fim;const D=dadosGraf(fim);
+/* filtro de Local dos gráficos: igual ao da Leitura (◀ Local ▶) */
+function grafLocNav(){return typeof selSetas==='function'&&window.LOC_OPS?`<div class="gCoLocNav">${selSetas('Local',LOC_OPS,Math.max(0,LOC_OPS.findIndex(o=>o[0]===gLocG)),'data-g="grafLocP" data-n','data-grafsel')}</div>`:`<div class="gForm gGrafFil">${campo({k:'grafLocF',l:'Local',t:'sel',op:[['T','Todos'],['C','Confinamento'],['P','Pasto']],v:gLocG,meia:1})}</div>`;}
+/* gráfico de % IMS realizado: o que o curral comeu no dia (realizado, em MS) ÷ peso vivo — dia a dia, para acompanhar o consumo */
+function dadosGrafIms(fim){const dias=[];for(let i=9;i>=0;i--)dias.push(somaDias(fim,-i));const ix=gIndice(),set=new Set();
+  (typeof HIST!=='undefined'?HIST:[]).forEach(r=>{if(r.dia>=dias[0]&&r.dia<=fim)set.add(nAt(r.curral));});dias.forEach(d=>cochoCurrais(d).forEach(c=>set.add(c)));
+  const todos=[...set].filter(c=>(gLocG==='T'||linhaDe(c)===gLocG)&&(typeof curralAtivo!=='function'||curralAtivo(c))).sort(alfa);   // só currais ativos
+  const linhas=todos.filter(c=>!gGrafOff.has(c)).map(c=>{let ant=NaN;const cel=dias.map(d=>{const kg=ix.get(d+'|'+c)||0,bi=kg?baseIms(c,d):0,im=kg&&bi?kg/bi:NaN;
+      if(!ok(im))return null;const ch=ok(ant)&&ant>0?(im-ant)/ant*100:0;ant=im;return {im,kg,ch};});
+    const v=cel.filter(Boolean),med=v.length?v.reduce((a,x)=>a+x.im,0)/v.length:NaN;return {c,cel,med};});
+  return {dias,todos,linhas};}
+const gImsTxt=v=>nf(v,2);
+function tCochoGrafIms(fim){const D=dadosGrafIms(fim);setTimeout(()=>{const t=document.querySelector('#gBox .gHeatIms');const bx=t&&t.closest('.tablebox');if(bx)bx.scrollLeft=bx.scrollWidth;},30);   // abre mostrando os dias mais recentes
+  const cab=D.dias.map(d=>`<th>${d.slice(8)}<small>${d.slice(5,7)}</small></th>`).join('');
+  const rows=D.linhas.map(o=>`<tr><th class="gHc${/^P-/.test(o.c)?' p':''}" title="${esc(o.c)}">${esc(o.c.replace(/^P-/,''))}</th>${o.cel.map((x,i)=>{if(!x)return `<td class="vazio" data-g="celGraf" data-c="${esc(o.c)}" data-d="${D.dias[i]}">·</td>`;const [bg,fg]=corNota(x.ch);
+      return `<td class="gHims" style="background:${bg};color:${fg}" data-g="celGraf" data-c="${esc(o.c)}" data-d="${D.dias[i]}">${gImsTxt(x.im)}</td>`;}).join('')}<td class="gHm">${ok(o.med)?gImsTxt(o.med):'—'}</td></tr>`).join('');
+  const cw=Math.max(5,Math.min(18,Math.max(...D.linhas.map(o=>o.c.replace(/^P-/,'').length),4)+1));
+  return `${voltar('Leitura')}<section class="panel"><h2>Gráfico de %IMS · 10 dias</h2>
+    ${navData('gGrafDia',fim,'Até o dia')}
+    ${grafLocNav()}
+    ${rows?`<div class="row compart fz3"><button class="verde" data-g="pdfGraf">📄 PDF</button><button class="verde" data-g="imgGraf">🖼 Foto</button><button class="verde" data-g="xlsGraf">📊 Excel</button></div>`:''}
+    <div class="gChips">${D.todos.map(c=>`<button data-g="grafCur" data-c="${esc(c)}" class="${gGrafOff.has(c)?'':'sel'}">${esc(c)}</button>`).join('')}</div>
+    ${rows?`<div class="tablebox"><table class="gHeat gHeatIms" style="--cw:${cw}ch"><colgroup><col class="cC">${D.dias.map(()=>'<col class="cD">').join('')}<col class="cM"></colgroup><thead><tr><th class="gHc">Local</th>${cab}<th class="gHm">Méd.</th></tr></thead><tbody>${rows}</tbody></table></div>
+    <p class="note">% IMS = matéria seca realizada no dia ÷ peso vivo projetado × 100. Azul = comeu mais que no dia anterior · vermelho = comeu menos · cinza = igual · ponto = sem trato. Toque num quadro para ver os kg.</p>`:'<p class="note">Nenhum trato nesse período.</p>'}</section>`;}
+function imagemGrafIms(pdf){const fim=GT.dia,D=dadosGrafIms(fim);if(!D.linhas.length)return toast('Nada para mostrar');
+  const mc=document.createElement('canvas').getContext('2d');mc.font='bold 15px Arial';const esq=Math.max(120,Math.ceil(Math.max(...D.linhas.map(o=>mc.measureText(o.c).width)))+30),cw=52,ch=34,top=112,W=esq+cw*10+70+20,H=top+ch*D.linhas.length+80,cv=document.createElement('canvas'),s=2;cv.width=W*s;cv.height=H*s;
+  const x=cv.getContext('2d');x.scale(s,s);x.fillStyle='#fff';x.fillRect(0,0,W,H);x.fillStyle='#11253d';x.fillRect(0,0,W,72);x.fillStyle='#a7bc09';x.fillRect(0,72,W,5);
+  x.fillStyle='#fff';x.font='bold 22px Arial';x.fillText('Gráfico de %IMS · 10 dias',16,32);x.font='bold 13px Arial';x.fillStyle='#c8dd1e';x.fillText(`${dB(D.dias[0])} a ${dB(fim)} · Gestão de Tratos · FJK`,16,56);
+  x.textAlign='center';x.font='bold 13px Arial';D.dias.forEach((d,i)=>{x.fillStyle='#5d6b7a';x.fillText(d.slice(8)+'/'+d.slice(5,7),esq+cw*i+cw/2,top-10);});x.fillText('Média',esq+cw*10+35,top-10);
+  D.linhas.forEach((o,r)=>{const y=top+ch*r;x.textAlign='left';x.fillStyle='#11253d';x.font='bold 15px Arial';x.fillText(o.c,16,y+ch/2+5);
+    o.cel.forEach((c,i)=>{const cx=esq+cw*i;if(c){const [bg,fg]=corNota(c.ch);x.fillStyle=bg;x.beginPath();x.roundRect?x.roundRect(cx+2,y+2,cw-4,ch-4,5):x.rect(cx+2,y+2,cw-4,ch-4);x.fill();x.fillStyle=fg;x.font='bold 14px Arial';}else{x.fillStyle='#c4ccd5';x.font='15px Arial';}
+      x.textAlign='center';x.fillText(c?gImsTxt(c.im):'·',cx+cw/2,y+ch/2+5);});
+    x.fillStyle='#11253d';x.font='bold 15px Arial';x.fillText(ok(o.med)?gImsTxt(o.med):'—',esq+cw*10+35,y+ch/2+5);});
+  x.textAlign='left';x.fillStyle='#5d6b7a';x.font='12px Arial';const ly=top+ch*D.linhas.length+26;
+  x.fillText('% IMS = MS realizada no dia ÷ peso vivo projetado × 100',16,ly);x.fillText('Azul = comeu mais que no dia anterior · vermelho = comeu menos · cinza = igual · ponto = sem trato',16,ly+18);
+  cv.toBlob(async b=>{const n=`Gráfico de IMS ${dB(fim).replace(/\//g,'-')}`;try{if(pdf)return await compartilharArquivo(await pngsParaPdf([b]),n+'.pdf','application/pdf');await compartilharArquivo(b,n+'.png','image/png');}catch(e){toast(pdf?'Não consegui gerar o PDF':'Não consegui gerar a imagem');}},'image/png');}
+function xlsGrafIms(){const D=dadosGrafIms(GT.dia);const cab=['Curral'].concat(D.dias.map(d=>dB(d).slice(0,5)),['Média']);
+  gExcel(`IMS realizado ate ${dB(GT.dia).replace(/\//g,'-')}`,[['% IMS',cab,D.linhas.map(o=>[xc(o.c)].concat(o.cel.map(x=>x?xc(x.im,'dec'):xc('')),[xc(o.med,'dec')])),[16].concat(D.dias.map(()=>8),[9])],
+    ['Kg realizado',cab.slice(0,-1),D.linhas.map(o=>[xc(o.c)].concat(o.cel.map(x=>x?xc(x.kg,'int'):xc('')))),[16].concat(D.dias.map(()=>9))]]);}
+function tCochoGraf(t){if(t.o)GT.o=t.o;const fim=t.dia||GT.dia||hojeKey();GT.dia=fim;if(GT.o==='ims')return tCochoGrafIms(fim);const D=dadosGraf(fim);
   const cab=D.dias.map(d=>`<th>${d.slice(8)}<small>${d.slice(5,7)}</small></th>`).join('');
   const rows=D.linhas.map(o=>{const ns=o.cel.filter(Boolean),med=ns.length?ns.reduce((a,x)=>a+x.nota,0)/ns.length:NaN;
     return `<tr><th class="gHc${/^P-/.test(o.c)?' p':''}" title="${esc(o.c)}">${esc(o.c.replace(/^P-/,''))}</th>${o.cel.map((x,i)=>{if(!x)return `<td class="vazio" data-g="celGraf" data-c="${esc(o.c)}" data-d="${D.dias[i]}">·</td>`;const [bg,fg]=corNota(x.pct);
       return `<td style="background:${bg};color:${fg}" data-g="celGraf" data-c="${esc(o.c)}" data-d="${D.dias[i]}">${notaTxt(x.nota)}</td>`;}).join('')}<td class="gHm">${ok(med)?(med>0?'+':'')+nf(med,1):'—'}</td></tr>`;}).join('');
   const notas=gCfg().notas.slice().sort((a,b)=>a.n-b.n);
   const cw=Math.max(5,Math.min(18,Math.max(...D.linhas.map(o=>o.c.replace(/^P-/,'').length),4)+1));
-  return `${voltar('Leitura')}<section class="panel"><h2>Leitura de cocho · 10 dias</h2>
+  return `${voltar('Leitura')}<section class="panel"><h2>Gráfico de notas · 10 dias</h2>
     ${navData('gGrafDia',fim,'Até o dia')}
-    <div class="gForm gGrafFil">${campo({k:'grafLocF',l:'Local',t:'sel',op:[['T','Todos'],['C','Confinamento'],['P','Pasto']],v:gLocG,meia:1})}</div>
+    ${grafLocNav()}
     ${rows?`<div class="row compart fz3"><button class="verde" data-g="pdfGraf">📄 PDF</button><button class="verde" data-g="imgGraf">🖼 Foto</button><button class="verde" data-g="xlsGraf">📊 Excel</button></div>`:''}
     <div class="gChips">${D.todos.map(c=>`<button data-g="grafCur" data-c="${esc(c)}" class="${gGrafOff.has(c)?'':'sel'}">${esc(c)}</button>`).join('')}</div>
     ${rows?`<div class="tablebox"><table class="gHeat" style="--cw:${cw}ch"><colgroup><col class="cC">${D.dias.map(()=>'<col class="cD">').join('')}<col class="cM"></colgroup><thead><tr><th class="gHc">Local</th>${cab}<th class="gHm">Méd.</th></tr></thead><tbody>${rows}</tbody></table></div>
@@ -1346,7 +1388,7 @@ function tCochoGraf(t){const fim=t.dia||GT.dia||hojeKey();GT.dia=fim;const D=dad
 function imagemGraf(pdf){const fim=GT.dia,D=dadosGraf(fim);if(!D.linhas.length)return toast('Nada para mostrar');
   const mc=document.createElement('canvas').getContext('2d');mc.font='bold 15px Arial';const esq=Math.max(120,Math.ceil(Math.max(...D.linhas.map(o=>mc.measureText(o.c).width)))+30),cw=46,ch=34,top=112,W=esq+cw*10+70+20,H=top+ch*D.linhas.length+110,cv=document.createElement('canvas'),s=2;cv.width=W*s;cv.height=H*s;
   const x=cv.getContext('2d');x.scale(s,s);x.fillStyle='#fff';x.fillRect(0,0,W,H);x.fillStyle='#11253d';x.fillRect(0,0,W,72);x.fillStyle='#a7bc09';x.fillRect(0,72,W,5);
-  x.fillStyle='#fff';x.font='bold 22px Arial';x.fillText('Leitura de cocho · 10 dias',16,32);x.font='bold 13px Arial';x.fillStyle='#c8dd1e';x.fillText(`${dB(D.dias[0])} a ${dB(fim)} · Gestão de Tratos · FJK`,16,56);
+  x.fillStyle='#fff';x.font='bold 22px Arial';x.fillText('Gráfico de notas · 10 dias',16,32);x.font='bold 13px Arial';x.fillStyle='#c8dd1e';x.fillText(`${dB(D.dias[0])} a ${dB(fim)} · Gestão de Tratos · FJK`,16,56);
   x.textAlign='center';x.font='bold 13px Arial';D.dias.forEach((d,i)=>{x.fillStyle='#5d6b7a';x.fillText(d.slice(8)+'/'+d.slice(5,7),esq+cw*i+cw/2,top-10);});x.fillText('Média',esq+cw*10+35,top-10);
   D.linhas.forEach((o,r)=>{const y=top+ch*r;x.textAlign='left';x.fillStyle='#11253d';x.font='bold 15px Arial';x.fillText(o.c,16,y+ch/2+5);
     o.cel.forEach((c,i)=>{const cx=esq+cw*i;if(c){const [bg,fg]=corNota(c.pct);x.fillStyle=bg;x.beginPath();x.roundRect?x.roundRect(cx+2,y+2,cw-4,ch-4,5):x.rect(cx+2,y+2,cw-4,ch-4);x.fill();x.fillStyle=fg;x.font='bold 15px Arial';}else{x.fillStyle='#c4ccd5';x.font='15px Arial';}
@@ -1355,7 +1397,7 @@ function imagemGraf(pdf){const fim=GT.dia,D=dadosGraf(fim);if(!D.linhas.length)r
   const ns=gCfg().notas.slice().sort((a,b)=>a.n-b.n),ly=top+ch*D.linhas.length+30,lw=Math.min(54,(W-32)/ns.length);
   ns.forEach((n,i)=>{const [bg,fg]=corNota(n.p),lx=16+lw*i;x.fillStyle=bg;x.fillRect(lx,ly,lw-3,30);x.fillStyle=fg;x.textAlign='center';x.font='bold 13px Arial';x.fillText(notaTxt(n.n),lx+lw/2-1,ly+14);x.font='10px Arial';x.fillText((n.p>0?'+':'')+nf(n.p,0)+'%',lx+lw/2-1,ly+26);});
   x.textAlign='left';x.fillStyle='#5d6b7a';x.font='12px Arial';x.fillText('Azul = aumentou o trato · vermelho = diminuiu · cinza = manteve · ponto = sem leitura',16,ly+52);
-  cv.toBlob(async b=>{const n=`Leitura de cocho ${dB(fim).replace(/\//g,'-')}`;try{if(pdf)return await compartilharArquivo(await pngsParaPdf([b]),n+'.pdf','application/pdf');await compartilharArquivo(b,n+'.png','image/png');}catch(e){toast(pdf?'Não consegui gerar o PDF':'Não consegui gerar a imagem');}},'image/png');}
+  cv.toBlob(async b=>{const n=`Gráfico de notas ${dB(fim).replace(/\//g,'-')}`;try{if(pdf)return await compartilharArquivo(await pngsParaPdf([b]),n+'.pdf','application/pdf');await compartilharArquivo(b,n+'.png','image/png');}catch(e){toast(pdf?'Não consegui gerar o PDF':'Não consegui gerar a imagem');}},'image/png');}
 
 /* ---------- Excel ---------- */
 const XS={int:4,dec:11,rs:12,pct:14,dia:2};
@@ -1543,9 +1585,9 @@ const REL_PER=[
   ['tratosPJ','Tratos do período dia a dia','todos os tratos de cada dia do período'],
   ['batidasP','Carregamentos do vagão','carregamentos do período com os insumos e o total'],
   ['perLote','Consumo e custo por lote','MN, MS/cab/dia, % IMS e custo de cada lote; insumos usados'],
+  ['comp','Comparativo de lotes','todos os lotes lado a lado (não depende da data)'],
   ['estMov','Estoque · movimentações','entradas, saídas e consumo de cada produto no período'],
-  ['vendas','Vendas por comprador','vendas do período: preço, rendimento e R$/cab'],
-  ['comp','Comparativo de lotes','todos os lotes lado a lado (não depende da data)']];
+  ['vendas','Vendas por comprador','vendas do período: preço, rendimento e R$/cab']];
 function relModo(){return GT&&GT.relModo==='per'?'per':'dia';}
 /* Config › Conf. balança: a mesma lista de relatórios, só com os da balança */
 const REL_BAL_DIA=[
@@ -1565,8 +1607,9 @@ function relExpSel0(){const per=relModo()==='per',k=relSelK();if(window.__relExp
 function tRels(t){const per=relModo()==='per',dia=(t&&t.dia)||hojeKey(),[ini,fim]=relFaixa(),sel=relExpSel(),selM=!!(t&&t.relSel),ab=t&&t.relAb,LST=relLista(),ck=per?ini+'|'+fim:dia;
   if(ab&&!selM&&relVerCache.k!==ab+'|'+ck)setTimeout(relVerCarregar,60);
   const abre=k=>REL_ABRE[k]?`<button type="button" class="mini gRelAbre" data-g="ir" data-t="${REL_ABRE[k]}"${per?` data-ini="${ini}" data-fim="${fim}"`:` data-dia="${dia}"`}>abrir a tela completa ›</button>`:'';
-  const lista=selM?LST.map(([k,tt,d])=>`<label class="gRelIt"><input type="checkbox" data-relx="${k}"${sel.includes(k)?' checked':''}><span><b>${tt}</b><small>${d}</small></span></label>`).join('')
-    :LST.map(([k,tt,d])=>`<div class="gRelBloco${ab===k?' ab':''}"><button type="button" class="gRelIt gRelVerBt" data-g="relVer" data-k="${k}"><span><b>${tt}</b><small>${ab===k?'toque para fechar':d}</small></span><i>${ab===k?'▲':'▼'}</i></button>
+  const grpT=(k,ix)=>{if(relBal()||typeof REL_GRP==='undefined')return '';const g=REL_GRP[k],gA=ix?REL_GRP[LST[ix-1][0]]:null;return g&&g!==gA?`<h3 class="gRelGrp">${g}</h3>`:'';};
+  const lista=selM?LST.map(([k,tt,d],ix)=>grpT(k,ix)+`<label class="gRelIt"><input type="checkbox" data-relx="${k}"${sel.includes(k)?' checked':''}><span><b>${tt}</b><small>${d}</small></span></label>`).join('')
+    :LST.map(([k,tt,d],ix)=>grpT(k,ix)+`<div class="gRelBloco${ab===k?' ab':''}"><button type="button" class="gRelIt gRelVerBt" data-g="relVer" data-k="${k}"><span><b>${tt}</b><small>${ab===k?'toque para fechar':d}</small></span><i>${ab===k?'▲':'▼'}</i></button>
       ${ab===k?`<div class="gRelVer" id="gRelVer" title="Toque para ver em tela cheia">${relVerCache.k===k+'|'+ck?relVerCache.h:'<p class="note">Carregando o relatório…</p>'}</div>`:''}</div>`).join('');
   const atalho=(n,r)=>`<button type="button" class="mini" data-g="relAtalho" data-n="${n}">${r}</button>`;
   const bal=relBal();
@@ -1965,7 +2008,7 @@ function salvaCfg(){const c=JSON.parse(JSON.stringify(gCfg()));const t=fn('taxa'
 /* =====================================================================================
    EVENTOS
    ===================================================================================== */
-const SO_VER=new Set(['cfgSel','relExp','relSel','relVer','relModo','relAtalho','estFilP','estFilLimpa','estIrRel','estVerMov','fornec','pgN','pgP','cfgGrp','perP','cfgAbaP','estInsExp','cbExp','cbRes','cbN','cbSal','cbPer','lotLocP','loteTog','lotTodos','curGrp','coLocP','fzLocP','fzFotoVer','fzHN','fzHPdf','fzHImg','resPdf','resImg','resXls','insPdf','insImg','insXls','estPdf','estImg','estXls','estPerE','estOrd','nfVer','fzPdf','fzImgG','fzCur','fzLoc','fzImg','fzXls','fzXlsHist','cfgAba','coLoc','coAbre','coFecha','estPer','evLoc','evolN','imgDia','imgPer','imgComp','imgLote','pdfLote','imgVendas','pdfVendas','xlsVendas','pdfComp','xlsGraf','pdfGraf','racaAdd','racaRm','grafLoc','grafCur','celGraf','imgGraf','filtroLoc','dataPasso','dataHoje','voltar','ir','lote','raiz','compRel','compDia','xlsDia','xlsPer','xlsComp','xlsLote','perAtalho','nota','racAdd','racRm','notaAdd','notaRm','notaPadrao']);
+const SO_VER=new Set(['cfgSel','relExp','relSel','relVer','relModo','relAtalho','estFilP','estFilLimpa','estIrRel','estVerMov','fornec','pgN','pgP','cfgGrp','perP','cfgAbaP','estInsExp','cbExp','cbRes','cbN','cbSal','cbPer','grafLocP','lotLocP','loteTog','lotTodos','curGrp','coLocP','fzLocP','fzFotoVer','fzHN','fzHPdf','fzHImg','resPdf','resImg','resXls','insPdf','insImg','insXls','estPdf','estImg','estXls','estPerE','estOrd','nfVer','fzPdf','fzImgG','fzCur','fzLoc','fzImg','fzXls','fzXlsHist','cfgAba','coLoc','coAbre','coFecha','estPer','evLoc','evolN','imgDia','imgPer','imgComp','imgLote','pdfLote','imgVendas','pdfVendas','xlsVendas','pdfComp','xlsGraf','pdfGraf','racaAdd','racaRm','grafLoc','grafCur','celGraf','imgGraf','filtroLoc','dataPasso','dataHoje','voltar','ir','lote','raiz','compRel','compDia','xlsDia','xlsPer','xlsComp','xlsLote','perAtalho','nota','racAdd','racRm','notaAdd','notaRm','notaPadrao']);
 /* ---------- apagar: sempre com senha (1010) e só o que ainda não foi usado ---------- */
 const H_=()=>typeof HIST!=='undefined'?HIST:[];
 function racUsoTxt(id){const r=G.it[id];if(!r)return '';const L=gTodos('lote').filter(l=>(l.rac||[]).some(h=>h.r===id)),B=gTodos('carga').filter(c=>c.racao===id||(r.nome&&c.racNome===r.nome));
@@ -2010,6 +2053,7 @@ $('gBox').addEventListener('click',e=>{
   if(a==='coFecha'){if(GT.coAberto)delete GT.coAberto[b.dataset.c];if(GT.sel)delete GT.sel[b.dataset.c];const y=window.scrollY;gRender();window.scrollTo({top:y});return;}
   if(a==='baseM'){const c=b.dataset.c,m=b.dataset.m;GT.base=GT.base||{};GT.base[c]=m==='dia'?{m:'dia',d:null}:{m};if(GT.sel&&GT.sel[c])delete GT.sel[c].kg;const y=window.scrollY;gRender();window.scrollTo({top:y});return;}
   if(a==='coAbre'){GT.coAberto=GT.coAberto||{};GT.coAberto[b.dataset.c]=1;const y=window.scrollY;gRender();window.scrollTo({top:y});return;}
+  if(a==='grafLocP'){const L=['T','C','P'];const i=Math.max(0,L.indexOf(gLocG||'T'));gLocG=L[Math.max(0,Math.min(2,i+(+b.dataset.n||0)))];return gRender();}
   if(a==='coLocP'){const L=['T','C','P'];let i=Math.max(0,L.indexOf(GT.coLoc||'T'));document.querySelectorAll('#gBox .gCocho').forEach(el=>{const x=el.querySelector('input[data-kg]'),c=el.dataset.c;if(x&&GT.sel&&GT.sel[c]&&x.value)GT.sel[c].kg=gNum(x.value);});GT.coLoc=L[Math.max(0,Math.min(2,i+(+b.dataset.n)))];return gRender();}
   if(a==='coLoc'){document.querySelectorAll('#gBox .gCocho').forEach(el=>{const i=el.querySelector('input[data-kg]'),c=el.dataset.c;if(i&&GT.sel&&GT.sel[c]&&i.value)GT.sel[c].kg=gNum(i.value);});GT.coLoc=b.dataset.l;return gRender();}
   if(a==='evLoc'){GT.evLoc=b.dataset.l;return gRender();}
@@ -2042,8 +2086,9 @@ $('gBox').addEventListener('click',e=>{
   if(a==='racaRm'){if(!confirm(`Excluir a raça ${GT.racasEd[+b.dataset.i]}? Os lotes que já têm ela continuam com o nome.`))return;lerNotasEd();GT.racasEd.splice(+b.dataset.i,1);gRender();return toast('Tirada. Toque em Salvar configurações.');}
   if(a==='grafLoc'){gLocG=b.dataset.l;return gRender();}
   if(a==='grafCur'){const c=b.dataset.c;if(gGrafOff.has(c))gGrafOff.delete(c);else gGrafOff.add(c);return gRender();}
-  if(a==='imgGraf')return imagemGraf();
-  if(a==='pdfGraf')return imagemGraf(true);
+  if(a==='imgGraf')return GT.o==='ims'?imagemGrafIms():imagemGraf();
+  if(a==='pdfGraf')return GT.o==='ims'?imagemGrafIms(true):imagemGraf(true);
+  if(a==='celGraf'&&GT.o==='ims'){const c=b.dataset.c,d=b.dataset.d,kg=gIndice().get(d+'|'+c)||0,bi=kg?baseIms(c,d):0;return toast(kg?`${c} · ${dB(d).slice(0,5)}: ${nf(kg)} kg realizado · ${bi?pc(kg/bi,2)+' IMS':'sem peso'}`:`${c} · ${dB(d).slice(0,5)}: sem trato`);}
   if(a==='celGraf'){const x=G.it[idLeit(b.dataset.d,b.dataset.c)];return toast(x&&!x.del?`${b.dataset.c} · ${dB(b.dataset.d).slice(0,5)}: nota ${notaTxt(x.nota)} (${x.pct>0?'+':''}${nf(x.pct,0)}%) · ${nf(x.novo)} kg (base ${nf(x.base)})`:`${b.dataset.c} · ${dB(b.dataset.d).slice(0,5)}: sem leitura`);}
   if(a==='dataPasso'||a==='dataHoje'){const inp=$(b.dataset.alvo);if(!inp)return;inp.value=a==='dataHoje'?hojeKey():somaDias(inp.value||hojeKey(),+b.dataset.n);inp.dispatchEvent(new Event('change',{bubbles:true}));return;}
   if(a==='salvaCusto'){const dia=fv('dia'),v=fn('rs');if(!dia||!(v>0))return toast('Coloque a data e o valor');
@@ -2055,7 +2100,7 @@ $('gBox').addEventListener('click',e=>{
   if(a==='imgComp')return imgComp();
   if(a==='imgLote')return imgLote(id);
   if(a==='pdfLote')return imgLote(id,true);
-  if(a==='xlsGraf')return xlsGraf();
+  if(a==='xlsGraf')return GT.o==='ims'?xlsGrafIms():xlsGraf();
   if(a==='xlsPer')return xlsPer();
   if(a==='xlsComp')return xlsComp();
   if(a==='xlsLote')return xlsLote(id);
@@ -2251,6 +2296,7 @@ $('gBox').addEventListener('change',e=>{
   if(t.matches&&t.matches('select[data-estf]')){GT[t.dataset.estf]=t.value;GT.pgEP=1;return gRender();}
   if(['gf_perF','gf_tipoF','gf_prodF','gf_fornF'].includes(t.id)){const k={gf_perF:'perE',gf_tipoF:'tipoE',gf_prodF:'prodE',gf_fornF:'fornE'}[t.id];const v=k==='perE'?+t.value:t.value.trim();if(GT[k]===v)return;GT[k]=v;GT.pgEP=1;gMinAb.add('estRel');return gRender();}
   if(t.id==='gf_grafLocF'){gLocG=t.value;return gRender();}
+  if(t.matches&&t.matches('select[data-grafsel]')){gLocG=t.value;return gRender();}
   if(t.id==='gf_rForn'||t.id==='gf_rIns'){GT[t.id==='gf_rForn'?'rForn':'rIns']=t.value;GT.pgRP=1;return gRender();}
   if(t.matches&&t.matches('select[data-persel]')){GT.pgEP=GT.pgIP=GT.pgRP=1;GT[t.dataset.persel]=+t.value;return gRender();}
   if(t.matches&&t.matches('input[data-perd]')){if(t.value){GT[t.dataset.perd]=t.value;}return gRender();}
@@ -3524,13 +3570,20 @@ const REL_DIA=[
   ['tratosJ','Tratos do dia','todos os tratos numa tabela só (hora, curral, previsto, realizado e diferença)'],
   ['tratosC','Tratos do dia por curral','soma do dia por curral, com % PV'],
   ['batidas','Carregamentos do vagão','carregamentos do dia com os insumos e o total'],
-  ['resumo','Resumo do dia','o resumo da Gestão (cabeças, consumo, custo, alertas)'],
-  ['relDia','Relatório do dia por lote','consumo e custo de cada lote e insumos usados'],
-  ['indices','Índices do dia','MN, MS, % PV e custo por curral'],
+  ['grafNota','Gráfico de notas','notas da leitura de cocho de cada curral nos últimos 10 dias'],
+  ['grafIms','Gráfico de %IMS','% IMS realizado de cada curral nos últimos 10 dias'],
   ['fezes','Escore de fezes','avaliações do dia'],
-  ['estoque','Estoque','os quadros coloridos de cada produto (saldo, finaliza em, consumo, mínimo)'],
+  ['resumo','Resumo do dia','o resumo da Gestão (cabeças, consumo, custo, alertas)'],
+  ['indices','Índices do dia','MN, MS, % PV e custo por curral'],
+  ['relDia','Relatório do dia por lote','consumo e custo de cada lote e insumos usados'],
   ['lotes','Lotes ativos','lista dos lotes com custo, venda e previsão de abate'],
+  ['estoque','Estoque','os quadros coloridos de cada produto (saldo, finaliza em, consumo, mínimo)'],
   ['insumos','Insumos','preço e estoque de cada insumo']];
+/* títulos dos grupos na lista de Relatórios (juntando os do mesmo assunto) */
+const REL_GRP={tratosJ:'🐂 Tratos',tratosC:'🐂 Tratos',batidas:'🐂 Tratos',tratosPC:'🐂 Tratos',tratosPJ:'🐂 Tratos',batidasP:'🐂 Tratos',
+  grafNota:'🔍 Leitura de cocho e fezes',grafIms:'🔍 Leitura de cocho e fezes',fezes:'🔍 Leitura de cocho e fezes',
+  resumo:'📊 Consumo, índices e lotes',indices:'📊 Consumo, índices e lotes',relDia:'📊 Consumo, índices e lotes',lotes:'📊 Consumo, índices e lotes',perLote:'📊 Consumo, índices e lotes',comp:'📊 Consumo, índices e lotes',
+  estoque:'📦 Estoque e insumos',insumos:'📦 Estoque e insumos',estMov:'📦 Estoque e insumos',vendas:'💰 Vendas'};
 function relDiaSel(){const c=gCfg(),ks=new Set(REL_DIA.map(x=>x[0]));return (Array.isArray(c.relDia)?c.relDia:['tratosC','indices','estoque']).filter(k=>ks.has(k));}
 window.relDiaSel=relDiaSel;
 $('gBox').addEventListener('change',e=>{const t=e.target;if(!t.matches||!t.matches('input[data-reld]'))return;if(typeof bloqueado==='function'&&bloqueado()){t.checked=!t.checked;return;}
@@ -3550,6 +3603,8 @@ async function relDiaGerar(k,dia){const GT0=GT,gL=gLoc;
     case 'indices':return await zootExport('pdf',dia,'T');
     case 'confBal':GT={t:'cfg',cbDia:dia};return await confBatExp('pdf');
     case 'confRes':return await confResumoPer('pdf',dia,dia);
+    case 'grafNota':GT={t:'cochoGraf',dia,o:'nota'};if(!dadosGraf(dia).linhas.length)return;return imagemGraf(true);
+    case 'grafIms':GT={t:'cochoGraf',dia,o:'ims'};if(!dadosGrafIms(dia).linhas.length)return;return imagemGrafIms(true);
     case 'saltos':return await saltosPer('pdf',dia,dia);
     case 'fezes':GT={t:'fezes',dia,loc:'T'};if(!fzDadosDia().length)return;return await fzRelPdf();
     case 'estoque':return await estCardsPdf(dia);
@@ -3575,6 +3630,8 @@ async function relExpGerar(k,dia,fmt,ini,fim){const GT0=GT,gL=gLoc,cap=window.__
     case 'indices':await zootExport(fmt,dia,'T');break;
     case 'confBal':GT={t:'cfg',cbDia:dia};await confBatExp(fmt);break;
     case 'confRes':await confResumoPer(fmt,dia,dia);break;
+    case 'grafNota':GT={t:'cochoGraf',dia,o:'nota'};if(!dadosGraf(dia).linhas.length)break;if(xls)xlsGraf();else imagemGraf(pdf);break;
+    case 'grafIms':GT={t:'cochoGraf',dia,o:'ims'};if(!dadosGrafIms(dia).linhas.length)break;if(xls)xlsGrafIms();else imagemGrafIms(pdf);break;
     case 'saltos':await saltosPer(fmt,dia,dia);break;
     case 'confResP':await confResumoPer(fmt,ini,fim);break;
     case 'saltosP':await saltosPer(fmt,ini,fim);break;
