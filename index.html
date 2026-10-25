@@ -1219,7 +1219,7 @@ body.naInicio .topoTxt h1{font-size:clamp(16px,5vw,28px)!important}
 <div class="toast" id="toast" hidden></div>
 <script>
 'use strict';
-const APP_VERSAO='168';
+const APP_VERSAO='169';
 const APP_DATA='19/10/2026';
 const KEY='confinamento-completo-v1';
 const $=id=>document.getElementById(id);
@@ -2896,12 +2896,14 @@ function aplicarCadastro(n){try{const a=S.cadastro||[];
   if(a.length===n.length)a.forEach((v,i)=>{const nv=n[i];if(nv!==v&&!n.includes(v)&&!a.includes(nv)){
     if(S.atualNome===v)S.atualNome=nv;Object.values(S.prev||{}).forEach(m=>{if(m&&v in m){if(!(nv in m))m[nv]=m[v];delete m[v];}});}});}catch(e){}
   S.cadastro=n.slice();}
+/* o previsto da nuvem foi gravado num dia anterior e já existe previsto de hoje (gerado pela leitura de cocho): o da nuvem não vale mais */
+function prevNuvemVelho(d){try{return !!(d&&+d.ts>0&&diaKey(new Date(+d.ts))<hojeKey()&&prevGuardado(hojeKey()));}catch(e){return false;}}
 async function enviarPrevisto(){
   if(!S.prevPend)return;
   if(typeof modoVer!=='undefined'&&modoVer){S.prevPend=false;return;} // quem só olha nunca manda previsto
   const temAlgo=o=>Object.values(o||{}).some(m=>Object.values(m||{}).some(v=>+v>0));
   try{const j=await (await fetch(apiUrl()+'?acao=previsto',{cache:'no-store'})).json();
-    if(j&&j.ok&&j.dados&&j.dados.prev&&+j.dados.ts!==+(S.prevSyncTs||0)&&j.dados.aparelho!==S.aparelho){  /* a nuvem mudou desde a última vez (compara igual/diferente: não depende do relógio de cada aparelho) */
+    if(j&&j.ok&&j.dados&&j.dados.prev&&+j.dados.ts!==+(S.prevSyncTs||0)&&j.dados.aparelho!==S.aparelho&&!prevNuvemVelho(j.dados)){  /* a nuvem mudou desde a última vez (compara igual/diferente: não depende do relógio de cada aparelho) */
       const snap=S.prevSnap?JSON.parse(S.prevSnap):{};S.prev=juntarPrev(j.dados.prev,S.prev,snap);
       /* lista de currais (nomes): se não mudou aqui, vale a da nuvem (ex.: mudaram o nome de um curral em outro aparelho) */
       if(Array.isArray(j.dados.cadastro)&&(!S.cadSnap||JSON.stringify(S.cadastro)===S.cadSnap))aplicarCadastro(j.dados.cadastro);
@@ -2918,6 +2920,11 @@ async function puxarPrevisto(forcar){
   if(!forcar&&Date.now()-ultPuxaPrev<60000)return;
   ultPuxaPrev=Date.now();
   const r=await fetch(apiUrl()+'?acao=previsto',{cache:'no-store'});const j=await r.json();
+  /* previsto da nuvem é de um dia anterior e hoje já tem previsto gerado pela leitura: vale o de hoje e este aparelho manda para a nuvem */
+  if(j&&j.ok&&j.dados&&prevNuvemVelho(j.dados)){if(typeof modoVer!=='undefined'&&modoVer)return;
+    const temAlgo=o=>Object.values(o||{}).some(m=>Object.values(m||{}).some(v=>+v>0));
+    if(!temAlgo(S.prev)){S.prev=JSON.parse(JSON.stringify(prevGuardado(hojeKey())));S.prevSnap=JSON.stringify(S.prev);}
+    S.prevPend=true;save();try{render();}catch(e){}enviarPrevisto().catch(()=>{});return;}
   if(j&&j.ok&&j.dados&&Array.isArray(j.dados.cadastro)&&(S.prevSyncTs?+j.dados.ts!==+S.prevSyncTs:+j.dados.ts>(S.prevTs||0))){  /* outro aparelho mudou o previsto: vale o da nuvem (antes comparava com o relógio deste aparelho e às vezes não puxava) */
     if(S.prevPend){const snap=S.prevSnap?JSON.parse(S.prevSnap):{};S.prev=juntarPrev(j.dados.prev||{},S.prev,snap);}else S.prev=j.dados.prev||{};
     aplicarCadastro(j.dados.cadastro);S.cadSnap=JSON.stringify(S.cadastro);S.prevTs=Math.max(+j.dados.ts,S.prevTs||0);S.prevSyncTs=+j.dados.ts;if(!S.prevPend)S.prevSnap=JSON.stringify(S.prev);padronizarNomes();save();render();
