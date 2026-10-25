@@ -1460,7 +1460,7 @@ function tRels(t){const per=relModo()==='per',dia=(t&&t.dia)||hojeKey(),[ini,fim
   const abre=k=>REL_ABRE[k]?`<button type="button" class="mini gRelAbre" data-g="ir" data-t="${REL_ABRE[k]}"${per?` data-ini="${ini}" data-fim="${fim}"`:` data-dia="${dia}"`}>abrir a tela completa ›</button>`:'';
   const lista=selM?LST.map(([k,tt,d])=>`<label class="gRelIt"><input type="checkbox" data-relx="${k}"${sel.includes(k)?' checked':''}><span><b>${tt}</b><small>${d}</small></span></label>`).join('')
     :LST.map(([k,tt,d])=>`<div class="gRelBloco${ab===k?' ab':''}"><button type="button" class="gRelIt gRelVerBt" data-g="relVer" data-k="${k}"><span><b>${tt}</b><small>${ab===k?'toque para fechar':d}</small></span><i>${ab===k?'▲':'▼'}</i></button>
-      ${ab===k?`<div class="gRelVer" id="gRelVer">${relVerCache.k===k+'|'+ck?relVerCache.h:'<p class="note">Carregando o relatório…</p>'}</div>${abre(k)}`:''}</div>`).join('');
+      ${ab===k?`<div class="gRelVer" id="gRelVer" title="Toque para ver em tela cheia">${relVerCache.k===k+'|'+ck?relVerCache.h:'<p class="note">Carregando o relatório…</p>'}</div>`:''}</div>`).join('');
   const atalho=(n,r)=>`<button type="button" class="mini" data-g="relAtalho" data-n="${n}">${r}</button>`;
   return `<section class="panel"><h2>Relatórios</h2>
   <div class="gRelModo"><button type="button" class="${per?'':'on'}" data-g="relModo" data-m="dia">📅 Por dia</button><button type="button" class="${per?'on':''}" data-g="relModo" data-m="per">📆 Por período</button></div>
@@ -2387,6 +2387,7 @@ function cClique(e){
   const cp=e.target.closest('[data-cpasso]');if(cp){CG.passo=+cp.dataset.cpasso;cSave();return cRender();}
   if(e.target.closest('[data-ccancel]')){const fz=()=>{cLimparSetup();cRender();window.scrollTo({top:0});toast('Batida cancelada');};
     (typeof confirmaVermelho==='function'?confirmaVermelho('Deseja realmente cancelar a batida?','O que você escolheu para esta batida será descartado.','Sim, cancelar batida','Não, voltar'):Promise.resolve(confirm('Deseja realmente cancelar a batida?'))).then(sim=>{if(sim)fz();});return;}
+  {const ab=e.target.closest('[data-cexpall]');if(ab){const trs=[+CG.trato].concat(CG.juntos||[]);CG.desm=ab.dataset.cexpall==='1'?[]:cCurrCarga(trs).map(x=>x.c);cExpAplicar();cSave();return cRender();}}
   if(e.target.closest('[data-cexp]')){CG.expAberto=!CG.expAberto;cSave();return cRender();}
   {const xb=e.target.closest('[data-cexpc]');if(xb){const c=xb.dataset.cexpc;CG.desm=CG.desm||[];CG.desm=CG.desm.includes(c)?CG.desm.filter(x=>x!==c):CG.desm.concat(c);cExpAplicar();cSave();return cRender();}}
   if(e.target.closest('[data-cjtog]')){if(CG.juntoAberto){CG.juntoAberto=false;CG.juntos=[];}else CG.juntoAberto=true;cSave();return cRender();}  // fechar = tira os tratos juntos
@@ -3353,7 +3354,7 @@ function cJaCarr(trs){const m=new Map(),hj=hojeKey();try{gTodos('carga').filter(
   return m;}
 function cExpHTML(trs){const L=cCurrCarga(trs);if(!L.length)return '';const ds=CG.desm||[],nM=L.filter(x=>!ds.includes(x.c)).length,ja=cJaCarr(trs);
   return `<button type="button" class="mini cExpTog${CG.expAberto?' sel':''}" data-cexp="1">${CG.expAberto?'▲ Recolher tratos':'▼ Expandir tratos'}${ds.length?` · ${nM} de ${L.length} currais`:''}</button>`+
-    (CG.expAberto?`<div class="cJuntoLista cExpLista">${L.map(x=>{const on=!ds.includes(x.c);const jh=ja.get(x.c);return `<button type="button" data-cexpc="${esc(x.c)}" class="${on?'sel':''}${jh!=null&&!on?' cJaCarr':''}"><span>${on?'✓ ':''}${esc(x.c)}</span><small>${nf(x.kg)} kg</small>${jh!=null?`<em>já ${esc(jh)}</em>`:''}</button>`;}).join('')}</div>${ja.size?`<p class="note">Os marcados como <b>já carregado / já tratado</b> já foram feitos hoje; ficam fora desta batida. Toque para pôr de volta se precisar.</p>`:''}<p class="note">Toque no curral para tirar (ou pôr de volta) a quantidade dele da batida.</p>`:'');}
+    (CG.expAberto?`<div class="cExpTodos"><button type="button" class="mini" data-cexpall="1">✓ Marcar todos</button><button type="button" class="mini" data-cexpall="0">✕ Desmarcar todos</button></div><div class="cJuntoLista cExpLista">${L.map(x=>{const on=!ds.includes(x.c);const jh=ja.get(x.c);return `<button type="button" data-cexpc="${esc(x.c)}" class="${on?'sel':''}${jh!=null&&!on?' cJaCarr':''}"><span>${on?'✓ ':''}${esc(x.c)}</span><small>${nf(x.kg)} kg</small>${jh!=null?`<em>já ${esc(jh)}</em>`:''}</button>`;}).join('')}</div><p class="note">Toque no curral para colocar ou tirar a quantidade dele na batida.</p>`:'');}
 function cExpAplicar(){const trs=[+CG.trato].concat(CG.juntos||[]),L=cCurrCarga(trs),ds=CG.desm||[];CG.total=L.filter(x=>!ds.includes(x.c)).reduce((a,x)=>a+x.kg,0);}
 function cJaTratadoHTML(trs){if(typeof fornCurrais!=='function'||typeof fornPendentes!=='function')return '';
   const feitos=trs.filter(k=>k>0&&fornCurrais(CG.local,CG.rac,k).length&&!fornPendentes(CG.local,CG.rac,k).length);if(!feitos.length)return '';
@@ -3470,6 +3471,26 @@ async function relVerCarregar(){const box=document.getElementById('gRelVer');if(
   const h=F.length?F.map(f=>`<img src="${URL.createObjectURL(f)}" alt="${esc(f.name)}">`).join(''):(per?'<p class="note">Sem dados nesse período.</p>':'<p class="note">Sem dados nessa data.</p>');
   relVerCache={k:k+'|'+ck,h};b2.innerHTML=h;}
 window.relVerCarregar=relVerCarregar;
+/* tocou na imagem do relatório: abre em tela cheia, só para ver (aproxima com dois dedos ou dois toques; ◀ Voltar fecha) */
+function verImagens(srcs){if(!srcs.length)return;const f=document.createElement('div');f.className='zoomFundo';
+  f.innerHTML=`<div class="zoomArea"><div class="zoomMeio"><div class="zoomCont">${srcs.map(u=>`<img src="${u}" alt="">`).join('')}</div></div></div>`;
+  document.body.appendChild(f);document.documentElement.classList.add('zoomAberto');
+  const area=f.querySelector('.zoomArea'),cont=f.querySelector('.zoomCont');let z=1;
+  const aplica=(n,cx,cy)=>{n=Math.max(1,Math.min(6,n));const r=area.getBoundingClientRect();if(cx==null){cx=r.width/2;cy=r.height/2;}
+    const px=(area.scrollLeft+cx)/z,py=(area.scrollTop+cy)/z;z=n;cont.style.width=Math.round(area.clientWidth*.96*z)+'px';area.scrollLeft=px*z-cx;area.scrollTop=py*z-cy;};
+  cont.style.width=Math.round(area.clientWidth*.96)+'px';
+  let p0=null,ultToque=0;
+  const dist=t=>Math.hypot(t[0].clientX-t[1].clientX,t[0].clientY-t[1].clientY);
+  area.addEventListener('touchstart',e=>{if(e.touches.length===2){const r=area.getBoundingClientRect();p0={d:dist(e.touches),z,cx:(e.touches[0].clientX+e.touches[1].clientX)/2-r.left,cy:(e.touches[0].clientY+e.touches[1].clientY)/2-r.top};e.preventDefault();}
+},{passive:false});
+  area.addEventListener('touchmove',e=>{if(p0&&e.touches.length===2){aplica(p0.z*dist(e.touches)/p0.d,p0.cx,p0.cy);e.preventDefault();}},{passive:false});
+  area.addEventListener('touchend',e=>{if(e.touches.length<2)p0=null;});
+  area.addEventListener('wheel',e=>{if(!e.ctrlKey)return;e.preventDefault();const r=area.getBoundingClientRect();aplica(z*(e.deltaY<0?1.15:1/1.15),e.clientX-r.left,e.clientY-r.top);},{passive:false});
+  const fecha=()=>{f.remove();document.documentElement.classList.remove('zoomAberto');};
+  /* toque no relatório: aproxima (ou volta ao normal) · toque fora (na parte escura): fecha */
+  area.addEventListener('click',e=>{if(!e.target.closest('img')){fecha();return;}const r=area.getBoundingClientRect();aplica(z>1.2?1:2.5,e.clientX-r.left,e.clientY-r.top);});}
+window.verImagens=verImagens;
+document.addEventListener('click',e=>{const im=e.target.closest('#gRelVer img');if(!im)return;verImagens([...document.querySelectorAll('#gRelVer img')].map(x=>x.src));});
 let relExpRodando=false;
 async function relExpEnviar(fmt){if(relExpRodando)return;const dia=GT.dia||hojeKey(),sel=relExpSel(),[ini,fim]=relFaixa(),LST=relLista();
   if(!sel.length)return toast('Marque pelo menos um relatório');
