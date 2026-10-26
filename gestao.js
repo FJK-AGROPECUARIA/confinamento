@@ -198,7 +198,7 @@ const voltar=(txt)=>`<button class="gVoltar" data-g="voltar">❮ ${txt||'Voltar'
 const card=(t,b,cls)=>`<section class="panel ${cls||''}"><h2>${t}</h2>${b}</section>`;
 const st=(rot,val,cls)=>`<div class="${cls||''}"><small>${rot}</small><b class="num">${val}</b></div>`;
 function campo(f){const id='gf_'+f.k,v=f.v==null?'':f.v;let inp;
-  if(f.t==='sel')inp=`<select id="${id}">${f.op.map(([a,b])=>`<option value="${esc(a)}"${String(a)===String(v)?' selected':''}>${esc(b)}</option>`).join('')}</select>`;
+  if(f.t==='sel')inp=`<select id="${id}"${f.busca?' data-busca':''}>${f.op.map(([a,b])=>`<option value="${esc(a)}"${String(a)===String(v)?' selected':''}>${esc(b)}</option>`).join('')}</select>`;
   else if(f.t==='dia')inp=`<input type="date" id="${id}" value="${esc(v)}">`;
   else if(f.t==='rs')inp=`<input type="text" inputmode="numeric" class="gRs" id="${id}" value="${esc(rsIn(f.v===''||f.v==null?NaN:+f.v))}" placeholder="R$ 0,00" autocomplete="off">`;
   else if(f.t==='num')inp=`<input type="text" inputmode="decimal" id="${id}" value="${esc(v===''?'':vIn(v))}" placeholder="${esc(f.ph||'')}" autocomplete="off">`;
@@ -231,7 +231,7 @@ document.addEventListener('pointerdown',e=>{if(e.target.closest('.gSug'))e.preve
 document.addEventListener('click',e=>{const b=e.target.closest('.gSug [data-sugv]');if(!b)return;e.stopPropagation();const box=b.closest('.gSug'),inp=box.parentNode.querySelector('input[data-sug]');inp.value=b.dataset.sugv;box.hidden=true;inp.dispatchEvent(new Event('change',{bubbles:true}));},true);
 const fv=k=>{const e=$('gf_'+k);return e?e.value.trim():'';};
 const fn=k=>gNum(fv(k));
-const opCurrais=atual=>(S.cadastro||[]).filter(n=>n===atual||!window.curraisApi||!curraisApi.info(n).inativo).slice().sort((a,b)=>alfa(a,b)).map(n=>[n,n]);
+const opCurrais=(atual,inat)=>(S.cadastro||[]).filter(n=>inat||n===atual||!window.curraisApi||!curraisApi.info(n).inativo).slice().sort((a,b)=>alfa(a,b)).map(n=>[n,n+(inat&&window.curraisApi&&curraisApi.info(n).inativo?' (inativo)':'')]);
 const racAtivas=()=>gTodos('racao').filter(r=>!r.inativa);
 const opRacoes=atual=>[['','— escolher —']].concat(gTodos('racao').filter(r=>!r.inativa||r.uid===atual).sort(porNome).map(r=>[r.uid,r.nome+(r.inativa?' (inativa)':'')]));
 const opInsumos=()=>gTodos('insumo').sort(porNome).map(r=>[r.uid,r.nome+(r.inativo?' (inativo)':'')]);
@@ -543,7 +543,7 @@ function painelFaltas(){const F=faltasAbertas();if(!F.length)return '';
 function tAchouForm(t){const s=G.it[t.id],o=G.it[s.lote],hj=hojeKey(),p=faltaPend(s),dest=lotesAtivos().sort(porCurral);t.dest=t.dest||'__novo';
   return `${voltar()}<section class="panel"><h2>Achou os animais · ${esc(o.nome)}</h2>
     <p class="note">Faltaram ${nf(+s.cab)} cab em ${dB(s.dia)} (${nf(s.peso,1)} kg cada, ${s.obs?esc(s.obs)+', ':''}custo separado ${rs(+s.custo||0)}). Ainda faltam ${nf(p)}.</p>
-    <div class="gForm">${[{k:'aDest',l:'Vão para o lote',t:'sel',op:[['__novo','＋ Criar lote novo']].concat(dest.map(x=>[x.uid,`${x.nome} · ${curralEm(x,hj)} · ${nf(cabAtual(x))} cab`])),v:t.dest},
+    <div class="gForm">${[{k:'aDest',l:'Vão para o lote',t:'sel',op:[['__novo','＋ Criar lote novo']].concat(dest.map(x=>[x.uid,`${curralEm(x,hj)} · ${x.nome} · ${nf(cabAtual(x))} cab`])),v:t.dest,busca:1},
       {k:'aDia',l:'Data',t:'dia',v:hj,meia:1},{k:'aCab',l:'Cabeças achadas',t:'num',v:p,meia:1},{k:'aPeso',l:'Peso médio agora',suf:'kg',t:'num',v:Math.round(+s.peso||0),meia:1,ajuda:'Pese se puder; senão fica o peso estimado.'}].map(campo).join('')}</div>
     <div id="gAchNovo"${t.dest==='__novo'?'':' hidden'}>${campoLoteNovo('id="gf_tN_',{nome:o.nome+' (achados)'},o)}</div>
     <p class="note">Entram com o custo que levaram (${rs((+s.custo||0)/(+s.cab||1))} por cabeça).</p>
@@ -760,7 +760,7 @@ const transfCalc=(l,d,cab,peso)=>saiCalc(l,d,cab,peso);
 function tTransfForm(t){const l=G.it[t.id],hj=hojeKey(),dest=lotesAtivos().filter(o=>o.uid!==l.uid).sort(porCurral);
   return `${voltar()}<section class="panel"><h2>↔ Transferir animais · ${esc(l.nome)}</h2>
     <p class="note">Passa animais deste lote para outro lote como uma <b>compra e venda</b>: aqui fica registrada a compra real desses animais, os custos que tiveram até o dia anterior e o valor da venda interna (o resultado deles entra no lucro deste lote). O outro lote recebe os animais como <b>compra</b> por esse valor.</p>
-    ${true?`<div class="gForm">${[{k:'tDest',l:'Lote destino',t:'sel',op:[['','— Selecione —'],['__novo','＋ Criar lote novo']].concat(dest.map(o=>[o.uid,`${o.nome} · ${curralEm(o,hj)} · ${nf(cabAtual(o))} cab`])),v:t.dest||''},
+    ${true?`<div class="gForm">${[{k:'tDest',l:'Lote destino',t:'sel',op:[['','— Selecione —'],['__novo','＋ Criar lote novo']].concat(dest.map(o=>[o.uid,`${curralEm(o,hj)} · ${o.nome} · ${nf(cabAtual(o))} cab`])),v:t.dest||'',busca:1},
       {k:'tDia',l:'Data',t:'dia',v:hj,meia:1},{k:'tCab',l:'Quantidade',t:'num',v:1},{k:'tPeso',l:'Peso médio vivo',suf:'kg',t:'num',meia:1},{k:'tPesoT',l:'Peso total vivo',suf:'kg',t:'num',meia:1},{k:'tObs',l:'Observação',ph:'ex.: brinco 1234, refugo'}].map(campo).join('')}</div>
     <p class="note">Peso em branco: usa o peso projetado do lote.</p>
     <h3 class="gSubT">🧾 Compra e venda entre lotes</h3><div class="gForm">${[{k:'tCr',l:'Compra real desses animais',t:'rs',ajuda:'Em branco: compra prevista, proporcional às cabeças.'},{k:'tPr',l:'Preço da @ viva',t:'rs',meia:1},{k:'tVi',l:'Valor total da venda interna',t:'rs',meia:1}].map(campo).join('')}</div><div id="gTrNovo"${t.dest==='__novo'?'':' hidden'}>${campoLoteNovo('id="gf_tN_',{},l).replace(/id="gf_tN_nome"/,'id="gf_tN_nome"').replace(/<select id="gf_tN_c"/,'<select id="gf_tN_c"')}</div><div id="gTrRes" class="gApRes"></div><button class="primary" data-g="salvaTransf" data-id="${l.uid}">↔ Confirmar transferência</button><button class="danger" data-g="trCanc">✕ Cancelar transferência</button>`:'<p class="aviso warn">Não há outro lote ativo para receber os animais.</p>'}</section>`;}
@@ -791,18 +791,18 @@ function criarLoteTransf(o,d,cab,peso,custo,nv,vi){const n={uid:novoId('lote'),t
     sistema:o.sistema,sexo:o.sexo,cat:o.cat,raca:o.raca,idade:o.idade,gmd:o.gmd,diasPrev:null,alvo:o.alvo,rcPrev:o.rcPrev,simPreco:o.simPreco,obs:(nv.obs||'').trim()};gPut(n);return n.uid;}
 /* campos do lote novo (nome, curral, ração) */
 function campoLoteNovo(attr,g,o){const hj=hojeKey(),r=racaoEm(o,hj);return `<div class="gForm gCprNovo"><div class="gCampo"><label>Nome do lote novo</label><input type="text" ${attr}nome" value="${esc(g.nome||'')}" autocomplete="off" placeholder="ex.: ${esc(o.nome)} B"></div>
-  <div class="gCampo meia"><label>Curral / pasto</label><select ${attr}c">${opCurrais('').map(([a,b])=>`<option value="${esc(a)}"${a===(g.c||curralEm(o,hj))?' selected':''}>${esc(b)}</option>`).join('')}</select></div>
+  <div class="gCampo meia"><label>Curral / pasto</label><select ${attr}c" data-busca>${opCurrais('',true).map(([a,b])=>`<option value="${esc(a)}"${a===(g.c||curralEm(o,hj))?' selected':''}>${esc(b)}</option>`).join('')}</select></div>
   <div class="gCampo meia"><label>Ração</label><select ${attr}r">${opRacoes('').map(([a,b])=>`<option value="${esc(a)}"${a===(g.r!=null?g.r:(r?r.uid:''))?' selected':''}>${esc(b)}</option>`).join('')}</select></div>
   <div class="gCampo"><label>Observação do lote</label><input type="text" ${attr}obs" value="${esc(g.obs||'')}" autocomplete="off" placeholder="ex.: brincos 1023, 1045, 1102"></div>
   <p class="note" style="grid-column:1/-1">Pode ser o mesmo curral de outro lote: o trato do curral é dividido entre os lotes pelas cabeças.</p></div>`;}
 function nomeLivre(nm){return nm&&!gTodos('lote').some(o=>String(o.nome||'').trim().toLowerCase()===nm.trim().toLowerCase());}
 function tFechaForm(t){const l=G.it[t.id],hj=hojeKey(),cfg=gCfg();
   if(!t.f)t.f={dia:hj,cab:'',falta:'',fobs:'',peso:'',pesoT:'',pesoL:'',rc:l.rcPrev||cfg.rc||'',unid:'arroba',preco:'',desc:'',comp:'',obs:'',tr:[{dest:'',cab:'',peso:'',pesoT:''}]};const F=t.f;
-  const dest=lotesAtivos().filter(o=>o.uid!==l.uid).sort(porCurral),opD=[['','— escolher o lote —'],['__novo','＋ Criar lote novo']].concat(dest.map(o=>[o.uid,`${o.nome} · ${curralEm(o,hj)} · ${nf(cabAtual(o))} cab`]));
+  const dest=lotesAtivos().filter(o=>o.uid!==l.uid).sort(porCurral),opD=[['','— escolher o lote —'],['__novo','＋ Criar lote novo']].concat(dest.map(o=>[o.uid,`${curralEm(o,hj)} · ${o.nome} · ${nf(cabAtual(o))} cab`]));
   const inp=(k,lab,v,num,suf,ph)=>{const din=/^R\$/.test(suf||'');  /* valor em dinheiro: máscara R$ 1.234,56 */
     return `<div class="gCampo meia"><label>${lab}${suf&&!din?` <span class="gSuf">(${suf})</span>`:suf&&din&&suf!=='R$'?` <span class="gSuf">(${suf.replace(/^R\$\s*/,'')})</span>`:''}</label><input type="text"${din?' inputmode="numeric" class="gRs"':num?' inputmode="decimal"':''} data-fc="${k}" value="${esc(din?rsIn(gNum(v)):v)}" placeholder="${esc(din?'R$ 0,00':(ph||''))}" autocomplete="off"></div>`;};
   const trs=F.tr.map((g,i)=>`<div class="gApGr"><div class="gApTop"><b>Vai para outro lote ${i+1}</b><button class="mini danger" data-g="fcRm" data-i="${i}">✕</button></div><div class="gForm">
-    <div class="gCampo"><label>Lote que recebe</label><select data-ft="${i}|dest">${opD.map(([a,b])=>`<option value="${esc(a)}"${a===g.dest?' selected':''}>${esc(b)}</option>`).join('')}</select></div>
+    <div class="gCampo"><label>Lote que recebe</label><select data-ft="${i}|dest" data-busca>${opD.map(([a,b])=>`<option value="${esc(a)}"${a===g.dest?' selected':''}>${esc(b)}</option>`).join('')}</select></div>
     ${g.dest==='__novo'?campoLoteNovo(`data-ft="${i}|`,g,l):''}
     <div class="gCampo"><label>Quantidade</label><input type="text" inputmode="decimal" data-ft="${i}|cab" value="${esc(g.cab)}" autocomplete="off"></div>
     <div class="gCampo meia"><label>Peso médio <span class="gSuf">(kg)</span></label><input type="text" inputmode="decimal" data-ft="${i}|peso" value="${esc(g.peso)}" autocomplete="off"></div>
