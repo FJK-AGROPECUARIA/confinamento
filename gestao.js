@@ -1608,6 +1608,29 @@ const gImsTxt=v=>nf(v,2);
 /* variação pequena fica cinza: só muda de cor quando o %IMS sobe ou desce IMS_LIM ou mais em relação ao dia anterior */
 const IMS_LIM=0.06;   /* acima de 0,05: só 0,06 ou mais (números com 2 casas) */
 const corIms=d=>d>=IMS_LIM-0.005?['#dff3dc','#1b5e20']:d<=-IMS_LIM+0.005?['#fde3e1','#b3261e']:['#e9ecef','#11253d'];
+/* gráfico de linhas do %IMS: mesmos dias, mesmo local e só os currais marcados nos botões de cima */
+const COR_LIN=['#2e7d32','#1565c0','#c62828','#ef6c00','#6a1b9a','#00838f','#ad1457','#5d4037','#9e9d24','#283593','#00695c','#d84315','#4e342e','#7b1fa2','#0277bd','#558b2f','#e65100','#37474f'];
+function linhasImsSVG(D){const L=D.linhas.filter(o=>o.cel.some(Boolean));if(!L.length)return '';
+  const vs=L.flatMap(o=>o.cel.filter(Boolean).map(x=>x.im));let mn=Math.min(...vs),mx=Math.max(...vs);if(mx-mn<0.2){mn-=0.1;mx+=0.1;}const pad=(mx-mn)*0.08;mn=Math.max(0,mn-pad);mx+=pad;
+  const W=640,H=340,E=70,Dt=24,T=16,B=46,n=D.dias.length,xw=(W-E-Dt)/Math.max(1,n-1),X=i=>E+(n>1?i*xw:(W-E-Dt)/2),Y=v=>T+(H-T-B)*(1-(v-mn)/(mx-mn||1));
+  let g='';for(let k=0;k<=4;k++){const v=mn+(mx-mn)*k/4,y=Y(v);g+=`<line x1="${E}" x2="${W-Dt}" y1="${y}" y2="${y}" stroke="#e3e8e3"/><text x="${E-8}" y="${y+6}" text-anchor="end" font-size="19" fill="#6b7a6b">${nf(v,2)}</text>`;}
+  const passo=Math.ceil(n/6);D.dias.forEach((d,i)=>{if(i%passo&&i!==n-1)return;g+=`<text x="${X(i)}" y="${H-B+28}" text-anchor="middle" font-size="19" fill="#6b7a6b">${d.slice(8)}/${d.slice(5,7)}</text>`;});
+  const ls=L.map((o,k)=>{const cor=COR_LIN[k%COR_LIN.length];let dPath='',pts='';o.cel.forEach((x,i)=>{if(!x)return;dPath+=(dPath&&o.cel[i-1]?'L':'M')+X(i).toFixed(1)+','+Y(x.im).toFixed(1);pts+=`<circle cx="${X(i).toFixed(1)}" cy="${Y(x.im).toFixed(1)}" r="5" fill="${cor}"><title>${esc(o.c)} · ${dB(D.dias[i]).slice(0,5)} · ${gImsTxt(x.im)}</title></circle>`;});
+    return `<path d="${dPath}" fill="none" stroke="${cor}" stroke-width="3.5" stroke-linejoin="round"/>${pts}`;}).join('');
+  const leg=L.map((o,k)=>`<span><i style="background:${COR_LIN[k%COR_LIN.length]}"></i>${esc(o.c.replace(/^P-/,''))}</span>`).join('');
+  return `<h3 class="gSubT">📈 %IMS por dia (linhas)</h3><div class="row compart fz3"><button class="verde" data-g="pdfLinIms">📄 PDF</button><button class="verde" data-g="imgLinIms">🖼 Foto</button><button class="verde" data-g="xlsLinIms">📊 Excel</button></div><div class="gLinIms"><svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" role="img" aria-label="Gráfico de linhas do %IMS">${g}${ls}</svg></div><div class="gLinLeg">${leg}</div>
+    <p class="note">Mostra só os currais marcados nos botões de cima. Um curral com %IMS muito diferente (ex.: MANGUEIRA) achata as outras linhas: desmarque ele para ver melhor.</p>`;}
+/* PDF / Foto do gráfico de linhas: desenha o mesmo SVG numa imagem com título e legenda */
+function imagemLinIms(pdf){const fim=GT.dia,D=dadosGrafIms(fim),h=linhasImsSVG(D),m=h.match(/<svg[\s\S]*<\/svg>/);if(!m)return toast('Nada para mostrar');
+  const L=D.linhas.filter(o=>o.cel.some(Boolean)),svg=m[0].replace('<svg ','<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="680" font-family="Arial" ').replace(/<title>[^<]*<\/title>/g,'');
+  const img=new Image();img.onload=()=>{const W=1320,top=96,lgH=Math.ceil(L.length/5)*34+20,H=top+680+lgH+20,cv=document.createElement('canvas');cv.width=W;cv.height=H;const x=cv.getContext('2d');
+    x.fillStyle='#fff';x.fillRect(0,0,W,H);x.fillStyle='#11253d';x.fillRect(0,0,W,72);x.fillStyle='#a7bc09';x.fillRect(0,72,W,5);
+    x.fillStyle='#fff';x.font='bold 28px Arial';x.fillText(`%IMS por dia · ${gGrafN} dias`,20,36);x.fillStyle='#c8dd1e';x.font='bold 17px Arial';x.fillText(`${dB(D.dias[0])} a ${dB(D.dias[D.dias.length-1])} · Gestão de Tratos · FJK`,20,62);
+    x.drawImage(img,20,top);let lx=30,ly=top+700;L.forEach((o,k)=>{if(k&&k%5===0){lx=30;ly+=34;}x.fillStyle=COR_LIN[k%COR_LIN.length];x.fillRect(lx,ly-6,26,6);x.fillStyle='#11253d';x.font='bold 18px Arial';x.fillText(o.c.replace(/^P-/,''),lx+34,ly);lx+=250;});
+    cv.toBlob(async b=>{const n=`Grafico de linhas IMS ${dB(fim).replace(/\//g,'-')}`;try{if(pdf)return await compartilharArquivo(await pngsParaPdf([b]),n+'.pdf','application/pdf');await compartilharArquivo(b,n+'.png','image/png');}catch(e){toast(pdf?'Não consegui gerar o PDF':'Não consegui gerar a imagem');}},'image/png');};
+  img.onerror=()=>toast('Não consegui gerar a imagem');img.src='data:image/svg+xml;charset=utf-8,'+encodeURIComponent(svg);}
+function xlsLinIms(){const D=dadosGrafIms(GT.dia),L=D.linhas.filter(o=>o.cel.some(Boolean));const cab=['Curral'].concat(D.dias.map(d=>dB(d).slice(0,5)),['Média']);
+  gExcel(`Grafico linhas IMS ate ${dB(GT.dia).replace(/\//g,'-')}`,[['% IMS por dia',cab,L.map(o=>[xc(o.c)].concat(o.cel.map(x=>x?xc(x.im,'dec'):xc('')),[xc(o.med,'dec')])),[16].concat(D.dias.map(()=>8),[9])]]);}
 function tCochoGrafIms(fim){const D=dadosGrafIms(fim);setTimeout(()=>{const t=document.querySelector('#gBox .gHeatIms');const bx=t&&t.closest('.tablebox');if(bx)bx.scrollLeft=bx.scrollWidth;},30);   // abre mostrando os dias mais recentes
   const cab=D.dias.map(d=>`<th>${d.slice(8)}<small>${d.slice(5,7)}</small></th>`).join('');
   const rows=D.linhas.map(o=>`<tr><th class="gHc${/^P-/.test(o.c)?' p':''}" title="${esc(o.c)}">${esc(o.c.replace(/^P-/,''))}</th>${o.cel.map((x,i)=>{if(!x)return `<td class="vazio" data-g="celGraf" data-c="${esc(o.c)}" data-d="${D.dias[i]}">·</td>`;const [bg,fg]=corIms(x.dif);
@@ -1618,9 +1641,10 @@ function tCochoGrafIms(fim){const D=dadosGrafIms(fim);setTimeout(()=>{const t=do
     ${grafLocNav()}
     ${grafNBts()}
     ${rows?`<div class="row compart fz3"><button class="verde" data-g="pdfGraf">📄 PDF</button><button class="verde" data-g="imgGraf">🖼 Foto</button><button class="verde" data-g="xlsGraf">📊 Excel</button></div>`:''}
+    ${D.todos.length>1?`<div class="row gGrafTodos">${D.todos.every(c=>!gGrafOff.has(c))?'<button class="mini" data-g="grafTodos" data-v="0">✕ Desmarcar todos</button>':'<button class="mini" data-g="grafTodos" data-v="1">✓ Marcar todos</button>'}</div>`:''}
     <div class="gChips">${D.todos.map(c=>`<button data-g="grafCur" data-c="${esc(c)}" class="${gGrafOff.has(c)?'':'sel'}">${esc(c)}</button>`).join('')}</div>
     ${rows?`<div class="tablebox"><table class="gHeat gHeatIms" style="--cw:${cw}ch"><colgroup><col class="cC">${D.dias.map(()=>'<col class="cD">').join('')}<col class="cM"></colgroup><thead><tr><th class="gHc">Local</th>${cab}<th class="gHm">Méd.</th></tr></thead><tbody>${rows}</tbody></table></div>
-    <p class="note">% IMS = matéria seca realizada no dia ÷ peso vivo projetado × 100. Verde = subiu mais de 0,05 em relação ao dia anterior · vermelho = desceu mais de 0,05 · cinza = variação menor · ponto = sem trato. Toque num quadro para ver os kg.</p>`:'<p class="note">Nenhum trato nesse período.</p>'}</section>`;}
+    <p class="note">% IMS = matéria seca realizada no dia ÷ peso vivo projetado × 100. Verde = subiu mais de 0,05 em relação ao dia anterior · vermelho = desceu mais de 0,05 · cinza = variação menor · ponto = sem trato. Toque num quadro para ver os kg.</p>${linhasImsSVG(D)}`:'<p class="note">Nenhum trato nesse período.</p>'}</section>`;}
 function imagemGrafIms(pdf){const fim=GT.dia,D=dadosGrafIms(fim);if(!D.linhas.length)return toast('Nada para mostrar');
   const mc=document.createElement('canvas').getContext('2d');mc.font='bold 15px Arial';const esq=Math.max(120,Math.ceil(Math.max(...D.linhas.map(o=>mc.measureText(o.c).width)))+30),cw=52,ch=34,top=112,W=esq+cw*gGrafN+70+20,H=top+ch*D.linhas.length+80,cv=document.createElement('canvas'),s=2;cv.width=W*s;cv.height=H*s;
   const x=cv.getContext('2d');x.scale(s,s);x.fillStyle='#fff';x.fillRect(0,0,W,H);x.fillStyle='#11253d';x.fillRect(0,0,W,72);x.fillStyle='#a7bc09';x.fillRect(0,72,W,5);
@@ -1636,7 +1660,8 @@ function imagemGrafIms(pdf){const fim=GT.dia,D=dadosGrafIms(fim);if(!D.linhas.le
 function xlsGrafIms(){const D=dadosGrafIms(GT.dia);const cab=['Curral'].concat(D.dias.map(d=>dB(d).slice(0,5)),['Média']);
   gExcel(`IMS realizado ate ${dB(GT.dia).replace(/\//g,'-')}`,[['% IMS',cab,D.linhas.map(o=>[xc(o.c)].concat(o.cel.map(x=>x?xc(x.im,'dec'):xc('')),[xc(o.med,'dec')])),[16].concat(D.dias.map(()=>8),[9])],
     ['Kg realizado',cab.slice(0,-1),D.linhas.map(o=>[xc(o.c)].concat(o.cel.map(x=>x?xc(x.kg,'int'):xc('')))),[16].concat(D.dias.map(()=>9))]]);}
-function tCochoGraf(t){if(t.o)GT.o=t.o;const fim=t.dia||GT.dia||hojeKey();GT.dia=fim;if(GT.o==='ims')return tCochoGrafIms(fim);const D=dadosGraf(fim);
+function tCochoGraf(t){if(!t._ini){t._ini=1;gGrafOff.clear();}   /* ao abrir o gráfico, todos os currais começam marcados */
+  if(t.o)GT.o=t.o;const fim=t.dia||GT.dia||hojeKey();GT.dia=fim;if(GT.o==='ims')return tCochoGrafIms(fim);const D=dadosGraf(fim);
   const cab=D.dias.map(d=>`<th>${d.slice(8)}<small>${d.slice(5,7)}</small></th>`).join('');
   const rows=D.linhas.map(o=>{const ns=o.cel.filter(Boolean),med=ns.length?ns.reduce((a,x)=>a+x.nota,0)/ns.length:NaN;
     return `<tr><th class="gHc${/^P-/.test(o.c)?' p':''}" title="${esc(o.c)}">${esc(o.c.replace(/^P-/,''))}</th>${o.cel.map((x,i)=>{if(!x)return `<td class="vazio" data-g="celGraf" data-c="${esc(o.c)}" data-d="${D.dias[i]}">·</td>`;const [bg,fg]=corNota(x.pct);
@@ -2377,6 +2402,8 @@ $('gBox').addEventListener('click',e=>{
   if(a==='racaRm'){if(!confirm(`Excluir a raça ${GT.racasEd[+b.dataset.i]}? Os lotes que já têm ela continuam com o nome.`))return;lerNotasEd();GT.racasEd.splice(+b.dataset.i,1);gRender();return toast('Tirada. Toque em Salvar configurações.');}
   if(a==='grafLoc'){gLocG=b.dataset.l;return gRender();}
   if(a==='grafCur'){const c=b.dataset.c;if(gGrafOff.has(c))gGrafOff.delete(c);else gGrafOff.add(c);return gRender();}
+  if(a==='imgLinIms')return imagemLinIms();if(a==='pdfLinIms')return imagemLinIms(true);if(a==='xlsLinIms')return xlsLinIms();
+  if(a==='grafTodos'){if(b.dataset.v==='0')dadosGrafIms(GT.dia||hojeKey()).todos.forEach(c=>gGrafOff.add(c));else gGrafOff.clear();return gRender();}
   if(a==='imgGraf')return GT.o==='ims'?imagemGrafIms():imagemGraf();
   if(a==='pdfGraf')return GT.o==='ims'?imagemGrafIms(true):imagemGraf(true);
   if(a==='celGraf'&&GT.o==='ims'){const c=b.dataset.c,d=b.dataset.d,kg=gIndice().get(d+'|'+c)||0,bi=kg?baseIms(c,d):0;return toast(kg?`${c} · ${dB(d).slice(0,5)}: ${nf(kg)} kg realizado · ${bi?pc(kg/bi,2)+' IMS':'sem peso'}`:`${c} · ${dB(d).slice(0,5)}: sem trato`);}
