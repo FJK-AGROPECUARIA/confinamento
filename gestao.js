@@ -560,13 +560,13 @@ function tLoteForm(t){
   const l=t.id?G.it[t.id]:null,e=(l&&l.ent)||{},hj=hojeKey(),novo=!l,v=k=>l?l[k]:'';
   const fs=[{k:'nome',l:'Nome do lote',v:v('nome'),ph:'Ex.: Lote 1 - Nelore'}];
   const sis=l&&l.sistema==='Pasto com suplementação'?l.sistema:'Confinamento';
-  fs.push({k:'sistema',l:'Local',t:'sel',op:SISTEMAS,v:sis});
+  if(novo)fs.push({k:'sistema',l:'Local',t:'sel',op:SISTEMAS,v:sis});   /* editando: o local vem do cadastro do curral */
   if(novo)fs.push({k:'curral',l:'Curral / pasto',t:'sel',op:opCurraisTipo(tipoDoSistema(sis)),v:'',ajuda:'Aparecem só os currais do local escolhido (Gestão › Currais).'});
   fs.push(
     {k:'sexo',l:'Sexo',t:'sel',op:SEXOS,v:sexoNorm(v('sexo')),meia:1},{k:'cat',l:'Categoria',t:'sel',op:opCats(l&&catNorm(l.cat)),v:catNorm(v('cat')),meia:1},
     {k:'raca',l:'Raça',t:'sel',op:[['','—']].concat(gCfg().racas.concat(l&&l.raca&&!gCfg().racas.includes(l.raca)?[l.raca]:[]).sort(alfa).map(r=>[r,r])),v:v('raca'),meia:1},{k:'idade',l:'Idade',suf:'meses',t:'num',v:v('idade'),meia:1},
     {k:'dia',l:'Data de entrada',t:'dia',v:e.dia||hj,meia:1},{k:'cab',l:'Cabeças',t:'num',v:e.cab,meia:1},
-    {k:'peso',l:'Peso médio na chegada',suf:'kg',t:'num',v:e.peso,meia:1},{k:'pesoC',l:'Peso médio de compra',suf:'kg, na origem',t:'num',v:e.pesoC,meia:1,ajuda:'Se a compra foi pelo peso da origem. Vazio = usa o da chegada.'},
+    {k:'peso',l:'Peso médio de entrada/compra',suf:'kg',t:'num',v:e.peso,meia:1},
     {k:'unid',l:'Preço de compra em',t:'sel',op:UNID_C,v:e.unid||'arroba'},{k:'preco',l:'Preço de compra',t:'rs',v:e.preco,meia:1},{k:'rcC',l:'Rendimento de carcaça na compra',suf:'%',t:'num',v:e.rcC||50,meia:1,ajuda:'Compra por @: peso × rendimento ÷ 15. 50% é o mesmo que peso vivo ÷ 30.'},{k:'cGrupo',l:'Compra na alteração em grupo',t:'sel',op:[['0','🔒 Bloqueada (não muda pela lista)'],['1','✓ Liberada (pode mudar pela lista)']],v:l&&l.compraGrupo===false?'0':'1'},
     {k:'outros',l:'Frete, comissão e outros da compra',suf:'total',t:'rs',v:e.outros,meia:1},{k:'vTotC',l:'Valor total da compra (entrada)',t:'rs',v:'',meia:1,ajuda:'Calculado pelo preço; digitando o valor total, o preço é calculado.'},
     );
@@ -574,7 +574,7 @@ function tLoteForm(t){
   fs.push({k:'gmd',l:'Ganho por dia (meta)',suf:'kg/cab/dia',t:'num',v:l?l.gmd:1.5,meia:1},{k:'diasPrev',l:'Dias de cocho previstos',t:'num',v:v('diasPrev'),meia:1},
     {k:'alvo',l:'Peso de saída desejado',suf:'kg',t:'num',v:v('alvo'),meia:1},{k:'rcPrev',l:'Estimativa de venda · rendimento de carcaça',suf:'%',t:'num',v:v('rcPrev')||'',meia:1},{k:'simPreco',l:'Estimativa de venda · preço da @',t:'rs',v:l&&l.simPreco?l.simPreco:'',meia:1},
     {k:'obs',l:'Observação',v:v('obs')});
-  return `${voltar()}<section class="panel"><h2>${novo?'Novo lote':'Editar lote'}</h2><div class="gForm">${fs.map(campo).join('')}</div>
+  return `${voltar()}<section class="panel">${novo?'<h2>Novo lote</h2>':`<div class="gLoteTopo">${seloCurral(curralEm(l,hj))}<div><h2>Editar lote</h2><p class="note"><b>${esc(l.nome)}</b></p></div></div>`}<div class="gForm">${fs.map(campo).join('')}</div>
     <div id="gLfTot" class="gApRes"></div>
     ${novo?'':'<p class="note">Curral e ração mudam pelos botões “Mudar curral” e “Mudar ração” do lote, com a data da mudança.</p>'}
     <button class="primary" data-g="salvaLote" data-id="${t.id||''}">Salvar</button></section>`;
@@ -592,8 +592,8 @@ function salvaLote(id){
   const l=id?JSON.parse(JSON.stringify(G.it[id])):{uid:novoId('lote'),tipo:'lote',curr:[],rac:[]};
   if(!id){const c=fv('curral');if(!c)return toast('Escolha o curral');l.curr=[{desde:dia,c}];const r=fv('racao');l.rac=r?[{desde:dia,r}]:[];}
   else{if(l.curr.length&&l.curr[0].desde>dia)l.curr[0].desde=dia;if(l.rac.length&&l.rac[0].desde>dia)l.rac[0].desde=dia;}
-  const e0=l.ent||{};l.nome=nome;l.ent={dia,cab,peso,pesoC:fn('pesoC')||null,unid:fv('unid'),preco:fn('preco'),rcC:fn('rcC')||50,outros:fn('outros')||0,origem:e0.origem||'',gta:e0.gta||''};
-  l.sistema=fv('sistema');l.sexo=fv('sexo');l.cat=fv('cat');l.raca=fv('raca');l.idade=fn('idade')||null;
+  const e0=l.ent||{};l.nome=nome;l.ent={dia,cab,peso,pesoC:null,unid:fv('unid'),preco:fn('preco'),rcC:fn('rcC')||50,outros:fn('outros')||0,origem:e0.origem||'',gta:e0.gta||''};
+  if($('gf_sistema'))l.sistema=fv('sistema');l.sexo=fv('sexo');l.cat=fv('cat');l.raca=fv('raca');l.idade=fn('idade')||null;
   l.gmd=fn('gmd')||0;l.diasPrev=fn('diasPrev')||null;l.alvo=fn('alvo')||null;l.rcPrev=fn('rcPrev')||null;l.simPreco=fn('simPreco')||null;l.compraGrupo=fv('cGrupo')!=='0';l.obs=fv('obs');
   gPut(l);toast('Lote salvo');gPilha.pop();GT={t:'lote',id:l.uid};window.scrollTo({top:0});gRender();setTimeout(()=>{window.scrollTo({top:0});try{gRender();}catch(e){}},60);
 }
@@ -3845,3 +3845,7 @@ window.estCardsPdf=estCardsPdf;
 /* números digitados (pesos, médias, %): até 2 casas depois da vírgula, sem limite de dígitos */
 document.addEventListener('input',e=>{const t=e.target;if(!t||t.tagName!=='INPUT'||t.inputMode!=='decimal')return;const v=t.value;let n=v.replace(/[^\d.,-]/g,'');n=(n[0]==='-'?'-':'')+n.replace(/-/g,'');
   const i=n.search(/[.,]/),r=i<0?n:n.slice(0,i+1)+n.slice(i+1).replace(/[.,]/g,'').slice(0,2);if(r!==v){const ps=Math.min(t.selectionStart||r.length,r.length);t.value=r;try{t.setSelectionRange(ps,ps);}catch(x){}}},true);
+/* data que não existe (ex.: 31/09): o campo fica vazio sem avisar; aqui avisa na hora e não deixa salvar */
+const dataRuim=e=>e&&e.type==='date'&&e.validity&&e.validity.badInput;
+['change','focusout'].forEach(ev=>document.addEventListener(ev,e=>{const t=e.target;if(!t||t.type!=='date')return;const r=dataRuim(t);t.classList.toggle('gBadData',!!r);if(r&&ev==='change')toast('Essa data não existe (ex.: 31/09 — setembro tem 30 dias). Confira o dia e o mês.');},true));
+document.addEventListener('click',e=>{const b=e.target.closest&&e.target.closest('[data-g^="salva"]');if(!b)return;const r=[...document.querySelectorAll('#gBox input[type=date]')].find(dataRuim);if(r){e.preventDefault();e.stopPropagation();r.classList.add('gBadData');r.focus();toast('Essa data não existe (ex.: 31/09 — setembro tem 30 dias). Confira o dia e o mês.');}},true);
