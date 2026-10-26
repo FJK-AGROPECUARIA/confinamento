@@ -641,7 +641,7 @@ input[type=date]::-webkit-calendar-picker-indicator{margin-left:2px;padding:0}
 .gApGr{background:var(--surface);border-radius:14px;padding:10px 12px;margin:10px 0}.gApTop{display:flex;justify-content:space-between;align-items:center;margin-bottom:4px}
 .gApInfo{background:#eef4ff;border-left:4px solid #4a7fbf;border-radius:10px;padding:10px 12px;margin:10px 0;display:flex;flex-wrap:wrap;gap:6px;align-items:center}.gApInfo b{margin-right:4px}
 .gFaltas{flex-direction:column;align-items:stretch;background:#fff4d6;border-left-color:#e0912f}.gFaltaLin{display:flex;flex-wrap:wrap;gap:6px;align-items:center;justify-content:space-between}
-.gApRes{margin:12px 0}.gApRes .bad b{color:var(--bad,#b3261e)}
+.gApRes{margin:12px 0}.gTab tr.gSaiRes td>div{position:sticky;left:8px;max-width:min(300px,calc(100vw - 90px))}.gTab tr.gSaiRes td{text-align:left;font-size:13px;color:#5d6b7a;padding-top:0;white-space:normal}.gTab tr.gSaiRes td b.ok{color:#1b5e20}.gTab tr.gSaiRes td b.bad{color:#b3261e}.gApRes .bad b{color:var(--bad,#b3261e)}
 .gLoteRel{display:flex;flex-direction:column;gap:8px;width:100%;text-align:left;padding:10px;background:var(--surface);border-radius:14px}
 .gRelTopo{display:flex;gap:10px;align-items:center}
 .gRelTopo .gSelo{width:auto;min-width:64px!important;max-width:120px!important;padding:5px 8px;flex-direction:column}
@@ -1228,7 +1228,7 @@ body.naInicio .topoTxt h1{font-size:clamp(16px,5vw,28px)!important}
 <div class="toast" id="toast" hidden></div>
 <script>
 'use strict';
-const APP_VERSAO='197';
+const APP_VERSAO='198';
 const APP_DATA='19/10/2026';
 const KEY='confinamento-completo-v1';
 const $=id=>document.getElementById(id);
