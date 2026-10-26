@@ -657,10 +657,12 @@ function hOps(t){const fl=t.fl||'T',A=window.curraisApi,cs=(A?A.lista():[]).filt
 const hVal=(t,k)=>k==='per'?String(t.per!=null?t.per:90):k==='loc'?(t.fl||'T'):(t.fc||'');
 function filtroHist(t){const fl=t.fl||'T',fc=t.fc||'',O=hOps(t);
   const nav=(k,lbl)=>{const L=O[k],i=Math.max(0,L.findIndex(o=>o[0]===hVal(t,k)));return typeof selSetas==='function'?selSetas(lbl,L,i,`data-g="hNav" data-k="${k}" data-n`,`data-hsel="${k}"`):'';};
-  const html=`<div class="gCoLocNav gHistFil">${nav('per','Período')}${nav('loc','Local')}${nav('cur','Curral')}</div>`;
+  const hj=hojeKey(),di=t.dIni||somaDias(hj,-30),df=t.dFim||hj;
+  const html=`<div class="gForm gHistPer"><div class="gCampo meia"><label>Período: de</label><input type="date" data-hdt="ini" value="${di}"></div><div class="gCampo meia"><label>até</label><input type="date" data-hdt="fim" value="${df}"></div></div>
+    <div class="gCoLocNav gHistFil">${nav('loc','Local')}${nav('cur','Curral')}</div>`;
   const passa=(l,dia)=>{const c=curralEm(l,dia);if(fc)return c===fc;if(fl==='T')return true;return linhaDe(c)===fl;};
   return {html,passa};}
-function tEntradas(t){const hj=hojeKey(),per=t.per!=null?t.per:90,desde=per?somaDias(hj,-per):'';
+function tEntradas(t){const hj=hojeKey(),desde=t.dIni||somaDias(hj,-30),ate=t.dFim||hj;
   const op=[['','— escolher o lote —'],['__novo','＋ Criar lote novo (escolher o curral)']].concat(opLotesSel(true,hj));
   const R=[];
   gTodos('lote').forEach(l=>{const e=l.ent;if(!e||!e.dia)return;const vi=valorCompra(l)-entradasDe(l).reduce((a,x)=>a+(+x.rs||0),0);
@@ -668,7 +670,7 @@ function tEntradas(t){const hj=hojeKey(),per=t.per!=null?t.per:90,desde=per?soma
   gTodos('entlote').forEach(x=>{const l=G.it[x.lote];if(!l||l.del)return;const tr=x.transf&&G.it[x.transf],de=tr&&G.it[tr.lote];
     R.push({k:'ent',x,dia:x.dia,l,cab:+x.cab||0,peso:+x.peso||0,rs:+x.rs||0,orig:x.falta?'Animais achados':de?(x.vi?'Compra (venda interna) de ':'Transferência de ')+de.nome:x.obs||'Compra',auto:!!(x.transf||x.falta)});});
   const FH=filtroHist(t);
-  const L=R.filter(r=>(!desde||r.dia>=desde)&&FH.passa(r.l,r.dia)).sort((a,b)=>b.dia.localeCompare(a.dia)||(b.k==='lote')-(a.k==='lote'));
+  const L=R.filter(r=>r.dia>=desde&&r.dia<=ate&&FH.passa(r.l,r.dia)).sort((a,b)=>b.dia.localeCompare(a.dia)||(b.k==='lote')-(a.k==='lote'));
   const tot=L.reduce((a,r)=>a+r.cab,0);
   const linhas=L.map(r=>`<tr><td>${dCurto(r.dia)}<div class="gAcHist">${r.k==='lote'?`<button class="mini" data-g="ir" data-t="loteForm" data-id="${r.l.uid}" title="Alterar (editar lote)">✎</button>`
       :`${r.auto?'':`<button class="mini" data-g="entEd" data-id="${r.l.uid}" data-eid="${r.x.uid}">✎</button>`}<button class="mini danger" data-g="apaga" data-id="${r.x.uid}" data-o="${r.x.transf?'entrada (apaga também a transferência)':'entrada de animais'}">✕</button>`}</div></td><td class="c">${loteCel(r.l,r.orig)}</td><td>${r.k==='ent'?'+':''}${nf(r.cab)}</td><td>${nf(r.peso)}</td><td>${r.rs>0?nf(r.rs):'—'}</td></tr>`).join('');
@@ -685,10 +687,10 @@ function tPesNova(t){const hj=hojeKey();return `${voltar('Lotes')}<section class
   <div class="gForm">${campo({k:'pnLote',l:'Lote',t:'sel',busca:1,op:[['','— escolher o lote —']].concat(opLotesSel(false,hj)),v:t.lote||''})}</div>
   <button class="primary" data-g="pesNovaOk">Continuar ▸</button></section>`;}
 const tipoSai=s=>s.mot==='morte'?'✝ Morte':s.mot==='transf'?(+s.vi>0?'↔ Venda interna':'↔ Transferência'):s.mot==='apart'?'✂ Apartação':s.mot==='falta'?'❓ Faltou / sumiu':'💲 Venda';
-function tSaidas(t){const hj=hojeKey(),per=t.per!=null?t.per:90,desde=per?somaDias(hj,-per):'';
+function tSaidas(t){const hj=hojeKey(),desde=t.dIni||somaDias(hj,-30),ate=t.dFim||hj;
   const op=[['','— escolher o lote —']].concat(opLotesSel(false,hj));
   const FH=filtroHist(t);
-  const L=gTodos('saida').filter(x=>G.it[x.lote]&&!G.it[x.lote].del&&(!desde||x.dia>=desde)&&FH.passa(G.it[x.lote],x.dia)).sort((a,b)=>b.dia.localeCompare(a.dia));
+  const L=gTodos('saida').filter(x=>G.it[x.lote]&&!G.it[x.lote].del&&x.dia>=desde&&x.dia<=ate&&FH.passa(G.it[x.lote],x.dia)).sort((a,b)=>b.dia.localeCompare(a.dia));
   const dest=s=>{const d=s.destino&&G.it[s.destino];if(d&&!d.del)return '→ '+d.nome;if(ehVenda(s))return nomeCpr(s)||'';return [s.causa,s.obs].filter(Boolean).join(' · ');};
   const linhas=L.map(s=>{const l=G.it[s.lote],v=ehVenda(s)?valorVenda(s):s.mot==='transf'&&+s.vi>0?+s.vi:NaN;
     return `<tr><td>${dCurto(s.dia)}<div class="gAcHist">${ehVenda(s)||s.mot==='morte'?`<button class="mini" data-g="ir" data-t="saiForm" data-id="${l.uid}" data-o="${s.mot==='morte'?'morte':'venda'}" data-sid="${s.uid}">✎</button>`:''}${s.mot==='apart'?`<button class="mini" data-g="lote" data-id="${l.uid}" title="Desfazer no lote">▸</button>`:`<button class="mini danger" data-g="apaga" data-id="${s.uid}" data-o="${s.mot==='transf'?'transferência (volta os animais e o custo para o lote de origem)':'saída'}">✕</button>`}</div></td><td class="c"><b>${tipoSai(s)}</b><br>${loteCel(l,dest(s))}</td><td>${nf(s.cab)}</td><td>${s.mot==='morte'?'—':nf(s.peso)}</td><td>${ok(v)&&v>0?nf(v):'—'}</td></tr>`;}).join('');
@@ -2527,6 +2529,7 @@ function trAuto(t){try{if(t.classList&&t.classList.contains('gRs'))mascaraRs(t);
 $('gBox').addEventListener('input',e=>{if(GT.t==='transfForm'){trAuto(e.target);trPrevia();}if(GT.t==='fechaForm'){fcAuto(e.target);fcLer();fcPrevia();}});
 $('gBox').addEventListener('change',e=>{if(GT.t==='fechaForm'){fcLer();fcPrevia();}});
 function hSet(k,v){if(k==='per')GT.per=+v;else if(k==='loc'){GT.fl=v;GT.fc='';}else GT.fc=v;}
+$('gBox').addEventListener('change',e=>{const q=e.target.dataset&&e.target.dataset.hdt;if((GT.t==='entradas'||GT.t==='saidas')&&q&&e.target.value){if(q==='ini')GT.dIni=e.target.value;else GT.dFim=e.target.value;const y=window.scrollY;gRender();window.scrollTo({top:y});}});
 $('gBox').addEventListener('change',e=>{const k=e.target.dataset&&e.target.dataset.hsel;if((GT.t==='entradas'||GT.t==='saidas')&&k){hSet(k,e.target.value);const y=window.scrollY;gRender();window.scrollTo({top:y});}});
 $('gBox').addEventListener('change',e=>{if(GT.t==='transfForm')trPrevia();if(GT.t==='achouForm'&&e.target.id==='gf_aDest'&&$('gAchNovo'))$('gAchNovo').hidden=e.target.value!=='__novo';});
 $('gBox').addEventListener('input',e=>{if(GT.t==='apartForm'&&e.target.matches&&(e.target.matches('[data-ap]')||/^gAp(falta|fpeso|fpesoT)$/.test(e.target.id))){apLer();apPrevia();}});
