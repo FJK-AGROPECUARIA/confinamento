@@ -794,6 +794,8 @@ body.somenteVer:not(.menuFechado):not(.naInicio) #viewPrev,body.somenteVer:not(.
 .gAcHist{display:flex;gap:6px;justify-content:center;margin-top:4px}.gAcHist .mini{min-width:34px}
 .gRcLista{display:flex;flex-direction:column;gap:4px;margin:8px 0}.gRcLin{text-transform:none;letter-spacing:0;display:grid;grid-template-columns:28px 70px 1fr 1fr;gap:6px;align-items:center;padding:8px;border-radius:10px;background:#f4f7ee;font-size:.9rem}.gRcLin input{width:22px;height:22px}.gRcLin em{font-style:normal;color:#5d6b7a}.gRcCab{background:none;font-size:.72rem;text-transform:uppercase;color:#5d6b7a;font-weight:800}
 .gHistFil{display:flex!important;flex-direction:column;gap:10px!important;margin:6px 0 12px!important}.gSaiTipos{gap:10px!important}
+.gCampo .gSelCaixa .gDataBox{flex:1 1 auto!important;width:100%!important;max-width:100%!important}.gCampo .gSelCaixa .gDataBox span{white-space:normal!important;line-height:1.2;padding:4px 0;overflow:visible}.gCampo.meia .gSelCaixa .gDataBox span{font-size:.9rem;letter-spacing:-.01em}.gSelCaixa .gDataBox.vazio span{text-align:center!important;color:#6b7a6b;font-weight:600}.gSelCaixa .gDataBox.vazio{padding-left:36px!important}
+.gInfoBox{padding:12px 14px;border-radius:12px;background:#eef3e6;font-weight:800;color:#1b3a1c;min-height:46px;display:flex;align-items:center}
 .gLink{color:#1b5e20;font-weight:800;text-decoration:underline;cursor:pointer}.gSaiTipos{grid-template-columns:repeat(2,minmax(0,1fr))!important}
 body.modoGest:not(.menuFechado):not(.naInicio) #viewGest,body.modoGest:not(.menuFechado):not(.naInicio) #viewEscolha,body.modoGest:not(.menuFechado):not(.naInicio) .menuSeta{display:none!important}
 .menuSeta{align-self:stretch;border:0;background:transparent;padding:4px 8px 0;font-size:.85rem;font-weight:700;color:#5d6b7a;line-height:1.2;border-radius:10px;text-align:center}
@@ -1234,7 +1236,7 @@ body.naInicio .topoTxt h1{font-size:clamp(16px,5vw,28px)!important}
 <div class="toast" id="toast" hidden></div>
 <script>
 'use strict';
-const APP_VERSAO='221';
+const APP_VERSAO='222';
 const APP_DATA='19/10/2026';
 const KEY='confinamento-completo-v1';
 const $=id=>document.getElementById(id);
@@ -1527,7 +1529,7 @@ function fornSetupHTML0(){if(!FS.local)FS.passo=1;const cont=n=>`<button type="b
   if(FS.rac&&!R.some(r=>r.uid===FS.rac))FS.rac=null;if(FS.rac==null&&R.length===1)FS.rac=R[0].uid;
   const passoRac=`<h2>Fornecer no cocho</h2>
     <label>1. Local</label>${window.escolhaLocal?escolhaLocal('data-floc',FS.local):''}
-    <label for="fRac">2. Ração que vai distribuir</label><div class="racLin"><select id="fRac">${FS.rac==null?'<option value="-" selected>— escolha a ração —</option>':''}${R.map(r=>`<option value="${r.uid}"${r.uid===FS.rac?' selected':''}>${esc(r.nome)}</option>`).join('')}<option value=""${FS.rac===''?' selected':''}>Todas as rações</option></select>
+    <label for="fRac">2. Ração que vai distribuir</label><div class="racLin"><select id="fRac">${FS.rac==null?'<option value="-" selected>Selecione</option>':''}${R.map(r=>`<option value="${r.uid}"${r.uid===FS.rac?' selected':''}>${esc(r.nome)}</option>`).join('')}<option value=""${FS.rac===''?' selected':''}>Todas as rações</option></select>
     ${R.length===1?`<p class="note">Única ração ativa no ${FS.local==='C'?'confinamento':'pasto'}: já selecionada.</p>`:''}</div>`;
   if(FS.rac==null)return passoRac;
   const trF=tratosAtivos().filter(k=>fornCurrais(FS.local,FS.rac,k).length);
@@ -2647,7 +2649,7 @@ function selSetas(lbl,O,i,pAttr,sAttr){const opts=O.map(o=>`<option value="${o[0
 /* caixas de seleção dos formulários: quadradinho do padrão do sistema (tocar abre a lista e escolhe; sem setas) */
 const SETAS_IDS=new Set(['fRac','cRac','cSobRac','cfgComp','gMsIns','fzHCur','gVenCpr','gVenPor']);
 function selSync(s){const w=s.closest('.gSelSetas');if(!w)return;const o=s.options[s.selectedIndex],sp=w.querySelector('.gDataBox span'),B=w.querySelectorAll('.gSeta');
-  if(sp)sp.textContent=o?o.text:'—';if(B[0])B[0].disabled=s.disabled||s.selectedIndex<=0;if(B[1])B[1].disabled=s.disabled||s.selectedIndex>=s.options.length-1;}
+  if(sp)sp.textContent=o?o.text.replace(/^([^\p{L}\p{N}\s]+) /u,'$1\u00a0'):'Selecione';const bx=w.querySelector('.gDataBox');if(bx)bx.classList.toggle('vazio',!s.value);if(B[0])B[0].disabled=s.disabled||s.selectedIndex<=0;if(B[1])B[1].disabled=s.disabled||s.selectedIndex>=s.options.length-1;}
 function setasSel(root){(root||document).querySelectorAll('select').forEach(s=>{
   if(s.multiple||s.classList.contains('mini')||s.classList.contains('trato')||s.hasAttribute('data-sem-setas')||s.closest('.gDataBox,td,.gNt,.tSeta,.hNavUm'))return;
   if(!(s.closest('.gCampo')||SETAS_IDS.has(s.id)))return;
