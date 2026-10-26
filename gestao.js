@@ -2376,6 +2376,7 @@ $('gBox').addEventListener('click',e=>{
     if(!confirm(`Apagar esta ${b.dataset.o}?`))return;gDel(id);
     if(x&&x.tipo==='saida'&&x.mot==='transf'&&x.entl&&G.it[x.entl])gDel(x.entl);if(x&&x.tipo==='entlote'&&x.transf&&G.it[x.transf])gDel(x.transf);if(x&&x.tipo==='entlote'&&x.falta&&G.it[x.falta]){const f=JSON.parse(JSON.stringify(G.it[x.falta]));const i=(f.achados||[]).findIndex(y=>y.dest===x.lote&&y.dia===x.dia&&+y.cab===+x.cab);if(i>=0){f.achados.splice(i,1);gPut(f);}}   // transferência: apaga as duas pontas
     if(x&&x.tipo==='entlote'&&!x.transf&&G.it[x.lote])recalcSaidas(G.it[x.lote]);   /* entrada de animais apagada: refaz os custos das saídas */
+    if(x&&x.tipo==='saida'&&x.mot==='transf'){[x.lote,x.destino].forEach(u=>{const L=G.it[u];if(L&&!L.del)recalcSaidas(L);});}   /* transferência apagada: refaz os custos das saídas dos dois lotes */
     toast('Apagado');return gRender();}
   if(a==='salvaTransf')return salvaTransf(id);
   if(a==='trCanc'){(async()=>{const sim=await confirmaVermelho('Deseja realmente cancelar esta transferência?','Nada do que foi preenchido será lançado.','Sim, cancelar transferência','Não, continuar');if(!sim)return;gVoltar();toast('Transferência cancelada: nada foi lançado');})();return;}

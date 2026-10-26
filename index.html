@@ -1233,7 +1233,7 @@ body.naInicio .topoTxt h1{font-size:clamp(16px,5vw,28px)!important}
 <div class="toast" id="toast" hidden></div>
 <script>
 'use strict';
-const APP_VERSAO='214';
+const APP_VERSAO='215';
 const APP_DATA='19/10/2026';
 const KEY='confinamento-completo-v1';
 const $=id=>document.getElementById(id);
@@ -2681,6 +2681,8 @@ document.addEventListener('click',e=>{const i=e.target.closest&&e.target.closest
       inp.addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();const b=[...dd.querySelectorAll('button[data-i]')].find(b=>!b.hidden&&!b.disabled);if(b)b.click();}});
       if(matchMedia('(pointer:fine)').matches)setTimeout(()=>inp.focus(),0);}}
   window.gDDfechar=fechar;
+  /* computador (mouse): o select abria a lista nativa no 'mousedown' e o toque no meio da caixa não abria a nossa lista; agora a caixa toda abre a mesma lista */
+  document.addEventListener('mousedown',e=>{const s=e.target&&e.target.closest&&e.target.closest('select:not([multiple])');if(s&&!s.disabled&&e.button===0)e.preventDefault();},true);
   document.addEventListener('click',e=>{
     if(dd&&e.target.closest('.gDD')){e.preventDefault();e.stopPropagation();const b=e.target.closest('button[data-i]');if(!b||b.disabled)return;
       const s=cur,i=+b.dataset.i;fechar();if(s&&s.selectedIndex!==i){s.selectedIndex=i;s.dispatchEvent(new Event('input',{bubbles:true}));s.dispatchEvent(new Event('change',{bubbles:true}));}return;}
