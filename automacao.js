@@ -414,16 +414,21 @@ window.teclaBalanca=teclaBalanca;
    holdAuto 2 = tecla HOLD ("20"), que liga e desliga com o mesmo toque (reserva, se a balança não aceitar o comando).
    holdAuto 0 = desligado. */
 A.holdApp=(()=>{try{return localStorage.getItem('fjkHoldApp')==='1';}catch(e){return false;}})();
+A.holdFim=(()=>{try{return localStorage.getItem('fjkHoldFim')==='1';}catch(e){return false;}})();   // fornecimento finalizado: balança fica em HOLD até o próximo carregamento/fornecimento
+function holdFimGrava(v){A.holdFim=v;try{localStorage.setItem('fjkHoldFim',v?'1':'0');}catch(e){}}
 function holdGrava(v){A.holdApp=v;A.holdTs=Date.now();try{localStorage.setItem('fjkHoldApp',v?'1':'0');}catch(e){}}
 let holdMandando=false;
 async function holdSync(){if(holdMandando)return;
   if(!(A.fonte==='bt'&&A.digiStar&&A.dsEsc)){   // sem Bluetooth não dá para soltar: avisa o operador para soltar na mão
-    if(A.holdApp&&!A.pausa&&Date.now()-(A.holdAvisoTs||0)>10000){A.holdAvisoTs=Date.now();toast('⚠ Balança sem Bluetooth e pode estar em HOLD: se o visor mostrar HOLD, aperte HOLD na balança para soltar');}
+    if(A.holdApp&&!A.pausa&&!A.holdFim&&Date.now()-(A.holdAvisoTs||0)>10000){A.holdAvisoTs=Date.now();toast('⚠ Balança sem Bluetooth e pode estar em HOLD: se o visor mostrar HOLD, aperte HOLD na balança para soltar');}
     return;}
   let modo=1,noForn=false,noCarr=false,carrAzul=false;try{modo=+cfg().holdAuto||0;noForn=!!(window.filtroForn&&filtroForn()&&!naCargaAuto());
     noCarr=!!(naCargaAuto()&&acB());const it=noCarr?acItem():null;carrAzul=noCarr&&!!(AC.pausa||(AC.trava&&it&&!ok(it.real)));}catch(e){}
   let fimPend=false;try{fimPend=noForn&&!curralAtual()&&lista().length>0;}catch(e){}   // registrou o último curral e ainda não finalizou o fornecimento: fica travada
-  const quer=!!(modo&&((noForn&&(A.pausa||fimPend))||carrAzul));   // quadro azul na tela (Fornecer ou Carregar) = balança em HOLD
+  /* finalizou o fornecimento ou o carregamento: manda HOLD uma vez e não insiste (o botão HOLD da balança solta na mão); no próximo carregamento ou fornecimento o tablet assume de novo */
+  const ativo=noForn||noCarr;if(modo===1&&(A.ultForn||A.ultCarr)&&!ativo&&!A.holdFim)holdFimGrava(true);A.ultForn=noForn;A.ultCarr=noCarr;if(ativo&&A.holdFim)holdFimGrava(false);
+  if(A.holdFim&&!ativo){if(A.holdApp||modo!==1)return;}
+  const quer=!!(modo&&((noForn&&(A.pausa||fimPend))||carrAzul||(A.holdFim&&!ativo)));   // quadro azul na tela (Fornecer ou Carregar) = balança em HOLD
   const repetir=modo===1&&(noForn||noCarr)&&Date.now()-(A.holdTs||0)>4000;   // comando direto: reforça o estado do tablet
   if(quer===A.holdApp&&!repetir)return;
   if(!modo&&!A.holdApp)return;
