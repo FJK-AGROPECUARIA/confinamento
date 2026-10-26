@@ -247,7 +247,7 @@ const opInsumos=()=>gTodos('insumo').sort(porNome).map(r=>[r.uid,r.nome+(r.inati
 const UNID_C=[['arroba','R$/@ morto'],['arrV','R$/@ vivo'],['cab','R$/cabeça'],['kg','R$/kg vivo']];
 const UNID_V=[['arroba','R$/@ morto'],['arrV','R$/@ vivo'],['cab','R$/cabeça'],['kg','R$/kg vivo']];
 
-const RAIZ={home:'home',entradas:'entradas',saidas:'saidas',estoque:'estoque',estIns:'estoque',estForm:'estoque',estNF:'estoque',fornec:'estoque',fornForm:'estoque',entRel:'estoque',currais:'currais',curForm:'currais',lotes:'lotes',pesNova:'lotes',entNova:'entradas',lote:'lotes',loteForm:'lotes',pesForm:'lotes',entForm:'lotes',apartForm:'lotes',transfForm:'lotes',fechaForm:'lotes',achouForm:'lotes',saiForm:'lotes',mudForm:'lotes',rel:'lotes',custoForm:'lotes',
+const RAIZ={home:'home',entradas:'entradas',saidas:'saidas',estoque:'estoque',estIns:'estoque',estForm:'estoque',estNF:'estoque',fornec:'estoque',fornForm:'estoque',entRel:'estoque',currais:'currais',curForm:'currais',lotes:'lotes',pesNova:'lotes',entNova:'entradas',saiSel:'saidas',lote:'lotes',loteForm:'lotes',pesForm:'lotes',entForm:'lotes',apartForm:'lotes',transfForm:'lotes',fechaForm:'lotes',achouForm:'lotes',saiForm:'lotes',mudForm:'lotes',rel:'lotes',custoForm:'lotes',
   cocho:'cocho',cochoGraf:'cocho',fezes:'cocho',rels:'rels',dia:'rels',indices:'rels',confBal:'rels',periodo:'rels',comp:'rels',vendas:'rels',compradores:'rels',cprForm:'rels',racoes:'racoes',racForm:'racoes',racCur:'racoes',mudCur:'currais',insumos:'estoque',insForm:'estoque',insMS:'insumos',ms:'cocho',cfg:'cfg'};
 /* Leitura de cocho fica no menu Tratos (aba 'leit'); o resto da Gestão na aba 'gest' — as duas usam a mesma tela */
 function gRaiz(t){GT={t};gPilha.length=0;const alvo=RAIZ[t]==='cocho'&&!document.body.classList.contains('modoGest')?'leit':'gest';if(window.abaAtual!==alvo)aba(alvo);else gRender();window.scrollTo({top:0});}
@@ -256,11 +256,11 @@ function gRender(){if(GT&&GT.t!=='rel')RELCMP=null;
   const b=$('gBox');if(!b)return;
   if(window.abaAtual==='gest'&&RAIZ[GT.t]==='cocho'&&!document.body.classList.contains('modoGest')){aba('leit');return;}  // leitura abre no menu Tratos
   if(window.abaAtual==='leit'&&RAIZ[GT.t]!=='cocho'){aba('gest');return;}
-  const f={home:tHome,estoque:tEstoque,estIns:tEstIns,estForm:tEstForm,estNF:tEstNF,fornec:tFornec,fornForm:tFornForm,entRel:tEntRel,currais:tCurrais,curForm:tCurForm,lotes:tLotes,pesNova:tPesNova,entNova:tEntNova,entradas:tEntradas,saidas:tSaidas,lote:tLote,loteForm:tLoteForm,pesForm:tPesForm,entForm:tEntForm,apartForm:tApartForm,transfForm:tTransfForm,fechaForm:tFechaForm,achouForm:tAchouForm,saiForm:tSaiForm,mudForm:tMudForm,rel:tRelLote,custoForm:tCustoForm,
+  const f={home:tHome,estoque:tEstoque,estIns:tEstIns,estForm:tEstForm,estNF:tEstNF,fornec:tFornec,fornForm:tFornForm,entRel:tEntRel,currais:tCurrais,curForm:tCurForm,lotes:tLotes,pesNova:tPesNova,entNova:tEntNova,saiSel:tSaiSel,entradas:tEntradas,saidas:tSaidas,lote:tLote,loteForm:tLoteForm,pesForm:tPesForm,entForm:tEntForm,apartForm:tApartForm,transfForm:tTransfForm,fechaForm:tFechaForm,achouForm:tAchouForm,saiForm:tSaiForm,mudForm:tMudForm,rel:tRelLote,custoForm:tCustoForm,
     cocho:tCocho,cochoGraf:tCochoGraf,fezes:t=>tFezes(t),rels:tRels,dia:tDia,indices:tIndices,periodo:tPeriodo,comp:tComp,vendas:tVendas,compradores:tCompradores,cprForm:tCprForm,racoes:tRacoes,racForm:tRacForm,racCur:tRacCur,mudCur:tMudCur,insumos:tInsumos,insForm:tInsForm,insMS:tInsMS,ms:tInsMS,cfg:tCfg}[GT.t]||tHome;
   const raiz=GT.raiz||RAIZ[GT.t]||'home';document.querySelectorAll('#subGest button[data-gt]').forEach(x=>x.setAttribute('aria-selected',String(x.dataset.gt===raiz)));
   const cb=$('cfgTBox');if(cb&&$('cfgTParque')&&cb.parentNode!==$('cfgTParque'))$('cfgTParque').appendChild(cb); // ajustes da balança: guarda antes de redesenhar
-  b.innerHTML=f(GT);
+  b.innerHTML=GT.nova&&GT.t!=='saiSel'?saiTopo(GT)+f(GT).replace(/<button class="gVoltar"[^>]*>[^<]*<\/button>/,''):f(GT);
   try{const fz=GT.t==='fezes',ms=GT.t==='ms',lt=window.abaAtual==='leit';if($('tabFez'))$('tabFez').setAttribute('aria-selected',String(fz&&lt));if($('tabMS'))$('tabMS').setAttribute('aria-selected',String(ms&&lt));if($('tabLeit')&&lt)$('tabLeit').setAttribute('aria-selected',String(!fz&&!ms));}catch(e){}
   if(GT.t==='cfg'&&cb&&$('cfgBalHost')){$('cfgBalHost').appendChild(cb);if(window.cfgTAoAbrir)cfgTAoAbrir();}
   if(GT.t==='cfg'&&GT.cfgSel!=='confbal')cfgMinimizar();   // Conf. balança: a lista de relatórios já aparece aberta
@@ -517,7 +517,15 @@ function mediaLote(l,X){const ini=l.ent&&l.ent.dia,fim=fimLote(l)||hojeKey();con
   for(let d=ini,i=0;d<=fim&&i<4000;d=somaDias(d,1),i++){const x=diaLote(l,d,X);if(!x||!(x.mn>0))continue;m.n++;m.mn+=x.mnCab;if(ok(x.msCab)&&ok(x.pv)){m.ms+=x.msCab;m.pv+=x.pv;m.nms++;}}
   return m;}
 /* botões Todos / Confinamento / Pasto com o número de cada um (ex.: Pasto 0/11 ou Pasto 11) */
-function locBotoes(attr,sel,conta,extra){conta=null;return `<div class="linhas gFiltro">${[['T','Todos'],['C',ICO_C+' Confinamento'],['P','🌿 Pasto']].map(([k,r])=>{const n=conta?conta(k):null;return `<button data-g="${attr}" data-l="${k}" class="${sel===k?'sel':''}"${extra||''}>${r}${n!=null?`<small> ${n}</small>`:''}</button>`;}).join('')}</div>`;}
+/* Rações por curral: um botão só — todos marcados mostra "Desmarcar todos", senão "Marcar todos" */
+function rcMarcaBt(){const b=document.querySelector('[data-g=rcMarca]');if(!b)return;const X=[...document.querySelectorAll('[data-rc]:not(:disabled)')],todos=X.length&&X.every(x=>x.checked);
+  b.dataset.v=todos?'0':'1';b.textContent=todos?'✕ Desmarcar todos':'✓ Marcar todos';}
+document.addEventListener('change',e=>{if(e.target.matches&&e.target.matches('[data-rc]'))rcMarcaBt();});
+/* filtro de local no padrão do sistema: Local ◀ [Todos / Confinamento / Pasto] ▶ (Todos primeiro) */
+const LOC_SET={ntLoc:v=>{GT.ntLoc=v;},evLoc:v=>{GT.evLoc=v;},rcLoc:v=>{GT.loc=v;},filtroLoc:v=>{gLoc=v;}};
+function locBotoes(attr,sel,conta,extra){const LO=window.LOC_OPS;if(typeof selSetas==='function'&&LO&&LOC_SET[attr])return `<div class="gCoLocNav">${selSetas('Local',LO,Math.max(0,LO.findIndex(o=>o[0]===(sel||'T'))),`data-g="locP" data-a="${attr}" data-v0="${sel||'T'}" data-n`,`data-locsel="${attr}"`)}</div>`;
+  return locBotoesAnt(attr,sel,conta,extra);}
+function locBotoesAnt(attr,sel,conta,extra){conta=null;return `<div class="linhas gFiltro">${[['T','Todos'],['C',ICO_C+' Confinamento'],['P','🌿 Pasto']].map(([k,r])=>{const n=conta?conta(k):null;return `<button data-g="${attr}" data-l="${k}" class="${sel===k?'sel':''}"${extra||''}>${r}${n!=null?`<small> ${n}</small>`:''}</button>`;}).join('')}</div>`;}
 const doLocal=(k,c)=>k==='T'||linhaDe(c)===k;
 function tLotes(t){
   const hj=hojeKey(),X=gCtx(),loc=gLoc,noLocal=l=>loc==='T'||linhaDe(curralEm(l,fimLote(l)||hj))===loc;
@@ -541,7 +549,7 @@ function tLotes(t){
   return `<section class="panel"><div class="curhead gLotesTopo"><h2>${t.enc?'Lotes arquivados':'Lotes ativos'} <span class="note">${lista.length}</span></h2>
       <span class="gLotesBts">${t.enc?'':'<button type="button" class="mini lima" data-g="novoLote">+ Novo lote</button>'}<button type="button" class="mini" data-g="ir" data-t="lotes" data-enc="${t.enc?'':'1'}">${t.enc?'Ativos':'Arquivados'}</button></span></div>
     ${typeof selSetas==='function'&&window.LOC_OPS?`<div class="gCoLocNav">${selSetas('Local',LOC_OPS,Math.max(0,LOC_OPS.findIndex(o=>o[0]===loc)),'data-g="lotLocP" data-n','data-lotlsel')}</div>`:locBotoes('filtroLoc',loc)}
-    ${!t.enc||lista.length>1?`<div class="row gLotesAbre">${t.enc?'':`<button type="button" class="mini lima gPesNova" data-g="ir" data-t="pesNova">⚖️ Pesagem</button>`}${lista.length>1?`<button type="button" class="mini" data-g="lotTodos" data-v="1">▼ Abrir todos</button><button type="button" class="mini" data-g="lotTodos" data-v="0">▲ Minimizar todos</button>`:''}</div>`:''}
+    ${!t.enc||lista.length>1?`<div class="row gLotesAbre">${t.enc?'':`<button type="button" class="mini lima gPesNova" data-g="ir" data-t="pesNova">⚖️ Pesagem</button>`}${lista.length>1?(lista.every(l=>gLotAb.has(l.uid))?`<button type="button" class="mini" data-g="lotTodos" data-v="0">▲ Minimizar todos</button>`:`<button type="button" class="mini" data-g="lotTodos" data-v="1">▼ Abrir todos</button>`):''}</div>`:''}
     ${lista.length?`<div class="row compart fz3 lotesExp"><button class="verde" data-g="lotesPdf" data-enc="${t.enc?'1':''}">📄 PDF</button><button class="verde" data-g="lotesImg" data-enc="${t.enc?'1':''}">🖼 Foto</button><button class="verde" data-g="lotesXls" data-enc="${t.enc?'1':''}">📊 Excel</button></div>`:''}
     ${t.enc?'':painelFaltas()}
     ${cards||`<p class="note">${t.enc?'Nenhum lote arquivado.':'Nenhum lote ainda. Toque em “+ Novo lote”.'}</p>`}
@@ -696,6 +704,13 @@ function tEntNova(t){const hj=hojeKey(),arq=gTodos('lote').filter(l=>!ativo(l));
   if(sel==='__novo'){const sis=t.sis||'Confinamento';topo+=campo({k:'sistema',l:'Local de entrada',t:'sel',op:SISTEMAS,v:sis,meia:1})+campo({k:'curral',l:'Curral de entrada',t:'sel',busca:1,op:opCurraisTipo(tipoDoSistema(sis)),v:'',meia:1});corpo=tLoteForm({emb:1});}
   else if(sel&&G.it[sel]){const l=G.it[sel],cE=curralEm(l,ativo(l)?hj:(fimLote(l)||hj));topo+=`<div class="gCampo meia"><label>Local de entrada</label><div class="gInfoBox">${esc(linhaDe(cE)==='P'?'Pasto':'Confinamento')}</div></div><div class="gCampo meia"><label>Curral de entrada</label><div class="gInfoBox">${esc(cE||'—')}</div></div>`;GT.id=sel;corpo=tEntForm({id:sel,emb:1});}
   return `${voltar('Entrada de animais')}<section class="panel"><h2>＋ Nova entrada de animais</h2><div class="gForm">${topo}</div>${sel?'':'<p class="note">Escolha o lote de entrada ou “＋ Criar lote novo”.</p>'}</section>${corpo}`;}
+/* Nova saída: primeiro o tipo (botão), depois o lote de saída; o formulário do tipo abre embaixo */
+const SAI_TIT={saiForm:'💲 Venda / saída',fechaForm:'💲 Venda + sobra',transfForm:'↔ Transferência',apartForm:'✂ Apartar / dividir',morte:'✝ Morte'};
+function saiTopo(t){const hj=hojeKey(),l=t.id&&G.it[t.id];
+  let h=campo({k:'saSel',l:'Lote de saída',t:'sel',busca:1,op:[['','Selecione']].concat(opLotesSel(false,hj)),v:l?l.uid:''});
+  if(l){const c=curralEm(l,hj);h+=`<div class="gCampo meia"><label>Local de saída</label><div class="gInfoBox">${esc(linhaDe(c)==='P'?'Pasto':'Confinamento')}</div></div><div class="gCampo meia"><label>Curral de saída</label><div class="gInfoBox">${esc(c||'—')}</div></div>`;}
+  return `${voltar('Saída de animais')}<section class="panel"><h2>${SAI_TIT[t.ft==='saiForm'&&t.o==='morte'?'morte':t.ft]||'Saída de animais'}</h2><div class="gForm">${h}</div>${l?'':'<p class="note">Escolha o lote de saída.</p>'}</section>`;}
+const tSaiSel=t=>saiTopo(t);
 const tipoSai=s=>s.mot==='morte'?'✝ Morte':s.mot==='transf'?(+s.vi>0?'↔ Venda interna':'↔ Transferência'):s.mot==='apart'?'✂ Apartação':s.mot==='falta'?'❓ Faltou / sumiu':'💲 Venda';
 function tSaidas(t){const hj=hojeKey(),desde=t.dIni||somaDias(hj,-30),ate=t.dFim||hj;
   const op=[['','Selecione']].concat(opLotesSel(false,hj));
@@ -707,8 +722,7 @@ function tSaidas(t){const hj=hojeKey(),desde=t.dIni||somaDias(hj,-30),ate=t.dFim
   const soma=f=>L.filter(f).reduce((a,s)=>a+(+s.cab||0),0);
   const B=(t2,o,ic,txt,cls)=>`<button class="${cls||''}" data-g="saiNova" data-t="${t2}"${o?` data-o="${o}"`:''}>${ic} ${txt}</button>`;
   return `<section class="panel"><h2>📤 Saída de animais</h2>
-    <p class="note">Escolha o lote de onde os animais saem e o tipo de saída.</p>
-    <div class="gForm">${campo({k:'saLote',l:'Lote de onde saem',t:'sel',busca:1,op,v:t.lote||''})}</div>
+    <p class="note">Toque no tipo de saída; na próxima tela escolha o lote de saída.</p>
     <div class="gAcoes gSaiTipos">${B('saiForm','venda','💲','Venda / saída','lima')}${B('fechaForm','','💲','Venda + sobra','lima')}${B('transfForm','','↔','Transferência')}${B('apartForm','','✂','Apartar / dividir')}${B('saiForm','morte','✝','Morte')}</div></section>
   <section class="panel"><h2>Histórico de saídas</h2>${FH.html}
     ${L.length?`<div class="tablebox"><table class="gTab"><thead><tr><th>Data</th><th>Saída · lote</th><th>Cab.</th><th>Peso</th><th>Valor R$</th></tr></thead><tbody>${linhas}
@@ -1102,13 +1116,13 @@ function xlsVendas(){const t=GT.vF||{},V=vendasFiltradas(t),por=t.por||'cpr',G_=
     ['Vendas',['Data','Comprador','Tipo','Lote','Sexo','Raça','Categoria','Cabeças','Peso vivo','Rendimento','@ total','Preço @ bruto','Descontos','Receita líquida','R$/cab líq.','Obs.'],V.map(v=>[xc(v.s.dia,'dia'),xc(v.cpr),xc(v.cat),xc(v.lote),xc(v.sexo),xc(v.raca),xc(v.catA),xc(v.cab,'int'),xc(+v.s.peso,'int'),xc(v.rc/100,'pct'),xc(v.arr,'dec'),xc(v.arr?v.bruto/v.arr:NaN,'rs'),xc(v.desc,'rs'),xc(v.liq,'rs'),xc(v.cab?v.liq/v.cab:NaN,'rs'),xc(v.s.obs||'')])]]);}
 /* ---------- Rações por curral: muda a ração de um, de alguns ou de todos os currais (vale para os lotes que estão neles) ---------- */
 const lotesNoCur=(n,d)=>gTodos('lote').filter(l=>cabPres(l,d)>0&&curralEm(l,d)===n).sort(porNome);
-function tRacCur(t){const A=window.curraisApi,hj=hojeKey(),loc=t.loc||'C';if(!A)return '';
+function tRacCur(t){const A=window.curraisApi,hj=hojeKey(),loc=t.loc||'T';if(!A)return '';
   const L=A.lista().filter(n=>!A.info(n).inativo&&(loc==='T'||A.info(n).tipo===loc)).sort(alfa);
   const linhas=L.map(n=>{const ls=lotesNoCur(n,hj),rac=ls.map(l=>{const r=racaoEm(l,hj);return r?r.nome:'sem ração';});
     return `<label class="gRcLin${ls.length?'':' gInativa'}"><input type="checkbox" data-rc="${esc(n)}"${ls.length?'':' disabled'}><b>${esc(n)}</b><span>${ls.length?esc(ls.map(l=>l.nome).join(' + ')):'sem lote'}</span><em>${esc([...new Set(rac)].join(' / ')||'—')}</em></label>`;}).join('');
   return `${voltar('Rações')}<section class="panel"><h2>🌾 Rações por curral</h2>
-    <div class="linhas">${[['C','Confinamento'],['P','Pasto'],['T','Todos']].map(([k,tx])=>`<button data-g="rcLoc" data-k="${k}" class="${loc===k?'sel':''}">${tx}</button>`).join('')}</div>
-    <div class="row"><button class="mini" data-g="rcMarca" data-v="1">Marcar todos</button><button class="mini" data-g="rcMarca" data-v="0">Desmarcar</button></div>
+    ${locBotoes('rcLoc',loc)}
+    <div class="row"><button class="mini" data-g="rcMarca" data-v="1">✓ Marcar todos</button></div>
     <div class="gRcLista"><div class="gRcLin gRcCab"><span></span><b>Curral</b><span>Lote</span><em>Ração agora</em></div>${linhas||'<p class="note">Nenhum curral.</p>'}</div>
     <div class="gForm">${[{k:'rcDesde',l:'A partir de',t:'dia',v:hj,meia:1},{k:'rcRac',l:'Nova ração',t:'sel',op:opRacoes(''),v:'',meia:1}].map(campo).join('')}</div>
     <button class="primary" data-g="salvaRacCur">Mudar a ração dos currais marcados</button>
@@ -2364,7 +2378,7 @@ $('gBox').addEventListener('click',e=>{
   if(a==='notaPadrao'){GT.notasEd=NOTAS_PADRAO.map(x=>Object.assign({},x));gRender();return toast('Notas −4 a +4 de volta. Toque em Salvar.');}
   if(a==='entNova'){const v=$('gf_enLote')&&$('gf_enLote').value;if(!v)return toast('Escolha o lote que recebe os animais');if(v==='__novo')return gIr({t:'loteForm',raiz:'entradas'});return gIr({t:'entForm',id:v,raiz:'entradas'});}
   if(a==='entEd')return gIr({t:'entForm',id,eid:b.dataset.eid,raiz:'entradas'});
-  if(a==='saiNova'){const v=$('gf_saLote')&&$('gf_saLote').value;if(!v)return toast('Escolha o lote de onde saem os animais');return gIr({t:b.dataset.t,id:v,o:b.dataset.o,raiz:'saidas'});}
+  if(a==='saiNova')return gIr({t:'saiSel',ft:b.dataset.t,o:b.dataset.o,nova:1,raiz:'saidas'});
   if(a==='raizLote')return gIr({t:b.dataset.t,lote:id});
   if(a==='pesNovaOk'){const v=$('gf_pnLote')&&$('gf_pnLote').value;if(!v)return toast('Escolha o lote');return gIr({t:'pesForm',id:v});}
   if(a==='entPer'||a==='saiPer'){GT.per=+b.dataset.n;return gRender();}
@@ -2406,8 +2420,9 @@ $('gBox').addEventListener('click',e=>{
   if(a==='pdfVendas'){window.__expPdf=true;return imgVendas();}
   if(a==='pdfComp'){window.__expPdf=true;return imgComp();}
   if(a==='xlsVendas')return xlsVendas();
+  if(a==='locP'){const L=['T','C','P'],i=Math.max(0,L.indexOf(b.dataset.v0)),v=L[Math.max(0,Math.min(2,i+(+b.dataset.n)))];(LOC_SET[b.dataset.a]||(()=>{}))(v);return gRender();}
   if(a==='rcLoc'){GT.loc=b.dataset.k;return gRender();}
-  if(a==='rcMarca'){document.querySelectorAll('[data-rc]:not(:disabled)').forEach(x=>x.checked=b.dataset.v==='1');return;}
+  if(a==='rcMarca'){document.querySelectorAll('[data-rc]:not(:disabled)').forEach(x=>x.checked=b.dataset.v==='1');return rcMarcaBt();}
   if(a==='salvaRacCur'){const d=fv('rcDesde'),r=fv('rcRac'),cs=[...document.querySelectorAll('[data-rc]:checked')].map(x=>x.dataset.rc);
     if(!cs.length)return toast('Marque os currais');if(!d||!r)return toast('Escolha a data e a nova ração');
     let n=0;cs.forEach(c=>lotesNoCur(c,hojeKey()).forEach(l0=>{const l=JSON.parse(JSON.stringify(l0));if(d<l.ent.dia)return;l.rac=l.rac||[];setHist(l.rac,d,{r});gPut(l);n++;}));
@@ -2546,7 +2561,7 @@ function trAuto(t){try{if(t.classList&&t.classList.contains('gRs'))mascaraRs(t);
 $('gBox').addEventListener('input',e=>{if(GT.t==='transfForm'){trAuto(e.target);trPrevia();}if(GT.t==='fechaForm'){fcAuto(e.target);fcLer();fcPrevia();}});
 $('gBox').addEventListener('change',e=>{if(GT.t==='fechaForm'){fcLer();fcPrevia();}});
 function hSet(k,v){if(k==='per')GT.per=+v;else if(k==='loc'){GT.fl=v;GT.fc='';}else GT.fc=v;}
-$('gBox').addEventListener('change',e=>{if(GT.t==='entNova'&&e.target.id==='gf_enSel'){GT.sel=e.target.value;GT.arq='';GT.id=null;gRender();}if(GT.t==='entNova'&&e.target.id==='gf_enArq'){GT.arq=e.target.value;GT.id=null;gRender();}});
+$('gBox').addEventListener('change',e=>{if(GT.nova&&e.target.id==='gf_saSel'){const v=e.target.value;GT={t:v?GT.ft:'saiSel',ft:GT.ft,o:GT.o,id:v||null,nova:1,raiz:'saidas'};gRender();return;}if(GT.t==='entNova'&&e.target.id==='gf_enSel'){GT.sel=e.target.value;GT.arq='';GT.id=null;gRender();}if(GT.t==='entNova'&&e.target.id==='gf_enArq'){GT.arq=e.target.value;GT.id=null;gRender();}});
 $('gBox').addEventListener('change',e=>{const q=e.target.dataset&&e.target.dataset.hdt;if((GT.t==='entradas'||GT.t==='saidas')&&q&&e.target.value){if(q==='ini')GT.dIni=e.target.value;else GT.dFim=e.target.value;const y=window.scrollY;gRender();window.scrollTo({top:y});}});
 $('gBox').addEventListener('change',e=>{const k=e.target.dataset&&e.target.dataset.hsel;if((GT.t==='entradas'||GT.t==='saidas')&&k){hSet(k,e.target.value);const y=window.scrollY;gRender();window.scrollTo({top:y});}});
 $('gBox').addEventListener('change',e=>{if(GT.t==='transfForm')trPrevia();if(GT.t==='achouForm'&&e.target.id==='gf_aDest'&&$('gAchNovo'))$('gAchNovo').hidden=e.target.value!=='__novo';});
@@ -2592,6 +2607,7 @@ $('gBox').addEventListener('change',e=>{
   if(t.id==='gf_rForn'||t.id==='gf_rIns'){GT[t.id==='gf_rForn'?'rForn':'rIns']=t.value;GT.pgRP=1;return gRender();}
   if(t.matches&&t.matches('select[data-persel]')){GT.pgEP=GT.pgIP=GT.pgRP=1;GT[t.dataset.persel]=+t.value;return gRender();}
   if(t.matches&&t.matches('input[data-perd]')){if(t.value){GT[t.dataset.perd]=t.value;}return gRender();}
+  if(t.matches&&t.matches('select[data-locsel]')&&LOC_SET[t.dataset.locsel]){LOC_SET[t.dataset.locsel](t.value);const y=window.scrollY;gRender();window.scrollTo({top:y});return;}
   if(t.matches&&t.matches('select[data-lotlsel]')){gLoc=t.value;return gRender();}
   if(t.matches&&t.matches('select[data-colsel]')){document.querySelectorAll('#gBox .gCocho').forEach(el=>{const i=el.querySelector('input[data-kg]'),c=el.dataset.c;if(i&&GT.sel&&GT.sel[c]&&i.value)GT.sel[c].kg=gNum(i.value);});GT.coLoc=t.value;return gRender();}
   if(t.id==='gCbDia'){GT.cbDia=t.value||hojeKey();const y=window.scrollY;gRender();window.scrollTo({top:y});return;}
@@ -3813,7 +3829,7 @@ function cJaCarr(trs){const m=new Map(),hj=hojeKey();try{gTodos('carga').filter(
   return m;}
 function cExpHTML(trs){const L=cCurrCarga(trs);if(!L.length)return '';const ds=CG.desm||[],nM=L.filter(x=>!ds.includes(x.c)).length,ja=cJaCarr(trs);
   return `<button type="button" class="mini cExpTog${CG.expAberto?' sel':''}" data-cexp="1">${CG.expAberto?'▲ Recolher tratos':'▼ Expandir tratos'}${ds.length?` · ${nM} de ${L.length} currais`:''}</button>`+
-    (CG.expAberto?`<div class="cExpTodos"><button type="button" class="mini" data-cexpall="1">✓ Marcar todos</button><button type="button" class="mini" data-cexpall="0">✕ Desmarcar todos</button></div><div class="cJuntoLista cExpLista">${L.map(x=>{const on=!ds.includes(x.c);const jh=ja.get(x.c);return `<button type="button" data-cexpc="${esc(x.c)}" class="${on?'sel':''}${jh!=null&&!on?' cJaCarr':''}"><span>${on?'✓ ':''}${esc(x.c)}</span><small><i class="kg">${nf(x.kg)} kg</i>${jh!=null?` · <em>já ${esc(jh)}</em>`:''}</small></button>`;}).join('')}</div><p class="note">Toque no curral para colocar ou tirar a quantidade dele no carregamento.</p>`:'');}
+    (CG.expAberto?`<div class="cExpTodos">${nM<L.length?'<button type="button" class="mini" data-cexpall="1">✓ Marcar todos</button>':'<button type="button" class="mini" data-cexpall="0">✕ Desmarcar todos</button>'}</div><div class="cJuntoLista cExpLista">${L.map(x=>{const on=!ds.includes(x.c);const jh=ja.get(x.c);return `<button type="button" data-cexpc="${esc(x.c)}" class="${on?'sel':''}${jh!=null&&!on?' cJaCarr':''}"><span>${on?'✓ ':''}${esc(x.c)}</span><small><i class="kg">${nf(x.kg)} kg</i>${jh!=null?` · <em>já ${esc(jh)}</em>`:''}</small></button>`;}).join('')}</div><p class="note">Toque no curral para colocar ou tirar a quantidade dele no carregamento.</p>`:'');}
 function cExpAplicar(){const trs=[+CG.trato].concat(CG.juntos||[]),L=cCurrCarga(trs),ds=CG.desm||[];CG.total=L.filter(x=>!ds.includes(x.c)).reduce((a,x)=>a+x.kg,0);}
 function cJaTratadoHTML(trs){if(typeof fornCurrais!=='function'||typeof fornPendentes!=='function')return '';
   const feitos=trs.filter(k=>k>0&&fornCurrais(CG.local,CG.rac,k).length&&!fornPendentes(CG.local,CG.rac,k).length);if(!feitos.length)return '';
