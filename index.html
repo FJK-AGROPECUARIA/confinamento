@@ -1236,7 +1236,7 @@ body.naInicio .topoTxt h1{font-size:clamp(16px,5vw,28px)!important}
 <div class="toast" id="toast" hidden></div>
 <script>
 'use strict';
-const APP_VERSAO='223';
+const APP_VERSAO='224';
 const APP_DATA='19/10/2026';
 const KEY='confinamento-completo-v1';
 const $=id=>document.getElementById(id);
@@ -2649,7 +2649,8 @@ function selSetas(lbl,O,i,pAttr,sAttr){const opts=O.map(o=>`<option value="${o[0
 /* caixas de seleção dos formulários: quadradinho do padrão do sistema (tocar abre a lista e escolhe; sem setas) */
 const SETAS_IDS=new Set(['fRac','cRac','cSobRac','cfgComp','gMsIns','fzHCur','gVenCpr','gVenPor']);
 function selSync(s){const w=s.closest('.gSelSetas');if(!w)return;const o=s.options[s.selectedIndex],sp=w.querySelector('.gDataBox span'),B=w.querySelectorAll('.gSeta');
-  if(sp)sp.textContent=o?o.text.replace(/^([^\p{L}\p{N}\s]+) /u,'$1\u00a0'):'Selecione';const bx=w.querySelector('.gDataBox');if(bx)bx.classList.toggle('vazio',!s.value);if(B[0])B[0].disabled=s.disabled||s.selectedIndex<=0;if(B[1])B[1].disabled=s.disabled||s.selectedIndex>=s.options.length-1;}
+  if(sp){const tx=o?o.text.replace(/^([^\p{L}\p{N}\s]+) /u,'$1\u00a0'):'Selecione';if(sp.textContent!==tx)sp.textContent=tx;}   /* só reescreve se mudou: reescrever sempre fazia o observador rodar sem parar (tela travando) */
+  const bx=w.querySelector('.gDataBox');if(bx&&bx.classList.contains('vazio')!==!s.value)bx.classList.toggle('vazio',!s.value);if(B[0])B[0].disabled=s.disabled||s.selectedIndex<=0;if(B[1])B[1].disabled=s.disabled||s.selectedIndex>=s.options.length-1;}
 function setasSel(root){(root||document).querySelectorAll('select').forEach(s=>{
   if(s.multiple||s.classList.contains('mini')||s.classList.contains('trato')||s.hasAttribute('data-sem-setas')||s.closest('.gDataBox,td,.gNt,.tSeta,.hNavUm'))return;
   if(!(s.closest('.gCampo')||SETAS_IDS.has(s.id)))return;
