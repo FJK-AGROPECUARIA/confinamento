@@ -791,6 +791,9 @@ body.somenteVer:not(.menuFechado):not(.naInicio) #viewPrev,body.somenteVer:not(.
 #subGest.gTiles button{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;min-height:118px;padding:14px 8px;border-radius:18px;border:0;background:var(--c);color:#fff;font-size:1.3rem;font-weight:800;box-shadow:0 2px 6px rgba(0,0,0,.12)}
 #subGest.gTiles .gIc{font-size:2.3rem;line-height:1}#subGest.gTiles .gIc svg{width:2.6rem;height:2.6rem;display:block}
 #subGest.gTiles button[aria-selected="true"]{outline:none}
+.gAcHist{display:flex;gap:6px;justify-content:center;margin-top:4px}.gAcHist .mini{min-width:34px}
+.gRcLista{display:flex;flex-direction:column;gap:4px;margin:8px 0}.gRcLin{text-transform:none;letter-spacing:0;display:grid;grid-template-columns:28px 70px 1fr 1fr;gap:6px;align-items:center;padding:8px;border-radius:10px;background:#f4f7ee;font-size:.9rem}.gRcLin input{width:22px;height:22px}.gRcLin em{font-style:normal;color:#5d6b7a}.gRcCab{background:none;font-size:.72rem;text-transform:uppercase;color:#5d6b7a;font-weight:800}
+.gLink{color:#1b5e20;font-weight:800;text-decoration:underline;cursor:pointer}.gSaiTipos{grid-template-columns:repeat(2,minmax(0,1fr))!important}
 body.modoGest:not(.menuFechado):not(.naInicio) #viewGest,body.modoGest:not(.menuFechado):not(.naInicio) #viewEscolha,body.modoGest:not(.menuFechado):not(.naInicio) .menuSeta{display:none!important}
 .menuSeta{align-self:stretch;border:0;background:transparent;padding:4px 8px 0;font-size:.85rem;font-weight:700;color:#5d6b7a;line-height:1.2;border-radius:10px;text-align:center}
 body.menuFechado .wrap>.menu{position:sticky;top:env(safe-area-inset-top,0px);z-index:30;padding:4px;box-shadow:0 3px 10px rgba(17,37,61,.18)}
@@ -959,6 +962,8 @@ body.naInicio .topoTxt h1{font-size:clamp(16px,5vw,28px)!important}
   <div class="subtabs gTiles" id="subGest" hidden>
     <button data-gt="currais" style="--c:#4f9a52"><span class="gIc"><svg class="icoCurral" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 21V7.5L5.5 5 7 7.5V21M10.5 21V7.5L12 5l1.5 2.5V21M17 21V7.5L18.5 5 20 7.5V21" fill="#c9a26b" stroke="#7a4f21" stroke-width="1.3" stroke-linejoin="round"/><path d="M2.5 10.5h19M2.5 16h19" stroke="#7a4f21" stroke-width="2.2" stroke-linecap="round"/></svg></span><span>Currais</span></button>
     <button data-gt="lotes" style="--c:#3d8442"><span class="gIc">🐂</span><span>Lotes</span></button>
+    <button data-gt="entradas" style="--c:#2e7d5b"><span class="gIc">📥</span><span>Entrada de animais</span></button>
+    <button data-gt="saidas" style="--c:#a0522d"><span class="gIc">📤</span><span>Saída de animais</span></button>
     <button data-gt="racoes" style="--c:#b8860b"><span class="gIc">🌽</span><span>Rações</span></button>
     <button data-gt="estoque" style="--c:#946a0c"><span class="gIc">📦</span><span>Estoque</span></button>
     <button data-gt="home" id="tabGest" style="--c:#3f80c4"><span class="gIc">📋</span><span>Resumo</span></button>
@@ -1228,7 +1233,7 @@ body.naInicio .topoTxt h1{font-size:clamp(16px,5vw,28px)!important}
 <div class="toast" id="toast" hidden></div>
 <script>
 'use strict';
-const APP_VERSAO='212';
+const APP_VERSAO='213';
 const APP_DATA='19/10/2026';
 const KEY='confinamento-completo-v1';
 const $=id=>document.getElementById(id);
@@ -2384,7 +2389,7 @@ function secaoJuntosImg(gs,cab){let tp=0,tf=0,tpf=0;
 const COLS_CURRAL=[['Curral',220,'c'],['Dieta',200,'c'],['Tratos',100,'c'],['Previsto',150,'r'],['Realizado',150,'r'],['Dif.',120,'r'],['% IMS',120,'c']];
 // secoes: [{cab, cols, linhas:[{v:[...], prev, dif, neg:[índices em negrito]}], total:[...]}]
 function desenharTabela(secoes,titulo,totalGeral){window.__tituloImg=titulo||(()=>{try{const [a,b]=intervaloHist();return `FJK - Tratos - ${diaBR(a)}${a!==b?' a '+diaBR(b):''}`;}catch(e){return 'FJK - Tratos';}})();
-  const cols=secoes[0].cols,M=30,W=M*2+cols.reduce((a,c)=>a+c[1],0),RH=46,esc=2;
+  let cols=secoes[0].cols;const cols0=cols,M=30,W=M*2+cols.reduce((a,c)=>a+c[1],0),RH=46,esc=2;   /* cada seção pode ter as suas colunas (mesma largura total) */
   let H=120;secoes.forEach(s=>{H+=50+40+RH*s.linhas.length+52+20;});H+=30+(totalGeral?76:0);
   const cv=document.createElement('canvas');cv.width=W*esc;cv.height=H*esc;const c=cv.getContext('2d');c.scale(esc,esc);
   const F='-apple-system,"Segoe UI",Roboto,Arial,sans-serif';
@@ -2395,10 +2400,10 @@ function desenharTabela(secoes,titulo,totalGeral){window.__tituloImg=titulo||(()
   const cor=(d,p)=>{if(d==null)return '#11253d';const k=classeDesv(d,p);return k==='ok'?'#5f7a00':k==='warn'?'#b26a00':'#b3261e';};
   const px=(k,a)=>{let x=M;for(let i=0;i<k;i++)x+=cols[i][1];const w=cols[k][1];return a==='l'?x+8:a==='c'?x+w/2:x+w-8;};
   let y=120;
-  secoes.forEach(s=>{
+  secoes.forEach(s=>{cols=s.cols||cols0;
     c.fillStyle='#f3f7dc';c.fillRect(M,y,W-2*M,44);c.fillStyle='#11253d';c.font=`700 24px ${F}`;c.textAlign='left';c.fillText(s.cab,M+12,y+22);y+=50;
     c.font=`700 16px ${F}`;c.fillStyle='#5d6b7a';
-    cols.forEach(([t,w,a],k)=>{c.textAlign=a==='l'?'left':a==='c'?'center':'right';c.fillText(String((s.tit||[])[k]??t).toUpperCase(),px(k,a),y+20);});   /* s.tit: outros títulos de coluna só nesta seção */
+    cols.forEach(([t,w,a],k)=>{c.textAlign=a==='l'?'left':a==='c'?'center':'right';const tx=String((s.tit||[])[k]??t).toUpperCase();let fs=16;c.font=`700 ${fs}px ${F}`;while(c.measureText(tx).width>w-6&&fs>11){fs--;c.font=`700 ${fs}px ${F}`;}c.fillText(tx,px(k,a),y+20);});   /* título maior que a coluna: letra menor */   /* s.tit: outros títulos de coluna só nesta seção */
     y+=40;c.fillStyle='#dde3ea';c.fillRect(M,y-2,W-2*M,2);
     s.linhas.forEach((l,i)=>{if(i%2){c.fillStyle='#f7f9fb';c.fillRect(M,y,W-2*M,RH);}
       cols.forEach(([t,w,a],k)=>{c.textAlign=a==='l'?'left':a==='c'?'center':'right';c.font=((l.neg||[0]).includes(k)?'700 ':'500 ')+'21px '+F;
@@ -2413,8 +2418,8 @@ function desenharTabela(secoes,titulo,totalGeral){window.__tituloImg=titulo||(()
       y+=RH;c.fillStyle='#dde3ea';c.fillRect(M,y-1,W-2*M,1);});
     const sub=s.total&&s.total[0]==='SUBTOTAL';c.fillStyle=sub?'#4a7fbf':'#11253d';c.fillRect(M,y+6,W-2*M,44);c.font=`700 21px ${F}`;
     cols.forEach(([t,w,a],k)=>{const v=s.total[k];if(v==null||v==='')return;c.textAlign=a==='l'?'left':a==='c'?'center':'right';
-      c.fillStyle=t==='Realizado'?(sub?'#eef7b0':'#c8dd1e'):'#ffffff';if(k===0)c.textAlign='left';c.fillText(String(v),k===0?M+12:px(k,a),y+28);});
-    y+=52+20;});
+      c.fillStyle=t==='Realizado'||t==='Carregado'?(sub?'#eef7b0':'#c8dd1e'):'#ffffff';if(k===0)c.textAlign='left';c.fillText(String(v),k===0?M+12:px(k,a),y+28);});
+    y+=52+20;});cols=cols0;
   /* total geral (soma de todos os tratos): linha separada e destacada no fim */
   if(totalGeral){y+=6;c.fillStyle='#11253d';c.fillRect(M,y,W-2*M,56);c.fillStyle='#a7bc09';c.fillRect(M,y,W-2*M,4);c.font=`800 24px ${F}`;
     cols.forEach(([t,w,a],k)=>{const v=totalGeral[k];if(v==null||v==='')return;c.textAlign=a==='l'?'left':a==='c'?'center':'right';

@@ -238,8 +238,8 @@ const opInsumos=()=>gTodos('insumo').sort(porNome).map(r=>[r.uid,r.nome+(r.inati
 const UNID_C=[['arroba','R$/@ abatida (peso × rendimento ÷ 15)'],['arrV','R$/@ viva (peso vivo ÷ 30)'],['cab','R$/cabeça'],['kg','R$/kg vivo']];
 const UNID_V=[['arroba','R$/@ abatida (carcaça ÷ 15)'],['arrV','R$/@ viva (peso vivo ÷ 30)'],['cab','R$/cabeça'],['kg','R$/kg vivo']];
 
-const RAIZ={home:'home',estoque:'estoque',estIns:'estoque',estForm:'estoque',estNF:'estoque',fornec:'estoque',fornForm:'estoque',entRel:'estoque',currais:'currais',curForm:'currais',lotes:'lotes',lote:'lotes',loteForm:'lotes',pesForm:'lotes',entForm:'lotes',apartForm:'lotes',transfForm:'lotes',fechaForm:'lotes',achouForm:'lotes',saiForm:'lotes',mudForm:'lotes',rel:'lotes',custoForm:'lotes',
-  cocho:'cocho',cochoGraf:'cocho',fezes:'cocho',rels:'rels',dia:'rels',indices:'rels',confBal:'rels',periodo:'rels',comp:'rels',vendas:'rels',compradores:'rels',cprForm:'rels',racoes:'racoes',racForm:'racoes',insumos:'estoque',insForm:'estoque',insMS:'insumos',ms:'cocho',cfg:'cfg'};
+const RAIZ={home:'home',entradas:'entradas',saidas:'saidas',estoque:'estoque',estIns:'estoque',estForm:'estoque',estNF:'estoque',fornec:'estoque',fornForm:'estoque',entRel:'estoque',currais:'currais',curForm:'currais',lotes:'lotes',lote:'lotes',loteForm:'lotes',pesForm:'lotes',entForm:'lotes',apartForm:'lotes',transfForm:'lotes',fechaForm:'lotes',achouForm:'lotes',saiForm:'lotes',mudForm:'lotes',rel:'lotes',custoForm:'lotes',
+  cocho:'cocho',cochoGraf:'cocho',fezes:'cocho',rels:'rels',dia:'rels',indices:'rels',confBal:'rels',periodo:'rels',comp:'rels',vendas:'rels',compradores:'rels',cprForm:'rels',racoes:'racoes',racForm:'racoes',racCur:'racoes',mudCur:'currais',insumos:'estoque',insForm:'estoque',insMS:'insumos',ms:'cocho',cfg:'cfg'};
 /* Leitura de cocho fica no menu Tratos (aba 'leit'); o resto da Gestão na aba 'gest' — as duas usam a mesma tela */
 function gRaiz(t){GT={t};gPilha.length=0;const alvo=RAIZ[t]==='cocho'&&!document.body.classList.contains('modoGest')?'leit':'gest';if(window.abaAtual!==alvo)aba(alvo);else gRender();window.scrollTo({top:0});}
 window.gAbrir=modo=>{const leit=RAIZ[GT.t]==='cocho';if(modo==='leit'&&!leit)GT={t:'cocho'};if(modo==='gest'&&leit&&!document.body.classList.contains('modoGest'))GT={t:'home'};gRender();if(navigator.onLine)gSync(true).catch(()=>{});};
@@ -247,9 +247,9 @@ function gRender(){if(GT&&GT.t!=='rel')RELCMP=null;
   const b=$('gBox');if(!b)return;
   if(window.abaAtual==='gest'&&RAIZ[GT.t]==='cocho'&&!document.body.classList.contains('modoGest')){aba('leit');return;}  // leitura abre no menu Tratos
   if(window.abaAtual==='leit'&&RAIZ[GT.t]!=='cocho'){aba('gest');return;}
-  const f={home:tHome,estoque:tEstoque,estIns:tEstIns,estForm:tEstForm,estNF:tEstNF,fornec:tFornec,fornForm:tFornForm,entRel:tEntRel,currais:tCurrais,curForm:tCurForm,lotes:tLotes,lote:tLote,loteForm:tLoteForm,pesForm:tPesForm,entForm:tEntForm,apartForm:tApartForm,transfForm:tTransfForm,fechaForm:tFechaForm,achouForm:tAchouForm,saiForm:tSaiForm,mudForm:tMudForm,rel:tRelLote,custoForm:tCustoForm,
-    cocho:tCocho,cochoGraf:tCochoGraf,fezes:t=>tFezes(t),rels:tRels,dia:tDia,indices:tIndices,periodo:tPeriodo,comp:tComp,vendas:tVendas,compradores:tCompradores,cprForm:tCprForm,racoes:tRacoes,racForm:tRacForm,insumos:tInsumos,insForm:tInsForm,insMS:tInsMS,ms:tInsMS,cfg:tCfg}[GT.t]||tHome;
-  const raiz=RAIZ[GT.t]||'home';document.querySelectorAll('#subGest button[data-gt]').forEach(x=>x.setAttribute('aria-selected',String(x.dataset.gt===raiz)));
+  const f={home:tHome,estoque:tEstoque,estIns:tEstIns,estForm:tEstForm,estNF:tEstNF,fornec:tFornec,fornForm:tFornForm,entRel:tEntRel,currais:tCurrais,curForm:tCurForm,lotes:tLotes,entradas:tEntradas,saidas:tSaidas,lote:tLote,loteForm:tLoteForm,pesForm:tPesForm,entForm:tEntForm,apartForm:tApartForm,transfForm:tTransfForm,fechaForm:tFechaForm,achouForm:tAchouForm,saiForm:tSaiForm,mudForm:tMudForm,rel:tRelLote,custoForm:tCustoForm,
+    cocho:tCocho,cochoGraf:tCochoGraf,fezes:t=>tFezes(t),rels:tRels,dia:tDia,indices:tIndices,periodo:tPeriodo,comp:tComp,vendas:tVendas,compradores:tCompradores,cprForm:tCprForm,racoes:tRacoes,racForm:tRacForm,racCur:tRacCur,mudCur:tMudCur,insumos:tInsumos,insForm:tInsForm,insMS:tInsMS,ms:tInsMS,cfg:tCfg}[GT.t]||tHome;
+  const raiz=GT.raiz||RAIZ[GT.t]||'home';document.querySelectorAll('#subGest button[data-gt]').forEach(x=>x.setAttribute('aria-selected',String(x.dataset.gt===raiz)));
   const cb=$('cfgTBox');if(cb&&$('cfgTParque')&&cb.parentNode!==$('cfgTParque'))$('cfgTParque').appendChild(cb); // ajustes da balança: guarda antes de redesenhar
   b.innerHTML=f(GT);
   try{const fz=GT.t==='fezes',ms=GT.t==='ms',lt=window.abaAtual==='leit';if($('tabFez'))$('tabFez').setAttribute('aria-selected',String(fz&&lt));if($('tabMS'))$('tabMS').setAttribute('aria-selected',String(ms&&lt));if($('tabLeit')&&lt)$('tabLeit').setAttribute('aria-selected',String(!fz&&!ms));}catch(e){}
@@ -630,6 +630,50 @@ function projAbate(l){try{const hj=hojeKey();if(fimLote(l)&&fimLote(l)<=hj)retur
   if(l.alvo&&l.gmd>0){const d=somaDias(hj,Math.max(0,Math.ceil((l.alvo-pj)/l.gmd)));return {dia:d,peso:Math.max(+l.alvo,pj),por:'peso desejado'};}
   if(l.diasPrev&&l.ent&&l.ent.dia){const d=somaDias(l.ent.dia,+l.diasPrev);return {dia:d,peso:d>hj?pesoEm(l,d):pj,por:'dias de cocho'};}
   return null;}catch(e){return null;}}
+/* ---------- Entrada de animais e Saída de animais (quadros próprios na Gestão; os formulários são os mesmos dos lotes) ---------- */
+const PER_ES=[[30,'30 dias'],[90,'90 dias'],[365,'1 ano'],[0,'Tudo']];
+const perBts=(g,per)=>`<div class="linhas">${PER_ES.map(([n,t])=>`<button data-g="${g}" data-n="${n}" class="${per===n?'sel':''}">${t}</button>`).join('')}</div>`;
+function opLotesSel(comArq,hj){const at=lotesAtivos().sort(porCurral),arq=comArq?gTodos('lote').filter(l=>!ativo(l)).sort(porNome):[];
+  return at.map(o=>[o.uid,`${curralEm(o,hj)||'—'} · ${o.nome} · ${nf(cabAtual(o))} cab`]).concat(arq.map(o=>[o.uid,`(arquivado) ${o.nome}`]));}
+const loteCel=(l,extra)=>l?`<a class="gLink" data-g="lote" data-id="${l.uid}">${esc(l.nome)}</a><small>${esc([curralEm(l,fimLote(l)||hojeKey()),extra].filter(Boolean).join(' · '))}</small>`:'—';
+const dCurto=d=>dB(d).slice(0,6)+dB(d).slice(8);
+function tEntradas(t){const hj=hojeKey(),per=t.per!=null?t.per:90,desde=per?somaDias(hj,-per):'';
+  const op=[['','— escolher o lote —'],['__novo','＋ Criar lote novo (escolher o curral)']].concat(opLotesSel(true,hj));
+  const R=[];
+  gTodos('lote').forEach(l=>{const e=l.ent;if(!e||!e.dia)return;const vi=valorCompra(l)-entradasDe(l).reduce((a,x)=>a+(+x.rs||0),0);
+    R.push({k:'lote',dia:e.dia,l,cab:+e.cab||0,peso:+e.peso||0,rs:vi,orig:e.origem||(l.apDe?'Apartação':'Compra · lote novo')});});
+  gTodos('entlote').forEach(x=>{const l=G.it[x.lote];if(!l||l.del)return;const tr=x.transf&&G.it[x.transf],de=tr&&G.it[tr.lote];
+    R.push({k:'ent',x,dia:x.dia,l,cab:+x.cab||0,peso:+x.peso||0,rs:+x.rs||0,orig:x.falta?'Animais achados':de?(x.vi?'Compra (venda interna) de ':'Transferência de ')+de.nome:x.obs||'Compra',auto:!!(x.transf||x.falta)});});
+  const L=R.filter(r=>!desde||r.dia>=desde).sort((a,b)=>b.dia.localeCompare(a.dia)||(b.k==='lote')-(a.k==='lote'));
+  const tot=L.reduce((a,r)=>a+r.cab,0);
+  const linhas=L.map(r=>`<tr><td>${dCurto(r.dia)}<div class="gAcHist">${r.k==='lote'?`<button class="mini" data-g="ir" data-t="loteForm" data-id="${r.l.uid}" title="Alterar (editar lote)">✎</button>`
+      :`${r.auto?'':`<button class="mini" data-g="entEd" data-id="${r.l.uid}" data-eid="${r.x.uid}">✎</button>`}<button class="mini danger" data-g="apaga" data-id="${r.x.uid}" data-o="${r.x.transf?'entrada (apaga também a transferência)':'entrada de animais'}">✕</button>`}</div></td><td class="c">${loteCel(r.l,r.orig)}</td><td>${r.k==='ent'?'+':''}${nf(r.cab)}</td><td>${nf(r.peso)}</td><td>${r.rs>0?nf(r.rs):'—'}</td></tr>`).join('');
+  return `<section class="panel"><h2>📥 Entrada de animais</h2>
+    <p class="note">Escolha o lote que vai receber os animais (aparece o curral em que ele está) ou crie um lote novo e escolha o curral.</p>
+    <div class="gForm">${campo({k:'enLote',l:'Lote que recebe',t:'sel',busca:1,op,v:t.lote||''})}</div>
+    <button class="primary" data-g="entNova">Continuar ▸</button></section>
+  <section class="panel"><h2>Histórico de entradas</h2>${perBts('entPer',per)}
+    ${L.length?`<div class="tablebox"><table class="gTab"><thead><tr><th>Data</th><th>Lote · origem</th><th>Cab.</th><th>Peso</th><th>Valor R$</th></tr></thead><tbody>${linhas}
+    <tr class="grp"><td>Total</td><td>${nf(L.length)} entrada(s)</td><td>${nf(tot)}</td><td></td><td>${nf(L.reduce((a,r)=>a+(r.rs>0?r.rs:0),0))}</td></tr></tbody></table></div>
+    <p class="note">✎ altera · ✕ exclui. A primeira entrada de cada lote se altera em "Editar lote". Entradas que vieram de transferência se apagam junto com a transferência; animais achados, no lote de origem.</p>`:'<p class="note">Nenhuma entrada nesse período.</p>'}</section>`;}
+const tipoSai=s=>s.mot==='morte'?'✝ Morte':s.mot==='transf'?(+s.vi>0?'↔ Venda interna':'↔ Transferência'):s.mot==='apart'?'✂ Apartação':s.mot==='falta'?'❓ Faltou / sumiu':'💲 Venda';
+function tSaidas(t){const hj=hojeKey(),per=t.per!=null?t.per:90,desde=per?somaDias(hj,-per):'';
+  const op=[['','— escolher o lote —']].concat(opLotesSel(false,hj));
+  const L=gTodos('saida').filter(x=>G.it[x.lote]&&!G.it[x.lote].del&&(!desde||x.dia>=desde)).sort((a,b)=>b.dia.localeCompare(a.dia));
+  const dest=s=>{const d=s.destino&&G.it[s.destino];if(d&&!d.del)return '→ '+d.nome;if(ehVenda(s))return nomeCpr(s)||'';return s.obs||'';};
+  const linhas=L.map(s=>{const l=G.it[s.lote],v=ehVenda(s)?valorVenda(s):s.mot==='transf'&&+s.vi>0?+s.vi:NaN;
+    return `<tr><td>${dCurto(s.dia)}<div class="gAcHist">${ehVenda(s)?`<button class="mini" data-g="ir" data-t="saiForm" data-id="${l.uid}" data-o="venda" data-sid="${s.uid}">✎</button>`:''}${s.mot==='apart'?`<button class="mini" data-g="lote" data-id="${l.uid}" title="Desfazer no lote">▸</button>`:`<button class="mini danger" data-g="apaga" data-id="${s.uid}" data-o="${s.mot==='transf'?'transferência (volta os animais e o custo para o lote de origem)':'saída'}">✕</button>`}</div></td><td class="c"><b>${tipoSai(s)}</b><br>${loteCel(l,dest(s))}</td><td>${nf(s.cab)}</td><td>${s.mot==='morte'?'—':nf(s.peso)}</td><td>${ok(v)&&v>0?nf(v):'—'}</td></tr>`;}).join('');
+  const soma=f=>L.filter(f).reduce((a,s)=>a+(+s.cab||0),0);
+  const B=(t2,o,ic,txt,cls)=>`<button class="${cls||''}" data-g="saiNova" data-t="${t2}"${o?` data-o="${o}"`:''}>${ic} ${txt}</button>`;
+  return `<section class="panel"><h2>📤 Saída de animais</h2>
+    <p class="note">Escolha o lote de onde os animais saem e o tipo de saída.</p>
+    <div class="gForm">${campo({k:'saLote',l:'Lote de onde saem',t:'sel',busca:1,op,v:t.lote||''})}</div>
+    <div class="gAcoes gSaiTipos">${B('saiForm','venda','💲','Venda / saída','lima')}${B('fechaForm','','💲','Venda + sobra','lima')}${B('transfForm','','↔','Transferência')}${B('apartForm','','✂','Apartar / dividir')}${B('saiForm','morte','✝','Morte')}</div></section>
+  <section class="panel"><h2>Histórico de saídas</h2>${perBts('saiPer',per)}
+    ${L.length?`<div class="tablebox"><table class="gTab"><thead><tr><th>Data</th><th>Saída · lote</th><th>Cab.</th><th>Peso</th><th>Valor R$</th></tr></thead><tbody>${linhas}
+    <tr class="grp"><td>Total</td><td>${nf(L.length)} saída(s)</td><td>${nf(soma(()=>true))}</td><td></td><td>${nf(L.filter(ehVenda).reduce((a,s)=>a+valorVenda(s),0))}</td></tr></tbody></table></div>
+    <p class="note">Vendidos ${nf(soma(ehVenda))} · transferidos ${nf(soma(s=>s.mot==='transf'))} · apartados ${nf(soma(s=>s.mot==='apart'))} · mortes ${nf(soma(s=>s.mot==='morte'))}${soma(s=>s.mot==='falta')?' · faltaram '+nf(soma(s=>s.mot==='falta')):''}. ✎ altera a venda · ✕ exclui (transferência volta os animais) · apartação se desfaz no lote (▸).</p>`:'<p class="note">Nenhuma saída nesse período.</p>'}</section>`;}
+/* ---------- ficha de cada lote ---------- */
 function tLote(t){
   const l=G.it[t.id];if(!l||l.del)return `${voltar()}<p class="note">Lote não encontrado.</p>`;
   const hj=hojeKey(),cab=cabAtual(l),fim=fimLote(l),ref=fim||hj,X=gCtx(),dRef=t.dia||(fim||hj);GT.dia=dRef;const x=diaLote(l,dRef,X),dd=dB(dRef).slice(0,5);
@@ -658,18 +702,12 @@ function tLote(t){
       ${st('GMD meta',nf(l.gmd,2)+' kg')}${st('Ração',esc(r?r.nome:'—'))}${st('Saída prevista',saiDia?dB(saiDia).slice(0,5)+`<small>${saiPor}</small>`:'—')}</div>
     <div class="gAcoes${fim?'':' gAc4'}">
       ${fim?'':`<button data-g="ir" data-t="loteForm" data-id="${l.uid}">✎ Editar dados</button>
-      <button class="verde" data-g="ir" data-t="entForm" data-id="${l.uid}">＋ Entrada de animais</button>
       <button class="lima" data-g="ir" data-t="pesForm" data-id="${l.uid}">⚖️ Pesagem</button>
       <button data-g="ir" data-t="saiForm" data-id="${l.uid}" data-o="morte">✝ Morte</button>
       <button data-g="ir" data-t="custoForm" data-id="${l.uid}">💉 Outros custos</button>
-      <button data-g="ir" data-t="mudForm" data-id="${l.uid}" data-o="rac">🌾 Mudar ração</button>
-      <button data-g="ir" data-t="mudForm" data-id="${l.uid}" data-o="curr">↔ Mudar curral</button>
-      <span></span>
-      <button data-g="ir" data-t="transfForm" data-id="${l.uid}">↔ Transferir animais</button>
-      <button data-g="ir" data-t="apartForm" data-id="${l.uid}">✂ Apartar / dividir</button>
-      <button class="lima" data-g="ir" data-t="saiForm" data-id="${l.uid}" data-o="venda">💲 Venda / saída</button>
-      <button class="lima" data-g="ir" data-t="fechaForm" data-id="${l.uid}">💲 Venda + sobra</button>`}
-      ${fim?`<button data-g="ir" data-t="loteForm" data-id="${l.uid}">✎ Editar dados</button><button class="verde" data-g="ir" data-t="entForm" data-id="${l.uid}">＋ Entrada de animais</button>`:''}
+      <button class="verde" data-g="raizLote" data-t="entradas" data-id="${l.uid}">📥 Entrada de animais</button>
+      <button class="lima" data-g="raizLote" data-t="saidas" data-id="${l.uid}">📤 Saída de animais</button>`}
+      ${fim?`<button data-g="ir" data-t="loteForm" data-id="${l.uid}">✎ Editar dados</button><button class="verde" data-g="raizLote" data-t="entradas" data-id="${l.uid}">📥 Entrada de animais</button>`:''}
     </div>
     ${apInfo(l)}<button class="primary" data-g="ir" data-t="rel" data-id="${l.uid}">📊 ${partesApart(l).length?'Relatório da apartação':fim?'Relatório final':'Resultado até hoje'}</button></section>
   <section class="panel gDiaBox">${navData('gRefDia',dRef,'Consumo do dia')}
@@ -907,15 +945,15 @@ function salvaFecha(id){fcLer();const l=G.it[id],F=GT.f,X=fcCalc(l,F),d=X.d;
   if(X.cabF>0){const cst={};Object.keys(X.cstF).forEach(k=>cst[k]=Math.round(X.cstF[k]*100)/100);gPut({uid:novoId('sai'),tipo:'saida',mot:'falta',lote:l.uid,dia:d,cab:X.cabF,peso:Math.round(X.pF*100)/100,cst,custo:Object.values(cst).reduce((a,v)=>a+v,0),achados:[],obs:F.fobs||'',fech:true});}
   if(X.cabV>0)gPut({uid:novoId('sai'),tipo:'saida',mot:'venda',lote:l.uid,dia:d,cab:X.cabV,peso:Math.round(X.pV*100)/100,rc:X.rc,pesoVT:X.kgV?Math.round(X.kgV*100)/100:null,carcT:gNum(F.carcT)>0?gNum(F.carcT):(gNum(F.carcM)>0?Math.round(gNum(F.carcM)*X.cabV*100)/100:null),unid:F.unid,preco:gNum(F.preco)||0,vTot:gNum(F.vTot)||null,desc:gNum(F.desc)||0,comp:cp||'',obs:F.obs||'',fech:true,cst:(()=>{const o={};Object.keys(X.cstV).forEach(k=>o[k]=Math.round(X.cstV[k]*100)/100);return o;})()});
   toast(`${l.nome} fechado`);gPilha.pop();GT={t:'rel',id:l.uid};gRender();window.scrollTo({top:0});}
-function tEntForm(t){const l=G.it[t.id];GT.entLote=l.uid;
-  return `${voltar()}<section class="panel"><h2>＋ Entrada de animais · ${esc(l.nome)}</h2><p class="note">No lote agora: ${nf(cabAtual(l))} cabeças · peso projetado hoje ${nf(pesoEm(l,hojeKey()))} kg.</p>
-    <div class="gForm">${[{k:'dia',l:'Data da entrada',t:'dia',v:hojeKey(),meia:1},{k:'cab',l:'Quantidade de animais',t:'num',meia:1},
-      {k:'peso',l:'Peso médio (individual)',suf:'kg por cabeça',t:'num',meia:1},{k:'pesoT',l:'ou Peso total',suf:'kg de todos',t:'num',meia:1},
-      {k:'prA',l:'Preço da @ na compra',t:'rs',v:(!l.ent.unid||l.ent.unid==='arroba')&&+l.ent.preco>0?+l.ent.preco:'',meia:1},{k:'rcE',l:'Rendimento na compra',suf:'%',t:'num',v:+l.ent.rcC||50,meia:1},
-      {k:'rs',l:'Valor total da compra',t:'rs',ajuda:'Preço da @ × arrobas (peso total × rendimento ÷ 15). Digitando o valor total, o preço da @ é calculado.'},{k:'obs',l:'Observação (de onde veio, etc.)'}].map(campo).join('')}</div>
+function tEntForm(t){const l=G.it[t.id];GT.entLote=l.uid;const E=t.eid&&G.it[t.eid]&&!G.it[t.eid].del?G.it[t.eid]:null,V=(k,d)=>E&&E[k]!=null&&E[k]!==''?E[k]:d;
+  return `${voltar()}<section class="panel"><h2>${E?'✎ Alterar entrada':'＋ Entrada de animais'} · ${esc(l.nome)}${curralEm(l,hojeKey())?' <small>('+esc(curralEm(l,hojeKey()))+')</small>':''}</h2><p class="note">No lote agora: ${nf(cabAtual(l))} cabeças · peso projetado hoje ${nf(pesoEm(l,hojeKey()))} kg.</p>
+    <div class="gForm">${[{k:'dia',l:'Data da entrada',t:'dia',v:V('dia',hojeKey()),meia:1},{k:'cab',l:'Quantidade de animais',t:'num',v:V('cab',''),meia:1},
+      {k:'peso',l:'Peso médio (individual)',suf:'kg por cabeça',t:'num',v:V('peso',''),meia:1},{k:'pesoT',l:'ou Peso total',suf:'kg de todos',t:'num',v:E&&+E.cab>0&&+E.peso>0?Math.round(E.cab*E.peso*100)/100:'',meia:1},
+      {k:'prA',l:'Preço da @ na compra',t:'rs',v:V('preco',(!l.ent.unid||l.ent.unid==='arroba')&&+l.ent.preco>0?+l.ent.preco:''),meia:1},{k:'rcE',l:'Rendimento na compra',suf:'%',t:'num',v:V('rcC',+l.ent.rcC||50),meia:1},
+      {k:'rs',l:'Valor total da compra',t:'rs',v:V('rs',''),ajuda:'Preço da @ × arrobas (peso total × rendimento ÷ 15). Digitando o valor total, o preço da @ é calculado.'},{k:'obs',l:'Observação (de onde veio, etc.)',v:V('obs','')}].map(campo).join('')}</div>
     <p class="note" id="gEntRes"></p>
     <p class="note">Os animais entram no mesmo lote e no mesmo curral. O peso médio do lote passa a ser a média dos que já estavam com os que chegaram. O custo que o lote já teve continua; daqui pra frente ele é dividido por mais cabeças.</p>
-    <button class="primary" data-g="salvaEnt" data-id="${l.uid}">Salvar entrada</button></section>`;}
+    <button class="primary" data-g="salvaEnt" data-id="${l.uid}"${E?` data-eid="${E.uid}"`:''}>${E?'Salvar alteração':'Salvar entrada'}</button></section>`;}
 function calcEnt(qual){const c=gNum($('gf_cab')&&$('gf_cab').value),pi=gNum($('gf_peso').value),pt=gNum($('gf_pesoT').value),res=$('gEntRes');
   if(c>0&&qual==='peso'&&pi>0)$('gf_pesoT').value=vIn(Math.round(c*pi*100)/100);
   else if(c>0&&qual==='pesoT'&&pt>0)$('gf_peso').value=vIn(Math.round(pt/c*100)/100);
@@ -923,7 +961,7 @@ function calcEnt(qual){const c=gNum($('gf_cab')&&$('gf_cab').value),pi=gNum($('g
   {const P2=gNum($('gf_peso').value),rc=gNum($('gf_rcE')&&$('gf_rcE').value),arr=c>0&&P2>0&&rc>0?c*P2*rc/100/15:NaN,pr=fn('prA'),vt=fn('rs');   /* preço da @ ↔ valor total da compra */
     if(arr>0){if(qual==='rs'){if(vt>0)$('gf_prA').value=rsIn(Math.round(vt/arr*100)/100);}else if(pr>0)$('gf_rs').value=rsIn(Math.round(arr*pr*100)/100);}}
   const l=G.it[GT.entLote],P=gNum($('gf_peso').value),d=fv('dia')||hojeKey();if(!res||!l)return;
-  if(c>0&&P>0){const a=cabEm(l,somaDias(d,-1)),pA=pesoEm(l,d),m=(a*pA+c*P)/(a+c);res.innerHTML=`Depois da entrada: <b>${nf(a+c)} cab</b> · peso médio do lote <b>${nf(m)} kg</b> (antes ${nf(pA)} kg).`;}else res.textContent='';}
+  if(c>0&&P>0&&!(GT.eid)){const a=cabEm(l,somaDias(d,-1)),pA=pesoEm(l,d),m=(a*pA+c*P)/(a+c);res.innerHTML=`Depois da entrada: <b>${nf(a+c)} cab</b> · peso médio do lote <b>${nf(m)} kg</b> (antes ${nf(pA)} kg).`;}else res.textContent='';}
 /* venda: peso total vendido (vivo) e abatido (carcaça) → rendimento de carcaça sozinho; total ↔ peso médio pelas cabeças */
 /* venda: médio ↔ total (vivo e abatido), rendimento ↔ abatido, @ abatidas, preço ↔ valor total e valor líquido */
 function vendaAuto(q,g,p,ps){const c=g('cab');
@@ -1012,6 +1050,29 @@ function xlsVendas(){const t=GT.vF||{},V=vendasFiltradas(t),por=t.por||'cpr',G_=
   gExcel(`Vendas ${dB(t.ini).replace(/\//g,'-')} a ${dB(t.fim).replace(/\//g,'-')}`,[
     ['Comparativo',[nomePor,'Vendas','Cabeças','Peso vivo médio','Rendimento','@/cab','@ total','Preço @ bruto','Preço @ líquido','R$/kg vivo líq.','R$/cab líq.','Descontos','Receita líquida'],G_.map(o=>[xc(o.nome),xc(o.n,'int'),xc(o.cab,'int'),xc(o.peso,'int'),xc(o.rc/100,'pct'),xc(o.arrCab,'dec'),xc(o.arr,'dec'),xc(o.prB,'rs'),xc(o.prL,'rs'),xc(o.rsKg,'rs'),xc(o.rsCab,'rs'),xc(o.desc,'rs'),xc(o.liq,'rs')])],
     ['Vendas',['Data','Comprador','Tipo','Lote','Sexo','Raça','Categoria','Cabeças','Peso vivo','Rendimento','@ total','Preço @ bruto','Descontos','Receita líquida','R$/cab líq.','Obs.'],V.map(v=>[xc(v.s.dia,'dia'),xc(v.cpr),xc(v.cat),xc(v.lote),xc(v.sexo),xc(v.raca),xc(v.catA),xc(v.cab,'int'),xc(+v.s.peso,'int'),xc(v.rc/100,'pct'),xc(v.arr,'dec'),xc(v.arr?v.bruto/v.arr:NaN,'rs'),xc(v.desc,'rs'),xc(v.liq,'rs'),xc(v.cab?v.liq/v.cab:NaN,'rs'),xc(v.s.obs||'')])]]);}
+/* ---------- Rações por curral: muda a ração de um, de alguns ou de todos os currais (vale para os lotes que estão neles) ---------- */
+const lotesNoCur=(n,d)=>gTodos('lote').filter(l=>cabPres(l,d)>0&&curralEm(l,d)===n).sort(porNome);
+function tRacCur(t){const A=window.curraisApi,hj=hojeKey(),loc=t.loc||'C';if(!A)return '';
+  const L=A.lista().filter(n=>!A.info(n).inativo&&(loc==='T'||A.info(n).tipo===loc)).sort(alfa);
+  const linhas=L.map(n=>{const ls=lotesNoCur(n,hj),rac=ls.map(l=>{const r=racaoEm(l,hj);return r?r.nome:'sem ração';});
+    return `<label class="gRcLin${ls.length?'':' gInativa'}"><input type="checkbox" data-rc="${esc(n)}"${ls.length?'':' disabled'}><b>${esc(n)}</b><span>${ls.length?esc(ls.map(l=>l.nome).join(' + ')):'sem lote'}</span><em>${esc([...new Set(rac)].join(' / ')||'—')}</em></label>`;}).join('');
+  return `${voltar('Rações')}<section class="panel"><h2>🌾 Rações por curral</h2>
+    <div class="linhas">${[['C','Confinamento'],['P','Pasto'],['T','Todos']].map(([k,tx])=>`<button data-g="rcLoc" data-k="${k}" class="${loc===k?'sel':''}">${tx}</button>`).join('')}</div>
+    <div class="row"><button class="mini" data-g="rcMarca" data-v="1">Marcar todos</button><button class="mini" data-g="rcMarca" data-v="0">Desmarcar</button></div>
+    <div class="gRcLista"><div class="gRcLin gRcCab"><span></span><b>Curral</b><span>Lote</span><em>Ração agora</em></div>${linhas||'<p class="note">Nenhum curral.</p>'}</div>
+    <div class="gForm">${[{k:'rcDesde',l:'A partir de',t:'dia',v:hj,meia:1},{k:'rcRac',l:'Nova ração',t:'sel',op:opRacoes(''),v:'',meia:1}].map(campo).join('')}</div>
+    <button class="primary" data-g="salvaRacCur">Mudar a ração dos currais marcados</button>
+    <p class="note">A ração muda para o lote que está em cada curral marcado, a partir da data escolhida. O que já foi tratado antes dessa data continua com a ração antiga.</p></section>`;}
+/* ---------- Mudar animais de curral: o lote inteiro vai para outro curral e leva tudo (custos, pesagens, histórico) ---------- */
+function tMudCur(t){const A=window.curraisApi,hj=hojeKey();if(!A)return '';
+  const com=A.lista().filter(n=>lotesNoCur(n,hj).length).sort(alfa);
+  const opO=[['','— escolher —']].concat(com.map(n=>{const ls=lotesNoCur(n,hj);return [n,`${n} · ${ls.map(l=>l.nome+' ('+nf(cabAtual(l))+' cab)').join(' + ')}`];}));
+  const opD=[['','— escolher —']].concat(opCurrais('',false).map(([n])=>{const ls=lotesNoCur(n,hj);return [n,n+(ls.length?` (ocupado: ${ls.map(l=>l.nome).join(' + ')})`:' (vazio)')];}));
+  return `${voltar('Currais')}<section class="panel"><h2>↔ Mudar animais de curral</h2>
+    <div class="gForm">${[{k:'mcO',l:'Curral de origem (onde os animais estão)',t:'sel',busca:1,op:opO,v:t.ori||''},{k:'mcD',l:'Curral de destino',t:'sel',busca:1,op:opD,v:''},{k:'mcDia',l:'A partir de',t:'dia',v:hj}].map(campo).join('')}</div>
+    <button class="primary" data-g="salvaMudCur">Mudar de curral</button>
+    <p class="note">O lote vai inteiro para o curral de destino com tudo o que já tem (entrada, custos, pesagens, ração). Os tratos de cada dia contam para o lote que estava no curral naquele dia: o que foi tratado antes da data continua no curral antigo, e um lote que já saiu (arquivado) não recebe nada novo.</p></section>`;}
+/* ---------- ajuste de curral ou ração de um lote ---------- */
 function tMudForm(t){const l=G.it[t.id],c=t.o==='curr';
   return `${voltar()}<section class="panel"><h2>${c?'Mudar curral':'Mudar ração'} · ${esc(l.nome)}</h2><div class="gForm">${[
     {k:'desde',l:'A partir de',t:'dia',v:hojeKey()},
@@ -1249,7 +1310,8 @@ function confBalLinhas(g){const L=[];if(g.sAnt!=null)L.push([g.nCar>1?`Salto: ca
 /* resumo por carregamento (para o dia ou vários dias) */
 function confResumo(dias){const R=[];dias.forEach(d=>{const Z=confBatDados(d);Z.forEach((g,i)=>{if(!g.b||g.junto)return;
   const hs=Z.filter(x=>x.b&&(x===g||(x.junto&&Z.indexOf(x)<i&&(x.b.local||'')===(g.b.local||'')))).slice(-(g.nCar||1)).map(x=>x.b.hora||'');
-  R.push({dia:d,hora:hs[0]+(hs.length>1?` (+${hs.length-1})`:''),loc:g.b.local==='P'?'Pasto':g.b.local==='C'?'Conf.':'',rac:g.b.racNome||'',ini0:g.iniR,car:g.carR,forn:g.rs.length?g.fornecido:null,dev:g.dev,fim:g.rs.length?g.fimFinal:null,dif:g.dif,sProd:g.difCar,s1:g.s1,sCur:g.sCur,dForn:g.difForn});});});return R;}
+  const uI=[...g.its].reverse().find(x=>x.hora);
+  R.push({dia:d,hora:hs[0]+(hs.length>1?` (+${hs.length-1})`:''),hIni:hs[0],hFim:(()=>{const uR=[...g.rs].reverse().find(x=>x.hora);return uR?uR.hora:(g.b.horaF||(uI?uI.hora:''));})(),noVag:ok(g.iniR)&&ok(g.carR)?g.iniR+g.carR:null,naBal:g.fimCarga,loc:g.b.local==='P'?'Pasto':g.b.local==='C'?'Conf.':'',rac:g.b.racNome||'',ini0:g.iniR,car:g.carR,forn:g.rs.length?g.fornecido:null,dev:g.dev,fim:g.rs.length?g.fimFinal:null,dif:g.dif,sProd:g.difCar,s1:g.s1,sCur:g.sCur,dForn:g.difForn});});});return R;}
 /* divide o fornecimento em trechos seguidos do mesmo trato (ex.: Trato 2 e depois Trato 3 com a sobra) */
 const runsT=rs=>{const o=[];rs.forEach(x=>{const u=o[o.length-1];if(u&&u[0].trato===x.trato)u.push(x);else o.push([x]);});return o;};
 const sg_=v=>v==null||!ok(v)?'':(v>0?'+':'')+nf(v);
@@ -1274,7 +1336,7 @@ function confBatHTML(){const dia=GT.cbDia||hojeKey(),D=confBatDados(dia);
     <div class="row compart fz3"><button class="verde" data-g="cbPer" data-o="pdf">📄 PDF</button><button class="verde" data-g="cbPer" data-o="img">🖼 Foto</button><button class="verde" data-g="cbPer" data-o="xls">📊 Excel</button></div>
     <p class="note">Também ficam em Gestão › Relatórios (por dia e por período).</p></section>`;}
 function confResumoTela(RS){if(!RS.length)return '';const n=v=>v==null||!ok(v)?'—':nf(v);
-  return `<h3 class="gSubT">Balanço do vagão · neste dia</h3><div class="tablebox"><table class="gTab gCbTab"><thead><tr><th>Hora</th><th>Carregamento</th><th>Já tinha</th><th>Carreg.</th><th>Forn.</th><th>Devia sobrar</th><th>Sobrou</th><th>A mais</th></tr></thead><tbody>${RS.map(x=>`<tr><td>${esc(x.hora)}</td><td class="c">${esc(x.loc)}<small> ${esc(x.rac)}</small></td><td class="${x.ini0>100?'gCbMais':''}">${n(x.ini0)}</td><td>${n(x.car)}</td><td>${n(x.forn)}</td><td>${n(x.dev)}</td><td>${n(x.fim)}</td><td class="${x.dif>=100?'gCbMais':x.dif<=-100?'gCbMenos':''}"><b>${x.dif==null?'—':sg_(x.dif)||'0'}</b></td></tr>`).join('')}</tbody></table></div>
+  return `<h3 class="gSubT">Balanço do vagão · neste dia</h3><div class="tablebox"><table class="gTab gCbTab"><thead><tr><th>Início</th><th>Fim</th><th>Carregamento</th><th>Já tinha</th><th>Carreg.</th><th>No vagão</th><th>Na balança</th><th>Forn.</th><th>Devia sobrar</th><th>Sobrou</th><th>A mais</th></tr></thead><tbody>${RS.map(x=>`<tr><td>${esc(x.hora)}</td><td>${esc(x.hFim||'—')}</td><td class="c">${esc(x.loc)}<small> ${esc(x.rac)}</small></td><td class="${x.ini0>100?'gCbMais':''}">${n(x.ini0)}</td><td>${n(x.car)}</td><td>${n(x.noVag)}</td><td>${n(x.naBal)}</td><td>${n(x.forn)}</td><td>${n(x.dev)}</td><td>${n(x.fim)}</td><td class="${x.dif>=100?'gCbMais':x.dif<=-100?'gCbMenos':''}"><b>${x.dif==null?'—':sg_(x.dif)||'0'}</b></td></tr>`).join('')}</tbody></table></div>
   <p class="note"><b>Já tinha</b> = ração que estava no vagão antes de carregar (se não usar ⚖ Sobra no Carregar, ela vai a mais). <b>A mais</b> = sobrou de verdade − devia sobrar: vem da balança subindo entre os currais, da carga até o 1º curral ou de produto que entrou sem registrar. Detalhes no PDF/Foto.</p>`;}
 /* balança sem sinal (registro do tablet): quando caiu, quando voltou, o peso antes de cair e o primeiro peso quando voltou */
 function sinaisDia(dia){const out=[],[Y,M,D]=dia.split('-').map(Number),tms=t=>{const [h,m,x]=String(t||'0:0:0').split(':').map(Number);return new Date(Y,M-1,D,h||0,m||0,x||0).getTime();};
@@ -1325,22 +1387,25 @@ async function confBatExp(o,diaArg,modo){const dia=diaArg||GT.cbDia||hojeKey(),D
   const blob=await desenharTabela(secs,`FJK - Conferência do carregamento - ${dB(dia)}`);if(modo==='blob')return blob;
   if(o==='pdf')return compartilharArquivo(await pngsParaPdf([blob]),nome+'.pdf','application/pdf');
   return compartilharVarios([blob],[nome+'.png']);}
-function secResumo(RS,cab,comDia){const cols=[['Hora',90,'c'],['Produto / curral',230,'c'],['Previsto',120,'r'],['Realizado',130,'r'],['Dif.',100,'r'],['Início',130,'r'],['Final',130,'r'],['Salto',110,'r']];
+/* Início = hora que começou a batida; Fim = hora do último curral do fornecimento (sem fornecimento: fim do carregamento);
+   No vagão = já tinha + carregado (o que devia ter); Na balança = o que a balança mostrou no fim do carregamento */
+function secResumo(RS,cab,comDia){const fixas=[['Já tinha',80,'r'],['Carregado',95,'r'],['No vagão',90,'r'],['Na balança',95,'r'],['Fornecido',95,'r'],['Devia sobrar',105,'r'],['Sobrou',80,'r'],['A mais',80,'r']];
+  const cols=(comDia?[['Início',110,'c'],['Fim',65,'c'],['Carregamento',145,'c']]:[['Início',70,'c'],['Fim',70,'c'],['Carregamento',180,'c']]).concat(fixas);
   const n=v=>v==null||!ok(v)?'—':nf(v),soma=k=>RS.reduce((a,x)=>a+(ok(x[k])?x[k]:0),0);
-  return {cab,cols,tit:['Hora','Carregamento','Já tinha','Carregado','Fornecido','Devia sobrar','Sobrou','A mais'],
-    linhas:RS.map(x=>({v:[(comDia?dB(x.dia).slice(0,5)+' ':'')+x.hora,`${x.loc} · ${x.rac}`,n(x.ini0),n(x.car),n(x.forn),n(x.dev),n(x.fim),x.dif==null?'—':sg_(x.dif)||'0'],neg:[7],
-      cor:[null,null,x.ini0>100?'#b3261e':null,null,null,null,null,x.dif>=100?'#b3261e':x.dif<=-100?'#1565c0':'#5f7a00']})),
-    total:['TOTAL','','',nf(soma('car')),nf(soma('forn')),'','',(sg_(RS.reduce((a,x)=>a+(ok(x.dif)?x.dif:0),0))||'0')+' kg']};}
+  return {cab,cols,tit:cols.map(c=>c[0]),
+    linhas:RS.map(x=>({v:[(comDia?dB(x.dia).slice(0,5)+' ':'')+x.hora,x.hFim||'—',`${x.loc} · ${x.rac}`,n(x.ini0),n(x.car),n(x.noVag),n(x.naBal),n(x.forn),n(x.dev),n(x.fim),x.dif==null?'—':sg_(x.dif)||'0'],neg:[5,10],
+      cor:[null,null,null,x.ini0>100?'#b3261e':null,null,null,ok(x.naBal)&&ok(x.noVag)&&Math.abs(x.naBal-x.noVag)>=50?'#b3261e':null,null,null,null,x.dif>=100?'#b3261e':x.dif<=-100?'#1565c0':'#5f7a00']})),
+    total:['TOTAL','','','',nf(soma('car')),'','',nf(soma('forn')),'','',(sg_(RS.reduce((a,x)=>a+(ok(x.dif)?x.dif:0),0))||'0')+' kg']};}
 /* resumo de vários dias: foto/PDF/Excel com uma linha por carregamento */
 const diasEntre=(a,b)=>{const L=[];let d=a;for(let i=0;i<400&&d<=b;i++){L.push(d);d=somaDias(d,1);}return L;};
 async function confResumoExp(o,nd){const hj=GT.cbDia||hojeKey();return confResumoPer(o,somaDias(hj,-(nd-1)),hj);}
 async function confResumoPer(o,ini,fim){const dias=diasEntre(ini,fim);
   const RS=confResumo(dias);if(!RS.length)return toast('Nenhum carregamento nesses dias');const rot=ini===fim?dB(ini):`${dB(dias[0])} a ${dB(dias[dias.length-1])}`,nome=`FJK - Balanço do vagão - ${rot.replace(/\//g,'-')}`;
   if(o==='xls'){const H=t=>({v:t,s:1}),num=v=>ok(v)?{v,s:4}:{v:''};
-    const rows=[[H('Dia'),H('Hora'),H('Local'),H('Ração'),H('Já tinha no vagão'),H('Carregado'),H('Fornecido'),H('Devia sobrar'),H('Sobrou (balança)'),H('A mais'),H('No carregamento'),H('Carga → 1º curral'),H('Entre currais'),H('No fornecimento')]];
-    RS.forEach(x=>rows.push([{v:dB(x.dia)},{v:x.hora},{v:x.loc},{v:x.rac},num(x.ini0),num(x.car),num(x.forn),num(x.dev),num(x.fim),num(x.dif),num(x.sProd),num(x.s1),num(x.sCur),num(x.dForn)]));
-    return compartilharArquivo(montarXlsx([['Balanço do vagão',rows,[11,11,8,16,12,11,11,12,13,9,14,13,11,13]]]),nome+'.xlsx',XT);}
-  const blob=await desenharTabela([secResumo(RS,`Balanço do vagão · ${rot}`,true)],`FJK - Balanço do vagão - ${rot}`);
+    const rows=[[H('Dia'),H('Início'),H('Fim (último curral)'),H('Local'),H('Ração'),H('Já tinha no vagão'),H('Carregado'),H('No vagão (já tinha + carregado)'),H('Na balança (fim do carregamento)'),H('Fornecido'),H('Devia sobrar'),H('Sobrou (balança)'),H('A mais'),H('No carregamento'),H('Carga → 1º curral'),H('Entre currais'),H('No fornecimento')]];
+    RS.forEach(x=>rows.push([{v:dB(x.dia)},{v:x.hora},{v:x.hFim||''},{v:x.loc},{v:x.rac},num(x.ini0),num(x.car),num(x.noVag),num(x.naBal),num(x.forn),num(x.dev),num(x.fim),num(x.dif),num(x.sProd),num(x.s1),num(x.sCur),num(x.dForn)]));
+    return compartilharArquivo(montarXlsx([['Balanço do vagão',rows,[11,11,11,8,16,12,11,14,14,11,12,13,9,14,13,11,13]]]),nome+'.xlsx',XT);}
+  const blob=await desenharTabela([secResumo(RS,`Balanço do vagão · ${rot}`,ini!==fim)],`FJK - Balanço do vagão - ${rot}`);
   if(o==='pdf')return compartilharArquivo(await pngsParaPdf([blob]),nome+'.pdf','application/pdf');return compartilharVarios([blob],[nome+'.png']);}
 window.confResumoExp=confResumoExp;
 /* conferência completa de cada dia do período: PDF com uma página por dia, fotos ou um Excel só */
@@ -1357,7 +1422,7 @@ function saltosDados(ini,fim){const M={},C1={n:0,s:0,mx:0,mn:0,m50:0};
   diasEntre(ini,fim).forEach(d=>confBatDados(d).forEach(g=>g.rs.forEach((r,i)=>{if(!ok(r.salto))return;const v=r.salto,pri=i===0&&!!g.b,k=(pri?'1|':'')+r.nome,o=M[k]=M[k]||{n:0,s:0,mx:0,mn:0,m50:0,loc:g.lc,nome:r.nome,pri,hm:0,nh:0};if(pri){C1.n++;C1.s+=v;}if(r.ts){const h=new Date(r.ts);o.hm+=h.getHours()*60+h.getMinutes();o.nh++;}
     o.n++;o.s+=v;o.mx=Math.max(o.mx,v);o.mn=Math.min(o.mn,v);if(v>=50)o.m50++;})));
   /* na ordem do horário em que acontece (média da hora do dia em que o curral foi tratado); o 1º curral aparece como "Fim da carga → C-10" */
-  const L=Object.values(M).map(o=>Object.assign({c:o.pri?'Fim da carga → '+o.nome:o.nome},o)).sort((a,b)=>(a.nh?a.hm/a.nh:1e9)-(b.nh?b.hm/b.nh:1e9)||(b.pri-a.pri));return {L,C1};}
+  const L=Object.values(M).map(o=>Object.assign({c:o.pri?'Carregamento → '+o.nome:o.nome},o)).sort((a,b)=>(a.nh?a.hm/a.nh:1e9)-(b.nh?b.hm/b.nh:1e9)||(b.pri-a.pri));return {L,C1};}
 async function saltosPer(o,ini,fim){const {L}=saltosDados(ini,fim);if(!L.length)return toast('Nenhum trato com balança nesses dias');
   const rot=ini===fim?dB(ini):`${dB(ini)} a ${dB(fim)}`,nome=`FJK - Saltos da balança - ${rot.replace(/\//g,'-')}`;
   /* hora em que o curral foi tratado (em vários dias: a hora média) */
@@ -1855,7 +1920,8 @@ function tRacoes(){
       ${cp?`<div class="gMini3"><div><small>MS</small><b>${pc(cp.ms)}</b></div><div><small>R$/kg MN</small><b>${rs(cp.custoMN,3)}</b></div><div><small>R$/kg MS</small><b>${rs(cp.custoMS,3)}</b></div></div>
       <div class="gComp"><div class="gCompCab"><span>Insumo</span><span>% MS</span><span>% MN</span></div>${cp.itens.map(i=>`<div><span>${esc(i.nome)}<i style="width:${Math.max(2,Math.min(100,i.pMN||0)).toFixed(1)}%"></i></span><b>${nf(i.pMS,1)}</b><b>${nf(i.pMN,1)}</b></div>`).join('')}</div>`:'<p class="note">sem fórmula</p>'}</button>`;};
   const cards=R.map(card).join('');
-  return `<section class="panel"><div class="curhead gLotesTopo"><h2>Rações ativas</h2><span class="gLotesBts"><button type="button" class="mini lima" data-g="ir" data-t="racForm">+ Nova ração</button></span></div>${cards||'<p class="note">Nenhuma ração ativa. Cadastre os insumos primeiro e depois a ração.</p>'}</section>
+  return `<section class="panel"><div class="curhead gLotesTopo"><h2>Rações ativas</h2><span class="gLotesBts"><button type="button" class="mini lima" data-g="ir" data-t="racForm">+ Nova ração</button></span></div>
+    <button class="primary" data-g="ir" data-t="racCur">🌾 Rações por curral (mudar a ração)</button>${cards||'<p class="note">Nenhuma ração ativa. Cadastre os insumos primeiro e depois a ração.</p>'}</section>
     ${Ri.length?`<section class="panel"><h2>Rações inativas</h2><p class="note">Não aparecem no Carregar, no Fornecer nem nos lotes. Os registros antigos continuam.</p>${Ri.map(card).join('')}</section>`:''}`;
 }
 /* ordem de carregamento da ração (r.ordem = lista de insumos); o que não está na lista vai no fim, na ordem da fórmula */
@@ -2242,6 +2308,11 @@ $('gBox').addEventListener('click',e=>{
   if(a==='notaAdd'){lerNotasEd();const mx=GT.notasEd.reduce((m,x)=>Math.max(m,ok(x.n)?x.n:0),0);GT.notasEd.push({n:mx+1,t:'Aumentar',p:0});return gRender();}
   if(a==='notaRm'){lerNotasEd();GT.notasEd.splice(+b.dataset.i,1);return gRender();}
   if(a==='notaPadrao'){GT.notasEd=NOTAS_PADRAO.map(x=>Object.assign({},x));gRender();return toast('Notas −4 a +4 de volta. Toque em Salvar.');}
+  if(a==='entNova'){const v=$('gf_enLote')&&$('gf_enLote').value;if(!v)return toast('Escolha o lote que recebe os animais');if(v==='__novo')return gIr({t:'loteForm',raiz:'entradas'});return gIr({t:'entForm',id:v,raiz:'entradas'});}
+  if(a==='entEd')return gIr({t:'entForm',id,eid:b.dataset.eid,raiz:'entradas'});
+  if(a==='saiNova'){const v=$('gf_saLote')&&$('gf_saLote').value;if(!v)return toast('Escolha o lote de onde saem os animais');return gIr({t:b.dataset.t,id:v,o:b.dataset.o,raiz:'saidas'});}
+  if(a==='raizLote')return gIr({t:b.dataset.t,lote:id});
+  if(a==='entPer'||a==='saiPer'){GT.per=+b.dataset.n;return gRender();}
   if(a==='novoLote')return gIr({t:'loteForm'});
   if(a==='salvaLote')return salvaLote(id);
   if(a==='salvaPes'){const dia=fv('dia'),peso=fn('peso');if(!dia||!(peso>0))return toast('Coloque a data e o peso');
@@ -2253,7 +2324,8 @@ $('gBox').addEventListener('click',e=>{
     if(dia<l.ent.dia)return toast('A data é antes da entrada do lote');
     const prA=fn('prA')>0?fn('prA'):null,rcE=fn('rcE')>0&&fn('rcE')<100?fn('rcE'):50,vt=fn('rs')>0?fn('rs'):(prA?Math.round(cab*peso*rcE/100/15*prA*100)/100:0);
     if(!(vt>0)&&!confirm('Salvar a entrada sem o valor da compra? O custo desses animais fica fora do lote.'))return;
-    gPut({uid:novoId('entl'),tipo:'entlote',lote:id,dia,cab,peso,rs:vt,preco:prA,rcC:rcE,obs:fv('obs')});{const n=recalcSaidas(l);if(n)toast(`+${nf(cab)} animais · custos de ${n} saída(s) refeitos`);else toast(`+${nf(cab)} animais no ${l.nome}`);};return gVoltar();}
+    const eOld=b.dataset.eid&&G.it[b.dataset.eid]?G.it[b.dataset.eid]:null;
+    gPut(Object.assign({},eOld||{},{uid:eOld?eOld.uid:novoId('entl'),tipo:'entlote',lote:id,dia,cab,peso,rs:vt,preco:prA,rcC:rcE,obs:fv('obs')}));if(eOld){recalcSaidas(l);toast('Entrada alterada');return gVoltar();}{const n=recalcSaidas(l);if(n)toast(`+${nf(cab)} animais · custos de ${n} saída(s) refeitos`);else toast(`+${nf(cab)} animais no ${l.nome}`);};return gVoltar();}
   if(a==='salvaSai'){const l=G.it[id],m=b.dataset.o==='morte',dia=fv('dia'),cab=fn('cab');
     if(!dia||!(cab>0))return toast('Coloque a data e a quantidade');if(dia<l.ent.dia)return toast('A data é antes da entrada do lote');
     const old=b.dataset.sid?G.it[b.dataset.sid]:null,tem=cabPres(l,dia,saidasDe(l).filter(x=>!old||x.uid!==old.uid)),cabF=!m&&!old?Math.max(0,fn('vfalta')||0):0;if(cab+cabF>tem)return toast(`Nessa data o lote tem ${nf(tem)} animais`+(cabF?' (vendidos + faltaram)':''));
@@ -2277,6 +2349,16 @@ $('gBox').addEventListener('click',e=>{
   if(a==='pdfVendas'){window.__expPdf=true;return imgVendas();}
   if(a==='pdfComp'){window.__expPdf=true;return imgComp();}
   if(a==='xlsVendas')return xlsVendas();
+  if(a==='rcLoc'){GT.loc=b.dataset.k;return gRender();}
+  if(a==='rcMarca'){document.querySelectorAll('[data-rc]:not(:disabled)').forEach(x=>x.checked=b.dataset.v==='1');return;}
+  if(a==='salvaRacCur'){const d=fv('rcDesde'),r=fv('rcRac'),cs=[...document.querySelectorAll('[data-rc]:checked')].map(x=>x.dataset.rc);
+    if(!cs.length)return toast('Marque os currais');if(!d||!r)return toast('Escolha a data e a nova ração');
+    let n=0;cs.forEach(c=>lotesNoCur(c,hojeKey()).forEach(l0=>{const l=JSON.parse(JSON.stringify(l0));if(d<l.ent.dia)return;l.rac=l.rac||[];setHist(l.rac,d,{r});gPut(l);n++;}));
+    toast(`Ração mudada em ${cs.length} curral(is) · ${n} lote(s)`);return gVoltar();}
+  if(a==='salvaMudCur'){const o=fv('mcO'),de=fv('mcD'),d=fv('mcDia');if(!o||!de||!d)return toast('Escolha a origem, o destino e a data');if(o===de)return toast('O destino é o mesmo curral');
+    const ls=lotesNoCur(o,hojeKey());if(!ls.length)return toast('Nenhum lote nesse curral');const ant=ls.find(l=>d<l.ent.dia);if(ant)return toast(`A data é antes da entrada do ${ant.nome}`);
+    const oc=lotesNoCur(de,d).filter(l=>!ls.includes(l));if(oc.length&&!confirm(`O ${de} já tem ${oc.map(l=>l.nome).join(' + ')}. Os lotes vão dividir o trato desse curral pelo número de cabeças. Mudar mesmo assim?`))return;
+    ls.forEach(l0=>{const l=JSON.parse(JSON.stringify(l0));l.curr=l.curr||[];setHist(l.curr,d,{c:de});gPut(l);});toast(`${ls.map(l=>l.nome).join(' + ')} → ${de}`);return gVoltar();}
   if(a==='salvaMud'){const l=JSON.parse(JSON.stringify(G.it[id])),c=b.dataset.o==='curr',d=fv('desde'),v=fv('val');if(!d||!v)return toast('Escolha a data e '+(c?'o curral':'a ração'));
     if(d<l.ent.dia)return toast('A data é antes da entrada do lote');
     if(c){l.curr=l.curr||[];setHist(l.curr,d,{c:v});}else{l.rac=l.rac||[];setHist(l.rac,d,{r:v});}gPut(l);toast('Salvo');return gVoltar();}
@@ -2731,7 +2813,7 @@ function cClique(e){
     if(fe.length){confirmaVermelho('Deseja realmente iniciar o carregamento?',`${fe.length>1?'Os Tratos '+fe.join(' e '):'O Trato '+fe[0]} (${NOMELOC[CG.local]}) já ${fe.length>1?'foram realizados':'foi realizado'} hoje: todos os currais já foram tratados.`,'Sim, iniciar mesmo assim','Não, voltar').then(v=>{if(!v)return;b._okIni=1;try{b.click();}finally{b._okIni=0;}});return;}}
   if(a==='iniciar'){const r=G.it[CG.rac],tudo=itensAjust(itensCarga(CG.rac,CG.total)),its=tudo.filter(i=>i.prev>0),jaIt=tudo.filter(i=>i.ja>0).map(i=>({ins:i.ins,nome:i.nome,kg:i.ja})),manIt=tudo.filter(i=>i.man>0).map(i=>({ins:i.ins,nome:i.nome,pMN:i.pMN,kg:i.man,prec:Math.round(Math.max(0,i.prevOrig-i.ja))}));if(!tudo.length)return toast('Ração sem fórmula');
     if(!its.length&&manIt.length){if(!confirm('Tudo foi lançado no manual: nada para a balança. Salvar o carregamento assim?'))return;   // só manual: salva direto
-      const now=Date.now();gPut({uid:novoId('carga'),tipo:'carga',dia:hojeKey(),local:CG.local||'',avulso:!!CG.avulso,trato:CG.avulso?0:+CG.trato,tratos:CG.avulso?[]:[+CG.trato].concat(CG.juntos||[]).sort((a,b)=>a-b),racao:CG.rac,racNome:r.nome,total:manIt.reduce((a,m)=>a+m.kg,0),ts0:now,hora:new Date(now).toTimeString().slice(0,5),
+      const now=Date.now();gPut({uid:novoId('carga'),tipo:'carga',dia:hojeKey(),local:CG.local||'',avulso:!!CG.avulso,trato:CG.avulso?0:+CG.trato,tratos:CG.avulso?[]:[+CG.trato].concat(CG.juntos||[]).sort((a,b)=>a-b),racao:CG.rac,racNome:r.nome,total:manIt.reduce((a,m)=>a+m.kg,0),ts0:now,hora:new Date(now).toTimeString().slice(0,5),tsF:now,horaF:new Date(now).toTimeString().slice(0,5),
         itens:manIt.map(m=>({ins:m.ins,nome:m.nome,pMN:m.pMN,prev:m.prec,real:m.kg,man:m.kg,bal:0,hora:'manual'})),origem:'manual'});
       CG.verDia=hojeKey();cLimparSetup();toast('Carregamento salvo (manual)');cRender();window.scrollTo({top:0});if(window.atualizarAoFinalizar)atualizarAoFinalizar();return;}
     if(!its.length)return toast('Tudo já está no vagão: nada para carregar');
@@ -2761,7 +2843,7 @@ function cClique(e){
         F.length?`${n} de ${A.itens.length} produtos carregados. Faltam: ${F.map(x=>x.nome).join(', ')}. Eles ficam sem registro neste carregamento.`:`Todos os ${A.itens.length} produtos carregados.`,
         'Sim, finalizar','Não, continuar carregando',!F.length);}finally{CG.conclAberto=false;}
     if(!sim||CG.ativa!==A)return;
-    gPut({uid:novoId('carga'),tipo:'carga',dia:A.dia,local:A.local||'',avulso:!!A.avulso,trato:A.trato,tratos:A.tratos||[A.trato],racao:A.rac,racNome:A.racNome,total:A.total,ts0:A.ts0,hora:new Date(A.ts0).toTimeString().slice(0,5),
+    gPut({uid:novoId('carga'),tipo:'carga',dia:A.dia,local:A.local||'',avulso:!!A.avulso,trato:A.trato,tratos:A.tratos||[A.trato],racao:A.rac,racNome:A.racNome,total:A.total,ts0:A.ts0,hora:new Date(A.ts0).toTimeString().slice(0,5),tsF:Date.now(),horaF:new Date().toTimeString().slice(0,5),
       itens:juntaManual(A),origem:A.origem||'',...(Array.isArray(A.cur)?{cur:A.cur}:{})});
     CG.ativa=null;CG.verDia=A.dia;cLimparSetup();toast('Carregamento salvo');cRender();window.scrollTo({top:0});if(window.atualizarAoFinalizar)atualizarAoFinalizar();})();return;}
   if(a==='apagaCarga'){if(!confirm('Apagar este carregamento?'))return;gDel(b.dataset.id);return cRender();}
@@ -2906,7 +2988,7 @@ function tCurrais(){const A=window.curraisApi;if(!A)return '';const L=A.lista().
   const grupo=(tit,arr,k)=>{if(!arr.length)return '';const ab=gCurAb.has(k);return `<button type="button" class="gGrpCab${ab?' aberto':''}" data-g="curGrp" data-k="${k}"><span>${tit}</span><small>${arr.length} curral(is)</small><em class="gGrpDica">${ab?'clique para fechar':'clique para abrir'}</em><span class="gLoteSeta">▼</span></button>${ab?`<div class="gGrpCorpo">${arr.map(item).join('')}</div>`:''}`;};
   const at=L.filter(x=>!x.i.inativo),ina=L.filter(x=>x.i.inativo);
   return `<section class="panel"><h2>Currais</h2><p class="note">O local diz se o curral é do confinamento ou do pasto; vale para os filtros, o Carregar e o Fornecer. Inativo não aparece no Previsto, no Fornecer nem nos lotes (os registros continuam).</p>
-    <button class="lima" data-g="ir" data-t="curForm">+ Novo curral</button>
+    <div class="gAcoes"><button class="lima" data-g="ir" data-t="curForm">+ Novo curral</button><button class="primary" data-g="ir" data-t="mudCur">↔ Mudar animais de curral</button></div>
     ${grupo(ICO_C+' Confinamento',at.filter(x=>x.i.tipo==='C'),'C')}${grupo('🌿 Pasto',at.filter(x=>x.i.tipo==='P'),'P')}${grupo('Sem tipo',at.filter(x=>x.i.tipo!=='C'&&x.i.tipo!=='P'),'S')}${grupo('⏸ Inativos',ina,'I')}</section>`;}
 function tCurForm(t){const A=window.curraisApi,n=t.id||'',i=n?A.info(n):{tipo:'C',inativo:false};
   return `${voltar()}<section class="panel"><h2>${n?'Curral '+esc(n):'Novo curral'}</h2>
