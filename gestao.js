@@ -1292,7 +1292,7 @@ function sinaisDoBloco(D,g,S){const ap=x=>x&&x.uid?String(x.uid).split('-')[1]||
   const L=[...g.its,...g.rs],antes=new Map(),fim=[];
   E.forEach(e=>{const r=L.find(x=>x.ts&&x.ts>=e.ts);if(r){if(!antes.has(r))antes.set(r,[]);antes.get(r).push(e);}else fim.push(e);});
   return {antes,fim};}
-const sinalTxt=e=>`Balança sem sinal ${String(e.t0).slice(0,5)}${e.fim?' → voltou '+String(e.fim).slice(0,8):''}`;
+const sinalTxt=e=>`Balança sem sinal ${String(e.t0).slice(0,8)}${e.fim?' → voltou '+String(e.fim).slice(0,8):''}`;
 /* modo: 'blob' devolve a imagem (para juntar vários dias); 'rows' devolve as linhas do Excel */
 async function confBatExp(o,diaArg,modo){const dia=diaArg||GT.cbDia||hojeKey(),D=confBatDados(dia);if(!D.length)return modo?null:toast('Nada nesse dia');
   const nome=`FJK - Conferência do carregamento - ${dB(dia).replace(/\//g,'-')}`;
@@ -1354,19 +1354,23 @@ async function confBalPer(o,ini,fim){const dias=diasEntre(ini,fim).filter(d=>con
   return compartilharVarios(B,dias.map(d=>`FJK - Conferência da balança - ${dB(d).replace(/\//g,'-')}.png`));}
 /* saltos da balança por curral: quanto a balança mudou entre o fim do curral anterior (ou da carga) e o começo deste — sem descarregar */
 function saltosDados(ini,fim){const M={},C1={n:0,s:0,mx:0,mn:0,m50:0};
-  diasEntre(ini,fim).forEach(d=>confBatDados(d).forEach(g=>g.rs.forEach((r,i)=>{if(!ok(r.salto))return;const v=r.salto,pri=i===0&&!!g.b,k=(pri?'1|':'')+r.nome,o=M[k]=M[k]||{n:0,s:0,mx:0,mn:0,m50:0,loc:g.lc,nome:r.nome,pri};if(pri){C1.n++;C1.s+=v;}
+  diasEntre(ini,fim).forEach(d=>confBatDados(d).forEach(g=>g.rs.forEach((r,i)=>{if(!ok(r.salto))return;const v=r.salto,pri=i===0&&!!g.b,k=(pri?'1|':'')+r.nome,o=M[k]=M[k]||{n:0,s:0,mx:0,mn:0,m50:0,loc:g.lc,nome:r.nome,pri,hm:0,nh:0};if(pri){C1.n++;C1.s+=v;}if(r.ts){const h=new Date(r.ts);o.hm+=h.getHours()*60+h.getMinutes();o.nh++;}
     o.n++;o.s+=v;o.mx=Math.max(o.mx,v);o.mn=Math.min(o.mn,v);if(v>=50)o.m50++;})));
-  /* o 1º curral (vindo da carga) fica na mesma tabela, em cima, como "Fim da carga → C-10" */
-  const L=Object.values(M).map(o=>Object.assign({c:o.pri?'Fim da carga → '+o.nome:o.nome},o)).sort((a,b)=>(b.pri-a.pri)||(b.s-a.s));return {L,C1};}
+  /* na ordem do horário em que acontece (média da hora do dia em que o curral foi tratado); o 1º curral aparece como "Fim da carga → C-10" */
+  const L=Object.values(M).map(o=>Object.assign({c:o.pri?'Fim da carga → '+o.nome:o.nome},o)).sort((a,b)=>(a.nh?a.hm/a.nh:1e9)-(b.nh?b.hm/b.nh:1e9)||(b.pri-a.pri));return {L,C1};}
 async function saltosPer(o,ini,fim){const {L}=saltosDados(ini,fim);if(!L.length)return toast('Nenhum trato com balança nesses dias');
   const rot=ini===fim?dB(ini):`${dB(ini)} a ${dB(fim)}`,nome=`FJK - Saltos da balança - ${rot.replace(/\//g,'-')}`;
-  const lin=(nm,lc,x)=>({v:[lc==='P'?'Pasto':lc==='C'?'Conf.':'',nm,nf(x.n),sg_(Math.round(x.s/x.n))||'0',sg_(x.mx)||'0',sg_(x.mn)||'0',sg_(x.s)||'0',nf(x.m50)],neg:[1,6],
-    cor:[null,null,null,x.s/x.n>=30?'#b3261e':x.s/x.n<=-30?'#1565c0':null,null,null,x.s>=100?'#b3261e':x.s<=-100?'#1565c0':null,x.m50?'#b3261e':null]});
-  if(o==='xls'){const H=t=>({v:t,s:1}),num=v=>({v,s:4}),rows=[[H('Local'),H('Curral'),H('Vezes'),H('Salto médio (kg)'),H('Maior subida'),H('Maior descida'),H('Soma (kg)'),H('Vezes com +50 ou mais')]];
-    L.forEach(x=>rows.push([{v:x.loc==='P'?'Pasto':x.loc==='C'?'Conf.':''},{v:x.c},num(x.n),num(Math.round(x.s/x.n)),num(x.mx),num(x.mn),num(x.s),num(x.m50)]));
-    return compartilharArquivo(montarXlsx([['Saltos',rows,[8,24,8,14,12,12,11,18]]]),nome+'.xlsx',XT);}
-  const cols=[['Hora',90,'c'],['Produto / curral',230,'c'],['Previsto',120,'r'],['Realizado',130,'r'],['Dif.',100,'r'],['Início',130,'r'],['Final',130,'r'],['Salto',110,'r']],tit=['Local','Curral','Vezes','Média','Maior +','Maior −','Soma','+50 ou mais'];
-  const secs=[{cab:'Antes de cada curral (o 1º conta desde o fim da carga)',cols,tit,linhas:L.map(x=>lin(x.c,x.loc,x)),total:['TOTAL','','','','','',(sg_(L.reduce((a,x)=>a+x.s,0))||'0')+' kg','']}];
+  /* hora em que o curral foi tratado (em vários dias: a hora média) */
+  const hTx=x=>{if(!x.nh)return '';const m=Math.round(x.hm/x.nh);return String(Math.floor(m/60)).padStart(2,'0')+':'+String(m%60).padStart(2,'0');};
+  const umDia=ini===fim,tira=o=>{if(!umDia){o.v.shift();o.neg=o.neg.map(k=>k-1);o.cor.shift();}return o;};
+  const lin=(nm,lc,x)=>tira({v:[hTx(x),lc==='P'?'Pasto':lc==='C'?'Conf.':'',nm,nf(x.n),sg_(Math.round(x.s/x.n))||'0',sg_(x.mx)||'0',sg_(x.mn)||'0',sg_(x.s)||'0',nf(x.m50)],neg:[2,7],
+    cor:[null,null,null,null,x.s/x.n>=30?'#b3261e':x.s/x.n<=-30?'#1565c0':null,null,null,x.s>=100?'#b3261e':x.s<=-100?'#1565c0':null,x.m50?'#b3261e':null]});
+  if(o==='xls'){const H=t=>({v:t,s:1}),num=v=>({v,s:4}),rows=[[...(umDia?[H('Hora')]:[]),H('Local'),H('Curral'),H('Vezes'),H('Salto médio (kg)'),H('Maior subida'),H('Maior descida'),H('Soma (kg)'),H('Vezes com +50 ou mais')]];
+    L.forEach(x=>rows.push([...(umDia?[{v:hTx(x)}]:[]),{v:x.loc==='P'?'Pasto':x.loc==='C'?'Conf.':''},{v:x.c},num(x.n),num(Math.round(x.s/x.n)),num(x.mx),num(x.mn),num(x.s),num(x.m50)]));
+    return compartilharArquivo(montarXlsx([['Saltos',rows,[...(umDia?[10]:[]),8,24,8,14,12,12,11,18]]]),nome+'.xlsx',XT);}
+  const cols=umDia?[['Hora',90,'c'],['Local',80,'c'],['Curral',250,'c'],['Vezes',80,'r'],['Média',100,'r'],['Maior +',100,'r'],['Maior −',100,'r'],['Soma',110,'r'],['+50 ou mais',130,'r']]:[['Local',90,'c'],['Curral',260,'c'],['Vezes',90,'r'],['Média',110,'r'],['Maior +',110,'r'],['Maior −',110,'r'],['Soma',120,'r'],['+50 ou mais',150,'r']];
+  const tit=cols.map(c=>c[0]);
+  const secs=[{cab:'Antes de cada curral (o 1º conta desde o fim da carga)',cols,tit,linhas:L.map(x=>lin(x.c,x.loc,x)),total:[...(umDia?['TOTAL','']:['TOTAL']),'','','','','',(sg_(L.reduce((a,x)=>a+x.s,0))||'0')+' kg','']}];
   const blob=await desenharTabela(secs,`FJK - Saltos da balança - ${rot}`);
   if(o==='pdf')return compartilharArquivo(await pngsParaPdf([blob]),nome+'.pdf','application/pdf');return compartilharVarios([blob],[nome+'.png']);}
 window.confBalPer=confBalPer;window.saltosPer=saltosPer;window.confResumoPer=confResumoPer;
