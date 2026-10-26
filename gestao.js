@@ -1531,6 +1531,8 @@ function gImagem(titulo,secoes){
   return new Promise(ok=>cv.toBlob(ok,'image/png'));
 }
 const nomeArq=s=>s.replace(/[\\/:*?"<>|]/g,'-');
+/* nome do arquivo do resultado do lote: Resultado (curral) lote - data em que fechou (ou a data de hoje, se ainda ativo) */
+const nomeRes=(l,C)=>nomeArq(`Resultado (${curralEm(l,C.ate)||'—'}) ${l.nome} - ${dB(C.ate).replace(/\//g,'-')}`);
 async function enviarImg(titulo,secoes,nome){if(!secoes.some(s=>s.linhas.length))return toast('Nada para mostrar');
   const pdf=window.__expPdf;window.__expPdf=false;
   try{const b=await gImagem(titulo,secoes);if(pdf)return await compartilharArquivo(await pngsParaPdf([b]),nomeArq(nome)+'.pdf','application/pdf');
@@ -1643,12 +1645,14 @@ function canvasLote(l,C){
   if((C.cabV||trsVI.length)&&!AP){bloco('4','Venda',`${vendas.length} venda(s)${trsVI.length?` · ${trsVI.length} venda(s) para outros lotes`:''}${sumi.length?` · ${nf(sumi.reduce((a,s)=>a+faltaPend(s),0))} sumido(s)`:''}`);
     const arrI=trsVI.reduce((a,s)=>a+(+s.cab||0)*(+s.peso||0)*(+s.rcV||50)/100/15,0),recI=trsVI.reduce((a,s)=>a+(+s.vi||0),0),cabI=trsVI.reduce((a,s)=>a+(+s.cab||0),0),brV=vendas.reduce((a,s)=>a+valorVenda(s)+(+s.desc||0),0);
     const recT=C.receita+recI,arrT=C.arrV+arrI,cabT2=C.cabV+cabI;   /* vendas para outros lotes entram junto */
+    const rcMed=C.arrV&&C.cabV?C.arrV*15/(C.cabV*C.pesoV)*100:NaN,pArr=arrT?(brV+recI)/arrT:NaN,recPerd=s=>{const p=faltaPend(s),pv=ok(C.pesoV)?C.pesoV:+s.peso;return p*pv*(ok(rcMed)?rcMed:50)/100/15*(ok(pArr)?pArr:0);};
+    GT.recPerd=sumi.reduce((a,s)=>a+recPerd(s),0);
     tiles([{r:'RECEITA LÍQUIDA',v:rs(recT),s:recI?`frigorífico ${rs(C.receita)} + outros lotes ${rs(recI)}`:'já descontados frete e impostos'},{r:'PREÇO MÉDIO DA @',v:rs(arrT?(brV+recI)/arrT:NaN),s:'bruto, média ponderada'},{r:'@ POR CABEÇA',v:nf(cabT2?arrT/cabT2:NaN,2),s:`${nf(arrT,1)} @ vendidas`}],3);
     const X1=M+8,X2=M+118,X3=M+450,X4=M+545,X5=M+625,X6=M+765,X7=W-M-8,lin1=(i,cor,dia,cpr,cab,peso,rc,arr,val)=>{if(i%2){c.fillStyle='#f7f9fb';c.fillRect(M,y,bwT,36);}txt(dia,X1,y+18,'600',15,cor);txt(cpr,X2,y+18,'700',15,cor,'left',X3-X2-40);txt(cab,X3,y+18,'600',15,cor,'right');txt(peso,X4,y+18,'600',15,cor,'right');txt(rc,X5,y+18,'600',15,cor,'right');txt(arr,X6,y+18,'600',15,cor,'right');txt(val,X7,y+18,'700',15,cor,'right');y+=36;};
     txt('DATA',X1,y,'700',13,CI);txt('COMPRADOR',X2,y,'700',13,CI);txt('CAB.',X3,y,'700',13,CI,'right');txt('PESO',X4,y,'700',13,CI,'right');txt('REND.',X5,y,'700',13,CI,'right');txt('@ BRUTA',X6,y,'700',13,CI,'right');txt('VALOR TOTAL',X7,y,'700',13,CI,'right');y+=16;let k=0;
     vendas.forEach(s=>{const a=arrobaVenda(s);lin1(k++,AZ,dB(s.dia),nomeCpr(s),nf(s.cab),nf(s.peso)+' kg',pc(+s.rc,1),rs(a?(valorVenda(s)+(+s.desc||0))/a:NaN),rs(valorVenda(s)));});
     trsVI.forEach(s=>{const rcV=+s.rcV||50,a=(+s.cab||0)*(+s.peso||0)*rcV/100/15,d=G.it[s.destino];lin1(k++,AZ,dB(s.dia),'→ '+(d?curralEm(d,s.dia)||d.nome:'outro lote')+' (venda interna)',nf(s.cab),nf(s.peso)+' kg',pc(rcV,1),rs(a?(+s.vi)/a:NaN),rs(+s.vi));});
-    sumi.forEach(s=>{const p=faltaPend(s);lin1(k++,VM,dB(s.dia),'❓ Sumidos (faltaram)'+(s.obs?' · '+s.obs:''),nf(p),nf(s.peso)+' kg','—','—','custo '+rs((+s.custo||0)*p/((+s.cab)||1)));});
+    sumi.forEach(s=>{const p=faltaPend(s);lin1(k++,VM,dB(s.dia),'❓ Sumidos (deixou de vender)'+(s.obs?' · '+s.obs:''),nf(p),nf(ok(C.pesoV)?C.pesoV:+s.peso)+' kg',pc(rcMed,1),rs(pArr),rs(recPerd(s)));});
     ret(M,y+4,bwT,40,10,AZ);txt('TOTAL VENDIDO',X1+8,y+24,'800',16,'#fff');txt(nf(cabT2),X3,y+24,'800',16,'#fff','right');txt(rs(arrT?(brV+recI)/arrT:NaN),X6,y+24,'700',15,'#fff','right');txt(rs(recT),X7,y+24,'800',16,'#c8dd1e','right');y+=50;
     y+=26;}
   /* 5. a conta do resultado */
@@ -1656,7 +1660,9 @@ function canvasLote(l,C){
     const cTr=(C.recInt||0)-(C.resInt||0),cT=C.custo+cTr+(C.perd||0),rec=(fim?C.receita:E.rec)+(C.recInt||0),linhas=[[fim?(C.recInt?'Receita total':'Receita'):'Receita estimada',rec,VD,'+'],['Custo total',-cT,VM,'−'],[fim?(pos?'Lucro':'Prejuízo'):'Resultado',lucro,corH,'=']],mx=Math.max(Math.abs(rec),cT,Math.abs(lucro))||1;
     linhas.forEach(([n,v,cor,s],i)=>{txt(s,M+10,y+20,'800',24,cor,'center');txt(n,M+34,y+20,'700',18,AZ);const w=Math.abs(v)/mx*(bwT-460);ret(M+250,y+6,Math.max(4,w),28,6,cor);txt(rs(Math.abs(v)),W-M-8,y+20,'800',20,cor,'right');y+=44;
       if(i===1){c.fillStyle=AZ;c.fillRect(M,y-2,bwT,2);y+=6;}});
-    if(C.perd)txt(`O custo total inclui ${rs(C.perd)} dos ${nf(sumi.reduce((a,s)=>a+faltaPend(s),0))} animais sumidos (prejuízo). Se forem achados, esse custo vai para o lote onde entrarem.`,M,y+4,'600',14,VM,'left',bwT),y+=26;
+    if(C.perd){const rp=GT.recPerd||0,nS=nf(sumi.reduce((a,s)=>a+faltaPend(s),0));
+      txt(`Receita perdida com os ${nS} sumidos: ${rs(rp)} (o que teriam rendido vendidos pelo peso, rendimento e @ médios da venda).`,M,y+4,'700',14,VM,'left',bwT);y+=22;
+      txt(`O custo deles (${rs(C.perd)}, compra + trato) já está no custo total. Se tivessem vindo, o lucro seria ${rs(lucro+rp)}.`,M,y+4,'600',14,CI,'left',bwT);y+=26;}
     y+=20;}
   /* rodapé explicativo */
   fonte('500',13);const notas=['Conversão = MS consumida ÷ kg ganhos. Peso de saída = média de todos os que saíram pesados (vendidos e transferidos).','@ peso vivo = ganho ÷ 30. @ carcaça = (peso × rendimento ÷ 15) − (peso de entrada ÷ 30).','Diária = (alimentação + operacional + outros) ÷ cabeças-dia. Dias de cocho = média ponderada dos vendidos.'];
@@ -1669,7 +1675,7 @@ function filhosApart(l,C){C=C||calcLote(l);const kgT=C.kgA||1;let res=0,custo=0,
       else if(Cf.fim){o.res=Cf.lucro;o.sit=`fechado em ${dB(Cf.fim)}`;o.cst=Cf.custo;}else{const V=vendaEst(f,Cf);o.res=V.res;o.est=true;todos=false;o.sit=`ativo · ${nf(Cf.cabAt)} cab`;o.cst=Cf.custo;}}else todos=false;
     if(ok(o.res)){res+=o.res;algum=true;custo+=o.cst||0;}else todos=false;return o;});
   F.todos=todos;F.res=algum?res:NaN;F.custo=custo;F.rentab=todos&&custo?res/custo*100:NaN;return F;}
-async function imgLote(id,pdf){const l=G.it[id],C=calcLote(l),nome=nomeArq(`Lote ${l.nome} ${dB(C.ate).replace(/\//g,'-')}`);pdf=pdf||window.__expPdf;window.__expPdf=false;
+async function imgLote(id,pdf){const l=G.it[id],C=calcLote(l),nome=nomeRes(l,C);pdf=pdf||window.__expPdf;window.__expPdf=false;
   try{const cv=canvasLote(l,C);if(pdf)return await compartilharArquivo(fzPdf([cv]),nome+'.pdf','application/pdf');
     await compartilharArquivo(await new Promise(ok=>cv.toBlob(ok,'image/png')),nome+'.png','image/png');}catch(e){console.error(e);toast(pdf?'Não consegui gerar o PDF':'Não consegui gerar a imagem');}}
 function xlsGraf(){const D=dadosGraf(GT.dia);const cab=['Curral'].concat(D.dias.map(d=>dB(d).slice(0,5)),['Média']);
@@ -1811,7 +1817,7 @@ function xlsLote(id){const l=G.it[id],C=calcLote(l),X=gCtx(),r=[];
   for(let d=l.ent.dia,i=0;d<=C.ate&&i<4000;d=somaDias(d,1),i++){const x=diaLote(l,d,X);if(!x)continue;const lt=G.it[idLeit(d,x.c)];
     r.push([xc(d,'dia'),xc(x.c),xc(x.rac),xc(x.cab,'int'),xc(x.peso,'int'),xc(x.mn,'int'),xc(x.ms,'int'),xc(x.mnCab,'dec'),xc(x.msCab,'dec'),xc(x.pv/100,'pct'),xc(lt&&!lt.del?lt.nota:''),xc(x.custoR,'rs'),xc(x.custoOp,'rs')]);}
   const res=(GT.relRes||[]).map(([a,b])=>[xc(a),xc(b)]);
-  gExcel(`Lote ${l.nome}`,[['Resumo',['Item','Valor'],res,[36,40]],['Dia a dia',['Data','Curral','Ração','Cabeças','Peso proj.','MN (kg)','MS (kg)','MN/cab','MS/cab','% IMS','Nota cocho','Custo ração','Custo operacional'],r,[11,10,14,9,10,10,10,9,9,8,9,13,13]],
+  gExcel(nomeRes(l,C),[['Resumo',['Item','Valor'],res,[36,40]],['Dia a dia',['Data','Curral','Ração','Cabeças','Peso proj.','MN (kg)','MS (kg)','MN/cab','MS/cab','% IMS','Nota cocho','Custo ração','Custo operacional'],r,[11,10,14,9,10,10,10,9,9,8,9,13,13]],
     ['Vendas e mortes',['Data','Tipo','Comprador','Cabeças','Peso vivo','Rendimento','@ total','Preço @ bruto','Descontos','Receita líquida','Obs.'],saidasDe(l).map(s=>{const m=s.mot!=='venda'&&ehVenda(s)===false,a=m?NaN:arrobaVenda(s);return [xc(s.dia,'dia'),xc({morte:'Morte',falta:'Faltou',transf:'Transferência',apart:'Apartação'}[s.mot]||'Venda'),xc(m?'':nomeCpr(s)),xc(+s.cab,'int'),xc(m?'':+s.peso,'int'),xc(m?'':(+s.rc||0)/100,'pct'),xc(m?'':a,'dec'),xc(m||!a?'':(valorVenda(s)+(+s.desc||0))/a,'rs'),xc(m?'':+s.desc||0,'rs'),xc(m?'':valorVenda(s),'rs'),xc(s.obs||'')];}),[11,8,22,9,10,10,10,12,12,14,22]]]);}
 
 /* ---------- rações ---------- */
