@@ -325,7 +325,7 @@ async function conectarBt(soBalanca){
 function ligarQueda(dev){if(dev._queda)return;dev._queda=true;
   dev.addEventListener('gattserverdisconnected',()=>{if(dev._manual||A.bt!==dev||A.btReconectando)return;reconectarBt('Bluetooth caiu');});}
 async function reconectarBt(motivo){const dev=A.bt;if(!dev||A.btReconectando)return;A.btReconectando=true;let n=0;const gen=A.btGen||0;
-  try{while(A.bt===dev&&A.fonte==='bt'&&(A.btGen||0)===gen){n++;setStatus(`${motivo} · reconectando${n>1?' (tentativa '+n+')':''}…`,'wait');bruto(motivo+': reconectando (tentativa '+n+')');if(n===1)diagLog('reconectando',{motivo});
+  try{while(A.bt===dev&&A.fonte==='bt'&&(A.btGen||0)===gen){n++;setStatus(`${motivo} · reconectando${n>1?' (tentativa '+n+')':''}…`,'wait');bruto(motivo+': reconectando (tentativa '+n+')');if(n===1)semSinal('reconectando',{motivo});
       try{dev._manual=true;if(dev.gatt.connected)dev.gatt.disconnect();}catch(e){}dev._manual=false;
       await new Promise(r=>setTimeout(r,n===1?700:3000));if(A.bt!==dev||(A.btGen||0)!==gen)break;
       try{await btAbrir(dev);A.ultDado=Date.now();A.btCutucou=0;toast('Balança reconectada');diagLog('reconectou',{tentativas:n});break;}catch(e){bruto('não reconectou: '+(e.message||e));}}}
@@ -334,7 +334,7 @@ async function reconectarBt(motivo){const dev=A.bt;if(!dev||A.btReconectando)ret
    chama de novo (05); se chegar a 5 s sem peso, reconecta sozinho — mesmo que pareça "conectado". */
 setInterval(()=>{if(A.fonte!=='bt'||!A.bt||!A.digiStar||A.btReconectando)return;
   const parado=Date.now()-Math.max(A.ultDado||0,A.tCon||0);
-  if(parado>2500&&!A.btCutucou&&A.dsEsc){A.btCutucou=Date.now();bruto('sem peso há 2,5 s: chamando a balança de novo');diagLog('sem_peso',{});A.dsEsc.writeValue(new Uint8Array([5])).catch(()=>{});}
+  if(parado>2500&&!A.btCutucou&&A.dsEsc){A.btCutucou=Date.now();bruto('sem peso há 2,5 s: chamando a balança de novo');semSinal('sem_peso',{});A.dsEsc.writeValue(new Uint8Array([5])).catch(()=>{});}
   if(parado>5000)reconectarBt('Balança parou de mandar o peso');},1000);
 /* ao abrir o app de novo (ou depois de atualizar), tenta voltar sozinho para a última balança, se o Chrome deixar */
 /* ao entrar na Automação (Carregar ou Fornecer): tenta conectar sozinho na balança já usada neste aparelho (NEW EZ),
@@ -585,7 +585,10 @@ setInterval(()=>{if(!atrasada())return;[['aEstTxt','aPeso'],['acEstTxt','acPeso'
 /* a balança do vagão anda de 5 em 5 kg: o app usa o mesmo passo em tudo (leitura, peso firme, médias e tela) */
 function rP(v){if(v==null||isNaN(v))return v;const p=Math.max(1,+cfg().passo||5);return Math.round(v/p)*p;}
 window.rP=rP;
-function novoPeso(n){
+/* balança sem sinal: anota o último peso antes de cair e o primeiro peso quando voltar (vai para a Conferência da balança) */
+function semSinal(tipo,d){let ant=null;try{ant=pesoVisor();}catch(e){}if(!A.voltaPend)A.voltaPend={antes:ant,t:Date.now(),hold:!!A.holdApp};
+  diagLog(tipo,Object.assign({},d,{peso:ant,hold:!!A.holdApp}));}
+function novoPeso(n){if(A.voltaPend){const V=A.voltaPend;A.voltaPend=null;try{diagLog('peso_voltou',{antes:V.antes,peso:Math.round(n),seg:Math.round((Date.now()-V.t)/1000),hold:V.hold,visor:A.visor,anunc:A.anunc});}catch(e){}}
   n=rP(n);const c=cfg(),agora=Date.now(),nCru=n;
   /* ajuste fino: mediana das últimas leituras (1 = sem filtro, 3 normal, 5 forte) — tira o "pula pra cima e pra baixo"
      de uma leitura isolada sem atrasar muito (a Digi-Star manda ~1,6 leitura por segundo) */
