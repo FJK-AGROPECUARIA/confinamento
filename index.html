@@ -1233,7 +1233,7 @@ body.naInicio .topoTxt h1{font-size:clamp(16px,5vw,28px)!important}
 <div class="toast" id="toast" hidden></div>
 <script>
 'use strict';
-const APP_VERSAO='215';
+const APP_VERSAO='216';
 const APP_DATA='19/10/2026';
 const KEY='confinamento-completo-v1';
 const $=id=>document.getElementById(id);
@@ -2682,14 +2682,20 @@ document.addEventListener('click',e=>{const i=e.target.closest&&e.target.closest
       if(matchMedia('(pointer:fine)').matches)setTimeout(()=>inp.focus(),0);}}
   window.gDDfechar=fechar;
   /* computador (mouse): o select abria a lista nativa no 'mousedown' e o toque no meio da caixa não abria a nossa lista; agora a caixa toda abre a mesma lista */
-  document.addEventListener('mousedown',e=>{const s=e.target&&e.target.closest&&e.target.closest('select:not([multiple])');if(s&&!s.disabled&&e.button===0)e.preventDefault();},true);
+  /* mouse: abre a nossa lista já no aperto do botão (antes do navegador abrir a lista dele), clicando em qualquer parte da caixa */
+  const comMouse=e=>e.pointerType==='mouse'||e.type==='mousedown';
+  const naCaixa=e=>{const t=e.target;if(!t||!t.closest)return null;const box=t.closest('.gDataBox');let s=box&&box.querySelector('select');if(!s)s=t.closest('select:not([multiple])');
+    if(!s&&(e.clientX||e.clientY)){const x=e.clientX,y=e.clientY;s=[...document.querySelectorAll('select:not([multiple])')].find(el=>{const r=el.getBoundingClientRect();return t.contains(el)&&r.width>0&&x>=r.left&&x<=r.right&&y>=r.top&&y<=r.bottom;})||null;}
+    return s&&!s.closest('.gDD')?s:null;};
+  ['pointerdown','mousedown'].forEach(tp=>document.addEventListener(tp,e=>{if(!comMouse(e)||e.button!==0)return;const s=naCaixa(e);if(!s)return;e.preventDefault();
+    if(tp==='mousedown'&&Date.now()-tAb<450)return;if(s.disabled)return;if(cur===s){fechar();tAb=Date.now();return;}abrir(s);tAb=Date.now();},true));
   document.addEventListener('click',e=>{
     if(dd&&e.target.closest('.gDD')){e.preventDefault();e.stopPropagation();const b=e.target.closest('button[data-i]');if(!b||b.disabled)return;
       const s=cur,i=+b.dataset.i;fechar();if(s&&s.selectedIndex!==i){s.selectedIndex=i;s.dispatchEvent(new Event('input',{bubbles:true}));s.dispatchEvent(new Event('change',{bubbles:true}));}return;}
     const box=e.target.closest&&e.target.closest('.gDataBox');let s=box&&box.querySelector('select');
     /* qualquer outra caixa de seleção do sistema (o select não recebe o toque: acha pela posição) */
     if(!s&&(e.clientX||e.clientY)){const x=e.clientX,y=e.clientY;s=[...document.querySelectorAll('select:not([multiple])')].find(el=>{const r=el.getBoundingClientRect();return e.target.contains(el)&&r.width>0&&r.height>0&&x>=r.left&&x<=r.right&&y>=r.top&&y<=r.bottom&&getComputedStyle(el).visibility!=='hidden';})||null;}
-    if(s){e.preventDefault();e.stopPropagation();if(s.disabled){fechar();return;}if(cur===s){if(Date.now()-tAb<450)return;fechar();return;}abrir(s);tAb=Date.now();return;}
+    if(s){e.preventDefault();e.stopPropagation();if(s.disabled){fechar();return;}if(Date.now()-tAb<450)return;if(cur===s){fechar();return;}abrir(s);tAb=Date.now();return;}
     if(dd)fechar();},true);
   let lw=innerWidth;addEventListener('resize',()=>{if(innerWidth!==lw){lw=innerWidth;fechar();}});addEventListener('popstate',fechar);
   document.addEventListener('keydown',e=>{if(e.key==='Escape')fechar();});
