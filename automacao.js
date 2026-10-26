@@ -422,7 +422,8 @@ async function holdSync(){if(holdMandando)return;
     return;}
   let modo=1,noForn=false,noCarr=false,carrAzul=false;try{modo=+cfg().holdAuto||0;noForn=!!(window.filtroForn&&filtroForn()&&!naCargaAuto());
     noCarr=!!(naCargaAuto()&&acB());const it=noCarr?acItem():null;carrAzul=noCarr&&!!(AC.pausa||(AC.trava&&it&&!ok(it.real)));}catch(e){}
-  const quer=!!(modo&&((noForn&&A.pausa)||carrAzul));   // quadro azul na tela (Fornecer ou Carregar) = balança em HOLD
+  let fimPend=false;try{fimPend=noForn&&!curralAtual()&&lista().length>0;}catch(e){}   // registrou o último curral e ainda não finalizou o fornecimento: fica travada
+  const quer=!!(modo&&((noForn&&(A.pausa||fimPend))||carrAzul));   // quadro azul na tela (Fornecer ou Carregar) = balança em HOLD
   const repetir=modo===1&&(noForn||noCarr)&&Date.now()-(A.holdTs||0)>4000;   // comando direto: reforça o estado do tablet
   if(quer===A.holdApp&&!repetir)return;
   if(!modo&&!A.holdApp)return;
