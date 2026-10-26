@@ -172,9 +172,13 @@ function diaLote(l,dia,X){
   const sd=X.sd.get(l.uid),cab=cabPres(l,dia,sd);if(!cab)return null;
   const c=curralEm(l,dia),tot=X.ix.get(dia+'|'+nAt(c))||0;
   const juntos=X.L.filter(o=>curralEm(o,dia)===c&&cabPres(o,dia,X.sd.get(o.uid))>0);
-  const cabTot=juntos.reduce((a,o)=>a+cabPres(o,dia,X.sd.get(o.uid)),0)||cab;
-  const mn=tot*cab/cabTot,rac=racaoEm(l,dia),cp=rac?compRacao(rac,dia):null;
-  const ms=cp?mn*cp.ms/100:NaN,peso=pesoEm(l,dia,X.pz.get(l.uid)),cabOp=cabEm(l,dia,sd);
+  /* dois ou mais lotes no mesmo curral: o trato do dia é dividido pelo PESO VIVO projetado de cada lote (cabeças × peso projetado no dia);
+     sem peso, cai para a divisão pelas cabeças */
+  const peso=pesoEm(l,dia,X.pz.get(l.uid)),pvL=o=>{const c2=cabPres(o,dia,X.sd.get(o.uid)),p2=o===l?peso:pesoEm(o,dia,X.pz.get(o.uid));return c2*(p2>0?p2:NaN);};
+  let sh=1;if(juntos.length>1){const pvs=juntos.map(pvL);if(pvs.every(v=>v>0)){const t=pvs.reduce((a,v)=>a+v,0);sh=pvL(l)/t;}
+    else{const cabTot=juntos.reduce((a,o)=>a+cabPres(o,dia,X.sd.get(o.uid)),0)||cab;sh=cab/cabTot;}}
+  const mn=tot*sh,rac=racaoEm(l,dia),cp=rac?compRacao(rac,dia):null;
+  const ms=cp?mn*cp.ms/100:NaN,cabOp=cabEm(l,dia,sd);
   return {dia,c,cab,cabOp,peso,mn,ms,mnCab:mn/cab,msCab:ms/cab,pv:ms/cab/peso*100,
     custoR:cp?mn*cp.custoMN:NaN,custoOp:cabOp*taxaEm(dia),rac:rac?rac.nome:'—',tem:tot>0,juntos:juntos.length,cp};
 }
@@ -1342,7 +1346,7 @@ function confResumoTela(RS){if(!RS.length)return '';const n=v=>v==null||!ok(v)?'
 function sinaisDia(dia){const out=[],[Y,M,D]=dia.split('-').map(Number),tms=t=>{const [h,m,x]=String(t||'0:0:0').split(':').map(Number);return new Date(Y,M-1,D,h||0,m||0,x||0).getTime();};
   gTodos('diag').filter(x=>x.dia===dia).forEach(it=>{const ap=it.aparelho||String(it.uid).split('-').pop();let ab=null;const fecha=()=>{if(ab)out.push(ab);ab=null;};
     (it.ev||[]).forEach(e=>{const ts=tms(e.t);
-      if(e.tipo==='sem_peso'||e.tipo==='reconectando'){if(ab&&ab.fimTs&&ts-ab.fimTs>20000)fecha();if(!ab)ab={ap,ts,t0:e.t,antes:ok(e.peso)?+e.peso:null,depois:null,fim:'',fimTs:0};}
+      if(e.tipo==='sem_peso'||e.tipo==='reconectando'){if(ab&&ab.fimTs&&ts-ab.fimTs>20000)fecha();if(!ab)ab={ap,ts,t0:e.t,antes:ok(e.peso)?+e.peso:null,depois:null,fim:'',fimTs:0,hold:e.hold};}
       else if(e.tipo==='reconectou'&&ab){ab.fim=e.t;ab.fimTs=ts;}
       else if(e.tipo==='peso_voltou'){if(!ab)ab={ap,ts,t0:e.t,antes:null};if(ab.antes==null&&ok(e.antes))ab.antes=+e.antes;ab.depois=ok(e.peso)?+e.peso:null;ab.fim=e.t;ab.fimTs=ts;fecha();}});
     fecha();});
@@ -1372,9 +1376,13 @@ async function confBatExp(o,diaArg,modo){const dia=diaArg||GT.cbDia||hojeKey(),D
   const cols=[['Hora',90,'c'],['Produto / curral',230,'c'],['Previsto',120,'r'],['Realizado',130,'r'],['Dif.',100,'r'],['Início',130,'r'],['Final',130,'r'],['Salto',110,'r']];
   const lin=x=>{const dif=ok(x.real)&&ok(x.prev)?x.real-x.prev:null;return {v:[x.hora||'',x.nome+(x.trato?' · T'+x.trato:''),ok(x.prev)?nf(x.prev):'',ok(x.real)?nf(x.real):'—',dif==null?'':sg_(dif),ok(x.ini)?nf(x.ini):'—',ok(x.fim)?nf(x.fim):'—',sg_(x.salto)],prev:x.prev,dif,neg:[1,3]};};
   const SS=sinaisDia(dia),corP=v=>v>=50?'#b3261e':v<=-50?'#1565c0':'#6b7a8f';
-  const linS=e=>{const d=ok(e.antes)&&ok(e.depois)?e.depois-e.antes:null;return {v:[String(e.t0).slice(0,5),'📶 '+sinalTxt(e),'','','',ok(e.antes)?nf(e.antes):'—',ok(e.depois)?nf(e.depois):'—',d==null?'':sg_(d)||'0'],neg:[],
-    cor:['#6b7a8f','#6b7a8f',null,null,null,'#6b7a8f','#6b7a8f',d==null?'#6b7a8f':corP(d)]};};
-  const comS=(L,SB)=>L.flatMap(x=>[...(SB.antes.get(x)||[]).map(linS),lin(x)]);
+  /* caiu no meio de um produto ou curral (o peso já tinha saído do início dele): a diferença é o que estava entrando/saindo, não é salto */
+  const linS=(e,x)=>{const d=ok(e.antes)&&ok(e.depois)?e.depois-e.antes:null,carr=x&&x.trato==null,
+      meio=e.hold===false&&x&&ok(x.ini)&&ok(x.fim)&&ok(e.antes)&&(carr?e.antes>x.ini+20&&e.antes<=x.fim+20:e.antes<x.ini-20&&e.antes>=x.fim-20),
+      tx=meio?(carr?' (carregando '+x.nome+')':' (descarregando no '+x.nome+')'):'';
+    return {v:[String(e.t0).slice(0,5),'📶 '+sinalTxt(e)+tx,'','','',ok(e.antes)?nf(e.antes):'—',ok(e.depois)?nf(e.depois):'—',d==null||meio?'':sg_(d)||'0'],neg:[],
+    cor:['#6b7a8f','#6b7a8f',null,null,null,'#6b7a8f','#6b7a8f',d==null||meio?'#6b7a8f':corP(d)]};};
+  const comS=(L,SB)=>L.flatMap(x=>[...(SB.antes.get(x)||[]).map(e=>linS(e,x)),lin(x)]);
   const secs=[];D.forEach(g=>{const SB=sinaisDoBloco(D,g,SS),b=g.b,cb=b?`Carregamento ${b.hora||''} · ${b.racNome||''}${b.local==='P'?' · Pasto':b.local==='C'?' · Confinamento':''}`:'Tratos sem carregamento antes';
     if(b&&g.its.length)secs.push({cab:`${b.hora||''} · Carregamento · `+cb.replace(/^Carregamento [^·]*· /,''),cols,linhas:comS(g.its,SB).concat(g.rs.length?[]:SB.fim.map(linS)),total:['CARREGADO','',nf(g.its.reduce((a,x)=>a+(x.prev||0),0)),nf(g.carregado),'','',ok(g.fimCarga)?nf(g.fimCarga):'',g.sProd?sg_(g.sProd):'']});
     runsT(g.rs).forEach((L,iR,RR)=>{const pv=L.reduce((a,x)=>a+(x.prev||0),0),fo=L.reduce((a,x)=>a+(x.real||0),0),sl=L.reduce((a,x)=>a+(ok(x.salto)?x.salto:0),0),uf=[...L].reverse().find(x=>ok(x.fim));
@@ -2357,7 +2365,7 @@ $('gBox').addEventListener('click',e=>{
     toast(`Ração mudada em ${cs.length} curral(is) · ${n} lote(s)`);return gVoltar();}
   if(a==='salvaMudCur'){const o=fv('mcO'),de=fv('mcD'),d=fv('mcDia');if(!o||!de||!d)return toast('Escolha a origem, o destino e a data');if(o===de)return toast('O destino é o mesmo curral');
     const ls=lotesNoCur(o,hojeKey());if(!ls.length)return toast('Nenhum lote nesse curral');const ant=ls.find(l=>d<l.ent.dia);if(ant)return toast(`A data é antes da entrada do ${ant.nome}`);
-    const oc=lotesNoCur(de,d).filter(l=>!ls.includes(l));if(oc.length&&!confirm(`O ${de} já tem ${oc.map(l=>l.nome).join(' + ')}. Os lotes vão dividir o trato desse curral pelo número de cabeças. Mudar mesmo assim?`))return;
+    const oc=lotesNoCur(de,d).filter(l=>!ls.includes(l));if(oc.length&&!confirm(`O ${de} já tem ${oc.map(l=>l.nome).join(' + ')}. Os lotes vão dividir o trato desse curral pelo peso vivo de cada lote. Mudar mesmo assim?`))return;
     ls.forEach(l0=>{const l=JSON.parse(JSON.stringify(l0));l.curr=l.curr||[];setHist(l.curr,d,{c:de});gPut(l);});toast(`${ls.map(l=>l.nome).join(' + ')} → ${de}`);return gVoltar();}
   if(a==='salvaMud'){const l=JSON.parse(JSON.stringify(G.it[id])),c=b.dataset.o==='curr',d=fv('desde'),v=fv('val');if(!d||!v)return toast('Escolha a data e '+(c?'o curral':'a ração'));
     if(d<l.ent.dia)return toast('A data é antes da entrada do lote');
