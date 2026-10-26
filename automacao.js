@@ -281,7 +281,7 @@ function aplicarBalRec(){[['aBox',$('aBox')&&$('aBox').querySelector(':scope>sec
 document.addEventListener('click',e=>{if(!e.target.closest('[data-baltog]'))return;A.balRec=!A.balRec;aplicarBalRec();});
 setInterval(pintarSinal,700);
 function desconectar(manual){if(manual){A.btGen=(A.btGen||0)+1;A.btReconectando=false;}
-  try{if(A.holdApp&&A.digiStar&&A.dsEsc){A.dsEsc.writeValue(new Uint8Array([0x1b,0x47,0x68,0x44,0x04])).catch(()=>{});holdGrava(false);}}catch(e){}   // vai desconectar: solta o HOLD antes
+  /* desconectar NÃO mexe no HOLD: a balança fica como estava (travada continua travada, solta continua solta) */
   try{if(A.bt&&A.bt.gatt&&A.bt.gatt.connected){A.bt._manual=true;A.bt.gatt.disconnect();}}catch(e){}
   try{if(A.ws){A.ws._manual=true;A.ws.close();}}catch(e){}
   if(A.sim){clearInterval(A.sim.t);A.sim=null;}
@@ -419,16 +419,19 @@ function holdFimGrava(v){A.holdFim=v;try{localStorage.setItem('fjkHoldFim',v?'1'
 function holdGrava(v){A.holdApp=v;A.holdTs=Date.now();try{localStorage.setItem('fjkHoldApp',v?'1':'0');}catch(e){}}
 let holdMandando=false;
 async function holdSync(){if(holdMandando)return;
-  if(!(A.fonte==='bt'&&A.digiStar&&A.dsEsc)){   // sem Bluetooth não dá para soltar: avisa o operador para soltar na mão
-    if(A.holdApp&&!A.pausa&&!A.holdFim&&Date.now()-(A.holdAvisoTs||0)>10000){A.holdAvisoTs=Date.now();toast('⚠ Balança sem Bluetooth e pode estar em HOLD: se o visor mostrar HOLD, aperte HOLD na balança para soltar');}
-    return;}
   let modo=1,noForn=false,noCarr=false,carrAzul=false;try{modo=+cfg().holdAuto||0;noForn=!!(window.filtroForn&&filtroForn()&&!naCargaAuto());
     noCarr=!!(naCargaAuto()&&acB());const it=noCarr?acItem():null;carrAzul=noCarr&&!!(AC.pausa||(AC.trava&&it&&!ok(it.real)));}catch(e){}
   let fimPend=false;try{fimPend=noForn&&!curralAtual()&&lista().length>0;}catch(e){}   // registrou o último curral e ainda não finalizou o fornecimento: fica travada
-  /* finalizou o fornecimento ou o carregamento: manda HOLD uma vez e não insiste (o botão HOLD da balança solta na mão); no próximo carregamento ou fornecimento o tablet assume de novo */
+  let carrFim=false;try{const B=noCarr?acB():null;carrFim=!!(B&&B.itens&&B.itens.length&&B.itens.every(x=>ok(x.real)));}catch(e){}   // registrou o último produto e ainda não finalizou o carregamento: fica travada
+  /* finalizou o fornecimento ou o carregamento: a balança continua em HOLD (o comando já foi no último curral) e o tablet não insiste;
+     o botão HOLD da balança solta na mão; no próximo carregamento ou fornecimento o tablet assume de novo. Vale mesmo se o Bluetooth cair ao finalizar. */
   const ativo=noForn||noCarr;if(modo===1&&(A.ultForn||A.ultCarr)&&!ativo&&!A.holdFim)holdFimGrava(true);A.ultForn=noForn;A.ultCarr=noCarr;if(ativo&&A.holdFim)holdFimGrava(false);
+  A.holdManter=modo===1&&(fimPend||carrFim||A.holdFim||(!ativo&&(A.ultForn||A.ultCarr)));   // não soltar ao desconectar
+  if(!(A.fonte==='bt'&&A.digiStar&&A.dsEsc)){   // sem Bluetooth não dá para soltar: avisa o operador para soltar na mão
+    if(A.holdApp&&!A.pausa&&!A.holdFim&&!A.holdManter&&Date.now()-(A.holdAvisoTs||0)>10000){A.holdAvisoTs=Date.now();toast('⚠ Balança sem Bluetooth e pode estar em HOLD: se o visor mostrar HOLD, aperte HOLD na balança para soltar');}
+    return;}
   if(A.holdFim&&!ativo){if(A.holdApp||modo!==1)return;}
-  const quer=!!(modo&&((noForn&&(A.pausa||fimPend))||carrAzul||(A.holdFim&&!ativo)));   // quadro azul na tela (Fornecer ou Carregar) = balança em HOLD
+  const quer=!!(modo&&((noForn&&(A.pausa||fimPend))||carrAzul||carrFim||(A.holdFim&&!ativo)));   // quadro azul na tela (Fornecer ou Carregar) = balança em HOLD
   const repetir=modo===1&&(noForn||noCarr)&&Date.now()-(A.holdTs||0)>4000;   // comando direto: reforça o estado do tablet
   if(quer===A.holdApp&&!repetir)return;
   if(!modo&&!A.holdApp)return;
