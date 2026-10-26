@@ -262,6 +262,7 @@ function gRender(){
   if(GT.t==='transfForm')trPrevia();
   if(GT.t==='fechaForm')fcPrevia();
   if(GT.t==='saiForm'&&GT.o!=='morte')vdPrevia();
+  if(GT.t==='loteForm')lfCalc();
   requestAnimationFrame(caberSelos);requestAnimationFrame(alinharCampos);
 }
 /* campos lado a lado: o título mais curto ganha a mesma altura do vizinho, assim as caixas de escrever ficam alinhadas */
@@ -567,16 +568,23 @@ function tLoteForm(t){
     {k:'dia',l:'Data de entrada',t:'dia',v:e.dia||hj,meia:1},{k:'cab',l:'Cabeças',t:'num',v:e.cab,meia:1},
     {k:'peso',l:'Peso médio na chegada',suf:'kg',t:'num',v:e.peso,meia:1},{k:'pesoC',l:'Peso médio de compra',suf:'kg, na origem',t:'num',v:e.pesoC,meia:1,ajuda:'Se a compra foi pelo peso da origem. Vazio = usa o da chegada.'},
     {k:'unid',l:'Preço de compra em',t:'sel',op:UNID_C,v:e.unid||'arroba'},{k:'preco',l:'Preço de compra',t:'rs',v:e.preco,meia:1},{k:'rcC',l:'Rendimento de carcaça na compra',suf:'%',t:'num',v:e.rcC||50,meia:1,ajuda:'Compra por @: peso × rendimento ÷ 15. 50% é o mesmo que peso vivo ÷ 30.'},{k:'cGrupo',l:'Compra na alteração em grupo',t:'sel',op:[['0','🔒 Bloqueada (não muda pela lista)'],['1','✓ Liberada (pode mudar pela lista)']],v:l&&l.compraGrupo===false?'0':'1'},
-    {k:'outros',l:'Frete, comissão e outros da compra',suf:'total',t:'rs',v:e.outros,meia:1},
+    {k:'outros',l:'Frete, comissão e outros da compra',suf:'total',t:'rs',v:e.outros,meia:1},{k:'vTotC',l:'Valor total da compra (entrada)',t:'rs',v:'',meia:1,ajuda:'Calculado pelo preço; digitando o valor total, o preço é calculado.'},
     );
   if(novo)fs.push({k:'racao',l:'Ração',t:'sel',op:opRacoes(),v:''});
   fs.push({k:'gmd',l:'Ganho por dia (meta)',suf:'kg/cab/dia',t:'num',v:l?l.gmd:1.5,meia:1},{k:'diasPrev',l:'Dias de cocho previstos',t:'num',v:v('diasPrev'),meia:1},
     {k:'alvo',l:'Peso de saída desejado',suf:'kg',t:'num',v:v('alvo'),meia:1},{k:'rcPrev',l:'Estimativa de venda · rendimento de carcaça',suf:'%',t:'num',v:v('rcPrev')||'',meia:1},{k:'simPreco',l:'Estimativa de venda · preço da @',t:'rs',v:l&&l.simPreco?l.simPreco:'',meia:1},
     {k:'obs',l:'Observação',v:v('obs')});
   return `${voltar()}<section class="panel"><h2>${novo?'Novo lote':'Editar lote'}</h2><div class="gForm">${fs.map(campo).join('')}</div>
+    <div id="gLfTot" class="gApRes"></div>
     ${novo?'':'<p class="note">Curral e ração mudam pelos botões “Mudar curral” e “Mudar ração” do lote, com a data da mudança.</p>'}
     <button class="primary" data-g="salvaLote" data-id="${t.id||''}">Salvar</button></section>`;
 }
+/* editar lote: valor total da compra ↔ preço, e o total com as entradas de animais depois */
+function lfCalc(q){const box=$('gLfTot');if(!box||!$('gf_preco'))return;const l=GT.id?G.it[GT.id]:null,cab=fn('cab'),peso=fn('pesoC')>0?fn('pesoC'):fn('peso'),u=fv('unid')||'arroba',rc=fn('rcC')>0?fn('rcC'):50;
+  const base=u==='cab'?cab:u==='kg'?cab*peso:u==='arrV'?cab*peso/30:cab*peso*rc/100/15;
+  if(base>0){if(q==='vTotC'){const v=fn('vTotC');if(v>0)$('gf_preco').value=rsIn(Math.round(v/base*100)/100);}else if(fn('preco')>0)$('gf_vTotC').value=rsIn(Math.round(base*fn('preco')*100)/100);}
+  const ent=(fn('vTotC')||0)+(fn('outros')||0),E=l?entradasDe(l):[],eTot=E.reduce((a,x)=>a+(+x.rs||0),0),eCab=E.reduce((a,x)=>a+(+x.cab||0),0);
+  box.innerHTML=`<div class="gLinhas">${lin(`Entrada · ${nf(cab)} cab${u==='arroba'?` · ${nf(base,2)} @`:''}`,rs(ent))}${E.length?lin(`Entradas depois · +${nf(eCab)} cab (${E.length}×)`,rs(eTot)):''}${lin(`<b>Total da compra do lote</b> · ${nf(cab+eCab)} cab`,rs(ent+eTot)+`<small> · ${rs((ent+eTot)/((cab+eCab)||1))}/cab</small>`)}</div>`;}
 function salvaLote(id){
   const nome=fv('nome'),dia=fv('dia'),cab=fn('cab'),peso=fn('peso');
   if(!nome)return toast('Coloque o nome do lote');if(!dia)return toast('Coloque a data de entrada');
@@ -2331,6 +2339,7 @@ $('gBox').addEventListener('input',e=>{
   if(GT.t==='rel'&&/^gf_s/.test(t.id))calcSimul();
   if(GT.t==='pesForm'&&(t.id==='gf_peso'||t.id==='gf_dia'))calcPes();
   if(GT.t==='entForm'&&/^gf_(cab|peso|pesoT|dia|prA|rcE|rs)$/.test(t.id))calcEnt(t.id.slice(3));
+  if(GT.t==='loteForm'&&/^gf_(cab|peso|pesoC|unid|preco|rcC|outros|vTotC)$/.test(t.id))lfCalc(t.id.slice(3));
   if(GT.t==='saiForm'&&/^gf_(cab|peso|pesoVT|carcT|carcM|arrT|rc|unid|preco|vTot|desc)$/.test(t.id))calcSai(t.id.slice(3));
   if(GT.t==='saiForm'&&GT.o!=='morte')vdPrevia();
 });
