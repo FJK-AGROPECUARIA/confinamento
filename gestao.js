@@ -3591,6 +3591,7 @@ $('gBox').addEventListener('click',e=>{const b=e.target.closest('[data-g^="fz"]'
   if(typeof bloqueado==='function'&&bloqueado())return;
   if(a==='fzMais'||a==='fzMenos')return fzMudar(+b.dataset.i,a==='fzMais'?1:-1);
   if(a==='fzFotoAdd'){const f=document.getElementById('fzFotoIn');if(f)f.click();return;}
+  if(a==='fzPendRm')return fzPendRm(b.dataset.k);
   if(a==='fzFotoVer')return fzFotoVer(+b.dataset.n);
   if(a==='fzFotoRm')return fzFotoRm(+b.dataset.n);
   if(a==='fzApagar'){if(!confirm(`Apagar a avaliação de fezes do ${GT.cur} em ${dB(GT.dia)}?`))return;const x=fzItem(GT.dia,GT.cur);if(x)gDel(x.uid);GT.cur=null;GT.fzR=null;return gRender();}});
@@ -3603,11 +3604,11 @@ $('gBox').addEventListener('change',e=>{if(GT.t!=='fezes')return;
 
 /* ---------- Escore de fezes: fotos (até 4 por curral/dia), guardadas no Google Drive pela planilha ---------- */
 const FZ_MAXF=6,FZ_FOTO={},FZ_ENV={};   // FZ_FOTO: cache id → dataURL; FZ_ENV: fotos subindo (por curral)
-function fzFotosHTML(x){const fo=(x&&x.fotos)||[],env=FZ_ENV[GT.dia+'|'+GT.cur]||0,livre=FZ_MAXF-fo.length-env;
+function fzFotosHTML(x){const fo=(x&&x.fotos)||[],pd=fzPendDe(GT.dia,GT.cur),env=pd.length,livre=FZ_MAXF-fo.length-env;
   const th=fo.map((f,n)=>{const src=FZ_FOTO[f.idMini];if(!src)fzFotoCarregar(f.idMini);
     return `<div class="fzFoto"><button class="fzFotoImg" data-g="fzFotoVer" data-n="${n}" aria-label="Ver foto ${n+1}">${src?`<img src="${src}" alt="">`:'<span>⏳</span>'}</button>${typeof modoVer!=='undefined'&&modoVer?'':`<button class="fzFotoX" data-g="fzFotoRm" data-n="${n}" aria-label="Apagar foto ${n+1}">✕</button>`}</div>`;}).join('')
-    +Array.from({length:env},()=>'<div class="fzFoto"><span class="fzFotoUp">⬆ enviando…</span></div>').join('');
-  return `<div class="fzFotos"><div class="fzFotosTopo"><span>📷 Fotos <small>(${fo.length} de ${FZ_MAXF})</small></span>
+    +pd.map(q=>`<div class="fzFoto"><img src="${q.mini}" alt="" style="width:100%;height:100%;object-fit:cover;opacity:.55"><span class="fzFotoUp" style="position:absolute;left:0;right:0;bottom:0;background:rgba(0,0,0,.6);color:#fff;font-size:.7rem;text-align:center;padding:2px">${navigator.onLine&&FZ_PEND_ENV?'⬆ enviando…':'⏳ aguardando sinal'}</span>${typeof modoVer!=='undefined'&&modoVer?'':`<button class="fzFotoX" data-g="fzPendRm" data-k="${q.k}" aria-label="Apagar foto">✕</button>`}</div>`).join('');
+  return `<div class="fzFotos"><div class="fzFotosTopo"><span>📷 Fotos <small>(${fo.length+env} de ${FZ_MAXF})</small>${env?` <small>· ${env} no aparelho, sobe quando tiver internet</small>`:''}</span>
     ${livre>0&&!(typeof modoVer!=='undefined'&&modoVer)?`<button class="mini" data-g="fzFotoAdd">📎 Anexar imagens</button>`:''}</div>
     ${th?`<div class="fzFotoGrade">${th}</div>`:''}<input type="file" id="fzFotoIn" accept="image/*" multiple hidden></div>`;}
 function fzRedim(file,max,q){return new Promise((ok_,erro)=>{const u=URL.createObjectURL(file),im=new Image();
@@ -3615,19 +3616,41 @@ function fzRedim(file,max,q){return new Promise((ok_,erro)=>{const u=URL.createO
     cv.getContext('2d').drawImage(im,0,0,cv.width,cv.height);URL.revokeObjectURL(u);ok_(cv.toDataURL('image/jpeg',q));};
   im.onerror=()=>{URL.revokeObjectURL(u);erro(new Error('imagem inválida'));};im.src=u;});}
 async function fzFotosAnexar(files){if(typeof bloqueado==='function'&&bloqueado())return;const t=GT,c=t.cur,dia=t.dia;if(!c||!files.length)return;
-  if(!navigator.onLine)return toast('Sem internet: anexe as fotos quando tiver sinal');
-  const chave=dia+'|'+c,ja=((fzItem(dia,c)||{}).fotos||[]).length,livre=FZ_MAXF-ja-(FZ_ENV[chave]||0);
+  const ja=((fzItem(dia,c)||{}).fotos||[]).length,livre=FZ_MAXF-ja-fzPendDe(dia,c).length;
   if(livre<=0)return toast(`Máximo de ${FZ_MAXF} fotos por curral`);
   if(files.length>livre)toast(`Só cabem mais ${livre} foto(s): as outras ficaram de fora`);
-  files=files.slice(0,livre);FZ_ENV[chave]=(FZ_ENV[chave]||0)+files.length;gRender();let okN=0;
+  files=files.slice(0,livre);let okN=0;
+  /* sem internet ou com: a foto é compactada e guardada no aparelho primeiro; depois sobe para o Drive (agora ou quando o sinal voltar) */
   for(const f of files){try{const big=await fzRedim(f,1024,.6),mini=await fzRedim(f,300,.6);  // compactadas: ~100 KB a grande, ~15 KB a miniatura
-      const r=await postApi({acao:'fotoSalvar',img:big.split(',')[1],mini:mini.split(',')[1],nome:`${dB(dia).replace(/\//g,'-')} ${c} ${Date.now()}`});
-      if(!r.id)throw new Error('sem id');FZ_FOTO[r.idMini||r.id]=mini;
-      const x=fzItem(dia,c)||{uid:fzId(dia,c),tipo:'fezes',dia,curral:c,c:[0,0,0,0,0],obs:''},n=JSON.parse(JSON.stringify(x));
-      n.fotos=(n.fotos||[]).concat([{id:r.id,idMini:r.idMini||r.id}]).slice(0,FZ_MAXF);const o=$('fzObs');if(o&&GT.cur===c)n.obs=o.value;gPut(n);okN++;}
-    catch(e){toast('Não consegui enviar a foto: '+(e.message||e));}
-    finally{FZ_ENV[chave]=Math.max(0,(FZ_ENV[chave]||1)-1);if(GT.t==='fezes'){const y=window.scrollY;gRender();window.scrollTo({top:y});}}}
-  if(okN)toast(`${okN} foto(s) anexada(s)`);}
+      const q={k:'fp-'+Date.now()+'-'+Math.random().toString(36).slice(2,7),dia,c,big,mini,ts:Date.now()};
+      await fzPendGrava(q);FZ_PEND.push(q);okN++;}
+    catch(e){toast('Não consegui ler a foto: '+(e.message||e));}}
+  if(GT.t==='fezes'){const y=window.scrollY;gRender();window.scrollTo({top:y});}
+  if(okN)toast(navigator.onLine?`${okN} foto(s) anexada(s) · enviando…`:`${okN} foto(s) guardada(s) no aparelho · sobem sozinhas quando tiver internet`);
+  fzPendEnviar();}
+/* ---------- fotos guardadas no aparelho esperando internet (IndexedDB: não somem se fechar o app) ---------- */
+let FZ_PEND=[],FZ_PEND_ENV=false;
+const fzPendDe=(dia,c)=>FZ_PEND.filter(q=>q.dia===dia&&q.c===c);
+function fzPendDb(){return new Promise((ok_,erro)=>{const r=indexedDB.open('fjk-fotos-pend',1);r.onupgradeneeded=()=>{if(!r.result.objectStoreNames.contains('p'))r.result.createObjectStore('p',{keyPath:'k'});};r.onsuccess=()=>ok_(r.result);r.onerror=()=>erro(r.error);});}
+async function fzPendOp(modo,fn){const db=await fzPendDb();return new Promise((ok_,erro)=>{const tx=db.transaction('p',modo),st=tx.objectStore('p'),rq=fn(st);tx.oncomplete=()=>{db.close();ok_(rq&&rq.result);};tx.onerror=()=>{db.close();erro(tx.error);};});}
+const fzPendGrava=q=>fzPendOp('readwrite',st=>st.put(q));
+const fzPendTira=k=>fzPendOp('readwrite',st=>st.delete(k));
+async function fzPendCarrega(){try{FZ_PEND=(await fzPendOp('readonly',st=>st.getAll()))||[];FZ_PEND.sort((a,b)=>a.ts-b.ts);}catch(e){FZ_PEND=[];}
+  if(FZ_PEND.length&&GT&&GT.t==='fezes'){const y=window.scrollY;gRender();window.scrollTo({top:y});}fzPendEnviar();}
+async function fzPendEnviar(){if(FZ_PEND_ENV||!FZ_PEND.length||!navigator.onLine||(typeof modoVer!=='undefined'&&modoVer))return;FZ_PEND_ENV=true;let okN=0;
+  const pinta=()=>{if(GT&&GT.t==='fezes'){const y=window.scrollY;gRender();window.scrollTo({top:y});}};pinta();
+  try{for(const q of FZ_PEND.slice()){
+      let r;try{r=await postApi({acao:'fotoSalvar',img:q.big.split(',')[1],mini:q.mini.split(',')[1],nome:`${dB(q.dia).replace(/\//g,'-')} ${q.c} ${q.ts}`});}catch(e){break;}   // caiu o sinal: tenta de novo depois
+      if(!r||!r.id)break;
+      FZ_FOTO[r.idMini||r.id]=q.mini;
+      const x=fzItem(q.dia,q.c)||{uid:fzId(q.dia,q.c),tipo:'fezes',dia:q.dia,curral:q.c,c:[0,0,0,0,0],obs:''},n=JSON.parse(JSON.stringify(x));
+      n.fotos=(n.fotos||[]).concat([{id:r.id,idMini:r.idMini||r.id}]).slice(0,FZ_MAXF);const o=$('fzObs');if(o&&GT.cur===q.c&&GT.dia===q.dia)n.obs=o.value;gPut(n);
+      try{await fzPendTira(q.k);}catch(e){}FZ_PEND=FZ_PEND.filter(z=>z.k!==q.k);okN++;pinta();}}
+  finally{FZ_PEND_ENV=false;pinta();}
+  if(okN)toast(`📷 ${okN} foto(s) do escore de fezes enviada(s)`);}
+async function fzPendRm(k){if(typeof bloqueado==='function'&&bloqueado())return;if(!confirm('Apagar esta foto (ainda não foi enviada)?'))return;
+  try{await fzPendTira(k);}catch(e){}FZ_PEND=FZ_PEND.filter(z=>z.k!==k);const y=window.scrollY;gRender();window.scrollTo({top:y});}
+window.addEventListener('online',()=>setTimeout(fzPendEnviar,1500));setInterval(fzPendEnviar,30000);setTimeout(fzPendCarrega,1500);
 const FZ_CARR={};
 function fzFotoCarregar(id){if(!id||FZ_FOTO[id])return Promise.resolve();if(FZ_CARR[id])return FZ_CARR[id];
   FZ_CARR[id]=(async()=>{
