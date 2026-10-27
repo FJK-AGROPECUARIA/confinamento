@@ -425,13 +425,13 @@ async function holdSync(){if(holdMandando)return;
   let carrFim=false;try{const B=noCarr?acB():null;carrFim=!!(B&&B.itens&&B.itens.length&&B.itens.every(x=>ok(x.real)));}catch(e){}   // registrou o último produto e ainda não finalizou o carregamento: fica travada
   /* finalizou o fornecimento ou o carregamento: a balança continua em HOLD (o comando já foi no último curral) e o tablet não insiste;
      o botão HOLD da balança solta na mão; no próximo carregamento ou fornecimento o tablet assume de novo. Vale mesmo se o Bluetooth cair ao finalizar. */
-  const ativo=noForn||noCarr;if(modo===1&&(A.ultForn||A.ultCarr)&&!ativo&&!A.holdFim)holdFimGrava(true);A.ultForn=noForn;A.ultCarr=noCarr;if(ativo&&A.holdFim)holdFimGrava(false);
+  const ativo=noForn||noCarr;if(modo===1&&(A.ultForn||A.ultCarr)&&!ativo&&!A.holdFim)holdFimGrava(true);A.ultForn=noForn;A.ultCarr=noCarr;   /* holdFim só sai ao LIBERAR (▶ FORNECER de um curral ou ▶ CARREGAR de um produto): abrir o fornecimento/batida ou escolher o trato não solta */
   A.holdManter=modo===1&&(fimPend||carrFim||A.holdFim||(!ativo&&(A.ultForn||A.ultCarr)));   // não soltar ao desconectar
   if(!(A.fonte==='bt'&&A.digiStar&&A.dsEsc)){   // sem Bluetooth não dá para soltar: avisa o operador para soltar na mão
     if(A.holdApp&&!A.pausa&&!A.holdFim&&!A.holdManter&&Date.now()-(A.holdAvisoTs||0)>10000){A.holdAvisoTs=Date.now();toast('⚠ Balança sem Bluetooth e pode estar em HOLD: se o visor mostrar HOLD, aperte HOLD na balança para soltar');}
     return;}
   if(A.holdFim&&!ativo){if(A.holdApp||modo!==1)return;}
-  const quer=!!(modo&&((noForn&&(A.pausa||fimPend))||carrAzul||carrFim||(A.holdFim&&!ativo)));   // quadro azul na tela (Fornecer ou Carregar) = balança em HOLD
+  const quer=!!(modo&&((noForn&&(A.pausa||fimPend))||carrAzul||carrFim||A.holdFim));   // quadro azul na tela (Fornecer ou Carregar) = balança em HOLD
   const repetir=modo===1&&(noForn||noCarr)&&Date.now()-(A.holdTs||0)>4000;   // comando direto: reforça o estado do tablet
   if(quer===A.holdApp&&!repetir)return;
   if(!modo&&!A.holdApp)return;
@@ -861,7 +861,7 @@ function pintarPausa(){const p=!!A.pausa;if(!$('aPausaBox'))return;$('aPausaBox'
 function aPausar(){if(A.pausa)return;const z0=zona(),cur0=curralAtual();A.pausa={est:A.est,base:A.base,ts:Date.now(),
     falta:A.est==='descarregando'&&z0?Math.max(0,z0.falta):(cur0?cur0.prev:null),caiu:A.est==='descarregando'&&A.base!=null&&A.peso!=null?Math.max(0,A.base-A.peso):0};pararSom();diagLog('pausou',{est:A.est,base:A.base,peso:A.peso});
   toast('⏸ Pausado: a balança não conta até você continuar');pintarPeso();holdSync();if(typeof agendarAoVivo==='function')agendarAoVivo();}
-function aContinuarPausa(){const P=A.pausa;if(!P)return;A.pausa=null;
+function aContinuarPausa(){const P=A.pausa;if(!P)return;A.pausa=null;if(A.holdFim)holdFimGrava(false);
   /* estava no meio do curral: o que já caiu fica guardado; a conta recomeça pela balança de AGORA (o que mudou no trajeto não conta) */
   if(P.est==='descarregando'){const atual=pesoVisor();A.est='descarregando';A.base=(atual!=null?atual:P.base)+(+P.caiu||0);A.baseConf=true;A.baseFix=true;A.baseCur=(curralAtual()||{}).nome||null;A.ancV=null;A.ancT=Date.now();A.fpMin=null;A.menor=A.peso;}
   else{novoCurral(true,true);const pa=pesoVisor();if(pa!=null){A.base=pa;A.baseConf=true;A.baseFix=true;A.baseCur=(curralAtual()||{}).nome||null;}else A.baseConf=false;A.posPausa=true;}  // liberou o curral: a balança EXATA do momento do toque vira o peso inicial (não troca depois pela média)  // liberou o curral: o peso de agora vira o inicial  // ainda não tinha começado: o peso de agora vira o inicial (e acerta quando a balança firmar)
@@ -1017,7 +1017,7 @@ function acItem(){const B=acB();return B?B.itens[B.atual]:null;}
 /* todo produto novo começa TRAVADO (quadro azul "▶ CARREGAR SILAGEM"): a balança só conta depois de tocar; o peso de agora vira o inicial */
 /* produto já liberado (tocou em CARREGAR) e ainda não registrado — ex.: o app fechou e voltou no meio da batida: não trava de novo e continua com o peso inicial guardado */
 function acNovoProduto(semTravar){AC.est='aguardando';AC.ancV=null;AC.ancT=0;AC.fpMin=null;AC.pausa=null;const it=acItem();AC.trava=!semTravar&&!!(it&&!ok(it.real)&&!(it.lib&&ok(it.ini)));setTimeout(holdSync,0);}
-window.acLiberar=()=>{const it=acItem();if(!it)return;AC.trava=false;const pa=pesoVisor();if(pa!=null){it.ini=pa;it.fim=null;it.iniFix=true;it.lib=true;}  /* início = balança EXATA no toque (não muda depois) */
+window.acLiberar=()=>{const it=acItem();if(!it)return;AC.trava=false;if(A.holdFim)holdFimGrava(false);const pa=pesoVisor();if(pa!=null){it.ini=pa;it.fim=null;it.iniFix=true;it.lib=true;}  /* início = balança EXATA no toque (não muda depois) */
   AC.est='aguardando';AC.ancV=null;AC.ancT=0;cSave();cRender();toast(`▶ Carregando ${it.nome}`);holdSync();};
 /* ⏸ Pausar no carregamento (trajeto no meio de um produto): a balança não conta; o que já foi carregado fica guardado.
    Ao continuar, o peso inicial é recalculado pela balança de agora (o que mudou no trajeto não conta). */
@@ -1025,7 +1025,7 @@ window.acPausar=()=>{const it=acItem();if(AC.pausa||AC.trava||!it||ok(it.real))r
   const pv=A.peso!=null?pesoVisor():null,carr=ok(it.ini)&&pv!=null?Math.max(0,pv-it.ini):0;
   AC.pausa={carr,ts:Date.now()};pararSom();diagLog('pausou_carga',{produto:it.nome,ini:it.ini,peso:pv,carr});
   toast('⏸ Pausado: a balança não conta até você continuar');pintarCarga();holdSync();};
-window.acContinuarPausa=()=>{const P=AC.pausa,it=acItem();if(!P)return;AC.pausa=null;
+window.acContinuarPausa=()=>{const P=AC.pausa,it=acItem();if(!P)return;AC.pausa=null;if(A.holdFim)holdFimGrava(false);
   const pa=A.peso!=null?pesoVisor():null;
   if(it&&!ok(it.real)&&pa!=null&&(ok(it.ini)||P.carr>0)){it.ini=pa-(+P.carr||0);it.fim=null;it.iniFix=true;it.lib=true;cSave();}
   AC.est='aguardando';AC.ancV=null;AC.ancT=0;AC.fpMin=null;
