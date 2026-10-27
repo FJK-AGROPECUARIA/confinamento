@@ -1237,7 +1237,7 @@ body.naInicio .topoTxt h1{font-size:clamp(16px,5vw,28px)!important}
 <div class="toast" id="toast" hidden></div>
 <script>
 'use strict';
-const APP_VERSAO='228';
+const APP_VERSAO='229';
 const APP_DATA='19/10/2026';
 const KEY='confinamento-completo-v1';
 const $=id=>document.getElementById(id);
@@ -3854,7 +3854,7 @@ function avTelaHTML(d,carga){const T=d.tela,Z=T.azul;
     <div class="${esc(T.etCl||'aEtapa')}">${esc(T.etapa||'')}</div>
     <div class="${esc(T.fCl||'aFalta')}"><small>${esc(T.fTit||'')}</small><b class="num">${esc(T.fVal||'—')}</b><em>${esc(T.fTxt||'')}</em></div>
     <div class="aMini"><div class="caiu"><small>${carga?'Carregado':'Fornecido'}</small><b class="num">${esc(T.feito||'—')}</b></div><div><small>Peso inicial</small><b class="num">${esc(T.ini||'—')}</b></div><div><small>Parar com</small><b class="num">${esc(T.alvo||'—')}</b></div></div>
-    ${carga?`<div class="avBatTot">Carregamento: <b>${fmt((d.carregado||0)+(parseFloat(String(T.feito||'0').replace(/\./g,'').replace(',','.'))||0))}</b> de ${fmt(d.totalPrev||0)} kg</div>`:''}</div>`;}
+    ${carga?`<div class="avBatTot">Carregamento: <b>${fmt((d.carregado||0)+((d.its&&d.its[(d.iProd||1)-1]&&d.its[(d.iProd||1)-1][2]!=null)?0:(parseFloat(String(T.feito||'0').replace(/\./g,'').replace(',','.'))||0)))}</b> de ${fmt(d.totalPrev||0)} kg</div>`:''}</div>`;}
 /* abre o mapa fora do sistema: no app do Google Maps se tiver; senão no navegador (o sistema continua aberto) */
 document.addEventListener('click',e=>{const a=e.target.closest('a[data-geo]');if(!a)return;e.preventDefault();const q=a.dataset.geo,web='https://www.google.com/maps/search/?api=1&query='+q;
   const ua=navigator.userAgent||'',ios=/iPad|iPhone|iPod/.test(ua)||(navigator.platform==='MacIntel'&&navigator.maxTouchPoints>1),and=/Android/i.test(ua);
