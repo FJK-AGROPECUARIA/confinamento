@@ -1237,7 +1237,7 @@ body.naInicio .topoTxt h1{font-size:clamp(16px,5vw,28px)!important}
 <div class="toast" id="toast" hidden></div>
 <script>
 'use strict';
-const APP_VERSAO='232';
+const APP_VERSAO='233';
 const APP_DATA='19/10/2026';
 const KEY='confinamento-completo-v1';
 const $=id=>document.getElementById(id);
@@ -1591,6 +1591,12 @@ async function iniciarFornecimentoChecado(){
   {toast('Atualizando o previsto…');const r=await prevAtualizarAgora();
     if(!r.ok&&!await perg('Previsto pode estar desatualizado',navigator.onLine?'A nuvem não respondeu: o previsto pode não ter as últimas leituras de cocho.':'Sem internet: o previsto pode não ter as últimas leituras de cocho feitas em outro aparelho.','Iniciar mesmo assim','Voltar'))return;
     if(r.mudou){try{render();}catch(e){}toast('✓ Previsto atualizado pela leitura de cocho');}}
+  /* o trato pede agora mais do que a batida levou para ele (previsto mudou depois de carregar): avisa antes de começar */
+  try{if(typeof gTodos==='function'){const k=+FS.trato,d=diaAtivo();
+    const cg=gTodos('carga').filter(c=>c.dia===d&&c.local===FS.local&&c.racao===FS.rac&&c.prevTr&&c.prevTr[k]!=null&&(c.tratos||[c.trato]).map(Number).includes(k)).sort((a,b)=>(+b.ts0||0)-(+a.ts0||0))[0];
+    if(cg){const agora=fornCurrais(FS.local,FS.rac,k).reduce((a,x)=>a+(+x.prev||0),0),pl=+cg.prevTr[k];
+      if(agora-pl>=20){try{window.diagLog&&diagLog('forn_prev_maior',{trato:k,agora,batida:pl,hora:cg.hora});}catch(e){}
+        if(!await perg('O previsto mudou depois da batida',`O Trato ${k} pede agora ${fmt(agora)} kg, mas a batida das ${cg.hora} foi feita com ${fmt(pl)} kg para ele (${fmt(agora-pl)} kg a mais). Pode faltar ração no vagão.`,'Iniciar mesmo assim','Voltar'))return;}}}}catch(e){}
   FS.juntoPlano=null;if(!await juntarTratosForn())return;const trs=FS.juntoPlano?FS.juntoPlano.tratos:[+FS.trato],pend=[].concat(...trs.map(k=>fornPendentes(FS.local,FS.rac,k))),prec=pend.reduce((a,x)=>a+x.prev,0);
   if(!pend.length&&fornCurrais(FS.local,FS.rac,FS.trato).length&&!await perg('Deseja realmente iniciar o fornecimento?',`O Trato ${FS.trato} (${FS.local==='C'?'Confinamento':'Pasto'}) já foi realizado hoje: todos os currais já foram tratados.`,'Sim, iniciar mesmo assim','Não, voltar'))return;
   const peso=window.pesoBalanca?pesoBalanca():null;
@@ -3040,21 +3046,23 @@ async function enviarPrevisto(){
       save();try{render();}catch(e){}}}catch(e){}
   const ts=Date.now();S.prevTs=ts;
   await postApi({acao:'previsto',cadastro:S.cadastro,prev:S.prev,ts,aparelho:S.aparelho});
-  S.prevSyncTs=ts;S.prevSnap=JSON.stringify(S.prev);S.cadSnap=JSON.stringify(S.cadastro);S.prevPend=false;save();
+  S.prevSyncTs=ts;S.prevChecadoEm=Date.now();S.prevSnap=JSON.stringify(S.prev);S.cadSnap=JSON.stringify(S.cadastro);S.prevPend=false;save();
 }
 /* Traz o previsto que outro celular mudou (o mais novo vale) */
 async function puxarPrevisto(forcar){
   if(S.prevPend)return;
   if(!forcar&&Date.now()-ultPuxaPrev<60000)return;
   ultPuxaPrev=Date.now();
-  const r=await fetch(apiUrl()+'?acao=previsto',{cache:'no-store'});const j=await r.json();
+  const r=await fetch(apiUrl()+'?acao=previsto',{cache:'no-store'});const j=await r.json();if(j&&j.ok){S.prevChecadoEm=Date.now();}
   /* previsto da nuvem é de um dia anterior e hoje já tem previsto gerado pela leitura: vale o de hoje e este aparelho manda para a nuvem */
   if(j&&j.ok&&j.dados&&prevNuvemVelho(j.dados)){if(typeof modoVer!=='undefined'&&modoVer)return;
     const temAlgo=o=>Object.values(o||{}).some(m=>Object.values(m||{}).some(v=>+v>0));
     if(!temAlgo(S.prev)){S.prev=JSON.parse(JSON.stringify(prevGuardado(hojeKey())));S.prevSnap=JSON.stringify(S.prev);}
     S.prevPend=true;save();try{render();}catch(e){}enviarPrevisto().catch(()=>{});return;}
   if(j&&j.ok&&j.dados&&Array.isArray(j.dados.cadastro)&&(S.prevSyncTs?+j.dados.ts!==+S.prevSyncTs:+j.dados.ts>(S.prevTs||0))){  /* outro aparelho mudou o previsto: vale o da nuvem (antes comparava com o relógio deste aparelho e às vezes não puxava) */
+    const _antes=JSON.stringify(S.prev||{});
     if(S.prevPend){const snap=S.prevSnap?JSON.parse(S.prevSnap):{};S.prev=juntarPrev(j.dados.prev||{},S.prev,snap);}else S.prev=j.dados.prev||{};
+    try{if(JSON.stringify(S.prev||{})!==_antes&&window.diagLog){const tot=x=>{const r={};Object.keys(x||{}).forEach(k=>{const v=Object.values(x[k]||{}).reduce((a,q)=>a+(+q||0),0);if(v)r[k]=v;});return r;};diagLog('prev_puxado',{antes:tot(JSON.parse(_antes)),depois:tot(S.prev),de:j.dados.aparelho||''});}}catch(e){}
     aplicarCadastro(j.dados.cadastro);S.cadSnap=JSON.stringify(S.cadastro);S.prevTs=Math.max(+j.dados.ts,S.prevTs||0);S.prevSyncTs=+j.dados.ts;if(!S.prevPend)S.prevSnap=JSON.stringify(S.prev);padronizarNomes();save();render();
     setTimeout(()=>{try{recompensar();}catch(e){}},300);
   }
@@ -3064,8 +3072,10 @@ async function puxarPrevisto(forcar){
 async function prevAtualizarAgora(){if((typeof modoVer!=='undefined'&&modoVer)||!apiUrl())return {ok:true,mudou:false};if(!navigator.onLine)return {ok:false,mudou:false};
   const antes=JSON.stringify(S.prev||{});
   try{await Promise.race([(async()=>{if(S.prevPend)await enviarPrevisto();await puxarPrevisto(true);})(),new Promise((_,r)=>setTimeout(()=>r(new Error('tempo')),8000))]);}
-  catch(e){return {ok:false,mudou:JSON.stringify(S.prev||{})!==antes};}
-  return {ok:true,mudou:JSON.stringify(S.prev||{})!==antes};}
+  catch(e){try{window.diagLog&&diagLog('prev_nuvem',{ok:false,erro:String(e&&e.message||e)});}catch(_){}return {ok:false,mudou:JSON.stringify(S.prev||{})!==antes};}
+  const mudou=JSON.stringify(S.prev||{})!==antes;
+  if(mudou){try{const tot=o=>{const r={};Object.keys(o||{}).forEach(k=>{const s=Object.values(o[k]||{}).reduce((a,v)=>a+(+v||0),0);if(s)r[k]=s;});return r;};window.diagLog&&diagLog('prev_nuvem',{ok:true,antes:tot(JSON.parse(antes)),depois:tot(S.prev)});}catch(_){}}
+  return {ok:true,mudou};}
 window.prevAtualizarAgora=prevAtualizarAgora;
 /* Traz sozinho os tratos que outros celulares lançaram (últimos 7 dias), a cada 2 minutos com internet */
 let ultPuxaReg=0;
