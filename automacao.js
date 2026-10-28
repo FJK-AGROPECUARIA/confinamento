@@ -1101,6 +1101,14 @@ window.acRegistrar=async()=>{const B=acB(),it=acItem();if(!B||!it)return;if(AC.r
   if(!fixo&&!ok(it.ini)){toast('Sem peso inicial ainda');return;}
   let fim=A.peso!=null?pesoVisor():null;   /* final = balança EXATA no toque em registrar (não espera firmar) */if(fim==null&&!fixo){toast('Sem leitura da balança');return;}
   if(acItem()!==it||ok(it.real))return;
+  /* núcleo etc. (registra o previsto): a balança precisa estar destravada e subir; se não subiu, pergunta se foi colocado */
+  if(fixo&&A.fonte&&A.peso!=null){
+    if(AC.trava){toast(`Toque em ▶ CARREGAR para destravar a balança antes de colocar o ${it.nome}`);return;}
+    const sub=ok(it.ini)&&fim!=null?fim-it.ini:null;
+    if(sub!=null&&sub<it.prev*0.5){AC.registrando=true;let sim=false;
+      try{sim=window.confirmaVermelho?await confirmaVermelho('A balança não subiu',`O ${it.nome} pede ${nf(it.prev)} kg, mas a balança subiu só ${nf(Math.max(0,sub))} kg (de ${nf(it.ini)} para ${nf(fim)}). O ${it.nome} foi colocado?`,'Sim, registrar mesmo assim','Não, vou colocar'):confirm('A balança não subiu. Registrar mesmo assim?');}finally{AC.registrando=false;}
+      try{diagLog('fixo_sem_subir',{produto:it.nome,prev:it.prev,ini:it.ini,fim,registrou:sim});}catch(e){}
+      if(!sim)return;if(acItem()!==it||ok(it.real))return;fim=A.peso!=null?pesoVisor():fim;}}
   if(fixo){regFixo(B,it,fim);fim=it.fim;}   // núcleo etc.: registra o previsto; o próximo começa do peso real da balança
   else{if(!(fim>it.ini)){toast('O peso não subiu desde o início');return;}
     it.fim=fim;it.real=fim-it.ini;it.hora=new Date().toTimeString().slice(0,5);it.tsReg=Date.now();}
