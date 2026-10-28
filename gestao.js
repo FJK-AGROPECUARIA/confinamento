@@ -257,7 +257,7 @@ function gRender(){if(GT&&GT.t!=='rel')RELCMP=null;
   if(window.abaAtual==='gest'&&RAIZ[GT.t]==='cocho'&&!document.body.classList.contains('modoGest')){aba('leit');return;}  // leitura abre no menu Tratos
   if(window.abaAtual==='leit'&&RAIZ[GT.t]!=='cocho'){aba('gest');return;}
   const f={home:tHome,estoque:tEstoque,estIns:tEstIns,estForm:tEstForm,estNF:tEstNF,fornec:tFornec,fornForm:tFornForm,entRel:tEntRel,currais:tCurrais,curForm:tCurForm,lotes:tLotes,pesNova:tPesNova,entNova:tEntNova,saiSel:tSaiSel,entradas:tEntradas,saidas:tSaidas,lote:tLote,loteForm:tLoteForm,pesForm:tPesForm,entForm:tEntForm,apartForm:tApartForm,transfForm:tTransfForm,fechaForm:tFechaForm,achouForm:tAchouForm,saiForm:tSaiForm,mudForm:tMudForm,rel:tRelLote,custoForm:tCustoForm,
-    cocho:tCocho,cochoGraf:tCochoGraf,fezes:t=>tFezes(t),rels:tRels,dia:tDia,indices:tIndices,periodo:tPeriodo,comp:tComp,vendas:tVendas,compradores:tCompradores,cprForm:tCprForm,racoes:tRacoes,racForm:tRacForm,racCur:tRacCur,mudCur:tMudCur,insumos:tInsumos,insForm:tInsForm,insMS:tInsMS,ms:tInsMS,cfg:tCfg}[GT.t]||tHome;
+    cocho:tCocho,cochoGraf:tCochoGraf,fezes:t=>tFezes(t),rels:tRels,dia:tDia,indices:tIndices,periodo:tPeriodo,comp:tComp,vendas:tVendas,compradores:tCompradores,cprForm:tCprForm,racoes:tRacoes,racForm:tRacForm,racCur:tRacCur,mudCur:tMudCur,mudEd:tMudEd,insumos:tInsumos,insForm:tInsForm,insMS:tInsMS,ms:tInsMS,cfg:tCfg}[GT.t]||tHome;
   const raiz=GT.raiz||RAIZ[GT.t]||'home';document.querySelectorAll('#subGest button[data-gt]').forEach(x=>x.setAttribute('aria-selected',String(x.dataset.gt===raiz)));
   const cb=$('cfgTBox');if(cb&&$('cfgTParque')&&cb.parentNode!==$('cfgTParque'))$('cfgTParque').appendChild(cb); // ajustes da balança: guarda antes de redesenhar
   b.innerHTML=GT.nova&&GT.t!=='saiSel'?saiTopo(GT)+f(GT).replace(/<button class="gVoltar"[^>]*>[^<]*<\/button>/,''):f(GT);
@@ -1029,8 +1029,8 @@ function salvaFecha(id){fcLer();const l=G.it[id],F=GT.f,X=fcCalc(l,F),d=X.d;
 function tEntForm(t){const l=G.it[t.id];GT.entLote=l.uid;const E=t.eid&&G.it[t.eid]&&!G.it[t.eid].del?G.it[t.eid]:null,V=(k,d)=>E&&E[k]!=null&&E[k]!==''?E[k]:d;
   return `${t.emb?'':voltar()}<section class="panel"><h2>${E?'✎ Alterar entrada':t.emb?'Dados da entrada':'＋ Entrada de animais'} · ${esc(l.nome)}${curralEm(l,hojeKey())?' <small>('+esc(curralEm(l,hojeKey()))+')</small>':''}</h2><p class="note">No lote agora: ${nf(cabAtual(l))} cabeças · peso projetado hoje ${nf(pesoEm(l,hojeKey()))} kg.</p>
     <div class="gForm">${[{k:'dia',l:'Data da entrada',t:'dia',v:V('dia',hojeKey()),meia:1},{k:'cab',l:'Quantidade de animais',t:'num',v:V('cab',''),meia:1},
-      {k:'peso',l:'Peso médio (individual)',suf:'kg por cabeça',t:'num',v:V('peso',''),meia:1},{k:'pesoT',l:'ou Peso total',suf:'kg de todos',t:'num',v:E&&+E.cab>0&&+E.peso>0?Math.round(E.cab*E.peso*100)/100:'',meia:1},
-      {k:'prA',l:'Preço da compra',suf:'R$/@ morto',t:'rs',v:V('preco',(!l.ent.unid||l.ent.unid==='arroba')&&+l.ent.preco>0?+l.ent.preco:''),meia:1},{k:'rcE',l:'Rendimento na compra',suf:'%',t:'num',v:V('rcC',+l.ent.rcC||50),meia:1},
+      {k:'peso',l:'Peso médio individual',t:'num',v:V('peso',''),meia:1},{k:'pesoT',l:'Peso total',t:'num',v:E&&+E.cab>0&&+E.peso>0?Math.round(E.cab*E.peso*100)/100:'',meia:1},
+      {k:'prA',l:'Preço da compra',t:'rs',v:V('preco',(!l.ent.unid||l.ent.unid==='arroba')&&+l.ent.preco>0?+l.ent.preco:''),meia:1},{k:'rcE',l:'Rendimento na compra',suf:'%',t:'num',v:V('rcC',+l.ent.rcC||50),meia:1},
       {k:'rs',l:'Valor total da compra',t:'rs',v:V('rs',''),ajuda:'Preço da @ × arrobas (peso total × rendimento ÷ 15). Digitando o valor total, o preço da @ é calculado.'},{k:'obs',l:'Observação (de onde veio, etc.)',v:V('obs','')}].map(campo).join('')}</div>
     <p class="note" id="gEntRes"></p>
     <p class="note">Os animais entram no mesmo lote e no mesmo curral. O peso médio do lote passa a ser a média dos que já estavam com os que chegaram. O custo que o lote já teve continua; daqui pra frente ele é dividido por mais cabeças.</p>
@@ -1151,7 +1151,8 @@ function tMudCur(t){const A=window.curraisApi,hj=hojeKey();if(!A)return '';
   const opO=[['','Selecione']].concat(com.map(n=>{const ls=lotesNoCur(n,hj);return [n,`${n} · ${ls.map(l=>l.nome+' ('+nf(cabAtual(l))+' cab)').join(' + ')}`];}));
   const opD=[['','Selecione']].concat(opCurrais('',false).map(([n])=>{const ls=lotesNoCur(n,hj);return [n,n+(ls.length?` (ocupado: ${ls.map(l=>l.nome).join(' + ')})`:' (vazio)')];}));
   return `${voltar('Currais')}<section class="panel"><h2>↔ Mudar animais de curral</h2>
-    <div class="gForm">${[{k:'mcO',l:'Curral de origem (onde os animais estão)',t:'sel',busca:1,op:opO,v:t.ori||''},{k:'mcD',l:'Curral de destino',t:'sel',busca:1,op:opD,v:''},{k:'mcDia',l:'A partir de',t:'dia',v:hj}].map(campo).join('')}</div>
+    <div class="gForm">${[{k:'mcO',l:'Curral de origem',t:'sel',busca:1,op:opO,v:t.ori||''},{k:'mcD',l:'Curral de destino',t:'sel',busca:1,op:opD,v:''},{k:'mcDia',l:'A partir de',t:'dia',v:hj}].map(campo).join('')}
+      <div class="gCampo"><label for="gf_mcObs">Observação</label><textarea id="gf_mcObs" rows="2" placeholder="Ex.: motivo da mudança" style="width:100%;box-sizing:border-box;resize:vertical;font:inherit"></textarea></div></div>
     <button class="primary" data-g="salvaMudCur">Mudar de curral</button>
     <p class="note">O lote vai inteiro para o curral de destino com tudo o que já tem (entrada, custos, pesagens, ração). Os tratos de cada dia contam para o lote que estava no curral naquele dia: o que foi tratado antes da data continua no curral antigo, e um lote que já saiu (arquivado) não recebe nada novo.</p></section>`;}
 /* ---------- ajuste de curral ou ração de um lote ---------- */
@@ -2487,7 +2488,8 @@ $('gBox').addEventListener('click',e=>{
   if(a==='salvaMudCur'){const o=fv('mcO'),de=fv('mcD'),d=fv('mcDia');if(!o||!de||!d)return toast('Escolha a origem, o destino e a data');if(o===de)return toast('O destino é o mesmo curral');
     const ls=lotesNoCur(o,hojeKey());if(!ls.length)return toast('Nenhum lote nesse curral');const ant=ls.find(l=>d<l.ent.dia);if(ant)return toast(`A data é antes da entrada do ${ant.nome}`);
     const oc=lotesNoCur(de,d).filter(l=>!ls.includes(l));if(oc.length&&!confirm(`O ${de} já tem ${oc.map(l=>l.nome).join(' + ')}. Os lotes vão dividir o trato desse curral pelo peso vivo de cada lote. Mudar mesmo assim?`))return;
-    ls.forEach(l0=>{const l=JSON.parse(JSON.stringify(l0));l.curr=l.curr||[];setHist(l.curr,d,{c:de});gPut(l);});recalcCurral(de,d);recalcCurral(o,d);toast(`${ls.map(l=>l.nome).join(' + ')} → ${de}`);return gVoltar();}
+    const obs=(($('gf_mcObs')||{}).value||'').trim();
+    ls.forEach(l0=>{const l=JSON.parse(JSON.stringify(l0));l.curr=l.curr||[];setHist(l.curr,d,Object.assign({c:de,de:o,ts:Date.now()},obs?{obs}:{}));gPut(l);});recalcCurral(de,d);recalcCurral(o,d);toast(`${ls.map(l=>l.nome).join(' + ')} → ${de}`);return gVoltar();}
   if(a==='salvaMud'){const l=JSON.parse(JSON.stringify(G.it[id])),c=b.dataset.o==='curr',d=fv('desde'),v=fv('val');if(!d||!v)return toast('Escolha a data e '+(c?'o curral':'a ração'));
     if(d<l.ent.dia)return toast('A data é antes da entrada do lote');
     if(c){l.curr=l.curr||[];setHist(l.curr,d,{c:v});}else{l.rac=l.rac||[];setHist(l.rac,d,{r:v});}gPut(l);toast('Salvo');return gVoltar();}
@@ -2948,6 +2950,13 @@ function cClique(e){
     q.then(v=>{if(!v)return;b._okConf=1;try{b.click();}finally{b._okConf=0;}});return;}
   if(a==='imgCarga'||a==='xlsCarga')return a==='imgCarga'?imgCarga():xlsCarga();
   if(bloqueado())return;
+  /* antes de iniciar o carregamento: atualiza o previsto (leitura de cocho de outro aparelho); se o total mudou, mostra e pede para conferir */
+  if(a==='iniciar'&&!b._okPrev&&!b._okIni&&!CG.ativa&&typeof prevAtualizarAgora==='function'){(async()=>{if(CG.prevChecando)return;CG.prevChecando=true;let r;
+      try{toast('Atualizando o previsto…');r=await prevAtualizarAgora();}finally{CG.prevChecando=false;}
+      if(!r.ok&&!await confirmaVermelho('Previsto pode estar desatualizado',navigator.onLine?'A nuvem não respondeu: o previsto pode não ter as últimas leituras de cocho.':'Sem internet: o previsto pode não ter as últimas leituras de cocho feitas em outro aparelho.','Iniciar mesmo assim','Voltar'))return;
+      if(r.mudou&&!CG.avulso&&CG.local){const antes=+CG.total||0;try{cExpAplicar();}catch(e){}cSave();cRender();const novo=+CG.total||0;
+        if(Math.round(novo)!==Math.round(antes)){await confirmaVermelho('Previsto atualizado',`A leitura de cocho mudou o previsto. Total do carregamento: ${nf(antes)} → ${nf(novo)} kg. Confira e toque em ▶ Iniciar carregamento de novo.`,'Entendi, vou conferir','Fechar',true);return;}}
+      const bt=document.querySelector('[data-c="iniciar"]')||b;bt._okPrev=1;try{bt.click();}finally{bt._okPrev=0;}})();return;}
   if(a==='iniciar'&&!b._okIni&&!CG.avulso&&CG.local&&typeof fornCurrais==='function'&&typeof fornPendentes==='function'){
     const trs=[+CG.trato].concat((CG.juntos||[]).map(Number).filter(k=>k!==+CG.trato)).filter(k=>k>0),fe=trs.filter(k=>fornCurrais(CG.local,CG.rac,k).length&&!fornPendentes(CG.local,CG.rac,k).length);
     if(fe.length){confirmaVermelho('Deseja realmente iniciar o carregamento?',`${fe.length>1?'Os Tratos '+fe.join(' e '):'O Trato '+fe[0]} (${NOMELOC[CG.local]}) já ${fe.length>1?'foram realizados':'foi realizado'} hoje: todos os currais já foram tratados.`,'Sim, iniciar mesmo assim','Não, voltar').then(v=>{if(!v)return;b._okIni=1;try{b.click();}finally{b._okIni=0;}});return;}}
@@ -3129,7 +3138,35 @@ function tCurrais(){const A=window.curraisApi;if(!A)return '';const L=A.lista().
   const at=L.filter(x=>!x.i.inativo),ina=L.filter(x=>x.i.inativo);
   return `<section class="panel"><h2>Currais</h2><p class="note">O local diz se o curral é do confinamento ou do pasto; vale para os filtros, o Carregar e o Fornecer. Inativo não aparece no Previsto, no Fornecer nem nos lotes (os registros continuam).</p>
     <div class="gAcoes"><button class="lima" data-g="ir" data-t="curForm">+ Novo curral</button><button class="primary" data-g="ir" data-t="mudCur">↔ Mudar animais de curral</button></div>
-    ${grupo(ICO_C+' Confinamento',at.filter(x=>x.i.tipo==='C'),'C')}${grupo('🌿 Pasto',at.filter(x=>x.i.tipo==='P'),'P')}${grupo('Sem tipo',at.filter(x=>x.i.tipo!=='C'&&x.i.tipo!=='P'),'S')}${grupo('⏸ Inativos',ina,'I')}</section>`;}
+    ${grupo(ICO_C+' Confinamento',at.filter(x=>x.i.tipo==='C'),'C')}${grupo('🌿 Pasto',at.filter(x=>x.i.tipo==='P'),'P')}${grupo('Sem tipo',at.filter(x=>x.i.tipo!=='C'&&x.i.tipo!=='P'),'S')}${grupo('⏸ Inativos',ina,'I')}${mudHistHTML()}</section>`;}
+/* ---------- histórico das mudanças de curral (recolhido no fim de Currais): editar e excluir pedem senha ---------- */
+function mudHist(){const R=[];gTodos('lote').forEach(l=>{const cs=(l.curr||[]).slice().sort((a,b)=>a.desde<b.desde?-1:1);
+  cs.forEach((x,i)=>{if(!i)return;const ant=cs[i-1];if(ant.c===x.c)return;R.push({l,desde:x.desde,de:x.de||ant.c,para:x.c,obs:x.obs||''});});});
+  return R.sort((a,b)=>a.desde!==b.desde?(a.desde<b.desde?1:-1):alfa(a.l.nome,b.l.nome));}
+function mudHistHTML(){const R=mudHist(),ab=gCurAb.has('M');
+  const lin=r=>`<div class="gItem" style="cursor:default"><div class="gItemTopo"><b>${dB(r.desde)} · ${esc(r.de)} → ${esc(r.para)}</b><span class="pill">${esc(r.l.nome)}</span></div>
+    ${r.obs?`<small style="display:block;white-space:pre-line">${esc(r.obs)}</small>`:''}
+    ${typeof modoVer!=='undefined'&&modoVer?'':`<div class="row" style="margin-top:6px"><button class="mini" data-g="mudHEd" data-id="${r.l.uid}" data-o="${r.desde}">✏ Editar</button><button class="mini danger" data-g="mudHRm" data-id="${r.l.uid}" data-o="${r.desde}">🗑 Excluir</button></div>`}</div>`;
+  return `<button type="button" class="gGrpCab${ab?' aberto':''}" data-g="curGrp" data-k="M"><span>📋 Mudanças de curral</span><small>${R.length} mudança(s)</small><em class="gGrpDica">${ab?'clique para fechar':'clique para abrir'}</em><span class="gLoteSeta">▼</span></button>${ab?`<div class="gGrpCorpo">${R.length?R.map(lin).join(''):'<p class="note">Nenhuma mudança registrada.</p>'}</div>`:''}`;}
+function tMudEd(t){const l=G.it[t.id],x=l&&(l.curr||[]).find(z=>z.desde===t.o);if(!l||!x)return `${voltar('Currais')}<section class="panel"><p class="note">Mudança não encontrada.</p></section>`;
+  const cs=(l.curr||[]).slice().sort((a,b)=>a.desde<b.desde?-1:1),i=cs.indexOf(x),de=x.de||(cs[i-1]||{}).c||'';
+  return `${voltar('Currais')}<section class="panel"><h2>✏ Editar mudança de curral</h2><p class="note"><b>${esc(l.nome)}</b> · saiu do ${esc(de)}</p>
+    <div class="gForm">${[{k:'meD',l:'Curral de destino',t:'sel',busca:1,op:opCurrais(x.c,false),v:x.c},{k:'meDia',l:'A partir de',t:'dia',v:x.desde}].map(campo).join('')}
+      <div class="gCampo"><label for="gf_meObs">Observação</label><textarea id="gf_meObs" rows="2" style="width:100%;box-sizing:border-box;resize:vertical;font:inherit">${esc(x.obs||'')}</textarea></div></div>
+    <button class="primary" data-g="mudHSalva" data-id="${l.uid}" data-o="${x.desde}">Salvar alteração</button></section>`;}
+document.addEventListener('click',async e=>{const b=e.target.closest('[data-g="mudHEd"],[data-g="mudHRm"],[data-g="mudHSalva"]');if(!b)return;e.preventDefault();e.stopPropagation();
+  if(typeof bloqueado==='function'&&bloqueado())return;const a=b.dataset.g,id=b.dataset.id,desde=b.dataset.o,l0=G.it[id];if(!l0)return toast('Lote não encontrado');
+  if(a==='mudHEd'){if(window.pedirSenhaAcao&&!await pedirSenhaAcao('Senha para editar'))return;GT={t:'mudEd',id,o:desde};gRender();window.scrollTo({top:0});return;}
+  if(a==='mudHRm'){if(window.pedirSenhaAcao&&!await pedirSenhaAcao('Senha para excluir'))return;
+    const x=(l0.curr||[]).find(z=>z.desde===desde);if(!x)return;const cs=(l0.curr||[]).slice().sort((p,q)=>p.desde<q.desde?-1:1),ant=cs[cs.indexOf(x)-1];
+    if(!await confirmaVermelho('Excluir esta mudança de curral?',`${l0.nome}: ${x.de||(ant||{}).c||''} → ${x.c} em ${dB(desde)}. O lote volta a ficar no ${(ant||{}).c||'curral anterior'} a partir dessa data.`,'Sim, excluir','Não'))return;
+    const l=JSON.parse(JSON.stringify(l0));l.curr=(l.curr||[]).filter(z=>z.desde!==desde);gPut(l);recalcCurral(x.c,desde);if(ant)recalcCurral(ant.c,desde);
+    toast('Mudança excluída');const y=window.scrollY;gRender();window.scrollTo({top:y});return;}
+  if(a==='mudHSalva'){const para=fv('meD'),d=fv('meDia'),obs=(($('gf_meObs')||{}).value||'').trim();if(!para||!d)return toast('Escolha o destino e a data');
+    if(d<l0.ent.dia)return toast('A data é antes da entrada do lote');const l=JSON.parse(JSON.stringify(l0)),x=(l.curr||[]).find(z=>z.desde===desde);if(!x)return;
+    if(d!==desde&&l.curr.some(z=>z.desde===d))return toast('Já tem outra mudança deste lote nessa data');
+    const velho=x.c;l.curr=l.curr.filter(z=>z.desde!==desde);const n={c:para,de:x.de,ts:x.ts||Date.now(),ed:Date.now()};if(obs)n.obs=obs;Object.keys(n).forEach(k=>n[k]==null&&delete n[k]);setHist(l.curr,d,n);gPut(l);
+    const d0=d<desde?d:desde;[velho,para,x.de].filter(Boolean).forEach(c=>recalcCurral(c,d0));toast('Mudança alterada');GT={t:'currais'};gCurAb.add('M');gRender();window.scrollTo({top:0});}},true);
 function tCurForm(t){const A=window.curraisApi,n=t.id||'',i=n?A.info(n):{tipo:'C',inativo:false};
   return `${voltar()}<section class="panel"><h2>${n?'Curral '+esc(n):'Novo curral'}</h2>
     <div class="gForm">${campo({k:'cnome',l:'Nome do curral',v:n,ph:'Ex.: C-11 ou P-REPRESA-2'})}
