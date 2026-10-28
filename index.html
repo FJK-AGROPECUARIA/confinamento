@@ -1237,7 +1237,7 @@ body.naInicio .topoTxt h1{font-size:clamp(16px,5vw,28px)!important}
 <div class="toast" id="toast" hidden></div>
 <script>
 'use strict';
-const APP_VERSAO='231';
+const APP_VERSAO='232';
 const APP_DATA='19/10/2026';
 const KEY='confinamento-completo-v1';
 const $=id=>document.getElementById(id);
@@ -1601,7 +1601,8 @@ function iniciarFornecimento(){FS.fim='';let junto=null;if(FS.juntoPlano){const 
   if(+S.tratoSel!==+FS.trato){S.tratoSel=+FS.trato;$('tratoSel').value=String(S.tratoSel);if($('aTrato'))$('aTrato').value=String(S.tratoSel);}
   const L=lista(),regs=regsAtuais();setAtual(Math.max(0,L.findIndex(x=>!feito(x.nome,regs))));save();
   if(window.aRenderFora)aRenderFora();render();mostrarFornecimento();window.scrollTo({top:0});}
-document.addEventListener('click',e=>{const lb=e.target.closest('[data-floc]');if(lb){FS.local=lb.dataset.floc;FS.rac=null;FS.trato=null;FS.passo=2;mostrarFornecimento();return;}
+document.addEventListener('click',e=>{const lb=e.target.closest('[data-floc]');if(lb){FS.local=lb.dataset.floc;FS.rac=null;FS.trato=null;FS.passo=2;mostrarFornecimento();
+    /* já traz o previsto da nuvem (leitura de cocho de outro aparelho) */try{prevAtualizarAgora().then(r=>{if(r&&r.mudou&&!filtroForn()){try{mostrarFornecimento();}catch(e){}toast('✓ Previsto atualizado pela leitura de cocho');}}).catch(()=>{});}catch(e){}return;}
   const fp=e.target.closest('[data-fpasso]');if(fp){FS.passo=+fp.dataset.fpasso;mostrarFornecimento();return;}
   if(e.target.closest('[data-fjtog]')){FS.juntoAb=!FS.juntoAb;if(!FS.juntoAb)FS.juntos=[];mostrarFornecimento();return;}
   const fj=e.target.closest('[data-fjunto]');if(fj){const k=+fj.dataset.fjunto;FS.juntos=FS.juntos||[];FS.juntos=FS.juntos.includes(k)?FS.juntos.filter(x=>x!==k):FS.juntos.concat(k);mostrarFornecimento();return;}
