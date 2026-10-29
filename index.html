@@ -687,7 +687,7 @@ body.comteclado .wrap{padding-bottom:300px!important}
 .gSeta{flex:0 0 42px;padding:0;font-size:1.1rem;background:var(--accent);color:#fff;border-color:var(--accent)}
 .gDataBox{flex:1;min-width:0;position:relative;margin:0;display:flex;align-items:center;justify-content:center;background:var(--bg);border:2px solid var(--line);border-radius:10px;min-height:46px;padding:0 6px;cursor:pointer;text-transform:none;letter-spacing:0;color:var(--fg);font-size:1rem}
 .gDataBox span{font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.gDataBox i{font-style:normal;font-size:.75rem;background:var(--lima);border-radius:99px;padding:1px 7px;margin-left:4px}
-.gDataBox input{position:absolute;inset:0;opacity:0;width:100%;height:100%;border:0;padding:0;cursor:pointer}
+.gDataBox input{position:absolute;inset:0;opacity:0;width:100%;height:100%;border:0;padding:0;cursor:pointer}.gCampo .gDiaCampo{width:100%;box-sizing:border-box;justify-content:flex-start;padding:0 38px 0 14px;min-height:50px;font-size:1.05rem}.gDiaCampo span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}.gCampo .gDiaCampo::after{content:'📅';position:absolute;right:12px;top:50%;transform:translateY(-50%);pointer-events:none;font-size:1rem}.gDiaCampo span.vazio{color:var(--muted)}
 .gHoje{align-self:flex-start;margin-top:6px}
 #gBox .stat b{font-size:1.18rem;line-height:1.15}
 .stat b,.res b,.gLoteNums b{white-space:nowrap;display:block;overflow:hidden}
@@ -1238,7 +1238,7 @@ body.naInicio .topoTxt h1{font-size:clamp(16px,5vw,28px)!important}
 <div class="toast" id="toast" hidden></div>
 <script>
 'use strict';
-const APP_VERSAO='234';
+const APP_VERSAO='235';
 const APP_DATA='19/10/2026';
 const KEY='confinamento-completo-v1';
 const $=id=>document.getElementById(id);
@@ -2134,24 +2134,28 @@ $('teclado').addEventListener('pointerdown',e=>{const b=e.target.closest('button
 let tecGen=null;
 const tgCampo=()=>tecGen?document.querySelector(tecGen.q):null;
 const tgTxt=()=>tecGen.tipo==='ims'?imsTxt(tecGen.buf):tecGen.buf;
+const tgUnid=t=>tecGen.tipo==='ims'?t+' %':tecGen.tipo==='brinco'?t:t+' kg';
 function tgMostra(dispara){const el=tgCampo(),t=tgTxt();if(el){el.value=t;el.classList.add('sel');if(dispara)el.dispatchEvent(new Event('input',{bubbles:true}));}
-  $('tecValor').textContent=t?(tecGen.tipo==='ims'?t+' %':t+' kg'):'—';const v=$('tecVoltar');if(v)v.disabled=tecGen.buf===tecGen.orig;}
+  $('tecValor').textContent=t?tgUnid(t):'—';const v=$('tecVoltar');if(v)v.disabled=tecGen.buf===tecGen.orig;}
 function abrirTecGen(el){if(!el||el.dataset.trava==='1')return;if(tecIdx!=null)fecharTeclado();if(tecGen)fecharTecGen();
   const tipo=el.dataset.tecg,chave=tipo==='ims'?'ims':'kg',c=el.dataset[chave];
   tecGen={tipo,q:`#gBox input[data-tecg="${tipo}"][data-${chave}="${CSS.escape(c)}"]`,c,buf:'',orig:'',novo:true};
-  tecGen.buf=tipo==='ims'?imsDig(el.value):String(el.value||'').replace(/\D/g,'');tecGen.orig=tecGen.buf;
+  tecGen.buf=tipo==='ims'?imsDig(el.value):tipo==='brinco'?String(el.value||''):String(el.value||'').replace(/\D/g,'');tecGen.orig=tecGen.buf;
+  {const up=document.querySelector('#teclado [data-k="up"],#teclado [data-k="abc"]');if(up){if(tipo==='brinco'){up.dataset.k='abc';up.textContent='ABC letras';}else{up.dataset.k='up';up.textContent='▲ Anterior';}}}
   document.querySelectorAll('#gBox input.sel').forEach(x=>x.classList.remove('sel'));
-  $('teclado').hidden=false;document.body.classList.add('comteclado');$('tecNome').textContent=c+(tipo==='ims'?' · % IMS':' · kg/dia');tgMostra(false);
+  $('teclado').hidden=false;document.body.classList.add('comteclado');$('tecNome').textContent=tipo==='brinco'?'Brinco do animal':c+(tipo==='ims'?' · % IMS':' · kg/dia');tgMostra(false);
   requestAnimationFrame(()=>{try{const r=el.getBoundingClientRect(),vis=innerHeight-$('teclado').offsetHeight,mb=topoLivre();window.scrollBy({top:r.top-Math.max(mb,mb+(vis-mb)/2-r.height/2),behavior:'smooth'});}catch(x){}});}
-function fecharTecGen(){if(!tecGen)return;const el=tgCampo();if(el){el.classList.remove('sel');el.dispatchEvent(new Event('change',{bubbles:true}));}tecGen=null;$('teclado').hidden=true;document.body.classList.remove('comteclado');}
+function fecharTecGen(){if(!tecGen)return;const el=tgCampo();if(el){el.classList.remove('sel');el.dispatchEvent(new Event('change',{bubbles:true}));}tecGen=null;$('teclado').hidden=true;document.body.classList.remove('comteclado');{const ab=document.querySelector('#teclado [data-k="abc"]');if(ab){ab.dataset.k='up';ab.textContent='▲ Anterior';}}}
 function teclarGen(k){if(!tecGen)return;
   if(k==='fechar'){fecharTecGen();return;}
   if(k==='voltar'){tecGen.buf=tecGen.orig;tecGen.novo=true;tgMostra(true);return;}
+  /* brinco com letra: fecha o teclado de números e abre o teclado do celular nesse campo (até sair da tela) */
+  if(k==='abc'){const el=tgCampo();fecharTecGen();if(el){el.removeAttribute('data-tecg');el.setAttribute('inputmode','text');setTimeout(()=>{try{el.focus();const n=el.value.length;el.setSelectionRange(n,n);}catch(e){}},50);}return;}
   if(k==='ok'||k==='up'){const L=[...document.querySelectorAll(`#gBox input[data-tecg="${tecGen.tipo}"]`)].filter(x=>x.offsetParent!==null&&x.dataset.trava!=='1'),i=L.indexOf(tgCampo()),nx=L[i+(k==='ok'?1:-1)];
     if(nx){fecharTecGen();abrirTecGen(nx);}else if(k==='ok')fecharTecGen();return;}
   if(tecGen.novo&&k!=='del')tecGen.buf='';tecGen.novo=false;
   if(k==='del')tecGen.buf=tecGen.buf.slice(0,-1);else if(k==='limpar')tecGen.buf='';
-  else if(/^\d$/.test(k)){const max=tecGen.tipo==='ims'?4:6;if(tecGen.buf.length<max)tecGen.buf=tecGen.tipo==='ims'?imsDig(tecGen.buf+k):(tecGen.buf==='0'?'':tecGen.buf)+k;}
+  else if(/^\d$/.test(k)){const max=tecGen.tipo==='ims'?4:tecGen.tipo==='brinco'?15:6;if(tecGen.buf.length<max)tecGen.buf=tecGen.tipo==='ims'?imsDig(tecGen.buf+k):(tecGen.buf==='0'&&tecGen.tipo!=='brinco'?'':tecGen.buf)+k;}
   tgMostra(true);}
 document.addEventListener('click',e=>{const el=e.target.closest&&e.target.closest('#gBox input[data-tecg]');if(!el)return;e.preventDefault();el.blur();abrirTecGen(el);});
 document.addEventListener('pointerdown',e=>{if(tecGen&&!e.target.closest('#teclado,#gBox input[data-tecg]'))fecharTecGen();},true);
