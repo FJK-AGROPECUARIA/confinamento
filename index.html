@@ -941,7 +941,7 @@ body.naInicio .topoTxt h1{font-size:clamp(16px,5vw,28px)!important}
   </nav>
   <div class="subtabs sub6" id="subTrato" hidden>
     <button id="tabLeit" aria-selected="false">🔍 Leitura</button>
-    <button id="tabFez" aria-selected="false">💩<small>Fezes</small></button><button id="tabMS" aria-selected="false" title="Atualizar % de matéria seca">💧<small>% MS</small></button>
+    <button id="tabFez" aria-selected="false">💩<small>Fezes</small></button><button id="tabMS" aria-selected="false" title="Atualizar % de matéria seca">💧<small>% MS</small></button><button id="tabMed" aria-selected="false" hidden>💉<small>Medicam.</small></button>
     <button id="tabModoAuto" aria-selected="false">⚡ Automação</button>
     <button id="tabHist" aria-selected="false">📖 Previsto/Realizado</button>
     <button id="tabMan" aria-selected="false" title="Manual (só se a Automação não estiver funcionando)">✋<small>Manual</small></button>
@@ -954,6 +954,7 @@ body.naInicio .topoTxt h1{font-size:clamp(16px,5vw,28px)!important}
     <button type="button" data-tt="auto" style="--c:#c62828"><small>⚡ Automação</small><span class="gIc"><span class="tStk"><svg viewBox="0 0 24 24" width="34" height="34" aria-hidden="true"><path d="M3 12h16M12 5l7 7-7 7" stroke="#fff" stroke-width="3.6" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg><i class="tBoi">🐂</i></span></span><span>Fornecer</span></button>
     <button type="button" data-tt="fez" style="--c:#8a6a4a"><span class="gIc"><span class="tFz">💩</span></span><span>Escore de fezes</span></button>
     <button type="button" data-tt="ms" style="--c:#2f8fa8"><span class="gIc">💧</span><span>% MS</span></button>
+    <button type="button" data-tt="med" style="--c:#7b3fa0"><span class="gIc">💉</span><span>Medicamentos</span></button>
     <button type="button" data-tt="man" style="--c:#7d8a92"><span class="gIc">✋</span><span>Trato Manual</span></button>
   </div>
   <div class="subModo" id="subModo" hidden>
@@ -1237,7 +1238,7 @@ body.naInicio .topoTxt h1{font-size:clamp(16px,5vw,28px)!important}
 <div class="toast" id="toast" hidden></div>
 <script>
 'use strict';
-const APP_VERSAO='233';
+const APP_VERSAO='234';
 const APP_DATA='19/10/2026';
 const KEY='confinamento-completo-v1';
 const $=id=>document.getElementById(id);
@@ -2553,7 +2554,7 @@ function aba(qual){if(qual==='prev')qual='hist';   /* a aba antiga Previsto saiu
   if(typeof fecharBal==='function'&&balCampo)fecharBal();
   if(qual!=='prev'&&typeof modoOrdem==='function')modoOrdem(false);
   if(typeof camStream!=='undefined'&&camStream)fecharCamera();
-  $('viewPrev').hidden=qual!=='prev';$('viewTrato').hidden=qual!=='trato';$('viewHist').hidden=qual!=='hist';$('viewGest').hidden=!(qual==='gest'||qual==='leit');window.abaAtual=qual;$('tabLeit').setAttribute('aria-selected',String(qual==='leit'));if(qual!=='leit')['tabFez','tabMS'].forEach(i=>$(i)&&$(i).setAttribute('aria-selected','false'));if(qual==='leit'&&window.gAbrir)gAbrir('leit');$('viewCarga').hidden=qual!=='carga';$('viewAuto').hidden=qual!=='auto';$('viewAutoC').hidden=qual!=='autoc';$('tabAutoC').setAttribute('aria-selected',String(qual==='autoc'));if(qual==='autoc'&&window.acAoAbrir)acAoAbrir();$('tabAuto').setAttribute('aria-selected',String(qual==='auto'));if(qual==='auto'&&window.aAoAbrir)aAoAbrir();$('tabCarga').setAttribute('aria-selected',String(qual==='carga'));if(qual==='carga'&&window.cAoAbrir)cAoAbrir();
+  $('viewPrev').hidden=qual!=='prev';$('viewTrato').hidden=qual!=='trato';$('viewHist').hidden=qual!=='hist';$('viewGest').hidden=!(qual==='gest'||qual==='leit');window.abaAtual=qual;$('tabLeit').setAttribute('aria-selected',String(qual==='leit'));if(qual!=='leit')['tabFez','tabMS','tabMed'].forEach(i=>$(i)&&$(i).setAttribute('aria-selected','false'));if(qual==='leit'&&window.gAbrir)gAbrir('leit');$('viewCarga').hidden=qual!=='carga';$('viewAuto').hidden=qual!=='auto';$('viewAutoC').hidden=qual!=='autoc';$('tabAutoC').setAttribute('aria-selected',String(qual==='autoc'));if(qual==='autoc'&&window.acAoAbrir)acAoAbrir();$('tabAuto').setAttribute('aria-selected',String(qual==='auto'));if(qual==='auto'&&window.aAoAbrir)aAoAbrir();$('tabCarga').setAttribute('aria-selected',String(qual==='carga'));if(qual==='carga'&&window.cAoAbrir)cAoAbrir();
   if(qual==='hist')hColFechar();
   if(qual==='hist'&&$('viewHist').dataset.aberta!=='1'){HD.dia=HD.ini=HD.fim=hojeKey();HD.per=false;HD.t=hModo==='T'?-1:0;localSel='T';}
   $('viewHist').dataset.aberta=qual==='hist'?'1':'';
@@ -2595,6 +2596,7 @@ $('tabGrpTrato').onclick=()=>tocarGrupo('trato');
 
 $('tabLeit').onclick=()=>{try{if(GT.t==='fezes'||GT.t==='ms')GT={t:'cocho'};}catch(e){}aba('leit');};
 $('tabMS').onclick=()=>{try{GT={t:'ms'};}catch(e){}if(window.abaAtual==='leit'&&window.gAoAbrir)gAoAbrir();else aba('leit');};
+$('tabMed').onclick=()=>{try{GT={t:'med'};}catch(e){}if(window.abaAtual==='leit'&&window.gAoAbrir)gAoAbrir();else aba('leit');};
 $('tabFez').onclick=()=>{try{GT={t:'fezes',dia:hojeKey(),loc:'T'};}catch(e){}if(window.abaAtual==='leit'&&window.gAoAbrir)gAoAbrir();else aba('leit');};
 /* Manual / Automação: só abre as opções (Carregar e Tratar), sem abrir a tela sozinho */
 function telaEscolha(txt){['viewPrev','viewTrato','viewHist','viewGest','viewCarga','viewAuto','viewAutoC'].forEach(i=>{const e=$(i);if(e)e.hidden=true;});
@@ -4104,12 +4106,12 @@ if('serviceWorker' in navigator){
   const abre=()=>{document.body.classList.remove('menuFechado');if(typeof modoVer!=='undefined'&&modoVer&&window.avVer)avVer(false);pinta();const y=m.getBoundingClientRect().top+scrollY-8;if(scrollY>y)window.scrollTo({top:Math.max(0,y)});};
   b.onclick=()=>document.body.classList.contains('menuFechado')?abre():fecha();
   m.addEventListener('click',e=>{const t=e.target.closest('button');if(!t||t===b)return;
-    const final=t.closest('#subGest')||t.closest('#subModo')||['tabLeit','tabFez','tabMS','tabHist'].includes(t.id);
+    const final=t.closest('#subGest')||t.closest('#subModo')||['tabLeit','tabFez','tabMS','tabMed','tabHist'].includes(t.id);
     if(final)setTimeout(fecha,150);else setTimeout(pinta,0);});
   /* quadrados dos Tratos: clicam nos botões antigos (que continuam fazendo tudo) */
-  const TT={leit:['tabLeit'],prev:['tabHist'],autoc:['tabModoAuto','tabAutoC'],auto:['tabModoAuto','tabAuto'],hist:['tabHist'],man:['tabMan'],fez:['tabFez'],ms:['tabMS']};
+  const TT={leit:['tabLeit'],prev:['tabHist'],autoc:['tabModoAuto','tabAutoC'],auto:['tabModoAuto','tabAuto'],hist:['tabHist'],man:['tabMan'],fez:['tabFez'],ms:['tabMS'],med:['tabMed']};
   const tts=()=>{const g=$('tratoTiles');if(!g)return;const ma=typeof modoAtual!=='undefined'?modoAtual:null;
-    g.querySelectorAll('button[data-tt]').forEach(x=>{const ids=TT[x.dataset.tt],o=$(ids[0]);x.hidden=!o||o.hidden;
+    g.querySelectorAll('button[data-tt]').forEach(x=>{const ids=TT[x.dataset.tt],o=$(ids[0]);x.hidden=x.dataset.tt==='med'?(!$('tabFez')||$('tabFez').hidden):(!o||o.hidden);
       const sel=ids.length>1?(ma==='auto'&&$(ids[1]).getAttribute('aria-selected')==='true'):(x.dataset.tt==='man'?ma==='man':o&&o.getAttribute('aria-selected')==='true');x.classList.toggle('sel',!!sel);});
     $('subModo').classList.toggle('soAuto',ma==='auto');};
   {const g=$('tratoTiles');if(g){g.addEventListener('click',e=>{const x=e.target.closest('button[data-tt]');if(!x)return;if(window.avVer)avVer(false);const ids=TT[x.dataset.tt];
