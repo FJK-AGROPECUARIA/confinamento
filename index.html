@@ -922,6 +922,7 @@ body.naInicio .topoTxt h1{font-size:clamp(16px,5vw,28px)!important}
 .gRebTab th,.gRebTab td{padding-left:3px!important;padding-right:3px!important}.gRebTab th{font-size:.68rem!important;white-space:normal!important}.gRebTab td:not(:first-child),.gRebTab th:not(:first-child){text-align:right}
 .gDuas{grid-template-columns:repeat(2,minmax(0,340px))!important;column-gap:28px!important}   /* tela larga: número perto do nome (Bois · 611 cab) */
 .gInsTab td:first-child,.gInsTab th:first-child{text-align:left!important}.gInsTab td:not(:first-child),.gInsTab th:not(:first-child){text-align:right!important}
+.gRelFmt{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin:4px 0 10px}.gRelFmt>b{grid-column:1/-1}.gRelFmt button{min-width:0;padding:10px 6px;border:2px solid var(--line);border-radius:10px;background:#fff;font-weight:700}.gRelFmt button.sel{background:#2e7d32;border-color:#2e7d32;color:#fff}
 /* Resumo › Abates previstos: curral em cima, lote embaixo; "depois de 60 dias" abre e fecha */
 .gAbTab td.c small{display:block;font-weight:400;color:var(--muted);font-size:.78rem}
 .gAbTab{width:100%;min-width:0!important}.gAbTab td.c,.gAbTab td.c small{white-space:normal!important;word-break:break-word}.gAbTab td.c{font-size:.92rem}.gAbTab td.c small{font-size:.7rem!important}.gAbTab td:not(:first-child),.gAbTab th:not(:first-child){text-align:center!important}.gAbTab td:first-child{text-align:left}.gAbTab th,.gAbTab td{padding-left:3px!important;padding-right:3px!important}.gAbTab th{font-size:.68rem!important;line-height:1.15;white-space:normal!important}.gAbTab td{font-size:.9rem}
@@ -1262,7 +1263,7 @@ body.naInicio .topoTxt h1{font-size:clamp(16px,5vw,28px)!important}
 <div class="toast" id="toast" hidden></div>
 <script>
 'use strict';
-const APP_VERSAO='248';
+const APP_VERSAO='249';
 const APP_DATA='19/10/2026';
 const KEY='confinamento-completo-v1';
 const $=id=>document.getElementById(id);
