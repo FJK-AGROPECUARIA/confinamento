@@ -248,7 +248,7 @@ const UNID_C=[['arroba','R$/@ morto'],['arrV','R$/@ vivo'],['cab','R$/cabeça'],
 const UNID_V=[['arroba','R$/@ morto'],['arrV','R$/@ vivo'],['cab','R$/cabeça'],['kg','R$/kg vivo']];
 
 const RAIZ={home:'home',entradas:'entradas',saidas:'saidas',estoque:'estoque',estIns:'estoque',estForm:'estoque',estNF:'estoque',fornec:'estoque',fornForm:'estoque',entRel:'estoque',currais:'currais',curForm:'currais',lotes:'lotes',pesNova:'lotes',entNova:'entradas',saiSel:'saidas',lote:'lotes',loteForm:'lotes',pesForm:'lotes',entForm:'lotes',apartForm:'lotes',transfForm:'lotes',fechaForm:'lotes',achouForm:'lotes',saiForm:'lotes',mudForm:'lotes',rel:'lotes',custoForm:'lotes',
-  cocho:'cocho',cochoGraf:'cocho',fezes:'cocho',rels:'rels',dia:'rels',indices:'rels',confBal:'rels',periodo:'rels',comp:'rels',vendas:'rels',compradores:'rels',cprForm:'rels',racoes:'racoes',racForm:'racoes',racCur:'racoes',mudCur:'currais',insumos:'estoque',insForm:'estoque',insMS:'insumos',ms:'cocho',cfg:'cfg'};
+  cocho:'cocho',cochoGraf:'cocho',fezes:'cocho',med:'cocho',rels:'rels',dia:'rels',indices:'rels',confBal:'rels',periodo:'rels',comp:'rels',vendas:'rels',compradores:'rels',cprForm:'rels',racoes:'racoes',racForm:'racoes',racCur:'racoes',mudCur:'currais',insumos:'estoque',insForm:'estoque',insMS:'insumos',ms:'cocho',cfg:'cfg'};
 /* Leitura de cocho fica no menu Tratos (aba 'leit'); o resto da Gestão na aba 'gest' — as duas usam a mesma tela */
 function gRaiz(t){GT={t};gPilha.length=0;const alvo=RAIZ[t]==='cocho'&&!document.body.classList.contains('modoGest')?'leit':'gest';if(window.abaAtual!==alvo)aba(alvo);else gRender();window.scrollTo({top:0});}
 window.gAbrir=modo=>{const leit=RAIZ[GT.t]==='cocho';if(modo==='leit'&&!leit)GT={t:'cocho'};if(modo==='gest'&&leit&&!document.body.classList.contains('modoGest'))GT={t:'home'};gRender();if(navigator.onLine)gSync(true).catch(()=>{});};
@@ -257,11 +257,11 @@ function gRender(){if(GT&&GT.t!=='rel')RELCMP=null;
   if(window.abaAtual==='gest'&&RAIZ[GT.t]==='cocho'&&!document.body.classList.contains('modoGest')){aba('leit');return;}  // leitura abre no menu Tratos
   if(window.abaAtual==='leit'&&RAIZ[GT.t]!=='cocho'){aba('gest');return;}
   const f={home:tHome,estoque:tEstoque,estIns:tEstIns,estForm:tEstForm,estNF:tEstNF,fornec:tFornec,fornForm:tFornForm,entRel:tEntRel,currais:tCurrais,curForm:tCurForm,lotes:tLotes,pesNova:tPesNova,entNova:tEntNova,saiSel:tSaiSel,entradas:tEntradas,saidas:tSaidas,lote:tLote,loteForm:tLoteForm,pesForm:tPesForm,entForm:tEntForm,apartForm:tApartForm,transfForm:tTransfForm,fechaForm:tFechaForm,achouForm:tAchouForm,saiForm:tSaiForm,mudForm:tMudForm,rel:tRelLote,custoForm:tCustoForm,
-    cocho:tCocho,cochoGraf:tCochoGraf,fezes:t=>tFezes(t),rels:tRels,dia:tDia,indices:tIndices,periodo:tPeriodo,comp:tComp,vendas:tVendas,compradores:tCompradores,cprForm:tCprForm,racoes:tRacoes,racForm:tRacForm,racCur:tRacCur,mudCur:tMudCur,mudEd:tMudEd,insumos:tInsumos,insForm:tInsForm,insMS:tInsMS,ms:tInsMS,cfg:tCfg}[GT.t]||tHome;
+    cocho:tCocho,cochoGraf:tCochoGraf,fezes:t=>tFezes(t),med:t=>tMed(t),rels:tRels,dia:tDia,indices:tIndices,periodo:tPeriodo,comp:tComp,vendas:tVendas,compradores:tCompradores,cprForm:tCprForm,racoes:tRacoes,racForm:tRacForm,racCur:tRacCur,mudCur:tMudCur,mudEd:tMudEd,insumos:tInsumos,insForm:tInsForm,insMS:tInsMS,ms:tInsMS,cfg:tCfg}[GT.t]||tHome;
   const raiz=GT.raiz||RAIZ[GT.t]||'home';document.querySelectorAll('#subGest button[data-gt]').forEach(x=>x.setAttribute('aria-selected',String(x.dataset.gt===raiz)));
   const cb=$('cfgTBox');if(cb&&$('cfgTParque')&&cb.parentNode!==$('cfgTParque'))$('cfgTParque').appendChild(cb); // ajustes da balança: guarda antes de redesenhar
   b.innerHTML=GT.nova&&GT.t!=='saiSel'?saiTopo(GT)+f(GT).replace(/<button class="gVoltar"[^>]*>[^<]*<\/button>/,''):f(GT);
-  try{const fz=GT.t==='fezes',ms=GT.t==='ms',lt=window.abaAtual==='leit';if($('tabFez'))$('tabFez').setAttribute('aria-selected',String(fz&&lt));if($('tabMS'))$('tabMS').setAttribute('aria-selected',String(ms&&lt));if($('tabLeit')&&lt)$('tabLeit').setAttribute('aria-selected',String(!fz&&!ms));}catch(e){}
+  try{const fz=GT.t==='fezes',ms=GT.t==='ms',lt=window.abaAtual==='leit';if($('tabMed'))$('tabMed').setAttribute('aria-selected',String(GT.t==='med'&&lt));if($('tabFez'))$('tabFez').setAttribute('aria-selected',String(fz&&lt));if($('tabMS'))$('tabMS').setAttribute('aria-selected',String(ms&&lt));if($('tabLeit')&&lt)$('tabLeit').setAttribute('aria-selected',String(!fz&&!ms&&GT.t!=='med'));}catch(e){}
   if(GT.t==='cfg'&&cb&&$('cfgBalHost')){$('cfgBalHost').appendChild(cb);if(window.cfgTAoAbrir)cfgTAoAbrir();}
   if(GT.t==='cfg'&&GT.cfgSel!=='confbal')cfgMinimizar();   // Conf. balança: a lista de relatórios já aparece aberta
   if(GT.t==='racForm')calcRacao();
@@ -3744,6 +3744,47 @@ async function fzFotoRm(n){if(typeof bloqueado==='function'&&bloqueado())return;
   try{await postApi({acao:'fotoApagar',ids:[f.id,f.idMini].filter((v,i,a)=>v&&a.indexOf(v)===i)});}catch(e){}}
 window.fzFotoCarregar=fzFotoCarregar;window.FZ_FOTO=FZ_FOTO;
 
+/* ---------- Medicamentos (Tratos): data, brinco, sintomas, ação realizada · filtro por data e pesquisa ---------- */
+const medNz=t=>String(t||'').normalize('NFD').replace(/[̀-ͯ]/g,'').toLowerCase();
+function medLista(t){const q=medNz(t.q).trim(),de=t.de||'',ate=t.ate||'';
+  return gTodos('med').filter(x=>(!de||x.dia>=de)&&(!ate||x.dia<=ate)&&(!q||medNz([x.brinco,x.sint,x.acao].join(' ')).includes(q)))
+    .sort((a,b)=>a.dia!==b.dia?(a.dia<b.dia?1:-1):(+b.ts||0)-(+a.ts||0));}
+function medItensHTML(t){const L=medLista(t),vis=typeof modoVer!=='undefined'&&modoVer;
+  if(!L.length)return `<p class="note">${gTodos('med').length?'Nada encontrado com esse filtro.':'Nenhum registro ainda. Toque em + Novo registro.'}</p>`;
+  return `<p class="note">${L.length} registro(s)</p>`+L.map(x=>`<div class="gItem" style="cursor:default;margin-bottom:8px;border-radius:12px">
+    <div class="gItemTopo"><b>🏷 ${esc(x.brinco||'—')}</b><span class="pill">${dB(x.dia)}</span></div>
+    ${x.sint?`<div style="margin-top:6px"><small style="color:var(--muted);font-weight:700">SINTOMAS</small><div style="white-space:pre-line">${esc(x.sint)}</div></div>`:''}
+    ${x.acao?`<div style="margin-top:6px"><small style="color:var(--muted);font-weight:700">AÇÃO REALIZADA</small><div style="white-space:pre-line">${esc(x.acao)}</div></div>`:''}
+    ${vis?'':`<div class="row" style="margin-top:8px"><button class="mini" data-g="medEd" data-id="${x.uid}">✏ Editar</button><button class="mini danger" data-g="medRm" data-id="${x.uid}">🗑 Excluir</button></div>`}</div>`).join('');}
+function tMed(t){const vis=typeof modoVer!=='undefined'&&modoVer;
+  if(t.form){const x=t.id?G.it[t.id]:null;
+    return `<section class="panel"><h2>💉 ${x?'Editar registro':'Novo registro'}</h2><div class="gForm">${[{k:'mdDia',l:'Data',t:'dia',v:x?x.dia:hojeKey()},{k:'mdBrinco',l:'Brinco do animal',v:x?x.brinco:'',ph:'Ex.: 1234'}].map(campo).join('')}
+      <div class="gCampo"><label for="gf_mdSint">Sintomas</label><textarea id="gf_mdSint" rows="2" placeholder="Ex.: tosse, febre, mancando" style="width:100%;box-sizing:border-box;resize:vertical;font:inherit;min-height:0;height:auto">${esc(x?x.sint||'':'')}</textarea></div>
+      <div class="gCampo"><label for="gf_mdAcao">Ação realizada</label><textarea id="gf_mdAcao" rows="4" placeholder="Ex.: aplicado 10 ml de …" style="width:100%;box-sizing:border-box;resize:vertical;font:inherit;min-height:0;height:auto">${esc(x?x.acao||'':'')}</textarea></div></div>
+      <button class="primary" data-g="medSalva" data-id="${x?x.uid:''}">💾 Salvar</button><button data-g="medVolta">Cancelar</button></section>`;}
+  return `<section class="panel"><h2>💉 Medicamentos</h2>
+    ${vis?'':'<button class="primary" data-g="medNovo">+ Novo registro</button>'}
+    <style>#gBox .mdDatas .gCampo,#gBox .mdDatas .gDataBox,#gBox .mdDatas input{width:100%!important;min-width:0!important;max-width:none!important;flex:1 1 auto!important}</style><div class="gForm" style="margin-top:10px"><div class="mdDatas" style="display:flex;gap:10px;width:100%;grid-column:1/-1"><div style="flex:1 1 0;min-width:0">${campo({k:'mdDe',l:'Data de',t:'dia',v:t.de||''})}</div><div style="flex:1 1 0;min-width:0">${campo({k:'mdAte',l:'Até',t:'dia',v:t.ate||''})}</div></div>
+      ${campo({k:'mdQ',l:'🔍 Pesquisar',v:t.q||'',ph:'Brinco, sintoma ou ação…'})}</div>
+    ${t.de||t.ate?'<button class="mini" data-g="medLimpa">Limpar datas</button>':''}
+    <div id="medLista" style="margin-top:10px">${medItensHTML(t)}</div></section>`;}
+document.addEventListener('input',e=>{if(!e.target||GT.t!=='med')return;const id=e.target.id;
+  if(id==='gf_mdQ'){GT.q=e.target.value;const w=$('medLista');if(w)w.innerHTML=medItensHTML(GT);}});
+document.addEventListener('change',e=>{if(!e.target||GT.t!=='med')return;const id=e.target.id;
+  if(id==='gf_mdDe'||id==='gf_mdAte'){GT[id==='gf_mdDe'?'de':'ate']=e.target.value||'';const y=window.scrollY;gRender();window.scrollTo({top:y});}});
+document.addEventListener('click',async e=>{const b=e.target.closest('[data-g="medNovo"],[data-g="medEd"],[data-g="medRm"],[data-g="medSalva"],[data-g="medVolta"],[data-g="medLimpa"]');if(!b)return;
+  e.preventDefault();e.stopPropagation();if(typeof bloqueado==='function'&&bloqueado())return;const a=b.dataset.g,id=b.dataset.id;
+  const filt={de:GT.de||'',ate:GT.ate||'',q:GT.q||''};
+  if(a==='medNovo'){GT=Object.assign({t:'med',form:1},filt);gRender();window.scrollTo({top:0});return;}
+  if(a==='medVolta'){GT=Object.assign({t:'med'},filt);gRender();return;}
+  if(a==='medLimpa'){GT=Object.assign({t:'med'},filt,{de:'',ate:''});gRender();return;}
+  if(a==='medEd'){if(window.pedirSenhaAcao&&!await pedirSenhaAcao('Senha para editar'))return;GT=Object.assign({t:'med',form:1,id},filt);gRender();window.scrollTo({top:0});return;}
+  if(a==='medRm'){const x=G.it[id];if(!x)return;if(window.pedirSenhaAcao&&!await pedirSenhaAcao('Senha para excluir'))return;
+    if(!await confirmaVermelho('Excluir este registro?',`Brinco ${x.brinco||'—'} · ${dB(x.dia)}`,'Sim, excluir','Não'))return;gDel(id);toast('Registro excluído');const y=window.scrollY;gRender();window.scrollTo({top:y});return;}
+  if(a==='medSalva'){const dia=fv('mdDia'),brinco=(fv('mdBrinco')||'').trim(),sint=(($('gf_mdSint')||{}).value||'').trim(),acao=(($('gf_mdAcao')||{}).value||'').trim();
+    if(!dia)return toast('Coloque a data');if(!brinco)return toast('Coloque o brinco do animal');if(!sint&&!acao)return toast('Coloque os sintomas ou a ação realizada');
+    const x0=id&&G.it[id];gPut(Object.assign({},x0||{},{uid:x0?x0.uid:novoId('med'),tipo:'med',dia,brinco,sint,acao}));
+    toast(x0?'Registro alterado':'Registro salvo');GT={t:'med',de:GT.de||'',ate:GT.ate||'',q:''};gRender();window.scrollTo({top:0});}},true);
 /* ---------- Escore de fezes: relatório com gráfico de cada curral (PDF e imagem) ---------- */
 const FZ_COR=['#c62828','#f2b705','#2e7d32','#8d6e63','#4e342e'];
 function fzDadosDia(){const t=GT;return gTodos('fezes').filter(x=>x.dia===t.dia&&doLocal(t.loc,x.curral)).map(x=>({c:x.curral,k:fzCalc(x.c),obs:x.obs||'',fotos:x.fotos||[]})).filter(o=>o.k.tot)
