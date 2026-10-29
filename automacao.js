@@ -434,12 +434,12 @@ async function holdSync(){if(holdMandando)return;
   if(!(A.fonte==='bt'&&A.digiStar&&A.dsEsc)){   // sem Bluetooth não dá para soltar: avisa o operador para soltar na mão
     if(A.holdApp&&!A.pausa&&!A.holdFim&&!A.holdManter&&Date.now()-(A.holdAvisoTs||0)>10000){A.holdAvisoTs=Date.now();toast('⚠ Balança sem Bluetooth e pode estar em HOLD: se o visor mostrar HOLD, aperte HOLD na balança para soltar');}
     return;}
-  /* destravou NA MÃO: com HOLD a balança manda o peso congelado; se o peso andar (≥25 kg em 3 leituras seguidas) é porque alguém
+  /* destravou NA MÃO: com HOLD a balança manda o peso congelado; se o peso andar (≥100 kg em 3 leituras seguidas) é porque alguém
      apertou HOLD na balança para soltar. Aí o tablet respeita e não trava de novo até o próximo registro (produto ou curral) ou liberação. */
   try{const pv=pesoVisor();
     if(modo===1&&A.holdApp&&!A.holdManual&&pv!=null){
       if(A.holdRef==null){if(Date.now()-(A.holdLigTs||0)>2000)A.holdRef=pv;A.holdMov=0;}
-      else if(Math.abs(pv-A.holdRef)>=25){A.holdMov=(A.holdMov||0)+1;
+      else if(Math.abs(pv-A.holdRef)>=100){A.holdMov=(A.holdMov||0)+1;
         if(A.holdMov>=3){try{diagLog('hold_manual',{peso:pv,ref:A.holdRef,noCarr,noForn,anunc:A.anunc});}catch(e){}
           A.holdManual=true;holdGrava(false);A.holdRef=null;A.holdMov=0;bruto('HOLD solto na balança (peso andou): o tablet não trava até o próximo registro');
           toast('🔓 Balança destravada na mão: o tablet não trava de novo até o próximo registro');}}
