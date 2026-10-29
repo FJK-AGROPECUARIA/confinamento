@@ -2280,7 +2280,8 @@ function tCfg(){const c=gCfg(),hj=hojeKey(),tx=vig(c.taxa,hj),ab=GT.cab||'custo'
       :`<div class="gSenBts"><button class="lima" data-g="senEd" data-k="${k}">✎ ${v?'Alterar':'Cadastrar'}</button>${v?`<button data-g="senVer" data-k="${k}">${ver?'🙈 Esconder':'👁 Mostrar'}</button><button class="danger" data-g="senTira" data-k="${k}">✕ Tirar senha</button>`:''}</div>`}</div>`;}).join('')}</section>`}`;}
   if(ab==='rels'){const sel=relDiaSel();
     h=`<section class="panel gCfgP"><h2>Relatórios do dia</h2>
-    <p class="note">Marque os relatórios que vão no botão <b>📤 Relatórios do dia</b> da tela inicial. Ao tocar no botão (com o dia finalizado), o app gera os PDFs marcados e abre o compartilhar do celular para escolher o WhatsApp e a conversa ou o grupo. Salva sozinho ao marcar.</p>
+    <div class="gRelFmt"><b>Enviar em:</b>${[['pdf','📄 PDF'],['img','🖼 Foto'],['xls','📊 Excel']].map(([v,t])=>`<button type="button" class="${relDiaFmt()===v?'sel':''}" data-g="relDiaFmt" data-v="${v}">${t}</button>`).join('')}</div>
+    <p class="note">Marque os relatórios que vão no botão <b>📤 Relatórios do dia</b> da tela inicial. Ao tocar no botão (com o dia finalizado), o app gera os relatórios marcados no formato escolhido acima e abre o compartilhar do celular para escolher o WhatsApp e a conversa ou o grupo. Salva sozinho ao marcar.</p>
     <div class="gRelLista">${REL_DIA.map(([k,t,d])=>`<label class="gRelIt"><input type="checkbox" data-reld="${k}"${sel.includes(k)?' checked':''}><span><b>${t}</b><small>${d}</small></span></label>`).join('')}</div></section>`;}
   if(ab==='backup'){const I=window.bkApi?bkApi.info():{};
     h=`<section class="panel gCfgP"><h2>Backup</h2>
@@ -2597,6 +2598,7 @@ $('gBox').addEventListener('click',e=>{
   if(a==='fornExc'){const f=G.it[id];if(!f)return;if(fornEntradas(f.nome).length)return toast('Tem entradas com este fornecedor: não dá para excluir');
     (window.perg?perg(`Excluir o fornecedor ${f.nome}?`,'Ele sai da lista de fornecedores.','Sim, excluir','Não',false):Promise.resolve(confirm('Excluir?'))).then(v=>{if(!v)return;gDel(id);toast('Fornecedor excluído');gRender();});return;}
   if(a==='entRelExp')return entRelExp(b.dataset.o);
+  if(a==='relDiaFmt'){const c=JSON.parse(JSON.stringify(gCfg()));c.relDiaFmt=b.dataset.v;gPut(c);toast('Relatórios do dia: '+({pdf:'PDF',img:'Foto',xls:'Excel'})[c.relDiaFmt]);return gRender();}
   if(a==='estFilLimpa'){GT.tipoE=GT.prodE=GT.fornE=GT.obsE='';GT.pgEP=1;return gRender();}
   if(a==='estIrRel'){gMinAb.add('estRel');gRender();const el=document.querySelector('.gEstRel');if(el)el.scrollIntoView({behavior:'smooth',block:'start'});return;}
   if(a==='estVerMov'){gMinAb.add('estRel');gPilha.length=0;GT={t:'estoque',prodE:(G.it[id]&&G.it[id].nome)||'',tipoE:'',fornE:''};gRender();setTimeout(()=>{const el=document.querySelector('.gEstRel');if(el)el.scrollIntoView({block:'start'});},60);return;}
@@ -4112,6 +4114,8 @@ const REL_GRP={tratosJ:'🐂 Tratos',tratosC:'🐂 Tratos',batidas:'🐂 Tratos'
   grafNota:'🔍 Leitura de cocho e fezes',grafIms:'🔍 Leitura de cocho e fezes',fezes:'🔍 Leitura de cocho e fezes',
   resumo:'📊 Consumo, índices e lotes',indices:'📊 Consumo, índices e lotes',relDia:'📊 Consumo, índices e lotes',lotes:'📊 Consumo, índices e lotes',perLote:'📊 Consumo, índices e lotes',comp:'📊 Consumo, índices e lotes',
   estoque:'📦 Estoque e insumos',insumos:'📦 Estoque e insumos',estMov:'📦 Estoque e insumos',vendas:'💰 Vendas'};
+function relDiaFmt(){const f=gCfg().relDiaFmt;return f==='img'||f==='xls'?f:'pdf';}   /* formato do botão 📤 Relatórios do dia (Config. › Relatórios) */
+window.relDiaFmt=relDiaFmt;
 function relDiaSel(){const c=gCfg(),ks=new Set(REL_DIA.map(x=>x[0]));return (Array.isArray(c.relDia)?c.relDia:['tratosC','indices','estoque']).filter(k=>ks.has(k));}
 window.relDiaSel=relDiaSel;
 $('gBox').addEventListener('change',e=>{const t=e.target;if(!t.matches||!t.matches('input[data-reld]'))return;if(typeof bloqueado==='function'&&bloqueado()){t.checked=!t.checked;return;}
@@ -4236,16 +4240,17 @@ async function relDiaEnviar(){if(relDiaRodando)return;let dia=hojeKey();const se
       const v=await (typeof confirmaVermelho==='function'?confirmaVermelho('Relatório do dia não finalizado','Hoje ainda faltam tratos:','Sim, enviar o dia anterior','Não',false,col,'📤 Enviar o relatório incompleto de hoje'):Promise.resolve(confirm('Relatório do dia não finalizado. Deseja o relatório do dia anterior?')));
       if(!v)return;if(v!=='x')dia=ontem;}
     toast(`Gerando ${sel.length} relatório(s)…`);await ate(6000);
-    const cap=[];window.__capArq=cap;const nomes=[];
-    for(const k of sel){const n0=cap.length;try{await relDiaGerar(k,dia);}catch(e){console.error(e);}
+    const fmt=relDiaFmt(),cap=[];window.__capArq=cap;const nomes=[];
+    for(const k of sel){const n0=cap.length;try{if(fmt==='pdf')await relDiaGerar(k,dia);else await relExpGerar(k,dia,fmt,dia,dia);}catch(e){console.error(e);}
       for(let w=0;w<40&&cap.length===n0;w++)await new Promise(r=>setTimeout(r,150));
       if(cap.length===n0)nomes.push((REL_DIA.find(x=>x[0]===k)||[,k])[1]);}
     window.__capArq=null;
-    const pdfs=cap.filter(f=>/pdf/i.test(f.type)||/\.pdf$/i.test(f.name));
+    const re=fmt==='pdf'?/pdf/i:fmt==='img'?/image|png|jpe?g/i:/sheet|excel|xlsx/i,ext=fmt==='pdf'?/\.pdf$/i:fmt==='img'?/\.(png|jpe?g)$/i:/\.xlsx$/i;
+    const vistos=new Set(),arqs=cap.filter(f=>(re.test(f.type)||ext.test(f.name))&&!vistos.has(f.name)&&vistos.add(f.name));
     const qd=dia===hojeKey()?'hoje':'em '+dB(dia);
-    if(!pdfs.length)return toast('Nenhum relatório com dados '+qd);
-    if(nomes.length)toast(`Sem dados ${qd}: ${nomes.join(', ')}`);
-    await salvarOuEnviar(pdfs,pdfs.map(f=>f.name),'application/pdf');
+    if(!arqs.length)return toast('Nenhum relatório com dados '+qd);
+    if(nomes.length)toast(`${fmt==='xls'?'Sem Excel ou sem dados':'Sem dados'} ${qd}: ${nomes.join(', ')}`);
+    await salvarOuEnviar(arqs,arqs.map(f=>f.name),fmt==='pdf'?'application/pdf':fmt==='img'?'image/png':XT);
   }finally{window.__capArq=null;relDiaRodando=false;if(bt)bt.classList.remove('girando');}}
 window.relDiaEnviar=relDiaEnviar;
 
