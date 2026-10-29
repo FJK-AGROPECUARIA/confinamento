@@ -920,6 +920,8 @@ body.naInicio .topoTxt h1{font-size:clamp(16px,5vw,28px)!important}
 #gBox .gCoGrafRow{display:grid!important;grid-template-columns:1fr 1fr!important;gap:8px;margin:8px 0 4px}#gBox .gCoGrafRow button.gCoGrafBt.verde{margin:0!important;width:100%!important}#gBox .gHeatIms{min-width:600px}#gBox .gHeatIms .gHc{position:sticky;left:0;background:#fff;z-index:1}#gBox .gHeatIms td{font-size:.74rem!important;padding-left:0!important;padding-right:0!important}
 #gBox button.gCoGrafBt.gCoGrafBt,button.gCoGrafBt.verde{min-height:0!important;height:auto!important;padding:6px 12px!important;font-size:.88rem!important;line-height:1.2!important;margin:8px 0 4px!important;width:100%}
 .gRebTab th,.gRebTab td{padding-left:3px!important;padding-right:3px!important}.gRebTab th{font-size:.68rem!important;white-space:normal!important}.gRebTab td:not(:first-child),.gRebTab th:not(:first-child){text-align:right}
+.gDuas{grid-template-columns:repeat(2,minmax(0,340px))!important;column-gap:28px!important}   /* tela larga: número perto do nome (Bois · 611 cab) */
+.gInsTab td:first-child,.gInsTab th:first-child{text-align:left!important}.gInsTab td:not(:first-child),.gInsTab th:not(:first-child){text-align:right!important}
 /* Resumo › Abates previstos: curral em cima, lote embaixo; "depois de 60 dias" abre e fecha */
 .gAbTab td.c small{display:block;font-weight:400;color:var(--muted);font-size:.78rem}
 .gAbTab{width:100%;min-width:0!important}.gAbTab td.c,.gAbTab td.c small{white-space:normal!important;word-break:break-word}.gAbTab td.c{font-size:.92rem}.gAbTab td.c small{font-size:.7rem!important}.gAbTab td:not(:first-child),.gAbTab th:not(:first-child){text-align:right}.gAbTab td:first-child{text-align:left}.gAbTab th,.gAbTab td{padding-left:3px!important;padding-right:3px!important}.gAbTab th{font-size:.68rem!important;line-height:1.15;white-space:normal!important}.gAbTab td{font-size:.9rem}
@@ -1260,7 +1262,7 @@ body.naInicio .topoTxt h1{font-size:clamp(16px,5vw,28px)!important}
 <div class="toast" id="toast" hidden></div>
 <script>
 'use strict';
-const APP_VERSAO='242';
+const APP_VERSAO='243';
 const APP_DATA='19/10/2026';
 const KEY='confinamento-completo-v1';
 const $=id=>document.getElementById(id);
