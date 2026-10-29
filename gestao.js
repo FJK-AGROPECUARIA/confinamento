@@ -208,7 +208,7 @@ const card=(t,b,cls)=>`<section class="panel ${cls||''}"><h2>${t}</h2>${b}</sect
 const st=(rot,val,cls)=>`<div class="${cls||''}"><small>${rot}</small><b class="num">${val}</b></div>`;
 function campo(f){const id='gf_'+f.k,v=f.v==null?'':f.v;let inp;
   if(f.t==='sel')inp=`<select id="${id}"${f.busca?' data-busca':''}>${f.op.map(([a,b])=>`<option value="${esc(a)}"${String(a)===String(v)?' selected':''}>${esc(b)}</option>`).join('')}</select>`;
-  else if(f.t==='dia')inp=`<input type="date" id="${id}" value="${esc(v)}">`;
+  else if(f.t==='dia')inp=`<label class="gDataBox gDiaCampo"><span class="${v?'':'vazio'}">${v?dB(v):'Escolher'}</span><input type="date" id="${id}" value="${esc(v)}"></label>`;   /* data sempre dd/mm/aaaa (o celular mostrava 28 de out. de 2026) */
   else if(f.t==='rs')inp=`<input type="text" inputmode="numeric" class="gRs" id="${id}" value="${esc(rsIn(f.v===''||f.v==null?NaN:+f.v))}" placeholder="R$ 0,00" autocomplete="off">`;
   else if(f.t==='num')inp=`<input type="text" inputmode="decimal" id="${id}" value="${esc(v===''?'':vIn(v))}" placeholder="${esc(f.ph||'')}" autocomplete="off">`;
   else inp=`<input type="text" id="${id}" value="${esc(v)}" placeholder="${esc(f.ph||(f.sug==='forn'?'Digite ou escolha um fornecedor':''))}" autocomplete="off"${f.lista?` list="${f.lista}"`:''}${f.sug?` data-sug="${f.sug}"`:''}>${f.sug?'<div class="gSug" hidden></div>':''}`;
@@ -3744,6 +3744,8 @@ async function fzFotoRm(n){if(typeof bloqueado==='function'&&bloqueado())return;
   try{await postApi({acao:'fotoApagar',ids:[f.id,f.idMini].filter((v,i,a)=>v&&a.indexOf(v)===i)});}catch(e){}}
 window.fzFotoCarregar=fzFotoCarregar;window.FZ_FOTO=FZ_FOTO;
 
+function diaCampoSync(){document.querySelectorAll('.gDiaCampo').forEach(b=>{const i=b.querySelector('input'),s=b.querySelector('span');if(!i||!s)return;const t=i.value?dB(i.value):'Escolher';if(s.textContent!==t){s.textContent=t;s.classList.toggle('vazio',!i.value);}});}
+['input','change'].forEach(ev=>document.addEventListener(ev,e=>{if(e.target&&e.target.closest&&e.target.closest('.gDiaCampo'))diaCampoSync();},true));setInterval(diaCampoSync,800);
 /* ---------- Medicamentos (Tratos): data, brinco, sintomas, ação realizada · filtro por data e pesquisa ---------- */
 const medNz=t=>String(t||'').normalize('NFD').replace(/[̀-ͯ]/g,'').toLowerCase();
 function medLista(t){const q=medNz(t.q).trim(),de=t.de||'',ate=t.ate||'';
@@ -3757,8 +3759,10 @@ function medItensHTML(t){const L=medLista(t),vis=typeof modoVer!=='undefined'&&m
     ${x.acao?`<div style="margin-top:6px"><small style="color:var(--muted);font-weight:700">AÇÃO REALIZADA</small><div style="white-space:pre-line">${esc(x.acao)}</div></div>`:''}
     ${vis?'':`<div class="row" style="margin-top:8px"><button class="mini" data-g="medEd" data-id="${x.uid}">✏ Editar</button><button class="mini danger" data-g="medRm" data-id="${x.uid}">🗑 Excluir</button></div>`}</div>`).join('');}
 function tMed(t){const vis=typeof modoVer!=='undefined'&&modoVer;
+  if(t.de===undefined&&t.ate===undefined){t.ate=hojeKey();t.de=somaDias(t.ate,-89);}   // abre sempre nos últimos 90 dias
   if(t.form){const x=t.id?G.it[t.id]:null;
-    return `<section class="panel"><h2>💉 ${x?'Editar registro':'Novo registro'}</h2><div class="gForm">${[{k:'mdDia',l:'Data',t:'dia',v:x?x.dia:hojeKey()},{k:'mdBrinco',l:'Brinco do animal',v:x?x.brinco:'',ph:'Ex.: 1234'}].map(campo).join('')}
+    return `<section class="panel"><h2>💉 ${x?'Editar registro':'Novo registro'}</h2><div class="gForm">${[{k:'mdDia',l:'Data',t:'dia',v:x?x.dia:hojeKey()}].map(campo).join('')}
+      <div class="gCampo"><label for="gf_mdBrinco">Brinco do animal</label><input type="text" id="gf_mdBrinco" data-tecg="brinco" data-kg="brinco" inputmode="none" autocomplete="off" value="${esc(x?x.brinco||'':'')}" placeholder="Toque para digitar"></div>
       <div class="gCampo"><label for="gf_mdSint">Sintomas</label><textarea id="gf_mdSint" rows="2" placeholder="Ex.: tosse, febre, mancando" style="width:100%;box-sizing:border-box;resize:vertical;font:inherit;min-height:0;height:auto">${esc(x?x.sint||'':'')}</textarea></div>
       <div class="gCampo"><label for="gf_mdAcao">Ação realizada</label><textarea id="gf_mdAcao" rows="4" placeholder="Ex.: aplicado 10 ml de …" style="width:100%;box-sizing:border-box;resize:vertical;font:inherit;min-height:0;height:auto">${esc(x?x.acao||'':'')}</textarea></div></div>
       <button class="primary" data-g="medSalva" data-id="${x?x.uid:''}">💾 Salvar</button><button data-g="medVolta">Cancelar</button></section>`;}
@@ -3766,7 +3770,7 @@ function tMed(t){const vis=typeof modoVer!=='undefined'&&modoVer;
     ${vis?'':'<button class="primary" data-g="medNovo">+ Novo registro</button>'}
     <style>#gBox .mdDatas .gCampo,#gBox .mdDatas .gDataBox,#gBox .mdDatas input{width:100%!important;min-width:0!important;max-width:none!important;flex:1 1 auto!important}</style><div class="gForm" style="margin-top:10px"><div class="mdDatas" style="display:flex;gap:10px;width:100%;grid-column:1/-1"><div style="flex:1 1 0;min-width:0">${campo({k:'mdDe',l:'Data de',t:'dia',v:t.de||''})}</div><div style="flex:1 1 0;min-width:0">${campo({k:'mdAte',l:'Até',t:'dia',v:t.ate||''})}</div></div>
       ${campo({k:'mdQ',l:'🔍 Pesquisar',v:t.q||'',ph:'Brinco, sintoma ou ação…'})}</div>
-    ${t.de||t.ate?'<button class="mini" data-g="medLimpa">Limpar datas</button>':''}
+    ${t.de||t.ate?'<button class="mini" data-g="medLimpa">Ver todas as datas</button>':''}
     <div id="medLista" style="margin-top:10px">${medItensHTML(t)}</div></section>`;}
 document.addEventListener('input',e=>{if(!e.target||GT.t!=='med')return;const id=e.target.id;
   if(id==='gf_mdQ'){GT.q=e.target.value;const w=$('medLista');if(w)w.innerHTML=medItensHTML(GT);}});
