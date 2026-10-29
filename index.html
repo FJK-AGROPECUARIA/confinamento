@@ -1238,7 +1238,7 @@ body.naInicio .topoTxt h1{font-size:clamp(16px,5vw,28px)!important}
 <div class="toast" id="toast" hidden></div>
 <script>
 'use strict';
-const APP_VERSAO='235';
+const APP_VERSAO='237';
 const APP_DATA='19/10/2026';
 const KEY='confinamento-completo-v1';
 const $=id=>document.getElementById(id);
@@ -1594,10 +1594,11 @@ async function iniciarFornecimentoChecado(){
     if(r.mudou){try{render();}catch(e){}toast('✓ Previsto atualizado pela leitura de cocho');}}
   /* o trato pede agora mais do que a batida levou para ele (previsto mudou depois de carregar): avisa antes de começar */
   try{if(typeof gTodos==='function'){const k=+FS.trato,d=diaAtivo();
-    const cg=gTodos('carga').filter(c=>c.dia===d&&c.local===FS.local&&c.racao===FS.rac&&c.prevTr&&c.prevTr[k]!=null&&(c.tratos||[c.trato]).map(Number).includes(k)).sort((a,b)=>(+b.ts0||0)-(+a.ts0||0))[0];
-    if(cg){const agora=fornCurrais(FS.local,FS.rac,k).reduce((a,x)=>a+(+x.prev||0),0),pl=+cg.prevTr[k];
+    const CGs=gTodos('carga').filter(c=>c.dia===d&&c.local===FS.local&&c.racao===FS.rac&&c.prevTr&&c.prevTr[k]!=null&&(c.tratos||[c.trato]).map(Number).includes(k)).sort((a,b)=>(+b.ts0||0)-(+a.ts0||0)),cg=CGs[0];
+    if(cg){const cs=new Set();let comCur=true;CGs.forEach(c=>{if(Array.isArray(c.cur)&&c.cur.length)c.cur.forEach(x=>cs.add(x));else comCur=false;});   /* batida com alguns currais só: compara só esses currais */
+      const agora=fornCurrais(FS.local,FS.rac,k).filter(x=>!comCur||cs.has(x.nome)).reduce((a,x)=>a+(+x.prev||0),0),pl=CGs.reduce((a,c)=>a+(+c.prevTr[k]||0),0);
       if(agora-pl>=20){try{window.diagLog&&diagLog('forn_prev_maior',{trato:k,agora,batida:pl,hora:cg.hora});}catch(e){}
-        if(!await perg('O previsto mudou depois da batida',`O Trato ${k} pede agora ${fmt(agora)} kg, mas a batida das ${cg.hora} foi feita com ${fmt(pl)} kg para ele (${fmt(agora-pl)} kg a mais). Pode faltar ração no vagão.`,'Iniciar mesmo assim','Voltar'))return;}}}}catch(e){}
+        if(!await perg('O previsto mudou depois da batida',`O Trato ${k} pede agora ${fmt(agora)} kg, mas ${CGs.length>1?`as ${CGs.length} batidas de hoje foram feitas`:`a batida das ${cg.hora} foi feita`} com ${fmt(pl)} kg para ele (${fmt(agora-pl)} kg a mais). Pode faltar ração no vagão.`,'Iniciar mesmo assim','Voltar'))return;}}}}catch(e){}
   FS.juntoPlano=null;if(!await juntarTratosForn())return;const trs=FS.juntoPlano?FS.juntoPlano.tratos:[+FS.trato],pend=[].concat(...trs.map(k=>fornPendentes(FS.local,FS.rac,k))),prec=pend.reduce((a,x)=>a+x.prev,0);
   if(!pend.length&&fornCurrais(FS.local,FS.rac,FS.trato).length&&!await perg('Deseja realmente iniciar o fornecimento?',`O Trato ${FS.trato} (${FS.local==='C'?'Confinamento':'Pasto'}) já foi realizado hoje: todos os currais já foram tratados.`,'Sim, iniciar mesmo assim','Não, voltar'))return;
   const peso=window.pesoBalanca?pesoBalanca():null;
