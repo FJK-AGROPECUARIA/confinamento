@@ -274,7 +274,19 @@ function pintarSinal(){const segs=A.ultDado?(Date.now()-A.ultDado)/1000:null;let
   if(cl!==A.sinalAnt){if(cl==='ok')A.balRec=true;else if(cl==='ruim'||(cl==='desc'&&A.sinalAnt))A.balRec=false;A.sinalAnt=cl;} // conectou: recolhe; parou o peso ou caiu: abre; fora isso, vale a setinha
   const mini=!A.fonte?(A.statusTipo==='wait'?'🟡 conectando…':A.statusTipo==='err'?'🔴 erro ao conectar':'🔴 desconectada'):cl==='ok'?'🟢 conectada':cl==='ruim'?'🔴 sem peso':'🟡 esperando peso';
   ['aBalMini','acBalMini'].forEach(id=>{const e=$(id);if(!e)return;if(e.textContent!==mini)e.textContent=mini;e.className='balMini '+(cl==='ruim'?'ruim':'');});
-  aplicarBalRec();}
+  aplicarBalRec();balAlerta(cl,segs);}
+/* AVISO GRANDE: batida ou fornecimento aberto na tela e a balança sem sinal (desconectada, reconectando ou sem peso) —
+   o que entrar no vagão agora não está sendo contado e a balança pode estar travada (HOLD) */
+function balAlerta(cl,segs){try{
+  const vis=id=>{const e=$(id);return !!(e&&!e.hidden&&e.offsetParent!==null);};
+  let ab=false;try{ab=!(typeof modoVer!=='undefined'&&modoVer)&&((vis('viewAutoC')&&typeof CG!=='undefined'&&CG&&!!CG.ativa)||(vis('viewAuto')&&!!(window.filtroForn&&filtroForn())));}catch(e){}
+  const ruim=ab&&(cl==='ruim'||cl==='desc'||(segs==null&&A.fonte&&Date.now()-(A.tCon||0)>6000));
+  let bx=$('balAlerta');if(ruim&&!bx){bx=document.createElement('div');bx.id='balAlerta';bx.setAttribute('role','alert');document.body.appendChild(bx);}
+  if(ruim&&!A.balAlertaAnt){try{navigator.vibrate&&navigator.vibrate([400,200,400]);}catch(e){}try{diagLog('aviso_sem_sinal',{motivo:!A.fonte?'desconectada':A.btReconectando?'reconectando':'sem_peso',hold:!!A.holdApp});}catch(e){}}
+  A.balAlertaAnt=ruim;
+  if(bx){bx.hidden=!ruim;if(ruim){const por=!A.fonte?'A balança está DESCONECTADA':A.btReconectando?'Reconectando a balança…':segs==null?'Esperando o peso da balança…':`Sem peso há ${Math.round(segs)} s`;
+    const h=`<b>⚠ BALANÇA SEM SINAL</b><span>${por}</span><em>NÃO coloque produto agora: o tablet não está contando e a balança pode estar travada</em>`;if(bx.innerHTML!==h)bx.innerHTML=h;}}
+  document.body.classList.toggle('comBalAlerta',ruim);}catch(e){}}
 window.recolherBal=()=>{A.balRec=true;aplicarBalRec();};
 function aplicarBalRec(){[['aBox',$('aBox')&&$('aBox').querySelector(':scope>section')],['acBox',$('acBox')&&$('acBox').querySelector(':scope>section')]].forEach(([_,sec])=>{if(!sec)return;
   sec.classList.toggle('balRec',!!A.balRec);const b=sec.querySelector('.balTog');if(b)b.textContent=A.balRec?'▼':'▲';});}
