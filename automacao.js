@@ -1104,6 +1104,9 @@ window.acRegistrar=async()=>{const B=acB(),it=acItem();if(!B||!it)return;if(AC.r
   /* núcleo etc. (registra o previsto): a balança precisa estar destravada e subir; se não subiu, pergunta se foi colocado */
   if(fixo&&A.fonte&&A.peso!=null){
     if(AC.trava){toast(`Toque em ▶ CARREGAR para destravar a balança antes de colocar o ${it.nome}`);return;}
+    /* Bluetooth caiu/voltou e o peso ainda não está chegando, ou o comando de destravar ainda não foi para a balança: não registra */
+    if(A.voltaPend||!A.tUlt||Date.now()-A.tUlt>4000){toast(`⚠ Balança sem sinal: espere o peso voltar na tela antes de registrar o ${it.nome}`);try{diagLog('fixo_bloq',{produto:it.nome,motivo:'sem_sinal'});}catch(e){}return;}
+    if(A.holdApp){try{holdSync();}catch(e){}toast(`⚠ A balança ainda está travada (HOLD). Espere destravar e o peso aparecer subindo, depois registre o ${it.nome}`);try{diagLog('fixo_bloq',{produto:it.nome,motivo:'hold'});}catch(e){}return;}
     const sub=ok(it.ini)&&fim!=null?fim-it.ini:null;
     if(sub!=null&&sub<it.prev*0.5){AC.registrando=true;let sim=false;
       try{sim=window.confirmaVermelho?await confirmaVermelho('A balança não subiu',`O ${it.nome} pede ${nf(it.prev)} kg, mas a balança subiu só ${nf(Math.max(0,sub))} kg (de ${nf(it.ini)} para ${nf(fim)}). O ${it.nome} foi colocado?`,'Sim, registrar mesmo assim','Não, vou colocar'):confirm('A balança não subiu. Registrar mesmo assim?');}finally{AC.registrando=false;}
