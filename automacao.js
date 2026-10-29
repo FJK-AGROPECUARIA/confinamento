@@ -873,7 +873,7 @@ function telaAzul(p){try{if(p==='ac'){const it=acItem();if(!it||ok(it.real))retu
   if(!A.pausa)return null;const cur=curralAtual();
   return A.pausa.trava?{t:'trava',txt:'▶ FORNECER',nome:cur?cur.nome:'',em:'Toque para fornecer'}:{t:'pausa'};}catch(e){return null;}}
 window.aEstadoAoVivo=()=>{const L=lista(),c=L[S.atual],regs=regsAtuais();
-  const ff=window.filtroForn?filtroForn():null;return {pausa:!!A.pausa,tela:$('viewAuto')&&!$('viewAuto').hidden&&ff?telaAuto('a'):null,modo:'trato',origem:'auto',local:ff?ff.local:'',rac:ff?ff.rac:'',fimForn:!ff,deAp:ff&&ff.deAp||'',contTs:ff&&ff.contTs||0,fts0:ff&&ff.ts0||0,dia:diaAtivo(),trato:S.tratoSel,curral:c?c.nome:'',prev:c?c.prev:null,ini:A.base!=null?Math.round(A.base):'',fim:A.peso!=null?Math.round(A.peso):'',
+  const ff=window.filtroForn?filtroForn():null;return {pausa:!!A.pausa,indo:!!(A.pausa&&A.pausa.trava),tela:$('viewAuto')&&!$('viewAuto').hidden&&ff?telaAuto('a'):null,modo:'trato',origem:'auto',local:ff?ff.local:'',rac:ff?ff.rac:'',fimForn:!ff,deAp:ff&&ff.deAp||'',contTs:ff&&ff.contTs||0,fts0:ff&&ff.ts0||0,dia:diaAtivo(),trato:S.tratoSel,curral:c?c.nome:'',prev:c?c.prev:null,ini:A.base!=null?Math.round(A.base):'',fim:A.peso!=null?Math.round(A.peso):'',
     ...contaLocalTrato(L,regs)};};
 /* ---------- Pausar no trajeto ---------- */
 /* diminui a letra até o texto caber na largura do quadro (nome de curral comprido, tela estreita) */
