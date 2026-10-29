@@ -1245,7 +1245,7 @@ body.naInicio .topoTxt h1{font-size:clamp(16px,5vw,28px)!important}
 <div class="toast" id="toast" hidden></div>
 <script>
 'use strict';
-const APP_VERSAO='240';
+const APP_VERSAO='241';
 const APP_DATA='19/10/2026';
 const KEY='confinamento-completo-v1';
 const $=id=>document.getElementById(id);
@@ -3875,7 +3875,7 @@ function cardCargaAoVivo(d){const ini=parseFloat(d.ini),fim=parseFloat(d.fim),pv
 function avTelaSint(d,carga){const ini=parseFloat(d.ini),fim=parseFloat(d.fim),pv=+d.prev;if(isNaN(ini)||!(pv>0))return null;
   const feito=isNaN(fim)?0:(carga?fim-ini:ini-fim),falta=pv-feito,alvo=carga?ini+pv:ini-pv;
   const cor=falta<0?'passou':falta<=Math.max(15,pv*.03)?'vermelho':falta<=Math.max(60,pv*.12)?'amarelo':'verde';
-  return {peso:isNaN(fim)?'—':fmt(fim),pesoTxt:'',etapa:feito>0?(carga?`▲ Carregando ${d.prod||''}`:`▼ Fornecendo no ${d.curral||''}`):(carga?`Pronto pra carregar ${d.prod||''}`:`Pronto pra fornecer no ${d.curral||''}`),
+  return {peso:isNaN(fim)?'—':fmt(fim),pesoTxt:'',etapa:feito>0?(carga?`▲ Carregando ${d.prod||''}`:`▼ Fornecendo no ${d.curral||''}`):(carga?`Pronto pra carregar ${d.prod||''}`:d.indo?`🚜 Indo para ${d.curral||''}`:`Pronto pra fornecer no ${d.curral||''}`),
     etCl:'aEtapa '+(feito>0?'desc':'pronto'),fCl:'aFalta '+cor,fTit:falta<0?'PASSOU':(carga?'Carregar':'Fornecer'),fVal:falta<0?'-'+fmt(-falta):fmt(falta),
     fTxt:falta<0?'DO PREVISTO':'\u00a0',feito:fmt(Math.max(0,feito)),ini:fmt(ini),alvo:fmt(alvo)};}
 function avTelaHTML(d,carga){const T=d.tela,Z=T.azul;
@@ -3932,7 +3932,7 @@ document.addEventListener('click',e=>{const b=e.target.closest&&e.target.closest
   if(window.abaAtual!==ab)aba(ab);else renderAoVivo();setTimeout(()=>{try{renderAoVivo();$('aoVivo').scrollIntoView({block:'start',behavior:'smooth'});}catch(x){}},50);});
 /* Visualizar: botão comprido "AO VIVO" em cima dos quadrados — verde quando alguém está carregando/fornecendo (toca e abre), vermelho quando não */
 function pintarAvBtn(){const b=$('avBtn');if(!b)return;b.hidden=!modoVer;if(!modoVer)return;const L=window.avTodos||[],on=L.length>0;
-  const d=on?L[0].d:null,txt=on?`<span>● AO VIVO</span><small>${d.modo==='carga'?'Carregando'+(d.rac?' '+esc(d.rac):''):'Fornecendo'+(d.curral?' '+esc(d.curral):'')}${L.length>1?` · +${L.length-1}`:''} · toque para ver ▸</small>`:'<span>● AO VIVO</span><small>nada agora</small>';
+  const d=on?L[0].d:null,txt=on?`<span>● AO VIVO</span><small>${d.modo==='carga'?'Carregando'+(d.rac?' '+esc(d.rac):''):(d.indo?'Indo para '+esc(d.curral||'o próximo curral'):'Fornecendo'+(d.curral?' em '+esc(d.curral):''))}${L.length>1?` · +${L.length-1}`:''} · toque para ver ▸</small>`:'<span>● AO VIVO</span><small>nada agora</small>';
   b.classList.toggle('on',on);if(b.dataset.h!==txt){b.dataset.h=txt;b.innerHTML=txt;}}
 /* o Ao vivo só aparece pelo botão: tocou (e tem alguém trabalhando) abre; abriu o menu de novo ou foi para outro quadrado, some */
 function avVer(on){document.body.classList.toggle('avVendo',!!on);semTela();}
