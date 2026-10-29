@@ -425,13 +425,18 @@ async function holdSync(){if(holdMandando)return;
   let carrFim=false;try{const B=noCarr?acB():null;carrFim=!!(B&&B.itens&&B.itens.length&&B.itens.every(x=>ok(x.real)));}catch(e){}   // registrou o último produto e ainda não finalizou o carregamento: fica travada
   /* finalizou o fornecimento ou o carregamento: a balança continua em HOLD (o comando já foi no último curral) e o tablet não insiste;
      o botão HOLD da balança solta na mão; no próximo carregamento ou fornecimento o tablet assume de novo. Vale mesmo se o Bluetooth cair ao finalizar. */
-  const ativo=noForn||noCarr;if(modo===1&&(A.ultForn||A.ultCarr)&&!ativo&&!A.holdFim)holdFimGrava(true);A.ultForn=noForn;A.ultCarr=noCarr;   /* holdFim só sai ao LIBERAR (▶ FORNECER de um curral ou ▶ CARREGAR de um produto): abrir o fornecimento/batida ou escolher o trato não solta */
+  const ativo=noForn||noCarr;
+  /* "terminou" = a batida ou o fornecimento ACABOU de verdade (finalizado ou cancelado), não só saiu da tela.
+     Antes, sair da tela do Carregar com a batida aberta já marcava "terminou" e o tablet travava a balança a cada 4 s mesmo com o produto liberado. */
+  let abertoDado=false;try{abertoDado=!!((typeof CG!=='undefined'&&CG&&CG.ativa)||(window.filtroForn&&filtroForn()));}catch(e){}
+  if(modo===1&&A.ultAberto&&!abertoDado&&!A.holdFim)holdFimGrava(true);A.ultAberto=abertoDado;A.ultForn=noForn;A.ultCarr=noCarr;   /* holdFim só sai ao LIBERAR (▶ FORNECER de um curral ou ▶ CARREGAR de um produto): abrir o fornecimento/batida ou escolher o trato não solta */
   A.holdManter=modo===1&&(fimPend||carrFim||A.holdFim||(!ativo&&(A.ultForn||A.ultCarr)));   // não soltar ao desconectar
   if(!(A.fonte==='bt'&&A.digiStar&&A.dsEsc)){   // sem Bluetooth não dá para soltar: avisa o operador para soltar na mão
     if(A.holdApp&&!A.pausa&&!A.holdFim&&!A.holdManter&&Date.now()-(A.holdAvisoTs||0)>10000){A.holdAvisoTs=Date.now();toast('⚠ Balança sem Bluetooth e pode estar em HOLD: se o visor mostrar HOLD, aperte HOLD na balança para soltar');}
     return;}
   if(A.holdFim&&!ativo){if(A.holdApp||modo!==1)return;}
-  const quer=!!(modo&&((noForn&&(A.pausa||fimPend))||carrAzul||carrFim||A.holdFim));   // quadro azul na tela (Fornecer ou Carregar) = balança em HOLD
+  if(!ativo&&abertoDado)return;   // batida/fornecimento aberto mas fora da tela dele: não mexe na balança (fica como está)
+  const quer=!!(modo&&((noForn&&(A.pausa||fimPend))||carrAzul||carrFim||(A.holdFim&&!ativo)));   // na tela do Carregar/Fornecer vale o estado da tela (produto ou curral liberado = solta)   // quadro azul na tela (Fornecer ou Carregar) = balança em HOLD
   const repetir=modo===1&&(noForn||noCarr)&&Date.now()-(A.holdTs||0)>4000;   // comando direto: reforça o estado do tablet
   if(quer===A.holdApp&&!repetir)return;
   if(!modo&&!A.holdApp)return;
@@ -439,7 +444,7 @@ async function holdSync(){if(holdMandando)return;
   try{let b;if(modo===2||(!modo&&A.holdAppTecla)){A.dsSeq=(A.dsSeq%99)+1;const txt='20'+String(A.dsSeq).padStart(2,'0');b=new Uint8Array([0x1a,...Array.from(txt).map(c=>c.charCodeAt(0))]);}
     else b=new Uint8Array([0x1b,0x47,0x68,quer?0x45:0x44,0x04]);   // ESC G h E|D EOT
     await A.dsEsc.writeValue(b);const mudou=quer!==A.holdApp;A.holdAppTecla=modo===2;holdGrava(quer);
-    if(mudou){bruto('HOLD '+(quer?'ligado':'solto')+' pelo tablet: '+hexDe(b));try{diagLog(quer?'hold_liga':'hold_solta',{modo,peso:A.peso,visor:A.visor,anunc:A.anunc});}catch(e){}}}
+    if(mudou){bruto('HOLD '+(quer?'ligado':'solto')+' pelo tablet: '+hexDe(b));try{diagLog(quer?'hold_liga':'hold_solta',{modo,peso:A.peso,visor:A.visor,anunc:A.anunc,por:[noForn&&A.pausa?'pausa_forn':'',fimPend?'fim_forn':'',carrAzul?(AC.pausa?'pausa_carr':'trava_carr'):'',carrFim?'fim_carr':'',A.holdFim&&!ativo?'terminou':''].filter(Boolean).join(',')||'-'});}catch(e){}}}
   catch(e){bruto('HOLD não foi: '+(e.message||e));}   // não mudou o estado: tenta de novo na próxima volta
   finally{holdMandando=false;}}
 window.holdSync=holdSync;setInterval(holdSync,700);
