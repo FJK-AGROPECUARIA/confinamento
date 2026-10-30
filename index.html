@@ -944,6 +944,8 @@ body.naInicio .topoTxt h1{font-size:clamp(16px,5vw,28px)!important}
 #balAlerta span{display:block;font-size:clamp(17px,4.2vw,26px);font-weight:700;margin-top:4px}
 #balAlerta em{display:block;font-style:normal;font-size:clamp(15px,3.6vw,22px);margin-top:6px;background:rgba(0,0,0,.25);border-radius:8px;padding:6px}
 @keyframes balPisca{0%,100%{background:#c62828}50%{background:#8e0000}}
+#regFalha{position:fixed;left:50%;transform:translateX(-50%);top:calc(env(safe-area-inset-top,0px) + 4px);z-index:99980;max-width:calc(100% - 16px);background:#c62828;color:#fff;border:0;border-radius:99px;padding:3px 10px;font-size:.7rem;font-weight:700;line-height:1.2;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;box-shadow:0 2px 8px rgba(0,0,0,.3);text-align:center}
+#regFalha[hidden]{display:none}
 </style>
 </head>
 <body>
@@ -1263,7 +1265,7 @@ body.naInicio .topoTxt h1{font-size:clamp(16px,5vw,28px)!important}
 <div class="toast" id="toast" hidden></div>
 <script>
 'use strict';
-const APP_VERSAO='249';
+const APP_VERSAO='250';
 const APP_DATA='19/10/2026';
 const KEY='confinamento-completo-v1';
 const $=id=>document.getElementById(id);
@@ -3111,12 +3113,24 @@ async function prevAtualizarAgora(){if((typeof modoVer!=='undefined'&&modoVer)||
 window.prevAtualizarAgora=prevAtualizarAgora;
 /* Traz sozinho os tratos que outros celulares lançaram (últimos 7 dias), a cada 2 minutos com internet */
 let ultPuxaReg=0;
+/* aviso vermelho discreto no topo quando não consegue baixar os tratos realizados da nuvem (some sozinho quando der certo) */
+let regFalhaDesde=0;
+function avisoRegFalha(on,motivo){let el=$('regFalha');
+  if(!on){if(el)el.hidden=true;if(regFalhaDesde){try{window.diagLog&&diagLog('reg_voltou',{seg:Math.round((Date.now()-regFalhaDesde)/1000)});}catch(e){}}regFalhaDesde=0;return;}
+  if(!el){el=document.createElement('button');el.type='button';el.id='regFalha';el.onclick=()=>{el.textContent='⏳ Buscando…';puxarRegistros(true).catch(()=>{});};document.body.appendChild(el);}
+  el.textContent='⚠ Sem sinal: realizado desatualizado · tocar';el.title='Não consegui baixar os tratos realizados da nuvem. Toque para tentar de novo.';el.hidden=false;
+  if(!regFalhaDesde){regFalhaDesde=Date.now();try{window.diagLog&&diagLog('reg_falhou',{motivo:String(motivo||'').slice(0,80),online:navigator.onLine});}catch(e){}}}
 async function puxarRegistros(forcar){
   if(!forcar&&Date.now()-ultPuxaReg<2*60000)return;
   ultPuxaReg=Date.now();
   const d=new Date();d.setDate(d.getDate()-7);
   const envAntes=new Set(HIST.filter(x=>x.enviado).map(x=>x.uid)); // só confere os que já estavam na nuvem antes de buscar
-  const r=await fetch(apiUrl()+'?acao=listar&desde='+diaKey(d),{cache:'no-store'});const j=await r.json();if(!j||!j.ok)return;marcarAtualiz();
+  let j=null;
+  try{const ac=typeof AbortController!=='undefined'?new AbortController():null,to=setTimeout(()=>{try{ac&&ac.abort();}catch(e){}},25000);
+    try{const r=await fetch(apiUrl()+'?acao=listar&desde='+diaKey(d),{cache:'no-store',signal:ac?ac.signal:undefined});j=await r.json();}finally{clearTimeout(to);}
+    if(!j||!j.ok)throw new Error((j&&j.erro)||'resposta inválida');}
+  catch(e){avisoRegFalha(true,e&&e.name==='AbortError'?'demorou demais':(e&&e.message)||e);throw e;}
+  avisoRegFalha(false);marcarAtualiz();
   const porUid=new Map(HIST.map(x=>[x.uid,x]));const pendEd=new Set((S.editarNuvem||[]).map(x=>x.uid));const apag=new Set(S.apagarNuvem||[]);
   const novos=[],mudados=[];
   (j.registros||[]).forEach(x=>{if(!x||!x.uid||apag.has(String(x.uid)))return;const u=String(x.uid),y=porUid.get(u);
