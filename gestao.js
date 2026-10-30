@@ -1075,8 +1075,14 @@ function salvaFecha(id){fcLer();const l=G.it[id],F=GT.f,X=fcCalc(l,F),d=X.d;
   if(X.cabV>0)gPut({uid:novoId('sai'),tipo:'saida',mot:'venda',lote:l.uid,dia:d,cab:X.cabV,peso:Math.round(X.pV*100)/100,rc:X.rc,pesoVT:X.kgV?Math.round(X.kgV*100)/100:null,carcT:gNum(F.carcT)>0?gNum(F.carcT):(gNum(F.carcM)>0?Math.round(gNum(F.carcM)*X.cabV*100)/100:null),unid:F.unid,preco:gNum(F.preco)||0,vTot:gNum(F.vTot)||null,desc:gNum(F.desc)||0,comp:cp||'',obs:F.obs||'',fech:true,cst:(()=>{const o={};Object.keys(X.cstV).forEach(k=>o[k]=Math.round(X.cstV[k]*100)/100);return o;})()});
   toast(`${l.nome} fechado`);gPilha.pop();GT={t:'rel',id:l.uid};gRender();window.scrollTo({top:0});}
 /* entrada proporcional: os animais entram como se fossem do lote desde o começo (mesmo peso de entrada, peso de hoje e custo dos tratos por cabeça) — não muda o resultado por cabeça */
-function entPropCalc(l,d,n){const tem=cabPres(l,d),K=custoAteDia(l,d),f=tem>0?n/tem:0,tr=((+K.alim||0)+(+K.op||0)+(+K.outros||0))*f;
-  return {tem,pe:pesoEntMed(l),pA:pesoEm(l,d),tr,alim:(+K.alim||0)*f,op:(+K.op||0)*f,outros:(+K.outros||0)*f,porCab:tem>0?((+K.alim||0)+(+K.op||0)+(+K.outros||0))/tem:NaN};}
+/* proporcional: cada animal novo leva o que UM animal do lote gastou por dia, desde a entrada até o dia anterior (soma do custo do dia ÷ cabeças do dia),
+   como se estivesse no lote desde o começo — não mistura o custo que animais transferidos trouxeram de outros lotes */
+function entPropCalc(l,d,n){const tem=cabPres(l,d),X=gCtx(),sd=X.sd.get(l.uid),k={alim:0,op:0,outros:0},oc=new Map();
+  custosDe(l).filter(c=>c.dia<d).forEach(c=>oc.set(c.dia,(oc.get(c.dia)||0)+(+c.rs||0)));
+  for(let x=l.ent.dia,i=0;x<d&&i<4000;x=somaDias(x,1),i++){const y=diaLote(l,x,X);if(y&&y.cab){k.alim+=(ok(y.custoR)?y.custoR:0)/y.cab;k.op+=(+y.custoOp||0)/y.cab;}
+    if(oc.has(x)){const c=cabPres(l,x,sd);if(c>0)k.outros+=oc.get(x)/c;}}
+  const porCab=k.alim+k.op+k.outros;
+  return {tem,pe:pesoEntMed(l),pA:pesoEm(l,d),tr:porCab*n,alim:k.alim*n,op:k.op*n,outros:k.outros*n,porCab};}
 function entPropPrevia(){const box=$('gEntProp'),l=G.it[GT.entLote];if(!box||!l)return;const d=fv('dia')||hojeKey(),n=fn('cab');if(!(n>0)){box.innerHTML='';return;}const P=entPropCalc(l,d,n);
   box.innerHTML=`<div class="stat gStat3">${st('Peso de entrada',nf(P.pe,1)+' kg')}${st('Peso hoje',nf(P.pA,1)+' kg')}${st('Custo tratos/cab',rs(P.porCab))}</div>
     <div class="gLinhas">${lin('· alimentação',rs(P.alim))}${lin('· operacional',rs(P.op))}${lin('· outros custos',rs(P.outros))}${lin(`Custo dos tratos que entra com os ${nf(n)}`,rs(P.tr))}</div>
