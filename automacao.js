@@ -450,13 +450,17 @@ async function holdSync(){if(holdMandando)return;
      apertou HOLD na balança para soltar. Aí o tablet respeita e não trava de novo até o próximo registro (produto ou curral) ou liberação. */
   try{const pv=pesoVisor();
     if(modo===1&&A.holdApp&&!A.holdManual&&pv!=null){
-      if(A.holdRef==null){if(Date.now()-(A.holdLigTs||0)>2000)A.holdRef=pv;A.holdMov=0;}
-      else if(Math.abs(pv-A.holdRef)>=100){A.holdMov=(A.holdMov||0)+1;
+      /* leitura estranha NÃO é destravar na mão: peso 0 (balança reiniciando / sem leitura) ou o peso de um HOLD anterior
+         (a balança às vezes volta a mandar o valor congelado de antes). Antes (v238–v257) isso soltava o HOLD e o tablet não travava mais. */
+      const estranho=A.holdRef!=null&&Math.abs(pv-A.holdRef)>=100&&(pv<=50||(A.holdAnt||[]).some(v=>Math.abs(pv-v)<=20));
+      if(A.holdRef==null){if(Date.now()-(A.holdLigTs||0)>2000){A.holdRef=pv;A.holdAnt=(A.holdAnt||[]).concat(pv).slice(-8);}A.holdMov=0;A.holdUlt=null;}
+      else if(estranho){A.holdMov=0;A.holdUlt=null;if(Date.now()-(A.holdEstTs||0)>60000){A.holdEstTs=Date.now();try{diagLog('hold_leitura_estranha',{peso:pv,ref:A.holdRef,anunc:A.anunc});}catch(e){}}}
+      else if(Math.abs(pv-A.holdRef)>=100){A.holdMov=A.holdUlt!=null&&Math.abs(pv-A.holdUlt)>150?1:(A.holdMov||0)+1;A.holdUlt=pv;   // as 3 leituras têm que andar juntas (peso de verdade), não pular
         if(A.holdMov>=3){try{diagLog('hold_manual',{peso:pv,ref:A.holdRef,noCarr,noForn,anunc:A.anunc});}catch(e){}
           A.holdManual=true;holdGrava(false);A.holdRef=null;A.holdMov=0;bruto('HOLD solto na balança (peso andou): o tablet não trava até o próximo registro');
           toast('🔓 Balança destravada na mão: o tablet não trava de novo até o próximo registro');}}
-      else A.holdMov=0;}
-    else if(!A.holdApp){A.holdRef=null;A.holdMov=0;}}catch(e){}
+      else{A.holdMov=0;A.holdUlt=null;}}
+    else if(!A.holdApp){A.holdRef=null;A.holdMov=0;A.holdUlt=null;}}catch(e){}
   if(A.holdFim&&!ativo){if(A.holdApp||modo!==1||A.holdManual)return;}
   if(!ativo&&abertoDado)return;   // batida/fornecimento aberto mas fora da tela dele: não mexe na balança (fica como está)
   const quer=!A.holdManual&&!!(modo&&((noForn&&(A.pausa||fimPend))||carrAzul||carrFim||(A.holdFim&&!ativo)));   // na tela do Carregar/Fornecer vale o estado da tela (produto ou curral liberado = solta)   // quadro azul na tela (Fornecer ou Carregar) = balança em HOLD
