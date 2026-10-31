@@ -789,7 +789,7 @@ body.somenteVer:not(.menuFechado):not(.naInicio) #viewPrev,body.somenteVer:not(.
 /* menu da Gestão em quadrados grandes (2 por linha); com o menu aberto só aparecem os quadrados */
 #subGest.gTiles{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}#subGest.gTiles[hidden]{display:none}
 #subGest.gTiles button{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;min-height:118px;padding:14px 8px;border-radius:18px;border:0;background:var(--c);color:#fff;font-size:1.3rem;font-weight:800;box-shadow:0 2px 6px rgba(0,0,0,.12)}
-#subGest.gTiles .gIc{font-size:2.3rem;line-height:1}#subGest.gTiles .gIc svg{width:2.6rem;height:2.6rem;display:block}
+#subGest.gTiles button>span:last-child{text-align:center;line-height:1.25}#subGest.gTiles .gIc{font-size:2.3rem;line-height:1}#subGest.gTiles .gIc svg{width:2.6rem;height:2.6rem;display:block}
 #subGest.gTiles button[aria-selected="true"]{outline:none}
 .gAcHist{display:flex;gap:6px;justify-content:center;margin-top:4px}.gAcHist .mini{min-width:34px}
 .gRcLista{display:flex;flex-direction:column;gap:4px;margin:8px 0}.gRcLin{text-transform:none;letter-spacing:0;display:grid;grid-template-columns:28px 70px 1fr 1fr;gap:6px;align-items:center;padding:8px;border-radius:10px;background:#f4f7ee;font-size:.9rem}.gRcLin input{width:22px;height:22px}.gRcLin em{font-style:normal;color:#5d6b7a}.gRcCab{background:none;font-size:.72rem;text-transform:uppercase;color:#5d6b7a;font-weight:800}
@@ -992,10 +992,10 @@ body.naInicio .topoTxt h1{font-size:clamp(16px,5vw,28px)!important}
     <button id="tabAuto" aria-selected="false" hidden>Fornecer</button>
   </div>
   <div class="subtabs gTiles" id="subGest" hidden>
-    <button data-gt="currais" style="--c:#4f9a52"><span class="gIc"><svg class="icoCurral" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 21V7.5L5.5 5 7 7.5V21M10.5 21V7.5L12 5l1.5 2.5V21M17 21V7.5L18.5 5 20 7.5V21" fill="#c9a26b" stroke="#7a4f21" stroke-width="1.3" stroke-linejoin="round"/><path d="M2.5 10.5h19M2.5 16h19" stroke="#7a4f21" stroke-width="2.2" stroke-linecap="round"/></svg></span><span>Currais</span></button>
-    <button data-gt="lotes" style="--c:#3d8442"><span class="gIc">🐂</span><span>Lotes</span></button>
-    <button data-gt="entradas" style="--c:#2e7d5b"><span class="gIc">📥</span><span>Entrada de animais</span></button>
-    <button data-gt="saidas" style="--c:#a0522d"><span class="gIc">📤</span><span>Saída de animais</span></button>
+    <button data-gt="currais" style="--c:#a3a9ae"><span class="gIc"><svg class="icoCurral" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 21V7.5L5.5 5 7 7.5V21M10.5 21V7.5L12 5l1.5 2.5V21M17 21V7.5L18.5 5 20 7.5V21" fill="#c9a26b" stroke="#7a4f21" stroke-width="1.3" stroke-linejoin="round"/><path d="M2.5 10.5h19M2.5 16h19" stroke="#7a4f21" stroke-width="2.2" stroke-linecap="round"/></svg></span><span>Currais</span></button>
+    <button data-gt="lotes" style="--c:#868d93"><span class="gIc">🐂</span><span>Lotes</span></button>
+    <button data-gt="entradas" style="--c:#2e7d5b"><span class="gIc">📥</span><span>Entrada de <br>animais</span></button>
+    <button data-gt="saidas" style="--c:#c0392b"><span class="gIc">📤</span><span>Saída de <br>animais</span></button>
     <button data-gt="racoes" style="--c:#b8860b"><span class="gIc">🌽</span><span>Rações</span></button>
     <button data-gt="estoque" style="--c:#946a0c"><span class="gIc">📦</span><span>Estoque</span></button>
     <button data-gt="home" id="tabGest" style="--c:#3f80c4"><span class="gIc">📋</span><span>Resumo</span></button>
@@ -1265,7 +1265,7 @@ body.naInicio .topoTxt h1{font-size:clamp(16px,5vw,28px)!important}
 <div class="toast" id="toast" hidden></div>
 <script>
 'use strict';
-const APP_VERSAO='255';
+const APP_VERSAO='256';
 const APP_DATA='19/10/2026';
 const KEY='confinamento-completo-v1';
 const $=id=>document.getElementById(id);
