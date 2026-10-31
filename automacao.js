@@ -431,6 +431,7 @@ function holdFimGrava(v){A.holdFim=v;try{localStorage.setItem('fjkHoldFim',v?'1'
 function holdGrava(v){A.holdApp=v;A.holdTs=Date.now();try{localStorage.setItem('fjkHoldApp',v?'1':'0');}catch(e){}}
 let holdMandando=false;
 async function holdSync(){if(holdMandando)return;
+  if(typeof modoAtual!=='undefined'&&modoAtual==='man')return;   // Trato Manual: o tablet não mexe no HOLD (fica tudo no botão da balança)
   let modo=1,noForn=false,noCarr=false,carrAzul=false;try{modo=+cfg().holdAuto||0;noForn=!!(window.filtroForn&&filtroForn()&&!naCargaAuto());
     noCarr=!!(naCargaAuto()&&acB());const it=noCarr?acItem():null;carrAzul=noCarr&&!!(AC.pausa||(AC.trava&&it&&!ok(it.real)));}catch(e){}
   let fimPend=false;try{fimPend=noForn&&!curralAtual()&&lista().length>0;}catch(e){}   // registrou o último curral e ainda não finalizou o fornecimento: fica travada
@@ -466,7 +467,8 @@ async function holdSync(){if(holdMandando)return;
   if(A.holdFim&&!ativo){if(A.holdApp||modo!==1||A.holdManual)return;}
   if(!ativo&&abertoDado)return;   // batida/fornecimento aberto mas fora da tela dele: não mexe na balança (fica como está)
   const quer=!A.holdManual&&!!(modo&&((noForn&&(A.pausa||fimPend))||carrAzul||carrFim||(A.holdFim&&!ativo)));   // na tela do Carregar/Fornecer vale o estado da tela (produto ou curral liberado = solta)   // quadro azul na tela (Fornecer ou Carregar) = balança em HOLD
-  const repetir=modo===1&&(noForn||noCarr)&&Date.now()-(A.holdTs||0)>4000;   // comando direto: reforça o estado do tablet
+  const naTela=!!(($('viewAuto')&&!$('viewAuto').hidden)||naCargaAuto());   // reforço só com a tela do Fornecer/Carregar da Automação aberta: fora dela o HOLD na mão funciona
+  const repetir=modo===1&&naTela&&(noForn||noCarr)&&Date.now()-(A.holdTs||0)>4000;   // comando direto: reforça o estado do tablet
   if(quer===A.holdApp&&!repetir)return;
   if(!modo&&!A.holdApp)return;
   holdMandando=true;
