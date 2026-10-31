@@ -1265,7 +1265,7 @@ body.naInicio .topoTxt h1{font-size:clamp(16px,5vw,28px)!important}
 <div class="toast" id="toast" hidden></div>
 <script>
 'use strict';
-const APP_VERSAO='256';
+const APP_VERSAO='257';
 const APP_DATA='19/10/2026';
 const KEY='confinamento-completo-v1';
 const $=id=>document.getElementById(id);
@@ -1429,10 +1429,17 @@ function totalCurral(c,obj){obj=obj||S.prev||{};let t=0;for(let k=1;k<=MAXT;k++)
    Ex.: total 2.230 = T1 1.120 + T2 1.110; T1 fez 1.110 → T2 vira 1.120 → previsto do dia continua 2.230 (não 1.120+1.120). */
 function totalDia(c,obj,dia){obj=obj||S.prev||{};dia=dia||hojeKey();const ks=[];for(let k=1;k<=MAXT;k++){const v=(obj[k]||{})[c];if(typeof v==='number'&&v>0)ks.push(k);}
   const cfgG=gOk()&&typeof gCfg==='function'?gCfg():{};if(ks.length<2||cfgG.compensa===false)return totalCurral(c,obj);
-  const regs=HIST.filter(r=>r.dia===dia&&r.curral===c);if(!regs.length)return totalCurral(c,obj);
+  const regs=HIST.filter(r=>r.dia===dia&&r.curral===c),pul=new Set(tratosPulados(c,dia,ks).map(p=>p.k));if(!regs.length&&!pul.size)return totalCurral(c,obj);
   const ult=ks[ks.length-1];let t=0;
-  for(let k=1;k<=MAXT;k++){const v=(obj[k]||{})[c];if(typeof v!=='number')continue;const rk=regs.filter(r=>+r.trato===k);t+=k!==ult&&rk.length?rk.reduce((a,r)=>a+(+r.forn||0),0):v;}
+  for(let k=1;k<=MAXT;k++){const v=(obj[k]||{})[c];if(typeof v!=='number')continue;const rk=regs.filter(r=>+r.trato===k);t+=k!==ult&&rk.length?rk.reduce((a,r)=>a+(+r.forn||0),0):k!==ult&&pul.has(k)?0:v;}
   return t;}
+/* curral PULADO num trato: ficou sem registro e o trato já passou (algum curral da mesma linha já tem registro num trato depois).
+   Conta como 0 kg e o previsto dele vai para o último trato do curral. "dono" = primeiro registro do trato seguinte: só o aparelho
+   que fez esse registro compensa (assim dois aparelhos não somam duas vezes). */
+function tratosPulados(c,dia,ks){const P=[];try{if(!ks||ks.length<2)return P;const regs=HIST.filter(r=>r.dia===dia),loc=linhaDe(c),ult=ks[ks.length-1];
+  ks.forEach(k=>{if(k===ult||regs.some(r=>+r.trato===k&&r.curral===c))return;const dep=regs.filter(r=>+r.trato>k&&linhaDe(r.curral)===loc);
+    if(dep.length)P.push({k,dono:dep.reduce((a,r)=>(+r.ts||0)<(+a.ts||0)?r:a)});});}catch(e){}return P;}
+const regDesteAparelho=r=>!!(r&&S&&S.aparelho&&String(r.uid||'').startsWith(S.aparelho+'-'));
 function arredPrev(v){let a=gOk()&&typeof gCfg==='function'?+gCfg().arred:10;if(!(a>0))a=10;return Math.round(v/a)*a;}
 /* divide o total do curral nos tratos pela % configurada; o último trato fica com a sobra do arredondamento */
 /* tudo em dezena (ou no arredondamento do Config.): unidade 1–4 desce, 5–9 sobe; o total também, então a soma dos tratos fecha certinho */
@@ -1497,29 +1504,40 @@ function compensarCurral(c){try{
   if(!orig){orig={};for(let k=1;k<=MAXT;k++){const v=(S.prev[k]||{})[c];if(typeof v==='number'&&v>0)orig[k]=v;
       if(mao&&feitos.has(k))orig[k]=regs.filter(r=>+r.trato===k).reduce((a,r)=>a+(+r.forn||0),0);}}
   const ks=Object.keys(orig).map(Number).sort((a,b)=>a-b);if(ks.length<2)return null;
-  /* "não fornecer" conta como 0 kg: o que faltou vai para o último trato (se quiser menos, ajusta o previsto na hora) */
-  const pulou=new Set();
-  const T=ks.filter(k=>!pulou.has(k)).reduce((a,k)=>a+orig[k],0);
+  /* "não fornecer" conta como 0 kg: o que faltou vai para o último trato (se quiser menos, ajusta o previsto na hora).
+     Curral pulado (trato passou sem registro dele) também conta 0 kg. Previsto original já guardado aqui: vale sempre;
+     sem ele, só o aparelho "dono" compensa (o previsto daqui pode já ter vindo compensado de outro aparelho) */
+  const fresco=!O.v[c]||mao,PU=mao?[]:tratosPulados(c,hj,ks);
+  const pulou=new Set(PU.filter(p=>!fresco||regDesteAparelho(p.dono)).map(p=>p.k));
+  const T=ks.reduce((a,k)=>a+orig[k],0);
   const real=regs.reduce((a,r)=>a+(+r.forn||0),0);
-  const pend=ks.filter(k=>!feitos.has(k));if(!pend.length||!feitos.size)return null;
+  const pend=ks.filter(k=>!feitos.has(k)&&!pulou.has(k));if(!pend.length||(!feitos.size&&!pulou.size))return null;
   /* o ajuste é sempre no ÚLTIMO trato do curral; os do meio ficam como estavam */
   const ult=ks[ks.length-1];if(feitos.has(ult))return null;
   const meio=pend.filter(k=>k!==ult).reduce((a,k)=>a+orig[k],0);
   const novo={};pend.filter(k=>k!==ult).forEach(k=>novo[k]=orig[k]);novo[ult]=Math.max(0,arredPrev(T-real-meio));
   let mudou=false;pend.forEach(k=>{if(!S.prev[k])S.prev[k]={};if(S.prev[k][c]!==novo[k]){S.prev[k][c]=novo[k];mudou=true;}});
   O.v[c]=orig;O.set[c]=novo;if(!O.hist)O.hist={};O.hist[c]=((O.hist[c]||[]).concat([novo])).slice(-10);save();
-  if(mudou){marcarPrev();const d=real-ks.filter(k=>feitos.has(k)&&!pulou.has(k)).reduce((a,k)=>a+orig[k],0);
+  if(mudou){marcarPrev();const d=real-ks.filter(k=>feitos.has(k)||pulou.has(k)).reduce((a,k)=>a+orig[k],0);
     try{window.diagLog&&diagLog('compensou',{curral:c,total:T,realizado:real,dif:d,novo});}catch(e){}
     toast(`${c}: último trato (Trato ${ult}) → ${fmt(novo[ult])} kg (${d>0?'+':''}${fmt(d)} kg compensados)`);}
   return novo;}catch(e){return null;}}
 window.compensarCurral=compensarCurral;
+/* currais pulados num trato (sem registro): compensa no último trato, no aparelho dono (ver tratosPulados) */
+function compensarPulados(){let n=0;try{if((typeof modoVer!=='undefined'&&modoVer)||!S||!S.prev)return 0;const hj=hojeKey();if(diaAtivo()!==hj)return 0;
+  const cs=new Set();Object.values(S.prev).forEach(m=>{if(m&&typeof m==='object')Object.keys(m).forEach(c=>cs.add(c));});
+  cs.forEach(c=>{const ks=[];for(let k=1;k<=MAXT;k++){const v=(S.prev[k]||{})[c];if(typeof v==='number'&&v>0)ks.push(k);}
+    const PU=tratosPulados(c,hj,ks);if(!PU.length)return;if(!(S.prevOrig&&S.prevOrig.dia===hj&&S.prevOrig.v&&S.prevOrig.v[c])&&!PU.some(p=>regDesteAparelho(p.dono)))return;
+    const s0=JSON.stringify(ks.map(k=>(S.prev[k]||{})[c]));compensarCurral(c);if(JSON.stringify(ks.map(k=>(S.prev[k]||{})[c]))!==s0)n++;});
+  if(n){try{render();}catch(e){}}}catch(e){}return n;}
+window.compensarPulados=compensarPulados;
 /* segurança: a compensação feita neste aparelho se perdeu (ex.: o previsto veio da nuvem/recarregou sem ela)? refaz.
    Só nos currais que este aparelho já compensou hoje (tem o previsto original guardado), para não compensar duas vezes. */
 function recompensar(){try{if((typeof modoVer!=='undefined'&&modoVer)||!S||!S.prev||!S.prevOrig||S.prevOrig.dia!==hojeKey()||diaAtivo()!==hojeKey())return 0;
   let n=0;Object.keys(S.prevOrig.v||{}).forEach(c=>{const s0=JSON.stringify(Object.keys(S.prev).map(k=>(S.prev[k]||{})[c]));compensarCurral(c);
     if(JSON.stringify(Object.keys(S.prev).map(k=>(S.prev[k]||{})[c]))!==s0)n++;});
   if(n){try{window.diagLog&&diagLog('recompensou',{n});}catch(e){}render();}return n;}catch(e){return 0;}}
-window.recompensar=recompensar;setInterval(recompensar,15000);
+window.recompensar=recompensar;setInterval(()=>{recompensar();compensarPulados();},15000);
 /* correção única de 22/10/2026: C-10 e C-9 perderam a compensação do Trato 3 (o previsto voltou da nuvem sem ela) */
 setTimeout(()=>{try{if((typeof modoVer!=='undefined'&&modoVer)||!S||!S.prev||hojeKey()!=='2026-10-22'||diaAtivo()!=='2026-10-22')return;
   if(localStorage.getItem('fixComp2210'))return;const hj='2026-10-22';let n=0;
@@ -1683,7 +1701,7 @@ async function naoFornecer(){if(bloqueado())return;const L=lista(),c=L[S.atual];
   HIST.push(r);try{window.diagLog&&diagLog('nao_forneceu',{curral:c.nome,trato:S.tratoSel,prev:c.prev});}catch(e){}
   const regs=regsAtuais();let nx=L.findIndex((x,i)=>i>S.atual&&!feito(x.nome,regs));if(nx<0)nx=L.findIndex(x=>!feito(x.nome,regs));
   setAtual(nx<0?L.length:nx);S.fim='';save();toast(`${c.nome}: não fornecido (0 kg)`);
-  setTimeout(()=>{compensarCurral(c.nome);proximoTratoSeCompleto();render();if(window.aRenderFora)aRenderFora();},600);
+  setTimeout(()=>{compensarCurral(c.nome);compensarPulados();proximoTratoSeCompleto();render();if(window.aRenderFora)aRenderFora();},600);
   render();if(window.aRenderFora)aRenderFora();sincronizar();}
 window.naoFornecer=naoFornecer;
 window.prevApi={MAXT,divisao,nTratos,setNTratos,totalCurral,totalDia,distribuir,prevDoDia,prevGuardado,guardarPrevDia,guardarPrevHoje,diaFinalizado,faltaDia,arredPrev};
@@ -1834,7 +1852,7 @@ $('btnReg').onclick=async()=>{
   try{r.id=await dbAdd(r);}catch(e){toast('Erro ao salvar no banco. Tente de novo.');calc();return;}
   HIST.push(r);
   toast(`${c.nome}: ${fmt(r.forn)} kg salvo`);
-  setTimeout(()=>{compensarCurral(c.nome);proximoTratoSeCompleto();render();},1200);
+  setTimeout(()=>{compensarCurral(c.nome);compensarPulados();proximoTratoSeCompleto();render();},1200);
   S.ini=String(fim);S.fim='';
   const regs=regsAtuais();
   let nx=L.findIndex((x,i)=>i>S.atual&&!feito(x.nome,regs));
