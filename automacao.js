@@ -446,8 +446,8 @@ async function holdSync(){if(holdMandando)return;
   if(!(A.fonte==='bt'&&A.digiStar&&A.dsEsc)){   // sem Bluetooth não dá para soltar: avisa o operador para soltar na mão
     if(A.holdApp&&!A.pausa&&!A.holdFim&&!A.holdManter&&Date.now()-(A.holdAvisoTs||0)>10000){A.holdAvisoTs=Date.now();toast('⚠ Balança sem Bluetooth e pode estar em HOLD: se o visor mostrar HOLD, aperte HOLD na balança para soltar');}
     return;}
-  /* destravou NA MÃO: com HOLD a balança manda o peso congelado; se o peso andar (≥100 kg em 3 leituras seguidas) é porque alguém
-     apertou HOLD na balança para soltar. Aí o tablet respeita e não trava de novo até o próximo registro (produto ou curral) ou liberação. */
+  /* peso andou com HOLD ligado (≥100 kg em 3 leituras seguidas): só registra no diagnóstico e o tablet reforça o HOLD.
+     (v238–v258 soltava o HOLD achando que alguém destravou na mão; leituras erradas da balança faziam ela andar destravada no trajeto) */
   try{const pv=pesoVisor();
     if(modo===1&&A.holdApp&&!A.holdManual&&pv!=null){
       /* leitura estranha NÃO é destravar na mão: peso 0 (balança reiniciando / sem leitura) ou o peso de um HOLD anterior
@@ -456,9 +456,11 @@ async function holdSync(){if(holdMandando)return;
       if(A.holdRef==null){if(Date.now()-(A.holdLigTs||0)>2000){A.holdRef=pv;A.holdAnt=(A.holdAnt||[]).concat(pv).slice(-8);}A.holdMov=0;A.holdUlt=null;}
       else if(estranho){A.holdMov=0;A.holdUlt=null;if(Date.now()-(A.holdEstTs||0)>60000){A.holdEstTs=Date.now();try{diagLog('hold_leitura_estranha',{peso:pv,ref:A.holdRef,anunc:A.anunc});}catch(e){}}}
       else if(Math.abs(pv-A.holdRef)>=100){A.holdMov=A.holdUlt!=null&&Math.abs(pv-A.holdUlt)>150?1:(A.holdMov||0)+1;A.holdUlt=pv;   // as 3 leituras têm que andar juntas (peso de verdade), não pular
-        if(A.holdMov>=3){try{diagLog('hold_manual',{peso:pv,ref:A.holdRef,noCarr,noForn,anunc:A.anunc});}catch(e){}
-          A.holdManual=true;holdGrava(false);A.holdRef=null;A.holdMov=0;bruto('HOLD solto na balança (peso andou): o tablet não trava até o próximo registro');
-          toast('🔓 Balança destravada na mão: o tablet não trava de novo até o próximo registro');}}
+        /* v259: NÃO solta mais sozinho. Travou pelo tablet, só solta pelo tablet (▶ FORNECER / ▶ CARREGAR / liberar).
+           Se o peso andou com o HOLD ligado (alguém apertou HOLD na balança, ou ela reiniciou), o tablet manda travar de novo na hora. */
+        if(A.holdMov>=3){if(A.holdLogRef!==A.holdRef){A.holdLogRef=A.holdRef;try{diagLog('hold_mexeu',{peso:pv,ref:A.holdRef,noCarr,noForn,anunc:A.anunc});}catch(e){}
+            bruto('Peso andou com HOLD ligado: o tablet trava de novo');}
+          A.holdMov=0;A.holdUlt=null;A.holdTs=0;}}
       else{A.holdMov=0;A.holdUlt=null;}}
     else if(!A.holdApp){A.holdRef=null;A.holdMov=0;A.holdUlt=null;}}catch(e){}
   if(A.holdFim&&!ativo){if(A.holdApp||modo!==1||A.holdManual)return;}
