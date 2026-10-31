@@ -754,7 +754,7 @@ async function registrarAuto(){
   diagLog('trato',Object.assign({curral:cur.nome,trato:S.tratoSel,prev:cur.prev,ini,fim,forn:ini-fim,iniConf:A.baseConf!==false},resumoBal()));diagCurva('trato',cur.nome,{prev:cur.prev,ini,fim});
   novoCurral();A.base=fim;A.baseConf=false; // provisório: o final deste curral; troca pelo peso real da balança assim que firmar
   save();render();aRender();registrando=false;
-  setTimeout(()=>{if(window.compensarCurral){compensarCurral(cur.nome);if(window.proximoTratoSeCompleto&&proximoTratoSeCompleto()){$('aTrato').value=String(S.tratoSel);novoCurral(true);}render();aRender();}},1200);
+  setTimeout(()=>{if(window.compensarCurral){compensarCurral(cur.nome);if(window.compensarPulados)compensarPulados();if(window.proximoTratoSeCompleto&&proximoTratoSeCompleto()){$('aTrato').value=String(S.tratoSel);novoCurral(true);}render();aRender();}},1200);
   sincronizar();
 }
 
