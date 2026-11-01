@@ -389,7 +389,7 @@ async function btAbrir(dev){
       if(p.notify||p.indicate){try{await c.startNotifications();c.addEventListener('characteristicvaluechanged',ev=>{A.btNotif=Date.now();receber(ev.target.value,'bt');});A.btChars.push(c);n++;}catch(e){info.push('    (não deixou assinar: '+(e.message||e)+')');}}
       if(p.read){A.btLer.push(c);try{const v=await c.readValue();bruto('lido '+c.uuid.slice(0,8)+': '+JSON.stringify(txtDe(v))+'   ['+hexDe(v)+']');}catch(e){}}
     }}
-  $('aBtInfo').textContent=info.join('\n');A.btInfo=info.join('\n');
+  $('aBtInfo').textContent=info.join('\n');A.btInfo=info.join('\n');if(A.holdApp)A.holdForcar=true;   // conectou (ou reabriu o app) com a balança devendo estar travada: reenvia o HOLD
   /* Digi-Star EZ ("NEW EZ"): a balança só manda o peso enquanto o app manda o byte 05 (ENQ) de tempos em tempos,
      igual ao app TAP Feed (descoberto no registro HCI do tablet). Manda logo ao conectar e a cada 3 s. */
   clearInterval(A.dsPoll);A.digiStar=false;
@@ -464,17 +464,18 @@ async function holdSync(){if(holdMandando)return;
           A.holdMov=0;A.holdUlt=null;A.holdTs=0;}}
       else{A.holdMov=0;A.holdUlt=null;}}
     else if(!A.holdApp){A.holdRef=null;A.holdMov=0;A.holdUlt=null;}}catch(e){}
-  if(A.holdFim&&!ativo){if(A.holdApp||modo!==1||A.holdManual)return;}
-  if(!ativo&&abertoDado)return;   // batida/fornecimento aberto mas fora da tela dele: não mexe na balança (fica como está)
+  if(A.holdFim&&!ativo){if((A.holdApp&&!A.holdForcar)||modo!==1||A.holdManual)return;}
+  if(!ativo&&abertoDado&&!(A.holdForcar&&A.holdApp))return;   // batida/fornecimento aberto mas fora da tela dele: não mexe na balança (fica como está)
   const quer=!A.holdManual&&!!(modo&&((noForn&&(A.pausa||fimPend))||carrAzul||carrFim||(A.holdFim&&!ativo)));   // na tela do Carregar/Fornecer vale o estado da tela (produto ou curral liberado = solta)   // quadro azul na tela (Fornecer ou Carregar) = balança em HOLD
   const naTela=!!(($('viewAuto')&&!$('viewAuto').hidden)||naCargaAuto());   // reforço só com a tela do Fornecer/Carregar da Automação aberta: fora dela o HOLD na mão funciona
-  const repetir=modo===1&&naTela&&(noForn||noCarr)&&Date.now()-(A.holdTs||0)>4000;   // comando direto: reforça o estado do tablet
+  const forcar=modo===1&&!!A.holdForcar&&A.holdApp&&quer;if(A.holdForcar&&!forcar)A.holdForcar=false;   // depois de voltar o sinal: reenvia o HOLD uma vez, em qualquer tela
+  const repetir=forcar||(modo===1&&naTela&&(noForn||noCarr)&&Date.now()-(A.holdTs||0)>4000);   // comando direto: reforça o estado do tablet
   if(quer===A.holdApp&&!repetir)return;
   if(!modo&&!A.holdApp)return;
   holdMandando=true;
   try{let b;if(modo===2||(!modo&&A.holdAppTecla)){A.dsSeq=(A.dsSeq%99)+1;const txt='20'+String(A.dsSeq).padStart(2,'0');b=new Uint8Array([0x1a,...Array.from(txt).map(c=>c.charCodeAt(0))]);}
     else b=new Uint8Array([0x1b,0x47,0x68,quer?0x45:0x44,0x04]);   // ESC G h E|D EOT
-    await A.dsEsc.writeValue(b);const mudou=quer!==A.holdApp;if(mudou&&quer){A.holdLigTs=Date.now();A.holdRef=null;A.holdMov=0;}A.holdAppTecla=modo===2;holdGrava(quer);
+    await A.dsEsc.writeValue(b);if(forcar){A.holdForcar=false;A.holdRef=null;A.holdLigTs=Date.now();A.holdMov=0;try{diagLog('hold_reenviado',{peso:A.peso,visor:A.visor,anunc:A.anunc});}catch(e){}}const mudou=quer!==A.holdApp;if(mudou&&quer){A.holdLigTs=Date.now();A.holdRef=null;A.holdMov=0;}A.holdAppTecla=modo===2;holdGrava(quer);
     if(mudou){bruto('HOLD '+(quer?'ligado':'solto')+' pelo tablet: '+hexDe(b));try{diagLog(quer?'hold_liga':'hold_solta',{modo,peso:A.peso,visor:A.visor,anunc:A.anunc,por:[noForn&&A.pausa?'pausa_forn':'',fimPend?'fim_forn':'',carrAzul?(AC.pausa?'pausa_carr':'trava_carr'):'',carrFim?'fim_carr':'',A.holdFim&&!ativo?'terminou':'',A.holdManual?'manual':''].filter(Boolean).join(',')||'-'});}catch(e){}}}
   catch(e){bruto('HOLD não foi: '+(e.message||e));}   // não mudou o estado: tenta de novo na próxima volta
   finally{holdMandando=false;}}
@@ -624,7 +625,7 @@ window.rP=rP;
 /* balança sem sinal: anota o último peso antes de cair e o primeiro peso quando voltar (vai para a Conferência da balança) */
 function semSinal(tipo,d){let ant=null;try{ant=pesoVisor();}catch(e){}if(!A.voltaPend)A.voltaPend={antes:ant,t:Date.now(),hold:!!A.holdApp};
   diagLog(tipo,Object.assign({},d,{peso:ant,hold:!!A.holdApp}));}
-function novoPeso(n){if(A.voltaPend){const V=A.voltaPend;A.voltaPend=null;try{diagLog('peso_voltou',{antes:V.antes,peso:Math.round(n),seg:Math.round((Date.now()-V.t)/1000),hold:V.hold,visor:A.visor,anunc:A.anunc});}catch(e){}}
+function novoPeso(n){if(A.voltaPend){const V=A.voltaPend;A.voltaPend=null;if(A.holdApp)A.holdForcar=true;   /* voltou o sinal: a balança pode ter perdido o HOLD (reiniciou/caiu): o tablet manda travar de novo */try{diagLog('peso_voltou',{antes:V.antes,peso:Math.round(n),seg:Math.round((Date.now()-V.t)/1000),hold:V.hold,visor:A.visor,anunc:A.anunc});}catch(e){}}
   n=rP(n);const c=cfg(),agora=Date.now(),nCru=n;
   /* ajuste fino: mediana das últimas leituras (1 = sem filtro, 3 normal, 5 forte) — tira o "pula pra cima e pra baixo"
      de uma leitura isolada sem atrasar muito (a Digi-Star manda ~1,6 leitura por segundo) */
