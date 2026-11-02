@@ -1430,12 +1430,14 @@ function confBatDados(dia){const H=(typeof HIST!=='undefined'?HIST:[]).filter(r=
   const Z=G_.map(g=>{const its=(g.b&&g.b.itens||[]).map(x=>Array.isArray(x)?{nome:x[0],prev:+x[1],real:+x[2],ini:null,fim:null,hora:''}:{nome:x.nome+(x.man?' (manual)':''),prev:+x.prev,real:ok(+x.real)?+x.real:null,ini:ok(+x.ini)?+x.ini:null,fim:ok(+x.fim)?+x.fim:null,hora:x.hora&&x.hora!=='manual'?x.hora:'',ts:x.hora&&x.hora!=='manual'?tsH(x.hora)+59000:null});
     its.forEach((x,i)=>{const a=its[i-1];x.salto=i&&a&&ok(a.fim)&&ok(x.ini)?x.ini-a.fim:null;});
     const fimC=[...its].reverse().find(x=>ok(x.fim)),fimCarga=fimC?fimC.fim:null;
-    const rs=g.regs.map((r,i,A)=>{const a=A[i-1];const ini=ok(+r.ini)?+r.ini:null,fim=ok(+r.fim)?+r.fim:null;
-      const sal=i?(a&&ok(+a.fim)&&ok(ini)?ini-(+a.fim):null):(ok(fimCarga)&&ok(ini)?ini-fimCarga:null);
-      return {hora:r.hora||'',nome:r.curral,trato:r.trato,prev:+r.prev||0,real:+r.forn||0,ini,fim,salto:sal,ts:+r.ts||(r.hora?tsH(r.hora)+59000:null)};});
+    /* "Não fornecer" (0 kg, sem balança): não tem início/fim nem salto; o próximo curral compara com o último que foi fornecido */
+    const naoF=r=>r.origem==='nao_forneceu'||(!(+r.forn)&&!(+r.ini)&&!(+r.fim));
+    let antF=null,pri=true;const rs=g.regs.map(r=>{const nf=naoF(r);const ini=!nf&&ok(+r.ini)?+r.ini:null,fim=!nf&&ok(+r.fim)?+r.fim:null;
+      let sal=null;if(!nf){sal=!pri?(antF&&ok(+antF.fim)&&ok(ini)?ini-(+antF.fim):null):(ok(fimCarga)&&ok(ini)?ini-fimCarga:null);antF=r;pri=false;}
+      return {hora:r.hora||'',nome:r.curral+(nf?' (não fornecido)':''),curral:r.curral,naoF:nf,trato:r.trato,prev:+r.prev||0,real:+r.forn||0,ini,fim,salto:sal,ts:+r.ts||(r.hora?tsH(r.hora)+59000:null)};});
     const soma=(L,k)=>L.reduce((a,x)=>a+(ok(x[k])?x[k]:0),0);
-    const sProd=soma(its,'salto'),s1=rs.length&&ok(rs[0].salto)?rs[0].salto:0,sCur=soma(rs.slice(1),'salto'),ult=[...rs].reverse().find(x=>ok(x.fim));
-    return {b:g.b,ts:g.ts,its,rs,ini0:its[0]&&ok(its[0].ini)?its[0].ini:null,carregado:soma(its,'real'),fimCarga,ini1:rs[0]?rs[0].ini:null,s1,sProd,sCur,fornecido:soma(rs,'real'),
+    const sProd=soma(its,'salto'),rF=rs.filter(x=>!x.naoF),s1=rF.length&&ok(rF[0].salto)?rF[0].salto:0,sCur=soma(rF.slice(1),'salto'),ult=[...rs].reverse().find(x=>ok(x.fim));
+    return {b:g.b,ts:g.ts,its,rs,ini0:its[0]&&ok(its[0].ini)?its[0].ini:null,carregado:soma(its,'real'),fimCarga,ini1:rF[0]?rF[0].ini:null,s1,sProd,sCur,fornecido:soma(rs,'real'),
       prevForn:soma(rs,'prev'),fimFinal:ult?ult.fim:null,apareceu:sProd+s1+sCur,tratos:[...new Set(rs.map(r=>r.trato))].sort(),lc:g.b?(g.b.local||''):(g.regs[0]?loc(g.regs[0].curral):'')};});
   /* salto entre o fim do último curral (do vagão anterior) e o começo desta batida */
   Z.forEach((g,i)=>{g.sAnt=null;g.antTxt='';if(!g.b||!g.its.length||!ok(g.ini0))return;
@@ -1584,7 +1586,7 @@ async function confBalPer(o,ini,fim){const dias=diasEntre(ini,fim).filter(d=>con
   return compartilharVarios(B,dias.map(d=>`FJK - Conferência da balança - ${dB(d).replace(/\//g,'-')}.png`));}
 /* saltos da balança por curral: quanto a balança mudou entre o fim do curral anterior (ou da carga) e o começo deste — sem descarregar */
 function saltosDados(ini,fim){const M={},C1={n:0,s:0,mx:0,mn:0,m50:0};
-  diasEntre(ini,fim).forEach(d=>confBatDados(d).forEach(g=>g.rs.forEach((r,i)=>{if(!ok(r.salto))return;const v=r.salto,pri=i===0&&!!g.b,k=(pri?'1|':'')+r.nome,o=M[k]=M[k]||{n:0,s:0,mx:0,mn:0,m50:0,loc:g.lc,nome:r.nome,pri,hm:0,nh:0};if(pri){C1.n++;C1.s+=v;}if(r.ts){const h=new Date(r.ts);o.hm+=h.getHours()*60+h.getMinutes();o.nh++;}
+  diasEntre(ini,fim).forEach(d=>confBatDados(d).forEach(g=>g.rs.filter(r=>!r.naoF).forEach((r,i)=>{if(!ok(r.salto))return;const v=r.salto,pri=i===0&&!!g.b,k=(pri?'1|':'')+r.nome,o=M[k]=M[k]||{n:0,s:0,mx:0,mn:0,m50:0,loc:g.lc,nome:r.nome,pri,hm:0,nh:0};if(pri){C1.n++;C1.s+=v;}if(r.ts){const h=new Date(r.ts);o.hm+=h.getHours()*60+h.getMinutes();o.nh++;}
     o.n++;o.s+=v;o.mx=Math.max(o.mx,v);o.mn=Math.min(o.mn,v);if(v>=50)o.m50++;})));
   /* na ordem do horário em que acontece (média da hora do dia em que o curral foi tratado); o 1º curral aparece como "Fim da carga → C-10" */
   const L=Object.values(M).map(o=>Object.assign({c:o.pri?'Carregamento → '+o.nome:o.nome},o)).sort((a,b)=>(a.nh?a.hm/a.nh:1e9)-(b.nh?b.hm/b.nh:1e9)||(b.pri-a.pri));return {L,C1};}
