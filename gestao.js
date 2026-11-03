@@ -1910,10 +1910,11 @@ function canvasLote(l,C){
   const pSai=ok(C.ganhoV)&&C.cabP?C.pesoE+C.ganhoV/C.cabP:NaN;
   tiles([{r:'PESO DE ENTRADA · VIVO',v:nf(C.pesoE,1)+' kg',s:'média por cabeça'},{r:'PESO DE SAÍDA · VIVO',v:ok(pSai)?nf(pSai,1)+' kg':'—',s:ok(pSai)?`média por cabeça · +${nf(pSai-C.pesoE,1)} kg`:'aparece após a venda'},{r:C.cabP?'GMD REAL':'GMD META',v:nf(C.cabP?C.gmdV:l.gmd,2)+' kg',s:'ganho por cabeça por dia'},
     {r:'CONSUMO DE MS',v:nf(C.msCab,2)+' kg',s:`por cab/dia · ${pc(C.pv,2)} do peso vivo`},{r:'CONSUMO DE MN',v:nf(C.mnCab,2)+' kg',s:'matéria natural por cab/dia'},
-    {r:'CONVERSÃO ALIMENTAR',v:nf(C.conv,2),s:'kg de MS para 1 kg de ganho'},{r:'GANHO TOTAL',v:nf(C.ganhoV)+' kg',s:C.cabP?`${nf(C.ganhoV/C.cabP,1)} kg por cabeça`:'aparece após a venda'},
-    {r:'@ PRODUZIDAS · PESO VIVO',v:nf(C.arrPV,2),s:C.cabP?`${nf(C.arrPV/C.cabP,2)} @ por cab (ganho ÷ 30)`:'—'},
-    ...(AP?[{r:'PESO NA APARTAÇÃO',v:nf(C.pesoA,1)+' kg',s:`entrada ${nf(C.pesoE,1)} kg · +${nf(C.pesoA-C.pesoE,1)} kg`},{r:'CUSTO DO KG GANHO',v:rs(C.custoKg),s:'custos sem compra ÷ kg ganhos'}]
-      :[{r:'@ PRODUZIDAS · CARCAÇA',v:nf(C.arrProd,2),s:C.cabV?`${nf(C.arrProd/C.cabV,2)} @ por cab (@ vendida − @ de entrada)`:'—'},{r:'RENDIMENTO DE CARCAÇA',v:pc(rcM,1),s:'média das vendas'}])],3);
+    {r:'CONVERSÃO ALIMENTAR',v:nf(C.conv,2),s:'kg de MS para 1 kg de ganho'},{r:'GANHO TOTAL · VIVO/LOTE',v:nf(C.ganhoV)+' kg',s:C.cabP?`${nf(C.ganhoV/C.cabP,1)} kg por cabeça`:'aparece após a venda'},
+    {r:'@ PRODUZIDAS · PESO VIVO/LOTE',v:nf(C.arrPV,2),s:'ganho ÷ 30'},
+    ...(AP?[{r:'PESO NA APARTAÇÃO',v:nf(C.pesoA,1)+' kg',s:`entrada ${nf(C.pesoE,1)} kg · +${nf(C.pesoA-C.pesoE,1)} kg`},{r:'CUSTO DO KG GANHO',v:rs(C.custoKg),s:'custos sem compra ÷ kg ganhos'},{r:'@ PRODUZIDAS · PESO VIVO/CABEÇA',v:C.cabP?nf(C.arrPV/C.cabP,2):'—',s:'ganho por cabeça ÷ 30'}]
+      :[{r:'@ PRODUZIDAS · CARCAÇA/LOTE',v:nf(C.arrProd,2),s:'@ vendidas − @ de entrada'},{r:'RENDIMENTO DE CARCAÇA',v:pc(rcM,1),s:'média das vendas'},
+        {r:'@ PRODUZIDAS · PESO VIVO/CABEÇA',v:C.cabP?nf(C.arrPV/C.cabP,2):'—',s:'ganho por cabeça ÷ 30'},{r:'@ PRODUZIDAS · CARCAÇA/CABEÇA',v:C.cabV?nf(C.arrProd/C.cabV,2):'—',s:'@ vendida − @ de entrada, por cabeça'}])],3);
   /* 3. custos com barra de composição */
   bloco('3','Custos',`custo total ${rs(C.custo)}`);
   const partes=[...linhasCompra(l,C).map(([a,v],i)=>[a,v,i?'#7a4fbf':'#11253d']),['Alimentação',C.alim,'#a7bc09'],['Operacional',C.op,'#4a7fbf'],['Outros custos',C.outros,'#e0912f']],tot=C.custo||1;
