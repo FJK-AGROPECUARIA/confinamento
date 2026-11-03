@@ -1931,7 +1931,7 @@ function canvasLote(l,C){
     y+=Math.ceil(arr.length/cols)*(h+g)+22;};
   /* 1. animais */
   bloco('1','Animais e desempenho','ponderado pelas datas de entrada e saída');
-  tiles([{r:'ENTRARAM',v:nf(cabE)+' cab',s:`${l.apDe?'peso na apartação':'peso médio'} ${nf(C.pesoE,1)} kg`},AP?{r:'APARTADOS',v:nf(C.cabA)+' cab',s:`peso médio ${nf(C.pesoA,1)} kg`}:{r:'VENDIDOS',v:nf(C.cabV)+' cab',s:(C.cabV?`peso médio ${nf(C.pesoV)} kg`:'nenhuma venda ainda')+(C.cabT?` · ${nf(C.cabT)} transferidos`:'')},
+  tiles([{r:'ENTRADA',v:nf(cabE)+' cab'},AP?{r:'APARTADOS',v:nf(C.cabA)+' cab'}:{r:'VENDIDO',v:nf(C.cabV)+' cab'},
     {r:'MORTES',v:nf(C.mortes),s:`${pc(C.mortPct,2)} de mortalidade`+(C.faltas?` · ${nf(C.faltas)} faltaram`:''),barra:C.mortes||C.faltas?VM:LI},{r:'PERÍODO',v:nf(C.dias)+' dias',s:`${dB(l.ent.dia).slice(0,5)} a ${dB(C.ate).slice(0,5)}`},{r:'DIAS DE CONSUMO',v:nf(Math.max(0,(C.R.dias||0)-(C.R.semReg||0)))+' dias',s:'dias com trato lançado'}],5);y-=22;   // desempenho colado nos animais
   /* 2. desempenho */
   const pSai=ok(C.ganhoV)&&C.cabP?C.pesoE+C.ganhoV/C.cabP:NaN;
