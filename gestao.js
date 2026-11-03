@@ -1272,7 +1272,7 @@ function tRelApart(l,C){const R=C.R,cabE=C.cabE,cabR=C.cabE-(C.cabT||0)-(C.falta
   ${card('Resultado do grupo',`<div class="gLinhas">${F.map(f=>lin(`${esc(f.nome)}<small> · ${esc(f.sit)}</small>`,ok(f.res)?rs(f.res)+(f.est?' (est.)':''):'—',ok(f.res)?(f.res>=0?'ok':'bad'):'')).join('')}</div>
     <div class="gHero ${ok(F.res)?(F.res>=0?'pos':'neg'):''}"><small>${F.todos?'Resultado do grupo':'Resultado do grupo (parcial / estimado)'}</small><b>${ok(F.res)?rs(F.res):'—'}</b><span>${ok(F.rentab)?'rentabilidade '+pc(F.rentab,1):'soma o lucro dos lotes novos (já incluem o custo trazido)'}</span></div>`)}`;}
 function tRelLote(t){
-  RELCMP=t.cmp==='venda'?{uid:t.id}:null;
+  RELCMP=(t.cmp||'venda')==='venda'?{uid:t.id}:null;   // padrão: compra pelo preço da @ vendida
   const l=G.it[t.id],C=calcLote(l),R=C.R,hj=hojeKey(),cfg=gCfg(),fim=C.fim,cabE=C.cabE,cabR=C.cabE-(C.cabT||0)-(C.faltas||0);if(C.apart)return tRelApart(l,C);
   const avisos=[R.semPreco?`${R.semPreco} dia(s) com ração sem preço ou sem matéria seca completa.`:'',R.semReg?`${R.semReg} dia(s) sem trato lançado no curral do lote.`:''].filter(Boolean);
   const gmd=C.cabV?C.gmdV:NaN;
@@ -1316,9 +1316,9 @@ function tRelLote(t){
   return `${voltar()}<section class="panel"><div class="gLoteTopo">${seloCurral(curralEm(l,C.ate))}<div><h2>${esc(l.nome)}</h2><span class="pill${fim?'':' done'}">${fim?'Relatório final':'Resultado até hoje'}</span>
       <p class="note">${dB(l.ent.dia)} a ${dB(C.ate)} · ${nf(C.dias)} dias · ${nf(cabE)} cab · entrada ${nf(C.pesoE)} kg</p></div></div>
     ${hero}
-    ${(()=>{const A=C.cmpAlt||compraPelaVenda(l,calcLote0(l));if(!A)return '';const v=t.cmp==='venda';
-      return `<div class="gCmpOp"><span>Compra dos animais</span><div class="row gRelAtalhos"><button type="button" class="mini${v?'':' sel'}" data-g="cmpModo" data-o="lanc">Lançada</button><button type="button" class="mini${v?' sel':''}" data-g="cmpModo" data-o="venda">Pelo preço da @ vendida</button></div>
-        ${v?`<p class="note">Compra recalculada: ${nf(A.arrC,2)} @ de entrada (peso de entrada × rendimento ÷ 15) × <b>${rs(A.pV)}/@</b> (média da @ vendida) = <b>${rs(A.nova)}</b> · lançada ${rs(A.lanc)} (${A.delta>=0?'+':''}${rs(A.delta)}).</p>`:''}</div>`;})()}
+    ${(()=>{const A=C.cmpAlt||compraPelaVenda(l,calcLote0(l));if(!A)return '';const v=(t.cmp||'venda')==='venda';
+      return `<div class="gCmpOp"><span>Compra dos animais</span><div class="row gRelAtalhos"><button type="button" class="mini${v?' sel':''}" data-g="cmpModo" data-o="venda">Pelo preço da @ vendida</button><button type="button" class="mini${v?'':' sel'}" data-g="cmpModo" data-o="lanc">Preço real de compra lançado</button></div>
+        ${v?`<p class="note">Compra recalculada: ${nf(A.arrC,2)} @ de entrada (peso de entrada × rendimento ÷ 15) × <b>${rs(A.pV)}/@</b> (média da @ vendida) = <b>${rs(A.nova)}</b> · preço real lançado ${rs(A.lanc)} (${A.delta>=0?'+':''}${rs(A.delta)}).</p>`:''}</div>`;})()}
     <div class="row compart fz3"><button class="verde" data-g="pdfLote" data-id="${l.uid}">📄 PDF</button><button class="verde" data-g="imgLote" data-id="${l.uid}">🖼 Foto</button><button class="verde" data-g="xlsLote" data-id="${l.uid}">📊 Excel</button></div></section>
   ${dados}
   ${card('Desempenho',desemp)}
@@ -2471,7 +2471,7 @@ $('gBox').addEventListener('click',e=>{
   if(a==='coFecha'){if(GT.coAberto)delete GT.coAberto[b.dataset.c];if(GT.sel)delete GT.sel[b.dataset.c];const y=window.scrollY;gRender();window.scrollTo({top:y});return;}
   if(a==='baseM'){const c=b.dataset.c,m=b.dataset.m;GT.base=GT.base||{};GT.base[c]=m==='dia'?{m:'dia',d:null}:{m};if(GT.sel&&GT.sel[c])delete GT.sel[c].kg;const y=window.scrollY;gRender();window.scrollTo({top:y});return;}
   if(a==='coAbre'){GT.coAberto=GT.coAberto||{};GT.coAberto[b.dataset.c]=1;const y=window.scrollY;gRender();window.scrollTo({top:y});return;}
-  if(a==='cmpModo'){GT.cmp=b.dataset.o==='venda'?'venda':'';return gRender();}
+  if(a==='cmpModo'){GT.cmp=b.dataset.o==='venda'?'venda':'lanc';return gRender();}
   if(a==='grafN'){gGrafN=+b.dataset.n||10;return gRender();}
   if(a==='grafLocP'){const L=['T','C','P'];const i=Math.max(0,L.indexOf(gLocG||'T'));gLocG=L[Math.max(0,Math.min(2,i+(+b.dataset.n||0)))];return gRender();}
   if(a==='coLocP'){const L=['T','C','P'];let i=Math.max(0,L.indexOf(GT.coLoc||'T'));document.querySelectorAll('#gBox .gCocho').forEach(el=>{const x=el.querySelector('input[data-kg]'),c=el.dataset.c;if(x&&GT.sel&&GT.sel[c]&&x.value)GT.sel[c].kg=gNum(x.value);});GT.coLoc=L[Math.max(0,Math.min(2,i+(+b.dataset.n)))];return gRender();}
