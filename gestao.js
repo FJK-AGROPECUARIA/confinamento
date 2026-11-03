@@ -163,7 +163,7 @@ const compraSim=(P,cab,peso)=>P.unid==='cab'?cab*P.preco:P.unid==='kg'?cab*peso*
 const entCompra=l=>{const P=precoSim(l);return entradasDe(l).reduce((a,x)=>a+(+x.rs||0)+(x.tc?compraSim(P,+x.cab||0,+(x.pesoE||x.peso)||0):0),0);};
 function valorCompra(l){if(l.ent&&l.ent.unid==='transf')return (+l.ent.preco||0)+entCompra(l);if(l.apDe)return custoHerdado(l)+entCompra(l);const e=l.ent||{};const cab=+e.cab||0,peso=+(e.pesoC||e.pesoE||e.peso)||0,p=+e.preco||0;
   const rc=+e.rcC||50,v=e.unid==='cab'?cab*p:e.unid==='kg'?cab*peso*p:e.unid==='arrV'?cab*peso/30*p:cab*peso*rc/100/15*p;return v+(+e.outros||0)+(+e.trz||0)+entCompra(l);}
-const arrobaVenda=s=>(+s.cab||0)*(+s.peso||0)*((+s.rc||0)/100)/15;
+const arrobaVenda=s=>+s.carcT>0?+s.carcT/15:(+s.cab||0)*(+s.peso||0)*((+s.rc||0)/100)/15;   // com o peso total abatido lançado usa ele (o rendimento gravado é arredondado)
 function valorVenda(s){if(+s.vTot>0)return +s.vTot-(+s.desc||0);  /* valor total da venda digitado/calculado: vale ele */
   const cab=+s.cab||0,peso=+s.peso||0,p=+s.preco||0;
   const v=s.unid==='cab'?cab*p:s.unid==='kg'?cab*peso*p:s.unid==='arrV'?cab*peso/30*p:arrobaVenda(s)*p;return v-(+s.desc||0);}
@@ -1980,13 +1980,14 @@ function canvasLote(l,C){
     GT.recPerd=sumi.reduce((a,s)=>a+recPerd(s),0);
     tiles([{r:'ANIMAIS VENDIDOS',v:nf(cabT2)+' cab',s:`${vendas.length+trsVI.length} venda(s)`},{r:'@ CABEÇA/VENDIDO',v:nf(cabT2?arrT/cabT2:NaN,2),s:'@ por cabeça'},{r:'@ TOTAL/VENDIDO',v:nf(arrT,1),s:'@ vendidas'},
       {r:'PREÇO MÉDIO DA @',v:rs(arrT?(brV+recI)/arrT:NaN),s:'bruto, média ponderada'},{r:'RECEITA TOTAL LÍQUIDA',v:rs(recT),s:recI?`frigorífico + outros lotes`:'frete e impostos descontados'}],5,[0.8,0.85,0.9,1.05,1.4]);
-    const X1=M+8,X2=M+118,X3=M+450,X4=M+545,X5=M+625,X6=M+765,X7=W-M-8,lin1=(i,cor,dia,cpr,cab,peso,rc,arr,val)=>{if(i%2){c.fillStyle='#f7f9fb';c.fillRect(M,y,bwT,36);}txt(dia,X1,y+18,'600',15,cor);txt(cpr,X2,y+18,'700',15,cor,'left',X3-X2-40);txt(cab,X3,y+18,'600',15,cor,'right');txt(peso,X4,y+18,'600',15,cor,'right');txt(rc,X5,y+18,'600',15,cor,'right');txt(arr,X6,y+18,'600',15,cor,'right');txt(val,X7,y+18,'700',15,cor,'right');y+=36;};
-    txt('DATA',X1,y,'700',13,CI);txt('COMPRADOR',X2,y,'700',13,CI);txt('CAB.',X3,y,'700',13,CI,'right');txt('PESO',X4,y,'700',13,CI,'right');txt('REND.',X5,y,'700',13,CI,'right');txt('@ BRUTA',X6,y,'700',13,CI,'right');txt('VALOR TOTAL',X7,y,'700',13,CI,'right');y+=16;let k=0;
-    vendas.forEach(s=>{const a=arrobaVenda(s);lin1(k++,AZ,dB(s.dia),nomeCpr(s),nf(s.cab),nf(s.peso)+' kg',pc(+s.rc,1),rs(a?(valorVenda(s)+(+s.desc||0))/a:NaN),rs(valorVenda(s)));});
-    trsVI.forEach(s=>{const rcV=+s.rcV||50,a=(+s.cab||0)*(+s.peso||0)*rcV/100/15,d=G.it[s.destino];lin1(k++,AZ,dB(s.dia),'→ '+(d?curralEm(d,s.dia)||d.nome:'outro lote')+' (venda interna)',nf(s.cab),nf(s.peso)+' kg',pc(rcV,1),rs(a?(+s.vi)/a:NaN),rs(+s.vi));});
-    saidasDe(l).filter(s=>s.mot==='morte').forEach(s=>lin1(k++,VM,dB(s.dia),`✝ Morte${s.causa?' · '+s.causa:''} · prejuízo ${rs(+s.custo||0)}`,nf(s.cab),'—','—','—','—'));
-    sumi.forEach(s=>{const p=faltaPend(s);lin1(k++,VM,dB(s.dia),'❓ Sumidos (custo separado)'+(s.obs?' · '+s.obs:''),nf(p),nf(+s.peso)+' kg','—','—','—');});
-    ret(M,y+4,bwT,40,10,AZ);txt('TOTAL VENDIDO',X1+8,y+24,'800',16,'#fff');txt(nf(cabT2),X3,y+24,'800',16,'#fff','right');txt(rs(arrT?(brV+recI)/arrT:NaN),X6,y+24,'700',15,'#fff','right');txt(rs(recT),X7,y+24,'800',16,'#c8dd1e','right');y+=50;
+    const X1=M+8,X2=M+112,X3=M+345,X4=M+490,X5=M+625,X6=M+700,X6b=M+800,X7=W-M-8,lin1=(i,cor,dia,cpr,cab,pv,pa,rc,arr,val)=>{if(i%2){c.fillStyle='#f7f9fb';c.fillRect(M,y,bwT,36);}txt(dia,X1,y+18,'600',15,cor);txt(cpr,X2,y+18,'700',15,cor,'left',X3-X2-40);txt(cab,X3,y+18,'600',15,cor,'right');txt(pv,X4,y+18,'600',15,cor,'right');txt(pa,X5,y+18,'600',15,cor,'right');txt(rc,X6,y+18,'600',15,cor,'right');txt(arr,X6b,y+18,'600',15,cor,'right');txt(val,X7,y+18,'700',15,cor,'right');y+=36;};
+    txt('DATA',X1,y,'700',13,CI);txt('COMPRADOR',X2,y,'700',13,CI);txt('CAB.',X3,y,'700',13,CI,'right');txt('PESO TOTAL',X4,y-8,'700',13,CI,'right');txt('VIVO',X4,y+8,'700',13,CI,'right');txt('PESO TOTAL',X5,y-8,'700',13,CI,'right');txt('ABATIDO',X5,y+8,'700',13,CI,'right');txt('REND.',X6,y,'700',13,CI,'right');txt('PREÇO/@',X6b,y,'700',13,CI,'right');txt('VALOR TOTAL',X7,y,'700',13,CI,'right');y+=22;let k=0,sPV=0,sPA=0;
+    const kg=v=>ok(v)&&v>0?nf(v)+' kg':'—';
+    vendas.forEach(s=>{const a=arrobaVenda(s),pv=+s.pesoVT>0?+s.pesoVT:(+s.cab||0)*(+s.peso||0),pa=+s.carcT>0?+s.carcT:a*15;sPV+=pv;sPA+=pa;lin1(k++,AZ,dB(s.dia),nomeCpr(s),nf(s.cab),kg(pv),kg(pa),pv>0?pc(pa/pv*100,1):'—',rs(a?(valorVenda(s)+(+s.desc||0))/a:NaN),rs(valorVenda(s)));});
+    trsVI.forEach(s=>{const rcV=+s.rcV||50,pv=(+s.cab||0)*(+s.peso||0),pa=+s.carcT>0?+s.carcT:pv*rcV/100,a=pa/15,d=G.it[s.destino];sPV+=pv;sPA+=pa;lin1(k++,AZ,dB(s.dia),'→ '+(d?curralEm(d,s.dia)||d.nome:'outro lote')+' (venda interna)',nf(s.cab),kg(pv),kg(pa),pv>0?pc(pa/pv*100,1):'—',rs(a?(+s.vi)/a:NaN),rs(+s.vi));});
+    saidasDe(l).filter(s=>s.mot==='morte').forEach(s=>lin1(k++,VM,dB(s.dia),`✝ Morte${s.causa?' · '+s.causa:''} · prejuízo ${rs(+s.custo||0)}`,nf(s.cab),'—','—','—','—','—'));
+    sumi.forEach(s=>{const p=faltaPend(s);lin1(k++,VM,dB(s.dia),'❓ Sumidos (custo separado)'+(s.obs?' · '+s.obs:''),nf(p),kg(p*(+s.peso||0)),'—','—','—','—');});
+    ret(M,y+4,bwT,40,10,AZ);txt('TOTAL VENDIDO',X1+8,y+24,'800',16,'#fff');txt(nf(cabT2),X3,y+24,'800',16,'#fff','right');txt(kg(sPV),X4,y+24,'700',15,'#fff','right');txt(kg(sPA),X5,y+24,'700',15,'#fff','right');txt(sPV>0?pc(sPA/sPV*100,1):'—',X6,y+24,'700',15,'#fff','right');txt(rs(arrT?(brV+recI)/arrT:NaN),X6b,y+24,'700',15,'#fff','right');txt(rs(recT),X7,y+24,'800',16,'#c8dd1e','right');y+=50;
     y+=26;}
   /* 5. a conta do resultado */
   if(heroEmbaixo){y+=6;heroDesenha();}
