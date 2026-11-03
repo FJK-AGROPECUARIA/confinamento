@@ -1929,16 +1929,16 @@ function canvasLote(l,C){
   /* 1. animais */
   bloco('1','Animais e desempenho','ponderado pelas datas de entrada e saída');
   tiles([{r:'ENTRARAM',v:nf(cabE)+' cab',s:`${l.apDe?'peso na apartação':'peso médio'} ${nf(C.pesoE,1)} kg`},AP?{r:'APARTADOS',v:nf(C.cabA)+' cab',s:`peso médio ${nf(C.pesoA,1)} kg`}:{r:'VENDIDOS',v:nf(C.cabV)+' cab',s:(C.cabV?`peso médio ${nf(C.pesoV)} kg`:'nenhuma venda ainda')+(C.cabT?` · ${nf(C.cabT)} transferidos`:'')},
-    {r:'MORTES',v:nf(C.mortes),s:`${pc(C.mortPct,2)} de mortalidade`+(C.faltas?` · ${nf(C.faltas)} faltaram`:''),barra:C.mortes||C.faltas?VM:LI},{r:'PERÍODO',v:nf(C.dias)+' dias',s:`${dB(l.ent.dia).slice(0,5)} a ${dB(C.ate).slice(0,5)}`},{r:'DIAS DE CONSUMO',v:nf(Math.max(0,(C.R.dias||0)-(C.R.semReg||0)))+' dias',s:'dias com trato lançado'}],5);
+    {r:'MORTES',v:nf(C.mortes),s:`${pc(C.mortPct,2)} de mortalidade`+(C.faltas?` · ${nf(C.faltas)} faltaram`:''),barra:C.mortes||C.faltas?VM:LI},{r:'PERÍODO',v:nf(C.dias)+' dias',s:`${dB(l.ent.dia).slice(0,5)} a ${dB(C.ate).slice(0,5)}`},{r:'DIAS DE CONSUMO',v:nf(Math.max(0,(C.R.dias||0)-(C.R.semReg||0)))+' dias',s:'dias com trato lançado'}],5);y-=22;   // desempenho colado nos animais
   /* 2. desempenho */
   const pSai=ok(C.ganhoV)&&C.cabP?C.pesoE+C.ganhoV/C.cabP:NaN;
   const gCab=C.cabP&&ok(C.ganhoV)?C.ganhoV/C.cabP:NaN,T_=(r,v,s)=>({r,v,s});
   const tGmd=T_(C.cabP?'GMD DO PERÍODO':'GMD META',nf(C.cabP?C.gmdV:l.gmd,2)+' kg','ganho por cabeça por dia'),tPvC=T_('@ PROD. · VIVO/CAB',C.cabP?nf(C.arrPV/C.cabP,2):'—','ganho por cabeça ÷ 30'),tPvL=T_('@ PROD. · VIVO/LOTE',nf(C.arrPV,2),'ganho do lote ÷ 30');
-  tiles([T_('PESO DE ENTRADA · VIVO/CAB',nf(C.pesoE,1)+' kg','média por cabeça'),T_('@ DE ENTRADA · VIVO/CAB',nf(C.pesoE/30,2),'peso de entrada ÷ 30'),
+  const dGmd=ok(gCab)&&C.gmdV>0?gCab/C.gmdV:NaN,arrSC=C.cabV?C.arrProd/C.cabV+C.pesoE/30:NaN,gmc=C.cabV&&dGmd>0?C.arrProd/C.cabV*15/dGmd:NaN;   // GMC: ganho de carcaça por dia (mesmos dias do GMD)
+  tiles([T_('PESO DE ENTRADA · VIVO/CAB',nf(C.pesoE,1)+' kg','média por cabeça'),T_('@ DE ENTRADA · VIVO/CAB',nf(C.pesoE/30,2),'peso de entrada ÷ 30'),null,null,null,
     T_('PESO DE SAÍDA · VIVO/CAB',ok(pSai)?nf(pSai,1)+' kg':'—',ok(pSai)?'média por cabeça':'aparece após a venda'),T_('@ DE SAÍDA · VIVO/CAB',ok(pSai)?nf(pSai/30,2):'—','peso de saída ÷ 30'),
-    AP?null:T_('PESO SAÍDA · CARCAÇA/CAB',ok(pSai)&&ok(rcM)?nf(pSai*rcM/100,1)+' kg':'—','peso de saída × rendimento'),
-    tPvC,T_('GANHO DE PESO · VIVO/CAB',ok(gCab)?nf(gCab,1)+' kg':'—','saída − entrada'),tGmd,AP?null:T_('@ PROD. · CARCAÇA/CAB',C.cabV?nf(C.arrProd/C.cabV,2):'—','@ vendida − @ de entrada'),T_('RENDIMENTO DE CARCAÇA',AP?'—':pc(rcM,1),'média das vendas'),
-    T_('GANHO TOTAL · VIVO/LOTE',nf(C.ganhoV)+' kg','todos os animais'),tPvL,AP?null:T_('@ PROD. · CARCAÇA/LOTE',nf(C.arrProd,2),'@ vendidas − @ de entrada'),null,null,
+    tPvC,T_('GANHO DE PESO · VIVO/CAB',ok(gCab)?nf(gCab,1)+' kg':'—','saída − entrada'),tGmd,
+    ...(AP?[]:[T_('RENDIMENTO DE CARCAÇA',pc(rcM,1),'média das vendas'),T_('@ DE SAÍDA · CARCAÇA/CAB',ok(arrSC)?nf(arrSC,2):'—','@ vendida por cabeça'),T_('@ PROD. · CARCAÇA/CAB',C.cabV?nf(C.arrProd/C.cabV,2):'—','@ vendida − @ de entrada'),T_('GMC DO PERÍODO',ok(gmc)?nf(gmc,2)+' kg':'—','ganho de carcaça por cab/dia'),null]),
     ...(AP?[T_('PESO NA APARTAÇÃO',nf(C.pesoA,1)+' kg',`+${nf(C.pesoA-C.pesoE,1)} kg desde a entrada`),T_('CUSTO DO KG GANHO',rs(C.custoKg),'custos sem compra ÷ kg')]
       :[])],5);
   /* 3. eficiência: quanto comeu e quanto converteu */
