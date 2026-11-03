@@ -1898,14 +1898,14 @@ function canvasLote(l,C){
   const fim=C.fim,cabE=C.cabE,cabR=C.cabE-(C.cabT||0)-(C.faltas||0),vendas=C.vendas,kgV=vendas.reduce((a,s)=>a+s.cab*s.peso,0),rcM=kgV?vendas.reduce((a,s)=>a+s.cab*s.peso*(+s.rc||0),0)/kgV:NaN;
   const E=fim?null:estVendaDet(l,C);
   /* cabeçalho */
-  c.fillStyle=AZ;c.fillRect(0,0,W,128);c.fillStyle=LI;c.fillRect(0,128,W,6);
+  c.fillStyle=AZ;c.fillRect(0,0,W,108);c.fillStyle=LI;c.fillRect(0,108,W,6);
   const AP=C.apart,FI=AP?filhosApart(l,C):null;
   /* topo: local e curral/pasto em destaque; embaixo a categoria (sexo · raça · categoria) e, menor, o nome do lote */
   const curT=curralEm(l,C.ate)||'',locT=linhaDe(curT)==='P'?'Pasto':'Confinamento',r=racaoEm(l,C.ate),tipoRel=AP?'Relatório da apartação':fim?'Relatório final':'Resultado até hoje';
-  txt(`Gestão de Tratos FJK - ${tipoRel}`,M,46,'800',30,'#fff','left',W-2*M);
-  txt([[sexoTxt(l.sexo),l.raca].filter(x=>x&&x!=='—').join(' '),catNorm(l.cat),r&&('Ração '+r.nome)].filter(Boolean).join(' · '),M,84,'700',19,'#c8dd1e','left',W-2*M);
-  txt(`Lote ${l.nome} · ${dB(l.ent.dia)} a ${dB(C.ate)} · ${nf(C.dias)} dias`,M,110,'500',15,'#dfe6ee','left',W-2*M);
-  let y=160;
+  txt(`Gestão de Tratos FJK - ${tipoRel}`,M,44,'800',30,'#fff','left',W-2*M-250);
+  txt(`${dB(l.ent.dia)} a ${dB(C.ate)}`,W-M,36,'600',14,'#dfe6ee','right',240);txt(`${nf(C.dias)} dias`,W-M,56,'600',14,'#dfe6ee','right',240);   // período pequeno no canto direito
+  txt([[sexoTxt(l.sexo),l.raca].filter(x=>x&&x!=='—').join(' '),catNorm(l.cat),'Lote '+l.nome,r&&('Ração '+r.nome)].filter(Boolean).join(' · '),M,82,'700',19,'#c8dd1e','left',W-2*M);
+  let y=140;
   /* quadro com o local e o curral/pasto, em destaque logo abaixo do cabeçalho */
   {const tl=`${locT} · ${curT}`;let fs=44;fonte('800',fs);while(c.measureText(tl).width>W-2*M-48&&fs>20){fs--;fonte('800',fs);}
     ret(M,y,W-2*M,84,14,'#c8dd1e');txt(tl,M+24,y+44,'800',fs,AZ,'left',W-2*M-48);y+=108;}
