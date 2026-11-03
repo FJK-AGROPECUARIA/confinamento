@@ -1933,13 +1933,14 @@ function canvasLote(l,C){
   /* 2. desempenho */
   const pSai=ok(C.ganhoV)&&C.cabP?C.pesoE+C.ganhoV/C.cabP:NaN;
   const gCab=C.cabP&&ok(C.ganhoV)?C.ganhoV/C.cabP:NaN,T_=(r,v,s)=>({r,v,s});
-  const tGmd=T_(C.cabP?'GMD DO PERÍODO':'GMD META',nf(C.cabP?C.gmdV:l.gmd,2)+' kg','ganho por cabeça por dia'),tPvC=T_('@ PROD. · VIVO/CABEÇA',C.cabP?nf(C.arrPV/C.cabP,2):'—','ganho por cabeça ÷ 30'),tPvL=T_('@ PROD. · VIVO/LOTE',nf(C.arrPV,2),'ganho do lote ÷ 30');
-  tiles([T_('PESO DE ENTRADA · VIVO/CABEÇA',nf(C.pesoE,1)+' kg','média por cabeça'),T_('@ DE ENTRADA · VIVO/CABEÇA',nf(C.pesoE/30,2),'peso de entrada ÷ 30'),
-    T_('PESO DE SAÍDA · VIVO/CABEÇA',ok(pSai)?nf(pSai,1)+' kg':'—',ok(pSai)?'média por cabeça':'aparece após a venda'),T_('@ DE SAÍDA · VIVO/CABEÇA',ok(pSai)?nf(pSai/30,2):'—','peso de saída ÷ 30'),
-    tPvC,T_('GANHO DE PESO VIVO/CABEÇA',ok(gCab)?nf(gCab,1)+' kg':'—','saída − entrada'),tGmd,T_('RENDIMENTO DE CARCAÇA',AP?'—':pc(rcM,1),'média das vendas'),
-    T_('GANHO DE PESO TOTAL VIVO/LOTE',nf(C.ganhoV)+' kg','todos os animais'),tPvL,...(AP?[null,null]:[T_('@ PROD. · CARCAÇA/CABEÇA',C.cabV?nf(C.arrProd/C.cabV,2):'—','@ vendida − @ de entrada'),T_('@ PROD. · CARCAÇA/LOTE',nf(C.arrProd,2),'@ vendidas − @ de entrada')]),
+  const tGmd=T_(C.cabP?'GMD DO PERÍODO':'GMD META',nf(C.cabP?C.gmdV:l.gmd,2)+' kg','ganho por cabeça por dia'),tPvC=T_('@ PROD. · VIVO/CAB',C.cabP?nf(C.arrPV/C.cabP,2):'—','ganho por cabeça ÷ 30'),tPvL=T_('@ PROD. · VIVO/LOTE',nf(C.arrPV,2),'ganho do lote ÷ 30');
+  tiles([T_('PESO DE ENTRADA · VIVO/CAB',nf(C.pesoE,1)+' kg','média por cabeça'),T_('@ DE ENTRADA · VIVO/CAB',nf(C.pesoE/30,2),'peso de entrada ÷ 30'),
+    T_('PESO DE SAÍDA · VIVO/CAB',ok(pSai)?nf(pSai,1)+' kg':'—',ok(pSai)?'média por cabeça':'aparece após a venda'),T_('@ DE SAÍDA · VIVO/CAB',ok(pSai)?nf(pSai/30,2):'—','peso de saída ÷ 30'),
+    AP?null:T_('PESO SAÍDA · CARCAÇA/CAB',ok(pSai)&&ok(rcM)?nf(pSai*rcM/100,1)+' kg':'—','peso de saída × rendimento'),
+    tPvC,T_('GANHO DE PESO · VIVO/CAB',ok(gCab)?nf(gCab,1)+' kg':'—','saída − entrada'),tGmd,AP?null:T_('@ PROD. · CARCAÇA/CAB',C.cabV?nf(C.arrProd/C.cabV,2):'—','@ vendida − @ de entrada'),T_('RENDIMENTO DE CARCAÇA',AP?'—':pc(rcM,1),'média das vendas'),
+    T_('GANHO TOTAL · VIVO/LOTE',nf(C.ganhoV)+' kg','todos os animais'),tPvL,AP?null:T_('@ PROD. · CARCAÇA/LOTE',nf(C.arrProd,2),'@ vendidas − @ de entrada'),null,null,
     ...(AP?[T_('PESO NA APARTAÇÃO',nf(C.pesoA,1)+' kg',`+${nf(C.pesoA-C.pesoE,1)} kg desde a entrada`),T_('CUSTO DO KG GANHO',rs(C.custoKg),'custos sem compra ÷ kg')]
-      :[])],4);
+      :[])],5);
   /* 3. eficiência: quanto comeu e quanto converteu */
   bloco('2','Eficiência','quanto o boi comeu');
   tiles([T_('CONSUMO DE MS',nf(C.msCab,2)+' kg',`por cab/dia · ${pc(C.pv,2)} do peso vivo`),T_('CONSUMO DE MN',nf(C.mnCab,2)+' kg','matéria natural por cab/dia'),T_('CONVERSÃO ALIMENTAR',nf(C.conv,2),'kg de MS para 1 kg de ganho')],3);
