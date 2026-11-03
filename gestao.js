@@ -257,7 +257,8 @@ const RAIZ={home:'home',entradas:'entradas',saidas:'saidas',estoque:'estoque',es
 /* Leitura de cocho fica no menu Tratos (aba 'leit'); o resto da Gestão na aba 'gest' — as duas usam a mesma tela */
 function gRaiz(t){GT={t};gPilha.length=0;const alvo=RAIZ[t]==='cocho'&&!document.body.classList.contains('modoGest')?'leit':'gest';if(window.abaAtual!==alvo)aba(alvo);else gRender();window.scrollTo({top:0});}
 window.gAbrir=modo=>{const leit=RAIZ[GT.t]==='cocho';if(modo==='leit'&&!leit)GT={t:'cocho'};if(modo==='gest'&&leit&&!document.body.classList.contains('modoGest'))GT={t:'home'};gRender();if(navigator.onLine)gSync(true).catch(()=>{});};
-function gRender(){if(GT&&GT.t!=='rel')RELCMP=null;
+function gRender(){if(GT&&GT.t!=='rel')RELCMP=null;if(GT&&GT.t!=='lotes')gLotAb.clear();   // saiu da lista de lotes: ao voltar, todos os cards abrem minimizados
+  else if(GT&&GT.t==='lotes'&&gRender.ultEnc!==undefined&&gRender.ultEnc!==!!GT.enc)gLotAb.clear();if(GT&&GT.t==='lotes')gRender.ultEnc=!!GT.enc;
   const b=$('gBox');if(!b)return;
   if(window.abaAtual==='gest'&&RAIZ[GT.t]==='cocho'&&!document.body.classList.contains('modoGest')){aba('leit');return;}  // leitura abre no menu Tratos
   if(window.abaAtual==='leit'&&RAIZ[GT.t]!=='cocho'){aba('gest');return;}
