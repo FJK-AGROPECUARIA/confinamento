@@ -692,13 +692,15 @@ const dCurto=d=>dB(d).slice(0,6)+dB(d).slice(8);
 /* filtro do histórico: local (Confinamento / Pasto) e curral, pelo curral em que o lote estava na data */
 /* opções dos filtros do histórico (padrão do sistema: título na esquerda, ◀ quadrinho ▶) */
 function hOps(t){const fl=t.fl||'T',A=window.curraisApi,cs=(A?A.lista():[]).filter(n=>fl==='T'||(A.info(n).tipo===fl)).sort(alfa);
-  return {per:PER_ES.map(([n,tx])=>[String(n),tx]),loc:(window.LOC_OPS||[['T','Todos'],['C','Confinamento'],['P','Pasto']]),cur:[['','Todos']].concat(cs.map(n=>[n,n]))};}
-const hVal=(t,k)=>k==='per'?String(t.per!=null?t.per:90):k==='loc'?(t.fl||'T'):(t.fc||'');
+  return {per:PER_ES.map(([n,tx])=>[String(n),tx]),tip:SAI_TIPOS.map(x=>[x[0],x[1]]),loc:(window.LOC_OPS||[['T','Todos'],['C','Confinamento'],['P','Pasto']]),cur:[['','Todos']].concat(cs.map(n=>[n,n]))};}
+/* filtro por tipo de saída (os 5 botões de lançar): Venda + sobra = tudo que saiu no fechamento (venda, sobra e faltaram) */
+const SAI_TIPOS=[['','Todos',()=>true],['venda','Venda / saída',s=>!s.fech&&(ehVenda(s)||s.mot==='falta')],['fech','Venda + sobra',s=>!!s.fech],['transf','Transferência',s=>!s.fech&&s.mot==='transf'],['apart','Apartar / dividir',s=>s.mot==='apart'],['morte','Morte',s=>s.mot==='morte']];
+const hVal=(t,k)=>k==='per'?String(t.per!=null?t.per:90):k==='tip'?(t.fTip||''):k==='loc'?(t.fl||'T'):(t.fc||'');
 function filtroHist(t){const fl=t.fl||'T',fc=t.fc||'',O=hOps(t);
   const nav=(k,lbl)=>{const L=O[k],i=Math.max(0,L.findIndex(o=>o[0]===hVal(t,k)));return typeof selSetas==='function'?selSetas(lbl,L,i,`data-g="hNav" data-k="${k}" data-n`,`data-hsel="${k}"`):'';};
   const hj=hojeKey(),di=t.dIni||somaDias(hj,-30),df=t.dFim||hj;
   const html=`<div class="gForm gHistPer"><div class="gCampo meia"><label>Período: de</label><input type="date" data-hdt="ini" value="${di}"></div><div class="gCampo meia"><label>até</label><input type="date" data-hdt="fim" value="${df}"></div></div>
-    <div class="gCoLocNav gHistFil">${nav('loc','Local')}${nav('cur','Curral')}</div>`;
+    <div class="gCoLocNav gHistFil">${t.t==='saidas'?nav('tip','Tipo'):''}${nav('loc','Local')}${nav('cur','Curral')}</div>`;
   const passa=(l,dia)=>{const c=curralEm(l,dia);if(fc)return c===fc;if(fl==='T')return true;return linhaDe(c)===fl;};
   return {html,passa};}
 function tEntradas(t){const hj=hojeKey(),desde=t.dIni||somaDias(hj,-30),ate=t.dFim||hj;
@@ -747,7 +749,8 @@ const tipoSai=s=>s.mot==='morte'?'✝ Morte':s.mot==='transf'?(+s.vi>0?'↔ Vend
 function tSaidas(t){const hj=hojeKey(),desde=t.dIni||somaDias(hj,-30),ate=t.dFim||hj;
   const op=[['','Selecione']].concat(opLotesSel(false,hj));
   const FH=filtroHist(t);
-  const L=gTodos('saida').filter(x=>G.it[x.lote]&&!G.it[x.lote].del&&x.dia>=desde&&x.dia<=ate&&FH.passa(G.it[x.lote],x.dia)).sort((a,b)=>b.dia.localeCompare(a.dia));
+  const fT=(SAI_TIPOS.find(x=>x[0]===(t.fTip||''))||SAI_TIPOS[0])[2];
+  const L=gTodos('saida').filter(x=>G.it[x.lote]&&!G.it[x.lote].del&&x.dia>=desde&&x.dia<=ate&&FH.passa(G.it[x.lote],x.dia)&&fT(x)).sort((a,b)=>b.dia.localeCompare(a.dia));
   const dest=s=>{const d=s.destino&&G.it[s.destino];if(d&&!d.del)return '→ '+d.nome;if(ehVenda(s))return nomeCpr(s)||'';return [s.causa,s.obs].filter(Boolean).join(' · ');};
   const linhas=L.map(s=>{const l=G.it[s.lote],v=ehVenda(s)?valorVenda(s):s.mot==='transf'&&+s.vi>0?+s.vi:NaN;
     return `<tr><td>${dCurto(s.dia)}<div class="gAcHist">${s.mot==='transf'&&!s.novoLote&&s.entl?`<button class="mini" data-g="ir" data-t="transfForm" data-id="${l.uid}" data-old="${s.uid}" title="Alterar a transferência">✎</button>`:''}${ehVenda(s)||s.mot==='morte'?`<button class="mini" data-g="ir" data-t="saiForm" data-id="${l.uid}" data-o="${s.mot==='morte'?'morte':'venda'}" data-sid="${s.uid}">✎</button>`:''}${s.mot==='apart'?`<button class="mini" data-g="lote" data-id="${l.uid}" title="Desfazer no lote">▸</button>`:`<button class="mini danger" data-g="apaga" data-id="${s.uid}" data-o="${s.mot==='transf'?'transferência (volta os animais e o custo para o lote de origem)':'saída'}">✕</button>`}</div></td><td class="c"><b>${tipoSai(s)}</b><br>${loteCel(l,dest(s))}</td><td>${nf(s.cab)}</td><td>${s.mot==='morte'?'—':nf(s.peso)}</td><td>${ok(v)&&v>0?nf(v):'—'}</td></tr>`;}).join('');
@@ -2727,7 +2730,7 @@ function trAuto(t){try{if(t.classList&&t.classList.contains('gRs'))mascaraRs(t);
   if(R[id])vendaLiga(k=>$('gf_'+M[k]),null,R[id]);}catch(e){}}
 $('gBox').addEventListener('input',e=>{if(GT.t==='transfForm'){trAuto(e.target);trPrevia();}if(GT.t==='fechaForm'){fcAuto(e.target);fcLer();fcPrevia();}});
 $('gBox').addEventListener('change',e=>{if(GT.t==='fechaForm'){fcLer();fcPrevia();}});
-function hSet(k,v){if(k==='per')GT.per=+v;else if(k==='loc'){GT.fl=v;GT.fc='';}else GT.fc=v;}
+function hSet(k,v){if(k==='per')GT.per=+v;else if(k==='tip')GT.fTip=v;else if(k==='loc'){GT.fl=v;GT.fc='';}else GT.fc=v;}
 $('gBox').addEventListener('change',e=>{if(e.target&&e.target.id==='gf_enTipo'){GT.enTipo=e.target.value;gRender();return;}});
 $('gBox').addEventListener('input',e=>{if(e.target&&(e.target.id==='gf_cab'||e.target.id==='gf_dia')&&$('gEntProp'))entPropPrevia();});
 document.addEventListener('change',e=>{if(e.target&&e.target.id==='gf_dia'&&$('gEntProp'))entPropPrevia();});
