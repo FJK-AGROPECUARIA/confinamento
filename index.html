@@ -648,7 +648,8 @@ input[type=date]::-webkit-calendar-picker-indicator{margin-left:2px;padding:0}
 .gSaiAc{display:flex;gap:6px;justify-content:flex-end}.gSaiDet{padding:4px 10px 10px;font-size:.84rem;color:var(--muted)}.gSaiDet .ok{color:#2e7d32}.gSaiDet .bad{color:#b3261e}
 .gFichaQ{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:6px}.gFichaQ>div{background:#f3f6f9;border-radius:10px;padding:8px 12px}.gFichaQ small{display:block;font-size:.68rem;color:var(--muted);font-weight:700;text-transform:uppercase}.gFichaQ b{color:#11253d}
 @media (max-width:760px){.gSaiRes5{grid-template-columns:repeat(2,1fr)}.gSaiRes5>div:last-child{grid-column:span 2}.gSaiCab{display:none}.gSaiLin>summary{grid-template-columns:auto 1fr auto;grid-template-areas:'d t ac' 'ds ds ds' 'n1 n2 n3';row-gap:4px}.gSaiLin>summary>.d{grid-area:d}.gSaiLin>summary>span:nth-child(2){grid-area:t}.gSaiLin>summary>.ds{grid-area:ds}.gSaiLin>summary>.gSaiAc{grid-area:ac}.gSaiLin>summary>span:nth-child(4),.gSaiLin>summary>span:nth-child(5){display:none}.gSaiLin>summary>span:nth-child(6){grid-area:n1;text-align:left}.gSaiLin>summary>span:nth-child(7){grid-area:n3}.gFichaQ{grid-template-columns:repeat(2,1fr)}}
-.gLoteNomeRel{display:flex;gap:12px;align-items:flex-start;justify-content:space-between;flex:1;flex-wrap:wrap}.gLoteNomeL{min-width:0}.gRelBt{width:auto!important;margin:0!important;padding:10px 16px!important;white-space:nowrap}
+.gLoteNomeRel{display:flex;gap:12px;align-items:flex-start;justify-content:space-between;flex:1;flex-wrap:wrap}.gLoteNomeL{min-width:0}.gRelTit{display:flex;flex-direction:column;align-items:center;gap:8px;padding:10px 14px;border:2px solid #2e6b30;border-radius:12px;background:#f3f8ee}.gRelTit>b{font-size:1.15rem;color:#2e6b30;text-align:center;white-space:nowrap}.gRelTitBts{display:flex;gap:6px}.gRelTitBts .mini{margin:0;padding:6px 12px;min-height:0;font-size:.85rem;white-space:nowrap}
+.gRelBt{width:auto!important;margin:0!important;padding:10px 16px!important;white-space:nowrap}
 .gLoteSeloAb{display:flex;flex-direction:column;gap:8px;align-items:stretch;width:44%;min-width:44%;flex:none}.gLoteArq .gLoteSeloAb .gSelo{width:100%;min-width:100%!important;max-width:100%!important;flex:1}.gLoteSeloAb .gLoteAbrir{margin:0;padding:8px 10px;min-height:0;font-size:.9rem}.gLoteArq{cursor:default}.gResLote{display:grid;gap:8px}
 .gCmpFix{display:flex;flex-wrap:wrap;align-items:center;gap:6px 10px;margin:8px 0 0;padding:8px 10px;border-radius:10px;background:#fff8e1;border:1px solid #f0d27a;font-size:.85rem}.gCmpFix.ok{background:#eef6e6;border-color:#b9d79a}.gCmpFix small{color:var(--muted)}input.gBadData{border-color:#b3261e!important;background:#fde3e1!important}.gTab tr.gSaiRes td>div{position:sticky;left:8px;max-width:min(300px,calc(100vw - 90px))}.gTab tr.gSaiRes td{text-align:left;font-size:13px;color:#5d6b7a;padding-top:0;white-space:normal}.gTab tr.gSaiRes td b.ok{color:#1b5e20}.gTab tr.gSaiRes td b.bad{color:#b3261e}.gApRes .bad b{color:var(--bad,#b3261e)}
 .gLoteRel{display:flex;flex-direction:column;gap:8px;width:100%;text-align:left;padding:10px;background:var(--surface);border-radius:14px}
@@ -1274,7 +1275,7 @@ body.naInicio .topoTxt h1{font-size:clamp(16px,5vw,28px)!important}
 <div class="toast" id="toast" hidden></div>
 <script>
 'use strict';
-const APP_VERSAO='279';
+const APP_VERSAO='280';
 const APP_DATA='19/10/2026';
 const KEY='confinamento-completo-v1';
 const $=id=>document.getElementById(id);
