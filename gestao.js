@@ -1880,21 +1880,24 @@ function canvasLote(l,C){
   /* cabeçalho */
   c.fillStyle=AZ;c.fillRect(0,0,W,128);c.fillStyle=LI;c.fillRect(0,128,W,6);
   const AP=C.apart,FI=AP?filhosApart(l,C):null;
-  txt(`${AP?'Relatório da apartação':fim?'Relatório final':'Resultado até hoje'} · ${l.nome}`,M,44,'800',34,'#fff','left',W-2*M);
-  const r=racaoEm(l,C.ate);
-  txt([curralEm(l,C.ate),[sexoTxt(l.sexo),l.raca].filter(x=>x&&x!=='—').join(' '),r&&r.nome].filter(Boolean).join(' · '),M,82,'600',18,'#c8dd1e','left',W-2*M);
-  txt(`${dB(l.ent.dia)} a ${dB(C.ate)} · ${nf(C.dias)} dias · Gestão de Tratos FJK`,M,108,'500',16,'#dfe6ee','left',W-2*M);
+  /* topo: local e curral/pasto em destaque; embaixo a categoria (sexo · raça · categoria) e, menor, o nome do lote */
+  const curT=curralEm(l,C.ate)||'',locT=linhaDe(curT)==='P'?'Pasto':'Confinamento',r=racaoEm(l,C.ate),tipoRel=AP?'Relatório da apartação':fim?'Relatório final':'Resultado até hoje';
+  txt(`Gestão de Tratos FJK - ${tipoRel}`,M,46,'800',30,'#fff','left',W-2*M-380);
+  {const tl=`${locT} · ${curT}`;let fs=34;fonte('800',fs);while(c.measureText(tl).width>340&&fs>18){fs--;fonte('800',fs);}const tw=c.measureText(tl).width,bx=W-M-tw-36;
+    ret(bx,14,tw+36,64,12,'#c8dd1e');txt(tl,W-M-18,47,'800',fs,AZ,'right');}   // quadro com o local e o curral/pasto
+  txt([[sexoTxt(l.sexo),l.raca].filter(x=>x&&x!=='—').join(' '),catNorm(l.cat),r&&('Ração '+r.nome)].filter(Boolean).join(' · '),M,84,'700',19,'#c8dd1e','left',W-2*M);
+  txt(`Lote ${l.nome} · ${dB(l.ent.dia)} a ${dB(C.ate)} · ${nf(C.dias)} dias`,M,110,'500',15,'#dfe6ee','left',W-2*M);
   let y=160;
   /* resultado em destaque */
   const lucro=AP?NaN:fim?C.lucro:(E&&E.pr>0?E.res:NaN),pos=!(lucro<0),corH=ok(lucro)?(pos?VD:VM):AZ;
-  ret(M,y,W-2*M,150,16,corH);
+  ret(M,y,W-2*M,104,14,corH);   // quadro do resultado (mais baixo)
   const rotH=AP?'CUSTO ATÉ A APARTAÇÃO':fim?(pos?'LUCRO DO LOTE':'PREJUÍZO DO LOTE'):ok(lucro)?(pos?'RESULTADO ESTIMADO HOJE':'PREJUÍZO ESTIMADO HOJE'):'CUSTO ATÉ HOJE';
-  txt(rotH,M+28,y+38,'700',17,'rgba(255,255,255,.85)');txt(rs(ok(lucro)?lucro:C.custo),M+28,y+88,'800',44,'#fff','left',400);
-  if(AP)txt(`dividido em ${C.aps.length} lotes, proporcional ao peso`,M+28,y+126,'500',14,'rgba(255,255,255,.85)','left',400);
-  else if(!fim)txt(ok(lucro)?'estimativa: peso projetado × rendimento × preço da @':'sem preço da @ de venda no lote',M+28,y+126,'500',14,'rgba(255,255,255,.85)','left',400);
+  txt(rotH,M+24,y+26,'700',15,'rgba(255,255,255,.85)');txt(rs(ok(lucro)?lucro:C.custo),M+24,y+62,'800',34,'#fff','left',400);
+  if(AP)txt(`dividido em ${C.aps.length} lotes, proporcional ao peso`,M+24,y+90,'500',12,'rgba(255,255,255,.85)','left',400);
+  else if(!fim)txt(ok(lucro)?'estimativa: peso projetado × rendimento × preço da @':'sem preço da @ de venda no lote',M+24,y+90,'500',12,'rgba(255,255,255,.85)','left',400);
   const hb=AP?[['GMD real',nf(C.gmdV,2)+' kg'],['custo @ produzida',rs(C.custoArrPV)],['custo por cabeça',rs(C.custo/cabR)]]:fim?[['por cabeça',rs(C.lucroCab)],['por @ produzida (carcaça)',rs(C.lucroArr)],['rentabilidade (compra + custos)',pc(C.rentab,1)]]:ok(lucro)?[['por cabeça',rs(E.resCab)],['sobre o custo',pc(E.margem,1)],['@ p/ empatar',rs(E.pontoEq)]]:[['por cabeça',rs(C.custo/cabR)],['diária',rs(C.diaria)],['cabeças',nf(C.cabAt)]];
-  const bw=(W-2*M-470)/3;hb.forEach(([a,b],i)=>{const x=M+450+i*(bw+6);ret(x,y+22,bw,106,12,'rgba(255,255,255,.14)');txt(b,x+bw/2,y+64,'800',24,'#fff','center',bw-12);txt(a,x+bw/2,y+100,'600',14,'rgba(255,255,255,.85)','center',bw-12);});
-  y+=180;
+  const bw=(W-2*M-470)/3;hb.forEach(([a,b],i)=>{const x=M+450+i*(bw+6);ret(x,y+12,bw,80,10,'rgba(255,255,255,.14)');txt(b,x+bw/2,y+42,'800',22,'#fff','center',bw-12);txt(a,x+bw/2,y+72,'600',13,'rgba(255,255,255,.85)','center',bw-12);});
+  y+=128;
   /* título de bloco e quadrinhos */
   const bloco=(n,t,sub)=>{ret(M,y,40,40,10,AZ);txt(n,M+20,y+21,'800',20,'#fff','center');txt(t,M+54,y+21,'800',24,AZ);if(sub)txt(sub,W-M,y+22,'500',14,CI,'right',420);y+=56;};
   const tiles=(arr,cols)=>{const g=12,w=(W-2*M-g*(cols-1))/cols,h=104;while(arr.length&&!arr[arr.length-1])arr.pop();
