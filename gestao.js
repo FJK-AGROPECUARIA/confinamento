@@ -1362,7 +1362,7 @@ function tRelLote(t){
   GT.calc={uid:l.uid,cab:C.cabAt,pesoE:C.pesoE,prod:C.prod,custo:C.custo,receita:C.receita,cabE,cabV:C.cabV,arrV:C.arrV,ms:R.ms,ganhoV:C.ganhoV};
   return `${t.emb?'':voltar()}<section class="panel">${t.emb?'':`<div class="gLoteTopo">${seloCurral(curralEm(l,C.ate))}<div><h2>${esc(l.nome)}</h2><span class="pill${fim?'':' done'}">${fim?'Relatório final':'Resultado até hoje'}</span>
       <p class="note">${dB(l.ent.dia)} a ${dB(C.ate)} · ${nf(C.dias)} dias · ${nf(cabE)} cab · entrada ${nf(C.pesoE)} kg</p></div></div>`}
-    ${hero}
+    ${t.emb?'':hero}
     ${(()=>{const e=l.ent||{};if(e.unid==='transf'||l.apDe)return '';const A=C.cmpAlt||compraPelaVenda(l,calcLote0(l)),m=t.cmp||'venda',B=(o,tx)=>`<button type="button" class="mini${m===o?' sel':''}" data-g="cmpModo" data-o="${o}">${tx}</button>`;
       const nota=A&&m!=='lanc'?`<p class="note">Compra recalculada: ${nf(A.arrC,2)} @ de entrada (peso de entrada × rendimento ÷ 15) × <b>${rs(A.pV)}/@</b> (${A.fix?'@ de compra digitada':'média da @ vendida'}) = <b>${rs(A.nova)}</b> · preço real lançado ${rs(A.lanc)} (${A.delta>=0?'+':''}${rs(A.delta)}).</p>`:'';
       return `<div class="gCmpOp"><span>Compra dos animais</span><div class="row gRelAtalhos gCmp3">${B('venda','Pelo preço da @ vendida')}${B('lanc','Preço real de compra lançado')}${B('dig','Lançar @ de compra')}</div>
@@ -1370,10 +1370,11 @@ function tRelLote(t){
         ${nota}${(()=>{const f=cmpFixDe(l),igual=f.m===m&&(m!=='dig'||Math.abs(f.pr-(+t.cmpPr||0))<0.005),podeFix=true;   // em 'dig' o botão lê o preço digitado na hora (mesmo sem sair do campo)
           return `<div class="gCmpFix${igual?' ok':''}"><span>📌 Base fixada no lote: <b>${esc(cmpFixTxt(l))}</b></span>${igual?'<small>o resumo dos lotes arquivados usa esta base</small>':podeFix?`<button type="button" class="mini lima" data-g="cmpFixar">📌 Fixar esta base no lote</button>`:''}</div>`;})()}</div>`;})()}
     <div class="row compart fz3"><button class="verde" data-g="pdfLote" data-id="${l.uid}">📄 PDF</button><button class="verde" data-g="imgLote" data-id="${l.uid}">🖼 Foto</button><button class="verde" data-g="xlsLote" data-id="${l.uid}">📊 Excel</button></div></section>
-  ${dados}
+  ${t.emb?(()=>{let u='';try{u=canvasLote(l,C).toDataURL('image/png');}catch(e){}   /* na tela do lote: o próprio relatório final (mesmos quadros do PDF/foto) */
+    return u?`<section class="panel gRelImg"><img src="${u}" alt="Relatório final" style="width:100%;height:auto;display:block;border-radius:10px"></section>`:`${dados}${card('Desempenho',desemp)}${card('Custos',custos)}${venda}`;})():`${dados}
   ${card('Desempenho',desemp)}
   ${card('Custos',custos)}
-  ${venda}${est}${sim}
+  ${venda}${est}${sim}`}
   ${avisos.length?`<section class="panel">${avisos.map(a=>`<p class="aviso warn">${a}</p>`).join('')}</section>`:''}`;
 }
 const lin=(a,b,c)=>`<div class="${c||''}"><span>${a}</span><b class="num">${b}</b></div>`;
