@@ -1979,7 +1979,7 @@ function canvasLote(l,C){
       :[])],5);
   /* 3. eficiência: quanto comeu e quanto converteu */
   bloco('2','Eficiência','quanto o boi comeu');
-  tiles([T_('CONSUMO DE MS · % PV',pc(C.pv,2),'MS ÷ peso vivo médio · por dia'),T_('CONSUMO - MS/DIA',nf(C.msCab,2)+' kg','matéria seca por cab/dia'),T_('CONSUMO - MN/DIA',nf(C.mnCab,2)+' kg','matéria natural por cab/dia'),T_('CONVERSÃO ALIMENTAR',nf(C.conv,2),'kg de MS para 1 kg de ganho'),T_('EFICIÊNCIA ALIMENTAR',ok(C.conv)&&C.conv>0?nf(1000/C.conv,0)+' g':'—','g de ganho por kg de MS')],5);
+  tiles([T_('IMS % PV',pc(C.pv,2),'MS ÷ peso vivo médio · por dia'),T_('CONSUMO - MS/DIA',nf(C.msCab,2)+' kg','matéria seca por cab/dia'),T_('CONSUMO - MN/DIA',nf(C.mnCab,2)+' kg','matéria natural por cab/dia'),T_('CONVERSÃO ALIMENTAR',nf(C.conv,2),'kg de MS para 1 kg de ganho'),T_('EFICIÊNCIA ALIMENTAR',ok(C.conv)&&C.conv>0?nf(1000/C.conv,0)+' g':'—','g de ganho por kg de MS')],5);
   /* 4. custos com barra de composição */
   bloco('3','Custos',`custo total ${rs(C.custo)}`);
   const partes=[...linhasCompra(l,C).map(([a,v],i)=>[a,v,i?'#7a4fbf':'#11253d']),['Alimentação',C.alim,'#a7bc09'],['Operacional',C.op,'#4a7fbf'],['Outros custos',C.outros,'#e0912f']],tot=C.custo||1;
