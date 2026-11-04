@@ -196,7 +196,7 @@ function resumoLote(l,ate){
   const X=gCtx(),ini=l.ent.dia,fim=ate||fimLote(l)||hojeKey();
   const r={dias:0,cabDias:0,cabOpDias:0,mn:0,ms:0,custoR:0,custoOp:0,pvS:0,pvN:0,semPreco:0,semReg:0};
   if(ini>fim)return r;
-  for(let d=ini,i=0;d<=fim&&i<4000;d=somaDias(d,1),i++){const x=diaLote(l,d,X);if(!x)continue;r.dias++;r.cabDias+=x.cab;r.cabOpDias+=x.cabOp;r.mn+=x.mn;
+  for(let d=ini,i=0;d<=fim&&i<4000;d=somaDias(d,1),i++){const x=diaLote(l,d,X);if(!x)continue;r.dias++;r.cabDias+=x.cab;r.cabOpDias+=x.cabOp;r.mn+=x.mn;if(ok(x.peso))r.pesoCD=(r.pesoCD||0)+x.cab*x.peso;
     if(ok(x.ms))r.ms+=x.ms;if(ok(x.custoR))r.custoR+=x.custoR;else if(x.mn>0)r.semPreco++;r.custoOp+=x.custoOp;if(!x.tem)r.semReg++;
     if(ok(x.pv)&&x.mn>0){r.pvS+=x.pv;r.pvN++;}}
   return r;
@@ -384,7 +384,8 @@ function calcLote0(l){
   const pesoV=cabV?vendas.reduce((a,s)=>a+s.cab*s.peso,0)/cabV:NaN;
   const offE=cabE?(entradasDe(l).reduce((a,x)=>a+(+x.cab||0)*difDias(l.ent.dia,x.diaE||x.dia),0)+(l.ent.diaE?(+l.ent.cab||0)*difDias(l.ent.dia,l.ent.diaE):0))/cabE:0;   // transferência a custo: conta os dias desde a entrada original   // entrada de animais depois: média de dias a menos no cocho
   /* desempenho: animais que saíram pesados (vendidos e apartados) */
-  const pes=vendas.concat(aps,trs),cabP=pes.reduce((a,s)=>a+(+s.cab||0),0);
+  const pes0=vendas.concat(aps),pes=pes0.length?pes0:trs,cabP=pes.reduce((a,s)=>a+(+s.cab||0),0);   // desempenho: vendidos (e apartados); transferidos ficam à parte (trP)
+  const trP=pes0.length&&trs.length?(()=>{const cab=trs.reduce((a,s)=>a+(+s.cab||0),0),kg=trs.reduce((a,s)=>a+s.cab*s.peso,0),g=kg-cab*pesoE,cd=trs.reduce((a,s)=>a+s.cab*Math.max(1,difDias(l.ent.dia,s.dia)),0);return {cab,peso:cab?kg/cab:NaN,ganho:g,gCab:cab?g/cab:NaN,gmd:cd?g/cd:NaN};})():null;
   const ganhoV=pes.reduce((a,s)=>a+s.cab*(s.peso-pesoE),0),cabDiasV=pes.reduce((a,s)=>a+s.cab*Math.max(1,difDias(l.ent.dia,s.dia)-offE),0);
   /* transferências para outros lotes: tira o custo que os animais levaram (guardado no dia da transferência) */
   const fts=sd.filter(s=>s.mot==='falta'&&s.cst),tO=k=>trs.concat(fts).reduce((a,s)=>a+(s.cst&&+s.cst[k]||0),0),trOut=trs.reduce((a,s)=>a+(+s.custo||0),0),fOut=fts.reduce((a,s)=>a+(+s.custo||0),0),cabT=trs.reduce((a,s)=>a+(+s.cab||0),0);
@@ -398,12 +399,13 @@ function calcLote0(l){
   const apart=aps.length>0,cabA=aps.reduce((a,s)=>a+(+s.cab||0),0),kgA=aps.reduce((a,s)=>a+s.cab*s.peso,0),fimN=fim&&!apart;
   const arrPV=cabP?ganhoV/30:NaN;
   return {fim,ate,R,vendas,faltas,fOut,aps,trs,cabT,trOut,trazido,cabTV,recInt,resInt,trazVI,resVd:vendas.reduce((a,s)=>a+(ok(resSai(s))?resSai(s):0),0),nVdR:vendas.filter(s=>ok(resSai(s))).length,apart,cabA,kgA,pesoA:cabA?kgA/cabA:NaN,mortes,cabE,pesoE,compra:compraL,outros:outrosL,cabV,arrV,receita,pesoV,ganhoV,cabDiasV,cabP,alim,op,prod,custo,arrProd,
-    dias:difDias(l.ent.dia,ate),cabAt:cabAtual(l),msCab:R.ms/R.cabDias,mnCab:R.mn/R.cabDias,pv:R.pvN?R.pvS/R.pvN:NaN,
+    dias:difDias(l.ent.dia,ate),cabAt:cabAtual(l),msCab:R.ms/R.cabDias,mnCab:R.mn/R.cabDias,pv:R.pesoCD>0?R.ms/R.pesoCD*100:(R.pvN?R.pvS/R.pvN:NaN),pesoMed:R.pesoCD>0?R.pesoCD/R.cabDias:NaN,   // IMS % PV = MS/dia ÷ peso vivo médio (ponderado por cabeças-dia), mesma base do MS/dia
+    
     gmdV:cabDiasV?ganhoV/cabDiasV:NaN,custoArr:prod/arrProd,conv:R.cabDias&&ganhoV>0?(R.ms/R.cabDias)/(ganhoV/cabDiasV):NaN,   // CA = MS/dia ÷ GMD
     lucro:fimN?receita+resInt-custo-perd:NaN,perd,sumCusto,custoMortes:sd.filter(s=>s.mot==='morte').reduce((a,s)=>a+(+s.custo||0),0),custoCabDia:(alimB+opB)/R.cabDias,
     efic:R.ms&&cabDiasV?(ganhoV/cabDiasV)/(R.ms/R.cabDias):NaN,   // EA = GMD ÷ MS/dia
                                       // eficiência alimentar: kg de peso vivo ganho por kg de MS consumida
-    arrPV,                                                      // @ produzidas em peso vivo (ganho ÷ 30)
+    arrPV,trP,                                                  // @ produzidas em peso vivo (ganho ÷ 30); trP: transferidos (fora do desempenho)
     custoArrPV:prod/arrPV,custoKg:prod/ganhoV,                  // custo da @ (peso vivo) e do kg ganho — usado na apartação
     diasMed:cabE?R.cabDias/cabE:NaN,                            // dias de consumo médios por animal (pondera entradas/saídas em datas diferentes)
     diaria:R.cabDias?(alimB+opB+outB)/R.cabDias:NaN,diaAlim:R.cabDias?alimB/R.cabDias:NaN,diaOp:R.cabDias?opB/R.cabDias:NaN,diaOut:R.cabDias?outB/R.cabDias:NaN,   // diária: todos os animais que passaram pelo lote
@@ -853,12 +855,13 @@ function tLote(t){
       ${L.map(o=>`<tr><td>${dB(o.dia)}</td><td>${nf(o.cab)}</td><td>${nf(o.peso)}</td><td>${nf(o.cab*o.peso)}</td><td>${ok(o.arr)?nf(o.arr,2):'—'}</td><td style="white-space:nowrap">${rs(o.lanc)}</td><td style="white-space:nowrap">${ok(o.arr)&&o.arr>0?rs(o.lanc/o.arr):'—'}</td><td style="white-space:nowrap"><b>${rs(o.base)}</b></td><td>${esc(o.obs)}</td><td class="acoes">${o.x?`<button class="mini danger" data-g="apaga" data-id="${o.x.uid}" data-o="entrada de animais">✕</button>`:''}</td></tr>`).join('')}
       <tr class="grp"><td>Total</td><td>${nf(cabT)}</td><td>${cabT?nf(kgT/cabT):'—'}</td><td>${nf(kgT)}</td><td>${nf(T('arr'),2)}</td><td style="white-space:nowrap">${rs(T('lanc'))}</td><td style="white-space:nowrap">${T('arr')>0?rs(T('lanc')/T('arr')):'—'}</td><td style="white-space:nowrap"><b>${rs(T('base'))}</b></td><td></td><td></td></tr></tbody></table></div>`);};
   /* lote arquivado: custos do período (alimentação, operacional, outros) e consumo total */
-  const P_cusArq=()=>{const C=calcLote(l),R=C.R,cabR=C.cabE-(C.cabT||0)-(C.faltas||0),cd=R.cabDias||NaN,dl=R.dias||NaN,tS=(C.alim||0)+(C.op||0)+(C.outros||0),mnT=R.mn,msT=R.ms;
+  const P_cusArq=()=>{const C=calcLote(l),R=C.R,cabR=C.cabE-(C.cabT||0)-(C.faltas||0),cd=R.cabDias||NaN,dl=R.dias||NaN,tS=(C.alim||0)+(C.op||0)+(C.outros||0);let mnT=R.mn,msT=R.ms;
     const t_=(r,v)=>`<div><small>${r}</small><b>${v}</b></div>`,ton=v=>ok(v)?nf(v/1000,1)+' t':'—';
     const lin=(n,tot,gB,cls)=>`<tr class="${cls||''}"><td>${n}</td><td style="white-space:nowrap">${rs(tot)}</td><td>${tS?pc(tot/tS*100,1):'—'}</td><td style="white-space:nowrap">${rs(cabR?tot/cabR:NaN)}</td><td style="white-space:nowrap">${rs(gB/cd)}</td><td style="white-space:nowrap">${rs(gB/dl)}</td></tr>`;
     const gA=R.custoR||0,gO=R.custoOp||0,gU=custosDe(l).filter(c=>c.dia<=C.ate).reduce((a,c)=>a+(+c.rs||0),0);
+    const fB=gA>0&&ok(C.alim)?C.alim/gA:1;mnT=mnT*fB;msT=msT*fB;   // consumo na mesma base do custo de alimentação (sem a parte dos transferidos)
     return card('Custos',`<div class="gSaiRes5">${t_('Consumo total · MN',ton(mnT))}${t_('Consumo total · MS',ton(msT))}${t_('MN por cab/dia',nf(C.mnCab,2)+' kg')}${t_('MS por cab/dia',nf(C.msCab,2)+' kg')}${t_('Dias no lote',nf(R.dias))}</div>
-      <div class="gSaiRes5">${t_('Preço médio · R$/kg MN',rs(mnT>0?gA/mnT:NaN,3))}${t_('Preço médio · R$/kg MS',rs(msT>0?gA/msT:NaN,3))}${t_('Custo total · alimentação',rs(C.alim))}${t_('Custo por dia · lote',rs((gA+gO+gU)/dl))}${t_('Diária total · cab/dia',rs(C.diaria))}</div>
+      <div class="gSaiRes5">${t_('Preço médio · R$/kg MN',rs(mnT>0?(C.alim||0)/mnT:NaN,3))}${t_('Preço médio · R$/kg MS',rs(msT>0?(C.alim||0)/msT:NaN,3))}${t_('Custo total · alimentação',rs(C.alim))}${t_('Custo por dia · lote',rs((gA+gO+gU)/dl))}${t_('Diária total · cab/dia',rs(C.diaria))}</div>
       <div class="tablebox"><table class="gTab"><thead><tr><th>Custo</th><th>Total</th><th>% do total</th><th>Por cabeça</th><th>Por cab/dia</th><th>Por dia (lote)</th></tr></thead><tbody>
       ${lin('Alimentação',C.alim||0,gA)}${lin('Operacional',C.op||0,gO)}${lin('Outros custos',C.outros||0,gU)}${lin('<b>Total (sem a compra)</b>',tS,gA+gO+gU,'grp')}</tbody></table></div>
       <p class="note">Sem a compra dos animais. Por cab/dia e por dia usam todos os animais que passaram pelo lote${C.cabT?`; total e por cabeça já sem o custo dos ${nf(C.cabT)} cab transferidos`:''}.</p>`);};
@@ -2007,32 +2010,34 @@ function canvasLote(l,C){
   const gCab=C.cabP&&ok(C.ganhoV)?C.ganhoV/C.cabP:NaN,T_=(r,v,s)=>({r,v,s});
   const tGmd=T_(C.cabP?'GMD DO PERÍODO':'GMD META',nf(C.cabP?C.gmdV:l.gmd,3)+' kg','ganho por cabeça por dia'),tPvC=T_('@ PROD. · VIVO/CAB',C.cabP?nf(C.arrPV/C.cabP,2):'—','ganho por cabeça ÷ 30'),tPvL=T_('@ PROD. · VIVO/LOTE',nf(C.arrPV,2),'ganho do lote ÷ 30');
   const dGmd=ok(gCab)&&C.gmdV>0?gCab/C.gmdV:NaN,arrSC=C.cabV?C.arrProd/C.cabV+C.pesoE/30:NaN,gmc=C.cabV&&dGmd>0?C.arrProd/C.cabV*15/dGmd:NaN;   // GMC: ganho de carcaça por dia (mesmos dias do GMD)
-  tiles([T_('PESO DE ENTRADA · VIVO/CAB',nf(C.pesoE,1)+' kg','média por cabeça'),T_('@ DE ENTRADA · VIVO/CAB',nf(C.pesoE/30,2),'peso de entrada ÷ 30'),null,null,null,
-    T_('PESO DE SAÍDA · VIVO/CAB',ok(pSai)?nf(pSai,1)+' kg':'—',ok(pSai)?'média por cabeça':'aparece após a venda'),T_('@ DE SAÍDA · VIVO/CAB',ok(pSai)?nf(pSai/30,2):'—','peso de saída ÷ 30'),
+  const TP=C.trP;tiles([T_('PESO DE ENTRADA · VIVO/CAB',nf(C.pesoE,1)+' kg','média por cabeça'),T_('@ DE ENTRADA · VIVO/CAB',nf(C.pesoE/30,2),'peso de entrada ÷ 30'),
+    TP?T_('TRANSFERIDOS',nf(TP.cab)+' cab',`fora do desempenho · ${nf(TP.peso,1)} kg`):null,TP?T_('GANHO · TRANSFERIDOS/CAB',nf(TP.gCab,1)+' kg',`GMD ${nf(TP.gmd,3)} kg · total ${nf(TP.ganho)} kg`):null,null,
+    T_('PESO DE SAÍDA · VIVO/CAB',ok(pSai)?nf(pSai,1)+' kg':'—',ok(pSai)?(TP?'média dos vendidos':'média por cabeça'):'aparece após a venda'),T_('@ DE SAÍDA · VIVO/CAB',ok(pSai)?nf(pSai/30,2):'—','peso de saída ÷ 30'),
     tPvC,tGmd,T_('GANHO DE PESO · VIVO/CAB',ok(gCab)?nf(gCab,1)+' kg':'—','saída − entrada'),
     ...(AP?[]:[T_('RENDIMENTO DE CARCAÇA',pc(rcM,2),'média das vendas'),T_('@ DE SAÍDA · CARCAÇA/CAB',ok(arrSC)?nf(arrSC,2):'—','@ vendida por cabeça'),T_('@ PROD. · CARCAÇA/CAB',C.cabV?nf(C.arrProd/C.cabV,2):'—','@ vendida − @ de entrada'),T_('GMC DO PERÍODO',ok(gmc)?nf(gmc,3)+' kg':'—','ganho de carcaça por cab/dia'),null]),
-    T_('GANHO TOTAL · VIVO/LOTE',nf(C.ganhoV)+' kg','todos os animais'),tPvL,AP?null:T_('@ PROD. · CARCAÇA/LOTE',nf(C.arrProd,2),'@ vendidas − @ de entrada'),null,null,
+    T_('GANHO TOTAL · VIVO/LOTE',nf(C.ganhoV)+' kg',TP?`${nf(C.cabP)} vendidos (sem os transferidos)`:'todos os animais'),tPvL,AP?null:T_('@ PROD. · CARCAÇA/LOTE',nf(C.arrProd,2),'@ vendidas − @ de entrada'),null,null,
     ...(AP?[T_('PESO NA APARTAÇÃO',nf(C.pesoA,1)+' kg',`+${nf(C.pesoA-C.pesoE,1)} kg desde a entrada`),T_('CUSTO DO KG GANHO',rs(C.custoKg),'custos sem compra ÷ kg')]
       :[])],5);
   /* 3. eficiência: quanto comeu e quanto converteu */
   bloco('2','Eficiência','quanto o boi comeu');
   const cab_=C.cabV||C.cabP||0,arrPC=cab_?C.arrProd/cab_:NaN,dCo=ok(C.diasCocho)?C.diasCocho:C.dias,msPer=C.msCab*dCo,arrPV1=C.cabP?C.arrPV/C.cabP:NaN;   // eficiência biológica: kg de MS no período (por cab) ÷ @ produzidas (carcaça, por cab)
-  tiles([T_('IMS % PV',pc(C.pv,2),'MS ÷ peso vivo médio · por dia'),T_('CONSUMO - MS/DIA',nf(C.msCab,2)+' kg','matéria seca por cab/dia'),T_('CONSUMO - MN/DIA',nf(C.mnCab,2)+' kg','matéria natural por cab/dia'),
+  tiles([T_('IMS % PV',pc(C.pv,2),ok(C.pesoMed)?`MS/dia ÷ peso vivo médio (${nf(C.pesoMed,1)} kg)`:'MS ÷ peso vivo médio'),T_('CONSUMO - MS/DIA',nf(C.msCab,2)+' kg','matéria seca por cab/dia'),T_('CONSUMO - MN/DIA',nf(C.mnCab,2)+' kg','matéria natural por cab/dia'),
     T_('CONVERSÃO ALIMENTAR · VIVO',ok(C.conv)&&C.conv>0?nf(C.conv,2):'—','kg de MS ÷ kg de ganho vivo (GMD)'),T_('EFICIÊNCIA ALIMENTAR · VIVO',ok(C.conv)&&C.conv>0?nf(1/C.conv,3)+' kg':'—','kg de ganho vivo por kg de MS'),T_('EFICIÊNCIA BIOLÓGICA · CARCAÇA',ok(arrPC)&&arrPC>0&&msPer>0?nf(msPer/arrPC,1)+' kg':'—','kg de MS por @ carcaça produzida'),
     T_('CONVERSÃO ALIMENTAR · CARCAÇA',ok(gmc)&&gmc>0&&C.msCab>0?nf(C.msCab/gmc,2):'—','kg de MS ÷ kg de carcaça (GMC)'),T_('EFICIÊNCIA ALIMENTAR · CARCAÇA',ok(gmc)&&gmc>0&&C.msCab>0?nf(gmc/C.msCab,3)+' kg':'—','kg de carcaça por kg de MS'),T_('RG',ok(gmc)&&gmc>0&&C.gmdV>0?pc(gmc/C.gmdV*100,2):'—','rendimento do ganho (GMC ÷ GMD)')],3);
   /* 4. custos com barra de composição */
   bloco('3','Custos',`custo total ${rs(C.custo)}`);
-  const partes=[...linhasCompra(l,C).map(([a,v],i)=>[a,v,i?'#7a4fbf':'#11253d']),['Alimentação',C.alim,'#a7bc09'],['Operacional',C.op,'#4a7fbf'],['Outros custos',C.outros,'#e0912f']],tot=C.custo||1;
+  const partes=[...linhasCompra(l,C).map(([a,v],i)=>[a,v,i?'#7a4fbf':'#11253d']),['Alimentação',C.alim,'#a7bc09',C.diaAlim],['Operacional',C.op,'#4a7fbf',C.diaOp],['Outros custos',C.outros,'#e0912f',C.diaOut]],tot=C.custo||1;
   const bwT=W-2*M,CAB_T='#e3ecbf';   // cabeçalho das tabelas: faixa verde-clara com título escuro
   const yT0=y-4;ret(M,y-4,bwT,36,8,AZ);txt('DESCRIÇÃO',M+30,y+14,'800',13,'#fff');txt('TOTAL',M+480,y+14,'800',13,'#fff','right');txt('% DO TOTAL',M+600,y+14,'800',13,'#fff','right');txt('POR CABEÇA',W-M-130,y+14,'800',13,'#fff','right');txt('CAB/DIA',W-M-8,y+14,'800',13,'#fff','right');y+=40;
-  partes.forEach(([n,v,cor],i)=>{const nP=n.split(' · '),h2=nP.length>1?56:44,dy=nP.length>1?6:2;if(i%2){c.fillStyle='#f7f9fb';c.fillRect(M,y,bwT,h2);}y+=dy;ret(M+6,y+12,16,16,4,cor);txt(nP[0],M+30,y+20,'700',19,AZ,'left',330);if(nP.length>1)txt(nP.slice(1).join(' · '),M+30,y+42,'600',15,CI,'left',450);   /* descrição em 2 linhas: não encosta no valor */txt(rs(v),M+480,y+20,'600',19,AZ,'right');txt(pc(v/tot*100,1),M+600,y+20,'600',19,CI,'right');
-    txt(rs(v/cabR),W-M-130,y+20,'600',19,AZ,'right');txt(i?rs(v/(C.R.cabDias||NaN)):'—',W-M-8,y+20,'600',19,AZ,'right');y+=h2-dy;});y+=4;
+  partes.forEach(([n,v,cor,dia_],i)=>{const nP=n.split(' · '),h2=nP.length>1?56:44,dy=nP.length>1?6:2;if(i%2){c.fillStyle='#f7f9fb';c.fillRect(M,y,bwT,h2);}y+=dy;ret(M+6,y+12,16,16,4,cor);txt(nP[0],M+30,y+20,'700',19,AZ,'left',330);if(nP.length>1)txt(nP.slice(1).join(' · '),M+30,y+42,'600',15,CI,'left',450);   /* descrição em 2 linhas: não encosta no valor */txt(rs(v),M+480,y+20,'600',19,AZ,'right');txt(pc(v/tot*100,1),M+600,y+20,'600',19,CI,'right');
+    txt(rs(v/cabR),W-M-130,y+20,'600',19,AZ,'right');txt(dia_!=null?rs(dia_):'—',W-M-8,y+20,'600',19,AZ,'right');y+=h2-dy;});y+=4;
   ret(M,y+4,bwT,46,10,AZ);txt('TOTAL',M+16,y+27,'800',19,'#fff');txt(rs(C.custo),M+480,y+27,'800',19,'#c8dd1e','right');txt("100%",M+600,y+27,'700',18,'#fff','right');txt(rs(C.custo/cabR),W-M-130,y+27,'800',19,'#c8dd1e','right');txt(rs(C.diaria),W-M-8,y+27,'800',19,'#c8dd1e','right');borda(M,yT0,bwT,y+50-yT0,10);y+=72;
   if(notaTransf(C)){fonte('600',14);const ws=notaTransf(C).split(' ');let ln='';const L=[];ws.forEach(w=>{const t=ln?ln+' '+w:w;if(c.measureText(t).width>bwT&&ln){L.push(ln);ln=w;}else ln=t;});if(ln)L.push(ln);
     L.forEach((t,i)=>txt(t,M,y-8+i*20,'600',14,CI));y+=18+(L.length-1)*20;}   /* nota em várias linhas (não corta) */
+  const mnL=C.R.custoR>0&&ok(C.alim)?C.R.mn*C.alim/C.R.custoR:C.R.mn;   // MN na mesma base do custo de alimentação (sem a parte levada pelos transferidos)
   const cSC=(C.alim||0)+(C.op||0)+(C.outros||0);   // custo sem a compra (alimentação + operacional + outros)
-  tiles([{r:'CONSUMO TOTAL · MN',v:ok(C.R.mn)?nf(C.R.mn/1000,1)+' t':'—',s:'matéria natural do lote'},{r:'PREÇO MÉDIO · R$/KG MN',v:rs(C.R.mn>0?(C.R.custoR||0)/C.R.mn:NaN,3),s:'custo da ração ÷ kg MN'},{r:'CUSTO ALIMENTAÇÃO/LOTE',v:rs(C.alim),s:'ração fornecida'},{r:'CUSTO TOTAL (SEM A COMPRA)',v:rs(cSC),s:'alim. + operac. + outros'}],4);y-=14;
-  tiles([{r:'DIÁRIA · ALIMENTAÇÃO/CAB',v:rs(C.diaAlim),s:'por cab/dia do período'},{r:'DIÁRIA · TOTAL/CAB',v:rs(C.diaria),s:'alim. + operac. + outros'},{r:'CUSTO TOTAL/CABEÇA',v:rs(cabR?cSC/cabR:NaN),s:'custo total ÷ cabeças'},AP?{r:'CUSTO DA @ PRODUZIDA',v:rs(C.custoArrPV),s:'sem compra ÷ @ vivo'}:{r:'CUSTO DA @ PRODUZIDA',v:rs(C.custoArr),s:'sem compra ÷ @ carcaça'}],4);
+  tiles([{r:'CONSUMO TOTAL · MN',v:ok(mnL)?nf(mnL/1000,1)+' t':'—',s:C.cabT?'sem a parte dos transferidos':'matéria natural do lote'},{r:'PREÇO MÉDIO · R$/KG MN',v:rs(mnL>0?C.alim/mnL:NaN,3),s:'custo alimentação ÷ kg MN'},{r:'CUSTO ALIMENTAÇÃO/LOTE',v:rs(C.alim),s:C.cabT?'sem a parte dos transferidos':'ração fornecida'},{r:'CUSTO TOTAL (SEM A COMPRA)',v:rs(cSC),s:'alim. + operac. + outros'}],4);y-=14;
+  tiles([{r:'DIÁRIA · ALIMENTAÇÃO/CAB',v:rs(C.diaAlim),s:'alimentação ÷ cabeças-dia (todos)'},{r:'DIÁRIA · TOTAL/CAB',v:rs(C.diaria),s:'total ÷ cabeças-dia (todos)'},{r:'CUSTO TOTAL/CABEÇA',v:rs(cabR?cSC/cabR:NaN),s:'custo total ÷ cabeças'},AP?{r:'CUSTO DA @ PRODUZIDA',v:rs(C.custoArrPV),s:'sem compra ÷ @ vivo'}:{r:'CUSTO DA @ PRODUZIDA',v:rs(C.custoArr),s:'sem compra ÷ @ carcaça'}],4);
   /* apartação: como o custo foi dividido e como estão os lotes novos */
   if(AP){bloco('4','Divisão na apartação',`${dB(C.aps[0].dia)} · proporcional ao peso`);
     const cores=['#11253d','#a7bc09','#4a7fbf','#e0912f','#7a4fbf','#3f7d20'];let xx=M;FI.forEach((f,i)=>{const w=f.pct/100*bwT;c.fillStyle=cores[i%6];c.fillRect(xx,y,w,30);if(w>60)txt(pc(f.pct,1),xx+w/2,y+16,'800',14,'#fff','center');xx+=w;});y+=48;
