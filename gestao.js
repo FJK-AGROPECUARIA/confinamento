@@ -1358,8 +1358,8 @@ function tRelLote(t){
     const F=efLote(C),k3=v=>ok(v)&&v>0?nf(v,3)+' kg':'—',k1=v=>ok(v)&&v>0?nf(v,1)+' kg':'—',d2=v=>ok(v)&&v>0?nf(v,2):'—';   // mesmos números do relatório final (PDF/foto)
     add('@ de entrada (vivo/cab)',nf(C.pesoE/30,2));add('@ de saída (vivo/cab)',d2(F.pSai/30));add('@ produzidas (vivo/cab)',d2(F.arrPVc));add('Ganho de peso (vivo/cab)',k1(F.gCab));
     add('Rendimento de carcaça',pc(F.rcM,2));add('@ de saída (carcaça/cab)',d2(F.arrSC));add('@ produzidas (carcaça/cab)',d2(F.arrPC));add('GMC',k3(F.gmc));
-    add('IMS % PV',pc(C.pv,2));add('Conversão alimentar · vivo (MS/dia ÷ GMD)',d2(C.conv));add('Eficiência alimentar · vivo (GMD ÷ MS/dia)',k3(F.eaV));add('Eficiência biológica · vivo (kg MS por @ vivo)',k1(F.ebV));
-    add('Conversão alimentar · carcaça (MS/dia ÷ GMC)',d2(F.caC));add('Eficiência alimentar · carcaça (GMC ÷ MS/dia)',k3(F.eaC));add('Eficiência biológica · carcaça (kg MS por @ carcaça)',k1(F.ebC));}
+    add('IMS % PV',pc(C.pv,2));add('Conversão alimentar · vivo (MS/dia ÷ GMD)',d2(C.conv));add('Eficiência alimentar · vivo (GMD ÷ MS/dia)',k3(F.eaV));
+    add('Conversão alimentar · carcaça (MS/dia ÷ GMC)',d2(F.caC));add('Eficiência alimentar · carcaça (GMC ÷ MS/dia)',k3(F.eaC));add('Eficiência biológica · carcaça (kg MS por @ carcaça)',k1(F.ebC));add('RG · rendimento do ganho (GMC ÷ GMD)',ok(F.gmc)&&F.gmc>0&&C.gmdV>0?pc(F.gmc/C.gmdV*100,2):'—');}
   if(fim){add(C.lucro>=0?'LUCRO':'PREJUÍZO',rs(C.lucro));add('Lucro por cabeça',rs(C.lucroCab));add('Lucro por @ produzida (carcaça)',rs(C.lucroArr));add('Rentabilidade',rentTx(C.rentab,C.rentabM)+' (lucro ÷ compra + custos)');}
   const E=fim?null:estVendaDet(l,C);
   if(E&&E.pr>0){add('Venda estimada',`${rs(E.rec)} (${nf(E.arrCab,2)} @/cab × ${rs(E.pr)} · rend. ${nf(E.rc,2)}%)`);add(E.res>=0?'Resultado estimado':'Prejuízo estimado',`${rs(E.res)} (${rs(E.resCab)}/cab · ${pc(E.margem,1)})`);add('Preço da @ para empatar',rs(E.pontoEq));}
@@ -2018,8 +2018,8 @@ function canvasLote(l,C){
   bloco('2','Eficiência','quanto o boi comeu');
   const cab_=C.cabV||C.cabP||0,arrPC=cab_?C.arrProd/cab_:NaN,dCo=ok(C.diasCocho)?C.diasCocho:C.dias,msPer=C.msCab*dCo,arrPV1=C.cabP?C.arrPV/C.cabP:NaN;   // eficiência biológica: kg de MS no período (por cab) ÷ @ produzidas (carcaça, por cab)
   tiles([T_('IMS % PV',pc(C.pv,2),'MS ÷ peso vivo médio · por dia'),T_('CONSUMO - MS/DIA',nf(C.msCab,2)+' kg','matéria seca por cab/dia'),T_('CONSUMO - MN/DIA',nf(C.mnCab,2)+' kg','matéria natural por cab/dia'),
-    T_('CONVERSÃO ALIMENTAR · VIVO',ok(C.conv)&&C.conv>0?nf(C.conv,2):'—','kg de MS ÷ kg de ganho vivo (GMD)'),T_('EFICIÊNCIA ALIMENTAR · VIVO',ok(C.conv)&&C.conv>0?nf(1/C.conv,3)+' kg':'—','kg de ganho vivo por kg de MS'),T_('EFICIÊNCIA BIOLÓGICA · VIVO',ok(arrPV1)&&arrPV1>0&&msPer>0?nf(msPer/arrPV1,1)+' kg':'—','kg de MS por @ vivo produzida'),
-    T_('CONVERSÃO ALIMENTAR · CARCAÇA',ok(gmc)&&gmc>0&&C.msCab>0?nf(C.msCab/gmc,2):'—','kg de MS ÷ kg de carcaça (GMC)'),T_('EFICIÊNCIA ALIMENTAR · CARCAÇA',ok(gmc)&&gmc>0&&C.msCab>0?nf(gmc/C.msCab,3)+' kg':'—','kg de carcaça por kg de MS'),T_('EFICIÊNCIA BIOLÓGICA · CARCAÇA',ok(arrPC)&&arrPC>0&&msPer>0?nf(msPer/arrPC,1)+' kg':'—','kg de MS por @ carcaça produzida')],3);
+    T_('CONVERSÃO ALIMENTAR · VIVO',ok(C.conv)&&C.conv>0?nf(C.conv,2):'—','kg de MS ÷ kg de ganho vivo (GMD)'),T_('EFICIÊNCIA ALIMENTAR · VIVO',ok(C.conv)&&C.conv>0?nf(1/C.conv,3)+' kg':'—','kg de ganho vivo por kg de MS'),T_('EFICIÊNCIA BIOLÓGICA · CARCAÇA',ok(arrPC)&&arrPC>0&&msPer>0?nf(msPer/arrPC,1)+' kg':'—','kg de MS por @ carcaça produzida'),
+    T_('CONVERSÃO ALIMENTAR · CARCAÇA',ok(gmc)&&gmc>0&&C.msCab>0?nf(C.msCab/gmc,2):'—','kg de MS ÷ kg de carcaça (GMC)'),T_('EFICIÊNCIA ALIMENTAR · CARCAÇA',ok(gmc)&&gmc>0&&C.msCab>0?nf(gmc/C.msCab,3)+' kg':'—','kg de carcaça por kg de MS'),T_('RG',ok(gmc)&&gmc>0&&C.gmdV>0?pc(gmc/C.gmdV*100,2):'—','rendimento do ganho (GMC ÷ GMD)')],3);
   /* 4. custos com barra de composição */
   bloco('3','Custos',`custo total ${rs(C.custo)}`);
   const partes=[...linhasCompra(l,C).map(([a,v],i)=>[a,v,i?'#7a4fbf':'#11253d']),['Alimentação',C.alim,'#a7bc09'],['Operacional',C.op,'#4a7fbf'],['Outros custos',C.outros,'#e0912f']],tot=C.custo||1;
