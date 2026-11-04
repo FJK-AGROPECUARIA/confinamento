@@ -399,8 +399,10 @@ function calcLote0(l){
   const arrPV=cabP?ganhoV/30:NaN;
   return {fim,ate,R,vendas,faltas,fOut,aps,trs,cabT,trOut,trazido,cabTV,recInt,resInt,trazVI,resVd:vendas.reduce((a,s)=>a+(ok(resSai(s))?resSai(s):0),0),nVdR:vendas.filter(s=>ok(resSai(s))).length,apart,cabA,kgA,pesoA:cabA?kgA/cabA:NaN,mortes,cabE,pesoE,compra:compraL,outros:outrosL,cabV,arrV,receita,pesoV,ganhoV,cabDiasV,cabP,alim,op,prod,custo,arrProd,
     dias:difDias(l.ent.dia,ate),cabAt:cabAtual(l),msCab:R.ms/R.cabDias,mnCab:R.mn/R.cabDias,pv:R.pvN?R.pvS/R.pvN:NaN,
-    gmdV:cabDiasV?ganhoV/cabDiasV:NaN,custoArr:prod/arrProd,conv:R.ms/ganhoV,lucro:fimN?receita+resInt-custo-perd:NaN,perd,sumCusto,custoMortes:sd.filter(s=>s.mot==='morte').reduce((a,s)=>a+(+s.custo||0),0),custoCabDia:(alimB+opB)/R.cabDias,
-    efic:R.ms?ganhoV/R.ms:NaN,                                  // eficiência alimentar: kg de peso vivo ganho por kg de MS consumida
+    gmdV:cabDiasV?ganhoV/cabDiasV:NaN,custoArr:prod/arrProd,conv:R.cabDias&&ganhoV>0?(R.ms/R.cabDias)/(ganhoV/cabDiasV):NaN,   // CA = MS/dia ÷ GMD
+    lucro:fimN?receita+resInt-custo-perd:NaN,perd,sumCusto,custoMortes:sd.filter(s=>s.mot==='morte').reduce((a,s)=>a+(+s.custo||0),0),custoCabDia:(alimB+opB)/R.cabDias,
+    efic:R.ms&&cabDiasV?(ganhoV/cabDiasV)/(R.ms/R.cabDias):NaN,   // EA = GMD ÷ MS/dia
+                                      // eficiência alimentar: kg de peso vivo ganho por kg de MS consumida
     arrPV,                                                      // @ produzidas em peso vivo (ganho ÷ 30)
     custoArrPV:prod/arrPV,custoKg:prod/ganhoV,                  // custo da @ (peso vivo) e do kg ganho — usado na apartação
     diasMed:cabE?R.cabDias/cabE:NaN,                            // dias de consumo médios por animal (pondera entradas/saídas em datas diferentes)
@@ -1965,7 +1967,7 @@ function canvasLote(l,C){
   y+=128;};
   const heroEmbaixo=!AP&&(fim||(E&&E.pr>0));if(!heroEmbaixo)heroDesenha();
   /* título de bloco e quadrinhos */
-  const bloco=(n,t)=>{ret(M,y,40,40,10,AZ);txt(n,M+20,y+21,'800',20,'#fff','center');txt(t,M+54,y+21,'800',24,AZ);y+=56;};   // sem comentário ao lado do título
+  const YB={},bloco=(n,t)=>{YB[n]=y;ret(M,y,40,40,10,AZ);txt(n,M+20,y+21,'800',20,'#fff','center');txt(t,M+54,y+21,'800',24,AZ);y+=56;};   // sem comentário ao lado do título
   const tiles=(arr,cols,pesos)=>{const g=12,w=(W-2*M-g*(cols-1))/cols,h=104;   // pesos: largura relativa de cada coluna (opcional)
     const pT=pesos?pesos.reduce((a,b)=>a+b,0):0,wC=i=>pesos?(W-2*M-g*(cols-1))*pesos[i%cols]/pT:w,xC=i=>{let x=M;for(let k=0;k<i%cols;k++)x+=wC(k)+g;return x;};while(arr.length&&!arr[arr.length-1])arr.pop();
     let fsT=14;arr.forEach((t,i)=>{if(!t)return;fonte('700',fsT);while(c.measureText(t.r).width>wC(i)-30&&fsT>10){fsT--;fonte('700',fsT);}});   // títulos dos quadros todos do mesmo tamanho
@@ -1991,7 +1993,10 @@ function canvasLote(l,C){
       :[])],5);
   /* 3. eficiência: quanto comeu e quanto converteu */
   bloco('2','Eficiência','quanto o boi comeu');
-  tiles([T_('IMS % PV',pc(C.pv,2),'MS ÷ peso vivo médio · por dia'),T_('CONSUMO - MS/DIA',nf(C.msCab,2)+' kg','matéria seca por cab/dia'),T_('CONSUMO - MN/DIA',nf(C.mnCab,2)+' kg','matéria natural por cab/dia'),T_('CONVERSÃO ALIMENTAR',nf(C.conv,2),'kg de MS para 1 kg de ganho'),T_('EFICIÊNCIA ALIMENTAR',ok(gmc)&&gmc>0&&C.msCab>0?nf(C.msCab/gmc,2):'—','kg de MS por kg de carcaça')],5);
+  const cab_=C.cabV||C.cabP||0,arrPC=cab_?C.arrProd/cab_:NaN,dCo=ok(C.diasCocho)?C.diasCocho:C.dias,msPer=C.msCab*dCo,arrPV1=C.cabP?C.arrPV/C.cabP:NaN;   // eficiência biológica: kg de MS no período (por cab) ÷ @ produzidas (carcaça, por cab)
+  tiles([T_('IMS % PV',pc(C.pv,2),'MS ÷ peso vivo médio · por dia'),T_('CONSUMO - MS/DIA',nf(C.msCab,2)+' kg','matéria seca por cab/dia'),T_('CONSUMO - MN/DIA',nf(C.mnCab,2)+' kg','matéria natural por cab/dia'),
+    T_('CONVERSÃO ALIMENTAR · VIVO',ok(C.conv)&&C.conv>0?nf(C.conv,2):'—','kg de MS ÷ kg de ganho vivo (GMD)'),T_('EFICIÊNCIA ALIMENTAR · VIVO',ok(C.conv)&&C.conv>0?nf(1/C.conv,3)+' kg':'—','kg de ganho vivo por kg de MS'),T_('EFICIÊNCIA BIOLÓGICA · VIVO',ok(arrPV1)&&arrPV1>0&&msPer>0?nf(msPer/arrPV1,1)+' kg':'—','kg de MS por @ vivo produzida'),
+    T_('CONVERSÃO ALIMENTAR · CARCAÇA',ok(gmc)&&gmc>0&&C.msCab>0?nf(C.msCab/gmc,2):'—','kg de MS ÷ kg de carcaça (GMC)'),T_('EFICIÊNCIA ALIMENTAR · CARCAÇA',ok(gmc)&&gmc>0&&C.msCab>0?nf(gmc/C.msCab,3)+' kg':'—','kg de carcaça por kg de MS'),T_('EFICIÊNCIA BIOLÓGICA · CARCAÇA',ok(arrPC)&&arrPC>0&&msPer>0?nf(msPer/arrPC,1)+' kg':'—','kg de MS por @ carcaça produzida')],3);
   /* 4. custos com barra de composição */
   bloco('3','Custos',`custo total ${rs(C.custo)}`);
   const partes=[...linhasCompra(l,C).map(([a,v],i)=>[a,v,i?'#7a4fbf':'#11253d']),['Alimentação',C.alim,'#a7bc09'],['Operacional',C.op,'#4a7fbf'],['Outros custos',C.outros,'#e0912f']],tot=C.custo||1;
@@ -2045,9 +2050,31 @@ function canvasLote(l,C){
     if(C.custoMortes>0){txt(`Mortes: ${nf(C.mortes)} cab · prejuízo ${rs(C.custoMortes)} (compra pelo preço de entrada + trato até o dia), já incluído no custo total.`,M,y+4,'700',14,VM,'left',bwT);y+=26;}
     y+=20;}
   /* rodapé explicativo */
-  fonte('500',13);const notas=['Conversão = MS consumida ÷ kg ganhos. Peso de saída = média de todos os que saíram pesados (vendidos e transferidos).','@ peso vivo = ganho ÷ 30. @ carcaça = (peso × rendimento ÷ 15) − (peso de entrada ÷ 30).','Diária = (alimentação + operacional + outros) ÷ cabeças-dia. Dias de cocho = média ponderada dos vendidos.'];
+  fonte('500',13);const notas=['Conversão = MS/dia ÷ GMD (vivo) ou ÷ GMC (carcaça). Ef. biológica = MS no período ÷ @ produzidas. Peso de saída = média de todos os que saíram pesados (vendidos e transferidos).','@ peso vivo = ganho ÷ 30. @ carcaça = (peso × rendimento ÷ 15) − (peso de entrada ÷ 30).','Diária = (alimentação + operacional + outros) ÷ cabeças-dia. Dias de cocho = média ponderada dos vendidos.'];
   c.fillStyle='#dde3ea';c.fillRect(M,y,bwT,1);y+=20;notas.forEach(n=>{txt(n,M,y,'500',13,CI,'left',bwT);y+=20;});y+=16;
-  const out=document.createElement('canvas');out.width=W*ESC;out.height=y*ESC;out.getContext('2d').drawImage(cv,0,0);return out;}
+  const out=document.createElement('canvas');out.width=W*ESC;out.height=y*ESC;out.getContext('2d').drawImage(cv,0,0);out.__yb=YB;out.__esc=ESC;return out;}
+/* relatório final em paisagem: cabeçalho na largura toda; 1 e 2 à esquerda, 3 em diante à direita */
+function canvasLotePais(l,C){const P=canvasLote(l,C),E=P.__esc||2,W=P.width,H=P.height,yb=P.__yb||{},hdr=114*E,G=30*E,cut=yb['3']?yb['3']*E-6*E:Math.round(H/2);
+  const hL=cut-hdr,hR=H-cut,TW=W*2+G,TH=hdr+Math.max(hL,hR)+10*E,cv=document.createElement('canvas');cv.width=TW;cv.height=TH;const c=cv.getContext('2d');
+  c.fillStyle='#fff';c.fillRect(0,0,TW,TH);c.fillStyle='#11253d';c.fillRect(0,0,TW,108*E);c.fillStyle='#a7bc09';c.fillRect(0,108*E,TW,6*E);
+  const cx=Math.round(W*0.7);c.drawImage(P,0,0,cx,hdr,0,0,cx,hdr);c.drawImage(P,cx,0,W-cx,hdr,TW-(W-cx),0,W-cx,hdr);   // título à esquerda, período no canto direito
+  c.drawImage(P,0,hdr,W,hL,0,hdr,W,hL);c.drawImage(P,0,cut,W,hR,W+G,hdr+8*E,W,hR);
+  c.fillStyle='#d2dae2';c.fillRect(W+G/2-E,hdr+16*E,2*E,TH-hdr-32*E);
+  /* gráfico do consumo de MS/dia (kg/cab) dia a dia (1º ao último dia de trato) no espaço livre embaixo da eficiência */
+  const gy=hdr+hL+10*E,gh=TH-gy-24*E;if(gh>160*E){const fim=C.ate||fimLote(l)||hojeKey(),pts=dadosEvol(l,fim,Math.max(1,difDias(l.ent.dia,fim)+1)).filter(p=>ok(p.ims)&&p.ims>0);
+    const M=36*E,x0=M+52*E,x1=W-M-10*E,yT=gy+64*E,yB=gy+gh-40*E,F='-apple-system,"Segoe UI",Roboto,Arial,sans-serif',t=(s,x,y,p,z,cor,al)=>{c.font=`${p} ${z*E}px ${F}`;c.fillStyle=cor;c.textAlign=al||'left';c.textBaseline='middle';c.fillText(s,x,y);};
+    c.fillStyle='#f3f6f9';c.beginPath();c.roundRect?c.roundRect(M,gy,W-2*M,gh,14*E):c.rect(M,gy,W-2*M,gh);c.fill();
+    t('Evolução do consumo de MS/dia',M+18*E,gy+24*E,'800',20,'#11253d');t('kg de matéria seca por cabeça · por dia de trato',M+18*E,gy+46*E,'500',13,'#5d6b7a');
+    if(pts.length<2)t('Sem dias com trato lançado para o gráfico.',M+18*E,gy+gh/2,'600',15,'#5d6b7a');
+    else{const v=pts.map(p=>p.ims),mn=Math.max(0,Math.floor(Math.min(...v)-0.5)),mx=Math.ceil(Math.max(...v)+0.5),sy=q=>yB-(q-mn)/(mx-mn||1)*(yB-yT),sx=i=>x0+i*(x1-x0)/(pts.length-1),md=v.reduce((a,b)=>a+b,0)/v.length;
+      for(let k=0;k<=4;k++){const q=mn+(mx-mn)*k/4,yy=sy(q);c.fillStyle='#dde3ea';c.fillRect(x0,yy,x1-x0,E);t(nf(q,1),x0-8*E,yy,'600',12,'#5d6b7a','right');}
+      c.strokeStyle='#e0912f';c.lineWidth=2*E;c.setLineDash([8*E,6*E]);c.beginPath();c.moveTo(x0,sy(md));c.lineTo(x1,sy(md));c.stroke();c.setLineDash([]);
+      t(`média ${nf(md,2)} kg`,x1,sy(md)-12*E,'800',13,'#e0912f','right');
+      c.strokeStyle='#2e7d32';c.lineWidth=3*E;c.lineJoin='round';c.beginPath();pts.forEach((p,i)=>i?c.lineTo(sx(i),sy(p.ims)):c.moveTo(sx(i),sy(p.ims)));c.stroke();
+      if(pts.length<=60){c.fillStyle='#2e7d32';pts.forEach((p,i)=>{c.beginPath();c.arc(sx(i),sy(p.ims),3.5*E,0,7);c.fill();});}
+      const nl=Math.min(8,pts.length),pa=(pts.length-1)/(nl-1);for(let k=0;k<nl;k++){const i=Math.round(k*pa);t(dB(pts[i].d).slice(0,5),sx(i),yB+20*E,'600',12,'#5d6b7a',k===0?'left':k===nl-1?'right':'center');}
+      t(`${nf(pts.length)} dias com trato · de ${dB(pts[0].d)} a ${dB(pts[pts.length-1].d)}`,W-M-18*E,gy+24*E,'600',13,'#5d6b7a','right');}}
+  return cv;}
 /* lotes novos de uma apartação: quanto de custo levou cada um e como está (real se fechou, estimado se ainda tem animais) */
 function filhosApart(l,C){C=C||calcLote(l);const kgT=C.kgA||1;let res=0,custo=0,todos=true,algum=false;
   const F=C.aps.map(s=>{const f=G.it[s.destino],pct=s.cab*s.peso/kgT*100,o={nome:f?f.nome:'(apagado)',uid:s.destino,cab:+s.cab,peso:+s.peso,pct,custo:C.custo*pct/100,res:NaN,est:false,sit:'—'};
@@ -2056,7 +2083,7 @@ function filhosApart(l,C){C=C||calcLote(l);const kgT=C.kgA||1;let res=0,custo=0,
     if(ok(o.res)){res+=o.res;algum=true;custo+=o.cst||0;}else todos=false;return o;});
   F.todos=todos;F.res=algum?res:NaN;F.custo=custo;F.rentab=todos&&custo?res/custo*100:NaN;return F;}
 async function imgLote(id,pdf){const l=G.it[id],C=calcLote(l),nome=nomeRes(l,C);pdf=pdf||window.__expPdf;window.__expPdf=false;
-  try{const cv=canvasLote(l,C);if(pdf)return await compartilharArquivo(fzPdf([cv]),nome+'.pdf','application/pdf');
+  try{const cv=canvasLotePais(l,C);if(pdf)return await compartilharArquivo(fzPdf([cv]),nome+'.pdf','application/pdf');
     await compartilharArquivo(await new Promise(ok=>cv.toBlob(ok,'image/png')),nome+'.png','image/png');}catch(e){console.error(e);toast(pdf?'Não consegui gerar o PDF':'Não consegui gerar a imagem');}}
 function xlsGraf(){const D=dadosGraf(GT.dia);const cab=['Curral'].concat(D.dias.map(d=>dB(d).slice(0,5)),['Média']);
   gExcel(`Leitura de cocho ate ${dB(GT.dia).replace(/\//g,'-')}`,[['Notas',cab,D.linhas.map(o=>{const ns=o.cel.filter(Boolean);return [xc(o.c)].concat(o.cel.map(x=>x?xc(x.nota,'int'):xc('')),[xc(ns.length?ns.reduce((a,x)=>a+x.nota,0)/ns.length:NaN,'dec')]);}),[16].concat(D.dias.map(()=>8),[9])],
