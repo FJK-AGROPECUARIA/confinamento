@@ -2067,19 +2067,19 @@ function canvasLotePais(l,C){const P=canvasLote(l,C),E=P.__esc||2,W=P.width,H=P.
   c.drawImage(P,0,hdr,W,hL,0,hdr,W,hL);c.drawImage(P,0,cut,W,hR,W+G,hdr+8*E,W,hR);
   c.fillStyle='#d2dae2';c.fillRect(W+G/2-E,hdr+16*E,2*E,TH-hdr-32*E);
   /* gráfico do consumo de MS/dia (kg/cab) dia a dia (1º ao último dia de trato) no espaço livre embaixo da eficiência */
-  const gy=hdr+hL+10*E,gh=TH-gy-24*E;if(gh>160*E){const fim=C.ate||fimLote(l)||hojeKey(),pts=dadosEvol(l,fim,Math.max(1,difDias(l.ent.dia,fim)+1)).filter(p=>ok(p.ims)&&p.ims>0);
+  const gy=hdr+hL+10*E,gh=TH-gy-24*E;if(gh>160*E){const fim=C.ate||fimLote(l)||hojeKey(),X_=gCtx(),pts=dadosEvol(l,fim,Math.max(1,difDias(l.ent.dia,fim)+1)).filter(p=>diaLote(l,p.d,X_)).map(p=>({d:p.d,ims:ok(p.ims)&&p.ims>0?p.ims:0,tr:ok(p.ims)&&p.ims>0})),nTr=pts.filter(p=>p.tr).length;   // dias sem trato entram como zero (mesma base do quadro MS/dia)
     const M=36*E,x0=M+52*E,x1=W-M-10*E,yT=gy+64*E,yB=gy+gh-40*E,F='-apple-system,"Segoe UI",Roboto,Arial,sans-serif',t=(s,x,y,p,z,cor,al)=>{c.font=`${p} ${z*E}px ${F}`;c.fillStyle=cor;c.textAlign=al||'left';c.textBaseline='middle';c.fillText(s,x,y);};
     c.fillStyle='#f3f6f9';c.beginPath();c.roundRect?c.roundRect(M,gy,W-2*M,gh,14*E):c.rect(M,gy,W-2*M,gh);c.fill();
-    t('Evolução do consumo de MS/dia',M+18*E,gy+24*E,'800',20,'#11253d');t('kg de matéria seca por cabeça · por dia de trato',M+18*E,gy+46*E,'500',13,'#5d6b7a');
-    if(pts.length<2)t('Sem dias com trato lançado para o gráfico.',M+18*E,gy+gh/2,'600',15,'#5d6b7a');
-    else{const v=pts.map(p=>p.ims),mn=Math.max(0,Math.floor(Math.min(...v)-0.5)),mx=Math.ceil(Math.max(...v)+0.5),sy=q=>yB-(q-mn)/(mx-mn||1)*(yB-yT),sx=i=>x0+i*(x1-x0)/(pts.length-1),md=v.reduce((a,b)=>a+b,0)/v.length;
+    t('Evolução do consumo de MS/dia',M+18*E,gy+24*E,'800',20,'#11253d');t('kg de matéria seca por cabeça · dias sem trato lançado contam como zero',M+18*E,gy+46*E,'500',13,'#5d6b7a');
+    if(nTr<2)t('Sem dias com trato lançado para o gráfico.',M+18*E,gy+gh/2,'600',15,'#5d6b7a');
+    else{const v=pts.map(p=>p.ims),mn=Math.max(0,Math.floor(Math.min(...v)-0.5)),mx=Math.ceil(Math.max(...v)+0.5),sy=q=>yB-(q-mn)/(mx-mn||1)*(yB-yT),sx=i=>x0+i*(x1-x0)/(pts.length-1),md=ok(C.msCab)?C.msCab:v.reduce((a,b)=>a+b,0)/v.length;   // média = quadro CONSUMO - MS/DIA
       for(let k=0;k<=4;k++){const q=mn+(mx-mn)*k/4,yy=sy(q);c.fillStyle='#dde3ea';c.fillRect(x0,yy,x1-x0,E);t(nf(q,1),x0-8*E,yy,'600',12,'#5d6b7a','right');}
       c.strokeStyle='#e0912f';c.lineWidth=2*E;c.setLineDash([8*E,6*E]);c.beginPath();c.moveTo(x0,sy(md));c.lineTo(x1,sy(md));c.stroke();c.setLineDash([]);
       t(`média ${nf(md,2)} kg`,x1,sy(md)-12*E,'800',13,'#e0912f','right');
       c.strokeStyle='#2e7d32';c.lineWidth=3*E;c.lineJoin='round';c.beginPath();pts.forEach((p,i)=>i?c.lineTo(sx(i),sy(p.ims)):c.moveTo(sx(i),sy(p.ims)));c.stroke();
       if(pts.length<=60){c.fillStyle='#2e7d32';pts.forEach((p,i)=>{c.beginPath();c.arc(sx(i),sy(p.ims),3.5*E,0,7);c.fill();});}
       const nl=Math.min(8,pts.length),pa=(pts.length-1)/(nl-1);for(let k=0;k<nl;k++){const i=Math.round(k*pa);t(dB(pts[i].d).slice(0,5),sx(i),yB+20*E,'600',12,'#5d6b7a',k===0?'left':k===nl-1?'right':'center');}
-      t(`${nf(pts.length)} dias com trato · de ${dB(pts[0].d)} a ${dB(pts[pts.length-1].d)}`,W-M-18*E,gy+24*E,'600',13,'#5d6b7a','right');}}
+      t(`${nf(pts.length)} dias · ${nf(nTr)} com trato · de ${dB(pts[0].d)} a ${dB(pts[pts.length-1].d)}`,W-M-18*E,gy+24*E,'600',13,'#5d6b7a','right');}}
   return cv;}
 /* lotes novos de uma apartação: quanto de custo levou cada um e como está (real se fechou, estimado se ainda tem animais) */
 function filhosApart(l,C){C=C||calcLote(l);const kgT=C.kgA||1;let res=0,custo=0,todos=true,algum=false;
