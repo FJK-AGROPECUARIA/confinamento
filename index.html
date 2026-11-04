@@ -653,7 +653,8 @@ input[type=date]::-webkit-calendar-picker-indicator{margin-left:2px;padding:0}
 .gLoteNomeRel{display:flex;gap:12px;align-items:flex-start;justify-content:space-between;flex:1;flex-wrap:wrap}.gLoteNomeL{min-width:0}.gRelTit{display:flex;flex-direction:column;align-items:center;gap:8px;padding:10px 14px;border:2px solid #2e6b30;border-radius:12px;background:#f3f8ee}.gRelTit>b{font-size:1.15rem;color:#2e6b30;text-align:center;white-space:nowrap}.gRelTitBts{display:flex;gap:6px}
 @media (max-width:760px){.gLoteTopo:has(.gLoteNomeRel){flex-wrap:wrap}.gLoteNomeRel{display:contents}.gLoteNomeL{flex:1;min-width:0}.gLoteNomeRel .gRelTit{flex:1 1 100%;box-sizing:border-box;padding:8px}.gRelTitBts{justify-content:center;width:100%}.gRelTitBts .mini{flex:1 1 0;min-width:0;padding:8px 6px;font-size:.9rem}.gLoteTopo:has(.gLoteNomeRel){align-items:flex-start}.gLoteTopo:has(.gLoteNomeRel) .gSelo{align-self:flex-start}.gCmpDig{display:flex;width:100%}.gCmpDig input{flex:1;min-width:0}}.gRelTitBts .mini{margin:0;padding:6px 12px;min-height:0;font-size:.85rem;white-space:nowrap}
 .gRelBt{width:auto!important;margin:0!important;padding:10px 16px!important;white-space:nowrap}
-.gLoteSeloAb{display:flex;flex-direction:column;gap:8px;align-items:stretch;width:44%;min-width:44%;flex:none}.gLoteArq .gLoteSeloAb .gSelo{width:100%;min-width:100%!important;max-width:100%!important;flex:1}.gLoteSeloAb .gLoteAbrir{margin:0;padding:8px 10px;min-height:0;font-size:.9rem}.gLoteArq{cursor:default}.gResLote{display:grid;gap:8px}
+.gLoteSeloAb{display:flex;flex-direction:column;gap:8px;align-items:stretch;width:44%;min-width:44%;flex:none}.gLoteArq .gLoteSeloAb .gSelo{width:100%;min-width:100%!important;max-width:100%!important;flex:1}.gLoteSeloAb .gLoteAbrir{margin:0;padding:8px 10px;min-height:0;font-size:.9rem}.gArqSelBar{display:flex;flex-wrap:wrap;gap:8px;margin:4px 0}.gArqSelBar .mini{margin:0}.gArqChk{display:flex;align-items:center;padding:0 4px}.gArqChk input{width:26px;height:26px;accent-color:#2e6b30}.gArqFora{opacity:.45}
+.gLoteArq{cursor:default;border:2px solid #c9d3dd;border-left:6px solid var(--lima);border-radius:14px;padding:12px 14px;margin:0 0 14px;background:#fff;box-shadow:0 2px 8px rgba(17,37,61,.10)}.gResLote{display:grid;gap:8px}
 .gCmpFix{display:flex;flex-wrap:wrap;align-items:center;gap:6px 10px;margin:8px 0 0;padding:8px 10px;border-radius:10px;background:#fff8e1;border:1px solid #f0d27a;font-size:.85rem}.gCmpFix.ok{background:#eef6e6;border-color:#b9d79a}.gCmpFix small{color:var(--muted)}input.gBadData{border-color:#b3261e!important;background:#fde3e1!important}.gTab tr.gSaiRes td>div{position:sticky;left:8px;max-width:min(300px,calc(100vw - 90px))}.gTab tr.gSaiRes td{text-align:left;font-size:13px;color:#5d6b7a;padding-top:0;white-space:normal}.gTab tr.gSaiRes td b.ok{color:#1b5e20}.gTab tr.gSaiRes td b.bad{color:#b3261e}.gApRes .bad b{color:var(--bad,#b3261e)}
 .gLoteRel{display:flex;flex-direction:column;gap:8px;width:100%;text-align:left;padding:10px;background:var(--surface);border-radius:14px}
 .gRelTopo{display:flex;gap:10px;align-items:center}
@@ -1278,7 +1279,7 @@ body.naInicio .topoTxt h1{font-size:clamp(16px,5vw,28px)!important}
 <div class="toast" id="toast" hidden></div>
 <script>
 'use strict';
-const APP_VERSAO='297';
+const APP_VERSAO='298';
 const APP_DATA='19/10/2026';
 const KEY='confinamento-completo-v1';
 const $=id=>document.getElementById(id);
