@@ -2020,7 +2020,7 @@ function canvasLote(l,C){
   if(notaTransf(C)){fonte('600',14);const ws=notaTransf(C).split(' ');let ln='';const L=[];ws.forEach(w=>{const t=ln?ln+' '+w:w;if(c.measureText(t).width>bwT&&ln){L.push(ln);ln=w;}else ln=t;});if(ln)L.push(ln);
     L.forEach((t,i)=>txt(t,M,y-8+i*20,'600',14,CI));y+=18+(L.length-1)*20;}   /* nota em várias linhas (não corta) */
   const cSC=(C.alim||0)+(C.op||0)+(C.outros||0);   // custo sem a compra (alimentação + operacional + outros)
-  tiles([{r:'DIÁRIA · ALIMENTAÇÃO',v:rs(C.diaAlim),s:'por cab/dia do período'},{r:'DIÁRIA TOTAL',v:rs(C.diaria),s:'alim. + operac. + outros'},{r:'CUSTO TOTAL/LOTE',v:rs(cSC),s:'sem a compra'},{r:'CUSTO TOTAL/CABEÇA',v:rs(cabR?cSC/cabR:NaN),s:'custo total ÷ cabeças'},AP?{r:'CUSTO DA @ PRODUZIDA',v:rs(C.custoArrPV),s:'sem compra ÷ @ vivo'}:{r:'CUSTO DA @ PRODUZIDA',v:rs(C.custoArr),s:'sem compra ÷ @ carcaça'}],5,[0.85,0.85,1.2,1.05,1.05]);
+  tiles([{r:'DIÁRIA · ALIMENTAÇÃO',v:rs(C.diaAlim),s:'por cab/dia do período'},{r:'DIÁRIA TOTAL',v:rs(C.diaria),s:'alim. + operac. + outros'},{r:'CUSTO TOTAL/CABEÇA',v:rs(cabR?cSC/cabR:NaN),s:'custo total ÷ cabeças'},{r:'CUSTO TOTAL/LOTE',v:rs(cSC),s:'sem a compra'},AP?{r:'CUSTO DA @ PRODUZIDA',v:rs(C.custoArrPV),s:'sem compra ÷ @ vivo'}:{r:'CUSTO DA @ PRODUZIDA',v:rs(C.custoArr),s:'sem compra ÷ @ carcaça'}],5,[0.85,0.85,1.05,1.2,1.05]);
   /* apartação: como o custo foi dividido e como estão os lotes novos */
   if(AP){bloco('4','Divisão na apartação',`${dB(C.aps[0].dia)} · proporcional ao peso`);
     const cores=['#11253d','#a7bc09','#4a7fbf','#e0912f','#7a4fbf','#3f7d20'];let xx=M;FI.forEach((f,i)=>{const w=f.pct/100*bwT;c.fillStyle=cores[i%6];c.fillRect(xx,y,w,30);if(w>60)txt(pc(f.pct,1),xx+w/2,y+16,'800',14,'#fff','center');xx+=w;});y+=48;
