@@ -1966,7 +1966,7 @@ function canvasLote(l,C){
   let y=140;
   /* quadro com o local e o curral/pasto, em destaque logo abaixo do cabeçalho */
   {const tl=`${locT} · ${curT}`;let fs=44;fonte('800',fs);while(c.measureText(tl).width>W-2*M-48&&fs>20){fs--;fonte('800',fs);}
-    ret(M,y,W-2*M,84,14,'#c8dd1e');txt(tl,M+24,y+44,'800',fs,AZ,'left',W-2*M-48);y+=108;}
+    var PS_=[y,tl];ret(M,y,W-2*M,84,14,'#c8dd1e');txt(tl,M+24,y+44,'800',fs,AZ,'left',W-2*M-48);y+=108;}
   /* resultado em destaque (no relatório com "Como chegou no resultado" ele vai logo acima desse bloco) */
   const lucro=AP?NaN:fim?C.lucro:(E&&E.pr>0?E.res:NaN),pos=!(lucro<0),corH=ok(lucro)?(pos?VD:VM):AZ;
   const heroDesenha=()=>{ret(M,y,W-2*M,104,14,corH);   // quadro do resultado (mais baixo)
@@ -2057,17 +2057,22 @@ function canvasLote(l,C){
     /* observações abaixo do lucro retiradas do relatório (v286) */
     y+=20;}
   y+=4;
-  const out=document.createElement('canvas');out.width=W*ESC;out.height=y*ESC;out.getContext('2d').drawImage(cv,0,0);out.__yb=YB;out.__esc=ESC;return out;}
+  const out=document.createElement('canvas');out.width=W*ESC;out.height=y*ESC;out.getContext('2d').drawImage(cv,0,0);out.__yb=typeof PS_!=='undefined'&&PS_?Object.assign(YB,{ps:PS_[0],pt:PS_[1]}):YB;out.__esc=ESC;return out;}
 /* relatório final em paisagem: cabeçalho na largura toda; 1 e 2 à esquerda, 3 em diante à direita */
 function canvasLotePais(l,C){const P=canvasLote(l,C),E=P.__esc||2,W=P.width,H=P.height,yb=P.__yb||{},hdr=114*E,G=30*E,cut=yb['3']?yb['3']*E-6*E:Math.round(H/2);
   const hL=cut-hdr,hR=H-cut,TW=W*2+G,CH=330*E,TH=hdr+Math.max(hL+CH,hR)+10*E,   // CH: espaço mínimo garantido para o gráfico de MS/dia na esquerda
     cv=document.createElement('canvas');cv.width=TW;cv.height=TH;const c=cv.getContext('2d');
   c.fillStyle='#fff';c.fillRect(0,0,TW,TH);c.fillStyle='#11253d';c.fillRect(0,0,TW,108*E);c.fillStyle='#a7bc09';c.fillRect(0,108*E,TW,6*E);
   const cx=Math.round(W*0.7);c.drawImage(P,0,0,cx,hdr,0,0,cx,hdr);c.drawImage(P,cx,0,W-cx,hdr,TW-(W-cx),0,W-cx,hdr);   // título à esquerda, período no canto direito
-  c.drawImage(P,0,hdr,W,hL,0,hdr,W,hL);c.drawImage(P,0,cut,W,hR,W+G,hdr+8*E,W,hR);
+  /* quadro verde do pasto/curral no cabeçalho (centro, um pouco à direita); a coluna da esquerda sobe */
+  const y1=yb['1']!=null&&yb.ps!=null?yb['1']*E-12*E:hdr,hL1=cut-y1;
+  if(yb.pt&&y1>hdr){const bx=Math.round(TW*0.37),bw=Math.round(TW*0.30),by=16*E,bh=76*E;c.fillStyle='#c8dd1e';c.beginPath();c.roundRect?c.roundRect(bx,by,bw,bh,12*E):c.rect(bx,by,bw,bh);c.fill();
+    let fs=40;const F='-apple-system,"Segoe UI",Roboto,Arial,sans-serif';c.font=`800 ${fs*E}px ${F}`;while(c.measureText(yb.pt).width>bw-40*E&&fs>18){fs--;c.font=`800 ${fs*E}px ${F}`;}
+    c.fillStyle='#11253d';c.textAlign='center';c.textBaseline='middle';c.fillText(yb.pt,bx+bw/2,by+bh/2+E);}
+  c.drawImage(P,0,y1,W,hL1,0,hdr+12*E,W,hL1);c.drawImage(P,0,cut,W,hR,W+G,hdr+8*E,W,hR);
   c.fillStyle='#d2dae2';c.fillRect(W+G/2-E,hdr+16*E,2*E,TH-hdr-32*E);
   /* gráfico do consumo de MS/dia (kg/cab) dia a dia (1º ao último dia de trato) no espaço livre embaixo da eficiência */
-  const gy=hdr+hL+10*E,gh=TH-gy-24*E;if(gh>160*E){const fim=C.ate||fimLote(l)||hojeKey(),X_=gCtx(),pts=dadosEvol(l,fim,Math.max(1,difDias(l.ent.dia,fim)+1)).filter(p=>diaLote(l,p.d,X_)).map(p=>({d:p.d,ims:ok(p.ims)&&p.ims>0?p.ims:0,tr:ok(p.ims)&&p.ims>0})),nTr=pts.filter(p=>p.tr).length;   // dias sem trato entram como zero (mesma base do quadro MS/dia)
+  const gy=hdr+12*E+hL1+10*E,gh=TH-gy-24*E;if(gh>160*E){const fim=C.ate||fimLote(l)||hojeKey(),X_=gCtx(),pts=dadosEvol(l,fim,Math.max(1,difDias(l.ent.dia,fim)+1)).filter(p=>diaLote(l,p.d,X_)).map(p=>({d:p.d,ims:ok(p.ims)&&p.ims>0?p.ims:0,tr:ok(p.ims)&&p.ims>0})),nTr=pts.filter(p=>p.tr).length;   // dias sem trato entram como zero (mesma base do quadro MS/dia)
     const M=36*E,x0=M+52*E,x1=W-M-10*E,yT=gy+64*E,yB=gy+gh-40*E,F='-apple-system,"Segoe UI",Roboto,Arial,sans-serif',t=(s,x,y,p,z,cor,al)=>{c.font=`${p} ${z*E}px ${F}`;c.fillStyle=cor;c.textAlign=al||'left';c.textBaseline='middle';c.fillText(s,x,y);};
     c.fillStyle='#f3f6f9';c.beginPath();c.roundRect?c.roundRect(M,gy,W-2*M,gh,14*E):c.rect(M,gy,W-2*M,gh);c.fill();
     t('Evolução do consumo de MS/dia',M+18*E,gy+24*E,'800',20,'#11253d');t('kg de matéria seca por cabeça · dias sem trato lançado contam como zero',M+18*E,gy+46*E,'500',13,'#5d6b7a');
