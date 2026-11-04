@@ -153,7 +153,7 @@ function custoHerdado(l,prof){if(!l.apDe)return 0;if(!APC||Date.now()-APT>1500){
   const v=Co?(Co.custo-cv)*(+me.cab||0)*(+me.peso||0)/kgT:0;APC[l.uid]=v;return v;}
 const rotCompra=l=>l&&l.apDe?'Custo trazido da apartação':'Compra dos animais';
 /* linhas de custo separando compra e custo trazido (transferência/apartação) */
-function linhasCompra(l,C){const pura=C.compra-C.trazido,nv=l.apDe||(l.ent&&l.ent.unid==='transf'),L=[];if(Math.abs(pura)>0.005||!C.trazido)L.push([(nv?'Compra (entradas)':'Compra dos animais')+(C.cmpAlt?(C.cmpAlt.fix?' · pelo preço @ da compra':' · pela @ vendida')+` (${rs(C.cmpAlt.pV)}/@ · rend. ${pc(C.cmpAlt.rc||50,2)})`:''),pura]);const tz=C.trazido-(C.trazVI||0);if(Math.abs(tz)>0.005)L.push([l.apDe?'Custo trazido da apartação':'Custo trazido (transferências)',tz]);if(C.trazVI)L.push(['Compra de outros lotes (venda interna)',C.trazVI]);return L;}
+function linhasCompra(l,C){const pura=C.compra-C.trazido,nv=l.apDe||(l.ent&&l.ent.unid==='transf'),L=[];if(Math.abs(pura)>0.005||!C.trazido)L.push([(nv?'Compra (entradas)':'Compra dos animais')+(C.cmpAlt?(C.cmpAlt.fix?' · preço @ da compra':' · pela @ vendida')+` (${rs(C.cmpAlt.pV)}/@ · rend. ${pc(C.cmpAlt.rc||50,2)})`:''),pura]);const tz=C.trazido-(C.trazVI||0);if(Math.abs(tz)>0.005)L.push([l.apDe?'Custo trazido da apartação':'Custo trazido (transferências)',tz]);if(C.trazVI)L.push(['Compra de outros lotes (venda interna)',C.trazVI]);return L;}
 const notaTransf=C=>[C.cabT?`${nf(C.cabT)} cab transferidos para outros lotes (custos já descontados).`:'',C.cabTV?`${nf(C.cabTV)} cab vendidos para outros lotes (resultado entra no lucro).`:'',C.faltas&&C.fOut?`${nf(C.faltas)} cab sumidos (custo separado, fora do resultado).`:''].filter(Boolean).join(' ');
 const ehVenda=s=>s.mot!=='morte'&&s.mot!=='apart'&&s.mot!=='transf'&&s.mot!=='falta';
 /* preço de compra de SIMULAÇÃO do lote (Estimativa de compra): usado também para os animais que chegam por transferência a custo */
@@ -356,7 +356,7 @@ var RELCMP=null;
 /* base da compra fixada no lote (l.cmpFix): 'venda' = pelo preço da @ vendida (padrão), 'lanc' = preço real lançado, 'dig' = @ de compra digitada (pr) */
 function cmpFixDe(l){const f=l&&l.cmpFix,rc=f&&+f.rc>0?+f.rc:((l&&l.ent&&+l.ent.rcC)||50);return f&&['venda','lanc','dig'].includes(f.m)&&(f.m!=='dig'||+f.pr>0)?{m:f.m,pr:+f.pr||0,rc}:{m:'venda',pr:0,rc};}   // rc: rendimento da compra (padrão: o da entrada, 50%)
 function relcmpDe(uid,m,pr,rc){const r=+rc>0?+rc:undefined;return m==='venda'?{uid,rc:r}:m==='dig'&&+pr>0?{uid,pr:+pr,rc:r}:null;}
-const CMP_NOME={venda:'pelo preço da @ vendida',lanc:'pelo preço da @ lançado na entrada',dig:'pelo preço @ da compra digitado'};
+const CMP_NOME={venda:'pelo preço da @ vendida',lanc:'pelo preço da @ lançado na entrada',dig:'preço @ da compra digitado'};
 function cmpFixTxt(l){const f=cmpFixDe(l);return CMP_NOME[f.m]+(f.m==='dig'?` (${rs(f.pr)}/@)`:'')+(f.m!=='lanc'?` · rendimento ${pc(f.rc,2)}`:'');}
 /* cálculo do lote pela base fixada (usado no resumo dos arquivados e nos cards) */
 function calcLoteFix(l){const old=RELCMP,f=cmpFixDe(l);RELCMP=relcmpDe(l.uid,f.m,f.pr,f.rc);try{return calcLote(l);}finally{RELCMP=old;}}
