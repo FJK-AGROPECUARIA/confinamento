@@ -2049,25 +2049,19 @@ function canvasLote(l,C){
     ret(M,y+4,bwT,40,10,AZ);txt('TOTAL VENDIDO',X1+8,y+24,'800',16,'#fff');txt(nf(cabT2),X3,y+24,'800',16,'#fff','right');txt(kg(sPV),X4,y+24,'700',15,'#fff','right');txt(kg(sPA),X5,y+24,'700',15,'#fff','right');txt(sPV>0?pc(sPA/sPV*100,2):'—',X6,y+24,'700',15,'#fff','right');txt(rs(arrT?(brV+recI)/arrT:NaN),X6b,y+24,'700',15,'#fff','right');txt(rs(recT),X7,y+24,'800',16,'#c8dd1e','right');borda(M,yV0,bwT,y+44-yV0,10);y+=50;
     y+=26;}
   /* 5. a conta do resultado */
-  if(heroEmbaixo){y+=6;heroDesenha();}
-  if(!AP&&(fim||(E&&E.pr>0))){bloco(C.cabV?'5':'4',fim?'Como chegou no resultado':'Como chegou na estimativa');
+  const nRes=C.cabV?5:4;if(heroEmbaixo){y+=6;bloco(String(nRes),fim?'Resultado final':'Resultado estimado');heroDesenha();}
+  if(!AP&&(fim||(E&&E.pr>0))){bloco(String(heroEmbaixo?nRes+1:nRes),fim?'Como chegou no resultado':'Como chegou na estimativa');
     const cTr=(C.recInt||0)-(C.resInt||0),cT=C.custo+cTr+(C.perd||0),rec=(fim?C.receita:E.rec)+(C.recInt||0),linhas=[[fim?(C.recInt?'Receita total':'Receita'):'Receita estimada',rec,VD,'+'],['Custo total',-cT,VM,'−'],[fim?(pos?'Lucro':'Prejuízo'):'Resultado',lucro,corH,'=']],mx=Math.max(Math.abs(rec),cT,Math.abs(lucro))||1;
     linhas.forEach(([n,v,cor,s],i)=>{txt(s,M+10,y+20,'800',24,cor,'center');txt(n,M+34,y+20,'700',18,AZ);const w=Math.abs(v)/mx*(bwT-460);ret(M+250,y+6,Math.max(4,w),28,6,cor);txt(rs(Math.abs(v)),W-M-8,y+20,'800',20,cor,'right');y+=44;
       if(i===1){c.fillStyle=AZ;c.fillRect(M,y-2,bwT,2);y+=6;}});
-    if(C.cmpAlt){txt(`Compra calculada pelo preço da @ ${C.cmpAlt.fix?'de compra digitado ('+rs(C.cmpAlt.pV)+'/@) ':'vendida ('+rs(C.cmpAlt.pV)+'/@) '}(${rs(C.cmpAlt.nova)}); a compra lançada é ${rs(C.cmpAlt.lanc)} (${C.cmpAlt.delta>=0?'+':''}${rs(C.cmpAlt.delta)} no custo).`,M,y+4,'700',14,VM,'left',bwT);y+=26;}
-    if(cTr>0){txt(`Custo total = custos do lote ${rs(C.custo)} (quadro 3) + ${rs(cTr)} dos ${nf(C.cabTV)} cab vendidos para outros lotes (a venda deles está na receita).`,M,y+4,'700',14,AZ,'left',bwT);y+=26;}
-    if(C.sumCusto){const nS=nf(sumi.reduce((a,s)=>a+faltaPend(s),0));
-      txt(`Os ${nS} sumidos saíram do lote levando o custo deles (${rs(C.sumCusto)}, compra + trato).`,M,y+4,'700',14,VM,'left',bwT);y+=22;
-      txt(`Esse custo fica separado até serem achados e não entra no resultado deste lote.`,M,y+4,'600',14,CI,'left',bwT);y+=26;}
-    if(C.custoMortes>0){txt(`Mortes: ${nf(C.mortes)} cab · prejuízo ${rs(C.custoMortes)} (compra pelo preço de entrada + trato até o dia), já incluído no custo total.`,M,y+4,'700',14,VM,'left',bwT);y+=26;}
+    /* observações abaixo do lucro retiradas do relatório (v286) */
     y+=20;}
-  /* rodapé explicativo */
-  fonte('500',13);const notas=['Conversão = MS/dia ÷ GMD (vivo) ou ÷ GMC (carcaça). Ef. biológica = MS no período ÷ @ produzidas. Peso de saída = média de todos os que saíram pesados (vendidos e transferidos).','@ peso vivo = ganho ÷ 30. @ carcaça = (peso × rendimento ÷ 15) − (peso de entrada ÷ 30).','Diária = (alimentação + operacional + outros) ÷ cabeças-dia. Dias de cocho = média ponderada dos vendidos.'];
-  c.fillStyle='#dde3ea';c.fillRect(M,y,bwT,1);y+=20;notas.forEach(n=>{txt(n,M,y,'500',13,CI,'left',bwT);y+=20;});y+=16;
+  y+=4;
   const out=document.createElement('canvas');out.width=W*ESC;out.height=y*ESC;out.getContext('2d').drawImage(cv,0,0);out.__yb=YB;out.__esc=ESC;return out;}
 /* relatório final em paisagem: cabeçalho na largura toda; 1 e 2 à esquerda, 3 em diante à direita */
 function canvasLotePais(l,C){const P=canvasLote(l,C),E=P.__esc||2,W=P.width,H=P.height,yb=P.__yb||{},hdr=114*E,G=30*E,cut=yb['3']?yb['3']*E-6*E:Math.round(H/2);
-  const hL=cut-hdr,hR=H-cut,TW=W*2+G,TH=hdr+Math.max(hL,hR)+10*E,cv=document.createElement('canvas');cv.width=TW;cv.height=TH;const c=cv.getContext('2d');
+  const hL=cut-hdr,hR=H-cut,TW=W*2+G,CH=330*E,TH=hdr+Math.max(hL+CH,hR)+10*E,   // CH: espaço mínimo garantido para o gráfico de MS/dia na esquerda
+    cv=document.createElement('canvas');cv.width=TW;cv.height=TH;const c=cv.getContext('2d');
   c.fillStyle='#fff';c.fillRect(0,0,TW,TH);c.fillStyle='#11253d';c.fillRect(0,0,TW,108*E);c.fillStyle='#a7bc09';c.fillRect(0,108*E,TW,6*E);
   const cx=Math.round(W*0.7);c.drawImage(P,0,0,cx,hdr,0,0,cx,hdr);c.drawImage(P,cx,0,W-cx,hdr,TW-(W-cx),0,W-cx,hdr);   // título à esquerda, período no canto direito
   c.drawImage(P,0,hdr,W,hL,0,hdr,W,hL);c.drawImage(P,0,cut,W,hR,W+G,hdr+8*E,W,hR);
