@@ -3023,14 +3023,15 @@ const cCaixa=()=>$(cAuto()?'acBox':'cBox');
 /* tocou em Confinamento ou Pasto no Carregar: já traz o previsto da nuvem (leitura de cocho de outro aparelho).
    Total ainda igual ao sugerido: troca sozinho. Total mexido na mão: pergunta antes de trocar. */
 async function cPrevAoEscolher(loc){if(typeof prevAtualizarAgora!=='function'||CG.ativa)return;
-  const sug=()=>{const t=CG.total;let v=null;try{if(CG.trato&&!CG.avulso){cExpAplicar();v=+CG.total||0;}}catch(e){}CG.total=t;return v;};
+  const sug=()=>{const t=CG.total,ta=CG.totalAuto;let v=null;try{if(CG.trato&&!CG.avulso){cExpAplicar();v=+CG.total||0;}}catch(e){}CG.total=t;CG.totalAuto=ta;return v;};
   const sAntes=sug();const r=await prevAtualizarAgora();if(!r.mudou||CG.ativa||CG.local!==loc)return;
   const sNovo=sug(),tU=+CG.total||0;
   if(sNovo==null||sAntes==null||Math.round(sNovo)===Math.round(sAntes)){cRender();return toast('✓ Previsto atualizado pela leitura de cocho');}
-  if(Math.round(tU)===Math.round(sAntes)){CG.total=sNovo;cSave();cRender();return toast(`✓ Previsto atualizado pela leitura de cocho: ${nf(sAntes)} → ${nf(sNovo)} kg`);}
-  if(await confirmaVermelho('O previsto mudou',`A leitura de cocho mudou o previsto: era ${nf(sAntes)} kg, agora é ${nf(sNovo)} kg. O total que está na tela (${nf(tU)} kg) foi mudado na mão.`,`Usar o novo (${nf(sNovo)} kg)`,'Manter o que está',true)){if(CG.ativa)return;CG.total=sNovo;cSave();}cRender();}
+  if(Math.round(tU)===Math.round(sAntes)){CG.total=sNovo;CG.totalAuto=sNovo;cSave();cRender();return toast(`✓ Previsto atualizado pela leitura de cocho: ${nf(sAntes)} → ${nf(sNovo)} kg`);}
+  if(await confirmaVermelho('O previsto mudou',`A leitura de cocho mudou o previsto: era ${nf(sAntes)} kg, agora é ${nf(sNovo)} kg. O total que está na tela (${nf(tU)} kg) foi mudado na mão.`,`Usar o novo (${nf(sNovo)} kg)`,'Manter o que está',true)){if(CG.ativa)return;CG.total=sNovo;}CG.totalAuto=sNovo;cSave();cRender();}
 function cRender(){const y0=window.scrollY;try{cRender0();}finally{if(Math.abs(window.scrollY-y0)>1)window.scrollTo(0,y0);}}  /* redesenha sem a tela pular */
 function cRender0(){const auto=cAuto(),b=$(auto?'acBox':'cBox'),o=$(auto?'cBox':'acBox');if(!b)return;if(o)o.innerHTML='';
+  {const ts=cTotSync();if(ts&&ts.auto)setTimeout(()=>toast(`✓ Previsto atualizado pela leitura de cocho: ${nf(ts.antes)} → ${nf(ts.novo)} kg`),0);}
   /* outro aparelho com batida aberta: primeiro só ela + "Abrir novo carregamento"; ao abrir novo, recolhe numa faixa em cima */
   const rem=cAtiva()?'':cRemHTML(),remSo=!!rem&&!(window.REMNOVO&&REMNOVO.c);
   if(remSo){b.innerHTML=rem+'<button type="button" class="primary remNovoBt" data-remnovo="c">＋ Abrir novo carregamento</button>'+cBatidasHoje();return;}
@@ -3109,7 +3110,7 @@ function cTelaNova0(){if(!CG.passo){CG.passo=1;CG.local=null;}if(!CG.local)CG.pa
   else if(!CG.trato&&!CG.avulso&&trC.length===1)CG.trato=trC[0];  // só os tratos com previsto; se for um só, já vem escolhido
   CG.juntos=CG.avulso?[]:(CG.juntos||[]).filter(k=>k!==+CG.trato);const trs=[+CG.trato].concat(CG.juntos).sort((a,b)=>a-b);
   const partes=trs.map(k=>({k,sg:sugestaoCarga(k,CG.rac,CG.local)})),sg={tot:partes.reduce((a,p)=>a+p.sg.tot,0),cs:[...new Set(partes.flatMap(p=>p.sg.cs))]};
-  const chave=CG.avulso?'avulso|'+CG.rac:CG.local+'|'+trs.join('+')+'|'+CG.rac;if(CG.totalDe!==chave){const mesmaRac=CG.totalDe!=null&&String(CG.totalDe).split('|').pop()===String(CG.rac);CG.total=CG.avulso?0:(sg.tot||0);CG.totalDe=chave;if(!mesmaRac)CG.ordem=null;  /* a Ordem é independente: continua valendo se a ração é a mesma */
+  const chave=CG.avulso?'avulso|'+CG.rac:CG.local+'|'+trs.join('+')+'|'+CG.rac;if(CG.totalDe!==chave){const mesmaRac=CG.totalDe!=null&&String(CG.totalDe).split('|').pop()===String(CG.rac);CG.total=CG.avulso?0:(sg.tot||0);CG.totalAuto=CG.total;CG.totalDe=chave;if(!mesmaRac)CG.ordem=null;  /* a Ordem é independente: continua valendo se a ração é a mesma */
     CG.ja={};CG.sobModo='rac';CG.sobRac=null;CG.sobKg=0;CG.ordAberto=false;CG.jaAberto=false;CG.man={};CG.manAberto=false;CG.desm=[];
     /* currais deste trato que já foram carregados hoje em outra batida: já vêm desmarcados (fica só o que falta) */
     if(!CG.avulso&&CG.trato){const ja=cJaCarr(trs),L=cCurrCarga(trs);CG.desm=L.filter(x=>ja.has(x.c)).map(x=>x.c);if(CG.desm.length)cExpAplicar();}
@@ -3244,7 +3245,10 @@ function cClique(e){
   if(a==='iniciar'&&!b._okPrev&&!b._okIni&&!CG.ativa&&typeof prevAtualizarAgora==='function'){(async()=>{if(CG.prevChecando)return;CG.prevChecando=true;let r;
       try{toast('Atualizando o previsto…');r=await prevAtualizarAgora();}finally{CG.prevChecando=false;}
       if(!r.ok&&!await confirmaVermelho('Previsto pode estar desatualizado',navigator.onLine?'A nuvem não respondeu: o previsto pode não ter as últimas leituras de cocho.':'Sem internet: o previsto pode não ter as últimas leituras de cocho feitas em outro aparelho.','Iniciar mesmo assim','Voltar'))return;
-      if(r.mudou&&!CG.avulso&&CG.local){const antes=+CG.total||0;try{cExpAplicar();}catch(e){}cSave();cRender();const novo=+CG.total||0;
+      {const ts=cTotSync();if(ts){if(ts.auto){cRender();await confirmaVermelho('Previsto atualizado',`A leitura de cocho mudou o previsto. Total do carregamento: ${nf(ts.antes)} → ${nf(ts.novo)} kg. Confira e toque em ▶ Iniciar carregamento de novo.`,'Entendi, vou conferir','Fechar',true);return;}
+        const usar=await confirmaVermelho('O previsto mudou',`A leitura de cocho mudou o previsto: era ${nf(ts.antes)} kg, agora é ${nf(ts.novo)} kg. O total que está na tela (${nf(ts.tela)} kg) foi mudado na mão.`,`Usar o novo (${nf(ts.novo)} kg)`,'Manter o que está',true);
+        if(usar){CG.total=ts.novo;}CG.totalAuto=ts.novo;cSave();cRender();if(usar)return;}}
+      if(r.mudou&&!CG.avulso&&CG.local&&CG.totalAuto==null){const antes=+CG.total||0;try{cExpAplicar();}catch(e){}cSave();cRender();const novo=+CG.total||0;
         if(Math.round(novo)!==Math.round(antes)){await confirmaVermelho('Previsto atualizado',`A leitura de cocho mudou o previsto. Total do carregamento: ${nf(antes)} → ${nf(novo)} kg. Confira e toque em ▶ Iniciar carregamento de novo.`,'Entendi, vou conferir','Fechar',true);return;}}
       try{window.diagLog&&diagLog('batida_prev',{local:CG.local,tratos:[+CG.trato].concat(CG.juntos||[]),prevTr:cPrevTr(),total:CG.total,conferido:hhmm(S.prevChecadoEm),nuvemOk:!!r.ok,mudou:!!r.mudou});}catch(e){}
       const bt=document.querySelector('[data-c="iniciar"]')||b;bt._okPrev=1;try{bt.click();}finally{bt._okPrev=0;}})();return;}
@@ -4337,7 +4341,16 @@ function cJaCarr(trs){const m=new Map(),hj=hojeKey();try{gTodos('carga').filter(
 function cExpHTML(trs){const L=cCurrCarga(trs);if(!L.length)return '';const ds=CG.desm||[],nM=L.filter(x=>!ds.includes(x.c)).length,ja=cJaCarr(trs);
   return `<button type="button" class="mini cExpTog${CG.expAberto?' sel':''}" data-cexp="1">${CG.expAberto?'▲ Recolher tratos':'▼ Expandir tratos'}${ds.length?` · ${nM} de ${L.length} currais`:''}</button>`+
     (CG.expAberto?`<div class="cExpTodos">${nM<L.length?'<button type="button" class="mini" data-cexpall="1">✓ Marcar todos</button>':'<button type="button" class="mini" data-cexpall="0">✕ Desmarcar todos</button>'}</div><div class="cJuntoLista cExpLista">${L.map(x=>{const on=!ds.includes(x.c);const jh=ja.get(x.c);return `<button type="button" data-cexpc="${esc(x.c)}" class="${on?'sel':''}${jh!=null&&!on?' cJaCarr':''}"><span>${on?'✓ ':''}${esc(x.c)}</span><small><i class="kg">${nf(x.kg)} kg</i>${jh!=null?` · <em>já ${esc(jh)}</em>`:''}</small></button>`;}).join('')}</div><p class="note">Toque no curral para colocar ou tirar a quantidade dele no carregamento.</p>`:'');}
-function cExpAplicar(){const trs=[+CG.trato].concat(CG.juntos||[]),L=cCurrCarga(trs),ds=CG.desm||[];CG.total=L.filter(x=>!ds.includes(x.c)).reduce((a,x)=>a+x.kg,0);}
+function cExpAplicar(){const trs=[+CG.trato].concat(CG.juntos||[]),L=cCurrCarga(trs),ds=CG.desm||[];CG.total=L.filter(x=>!ds.includes(x.c)).reduce((a,x)=>a+x.kg,0);CG.totalAuto=CG.total;}
+/* total que o previsto de agora pede para a batida da tela (mesma conta do cExpAplicar) */
+function cTotSug(){const trs=[+CG.trato].concat(CG.juntos||[]),ds=CG.desm||[];return cCurrCarga(trs).filter(x=>!ds.includes(x.c)).reduce((a,x)=>a+x.kg,0);}
+/* o previsto mudou depois que o total da batida foi montado (ex.: leitura de cocho chegou pela nuvem com a tela aberta).
+   Total não mexido na mão: troca sozinho. Mexido na mão: só avisa (volta {auto:false}). */
+function cTotSync(){try{if(CG.ativa||CG.avulso||!CG.trato||!CG.local||!CG.rac||CG.totalAuto==null)return null;
+  const trs=[+CG.trato].concat(CG.juntos||[]).sort((a,b)=>a-b);if(CG.totalDe!==CG.local+'|'+trs.join('+')+'|'+CG.rac)return null;
+  const s=cTotSug(),a=+CG.totalAuto||0,t=+CG.total||0;if(Math.round(s)===Math.round(a))return null;
+  if(Math.round(t)===Math.round(a)){CG.total=s;CG.totalAuto=s;cSave();try{window.diagLog&&diagLog('batida_tot_auto',{antes:a,novo:s,tratos:trs});}catch(e){}return {auto:true,antes:a,novo:s};}
+  return {auto:false,antes:a,novo:s,tela:t};}catch(e){return null;}}
 function cJaTratadoHTML(trs){if(typeof fornCurrais!=='function'||typeof fornPendentes!=='function')return '';
   const feitos=trs.filter(k=>k>0&&fornCurrais(CG.local,CG.rac,k).length&&!fornPendentes(CG.local,CG.rac,k).length);if(!feitos.length)return '';
   const prox=tratosAtivos().map(Number).find(k=>!trs.includes(k)&&fornPendentes(CG.local,CG.rac,k).length);
