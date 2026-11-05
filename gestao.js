@@ -622,15 +622,15 @@ function tLotes(t){
         <span><b>${ok(V.venda)?rs(V.venda):'—'}</b> ${V.real?'venda':'venda estimada'}</span><span class="${cr}"><b>${ok(V.res)?rs(V.res):'—'}</b> ${V.real?'resultado':'resultado estimado'}</span><span class="${crc(rc)}"><b>${ok(rc)?rs(rc):'—'}</b> resultado/cab/total</span><span class="${crc(rcd)}"><b>${ok(rcd)?rs(rcd):'—'}</b> resultado/cab/dia</span></div>`;})()}
       <button type="button" class="lima gLoteAbrir" data-g="lote" data-id="${l.uid}">Abrir lote ›</button>
       <small class="gLoteDica">Médias de todos os tratos do lote · custo/cab/total = tratos por cabeça (sem a compra) · custo/lote/total inclui a compra · resultado/cab/dia = resultado/cab/total ÷ dias do lote · venda estimada = cabeças × peso projetado × rendimento × preço da @ (editar lote › Estimativa de venda) · toque no quadro para minimizar</small></div>`:''}</div>`;}).join('');
-  return `<section class="panel"><div class="curhead gLotesTopo"><h2>${t.enc?'Lotes arquivados':'Lotes ativos'} <span class="note">${lista.length}</span></h2>
-      <span class="gLotesBts">${t.enc?'':'<button type="button" class="mini lima" data-g="novoLote">+ Novo lote</button>'}<button type="button" class="mini" data-g="ir" data-t="lotes" data-enc="${t.enc?'':'1'}">${t.enc?'Ativos':'Arquivados'}</button></span></div>
+  return `<section class="panel"><div class="curhead gLotesTopo"><h2>${t.enc?'Lotes finalizados':'Lotes ativos'} <span class="note">${lista.length}</span></h2>
+      <span class="gLotesBts">${t.enc?'':'<button type="button" class="mini lima" data-g="novoLote">+ Novo lote</button>'}<button type="button" class="mini${t.enc?'':' gBtFin'}" data-g="ir" data-t="lotes" data-enc="${t.enc?'':'1'}">${t.enc?'Ativos':'Finalizados'}</button></span></div>
     ${t.enc?`<div class="gForm gHistPer"><div class="gCampo meia"><label>Fechados de</label><input type="date" data-arqdt="ini" value="${gArqIni}"></div><div class="gCampo meia"><label>até</label><input type="date" data-arqdt="fim" value="${gArqFim}"></div></div>${gArqIni||gArqFim?'<div class="row"><button type="button" class="mini" data-g="arqLimpa">✕ Todas as datas</button></div>':''}`:''}
     ${typeof selSetas==='function'&&window.LOC_OPS?`<div class="gCoLocNav">${selSetas('Local',LOC_OPS,Math.max(0,LOC_OPS.findIndex(o=>o[0]===loc)),'data-g="lotLocP" data-n','data-lotlsel')}</div>`:locBotoes('filtroLoc',loc)}${navCur}
     ${!t.enc?`<div class="row gLotesAbre">${t.enc?'':`<button type="button" class="mini lima gPesNova" data-g="ir" data-t="pesNova">⚖️ Pesagem</button>`}${lista.length>1&&!t.enc?(lista.every(l=>gLotAb.has(l.uid))?`<button type="button" class="mini" data-g="lotTodos" data-v="0">▲ Minimizar todos</button>`:`<button type="button" class="mini" data-g="lotTodos" data-v="1">▼ Abrir todos</button>`):''}</div>`:''}
     ${t.enc&&lista.length?(()=>{const nS=lista.filter(l=>!gArqDesm.has(l.uid)).length;return `<div class="gArqSelBar"><button type="button" class="mini${gArqSel?' sel':''}" data-g="arqSel">☑ ${gArqSel?`Selecionando · ${nS} de ${lista.length} no relatório`:'Selecionar lotes para o relatório'}</button>${gArqSel?`<button type="button" class="mini" data-g="arqTodos">Marcar todos</button><button type="button" class="mini" data-g="arqNenhum" data-ids="${lista.map(l=>l.uid).join(',')}">Desmarcar todos</button>`:''}</div>`;})():''}
     ${lista.length?`<div class="row compart fz3 lotesExp"><button class="verde" data-g="lotesPdf" data-enc="${t.enc?'1':''}">📄 PDF</button><button class="verde" data-g="lotesImg" data-enc="${t.enc?'1':''}">🖼 Foto</button><button class="verde" data-g="lotesXls" data-enc="${t.enc?'1':''}">📊 Excel</button></div>`:''}
     ${t.enc?'':painelFaltas()}
-    ${cards||`<p class="note">${t.enc?'Nenhum lote arquivado.':'Nenhum lote ainda. Toque em “+ Novo lote”.'}</p>`}
+    ${cards||`<p class="note">${t.enc?'Nenhum lote finalizado.':'Nenhum lote ainda. Toque em “+ Novo lote”.'}</p>`}
 </section>`;
 }
 /* animais que faltaram num fechamento: o custo fica separado até serem achados */
@@ -788,7 +788,7 @@ function tPesNova(t){const hj=hojeKey();return `${voltar('Lotes')}<section class
 /* Nova entrada: o lote de entrada é escolhido aqui; lote novo abre ao lado o local e o curral de entrada */
 function tEntNova(t){const hj=hojeKey(),arq=gTodos('lote').filter(l=>!ativo(l));
   let sel=t.sel!=null?t.sel:(t.lote||'');if(sel&&G.it[sel]&&!ativo(G.it[sel])){t.arq=sel;sel=t.sel='__arq';}
-  const opSel=[['','Selecione'],['__novo','＋ Criar lote novo']].concat(opLotesSel(false,hj)).concat(arq.length?[['__arq',`📦 Lotes arquivados (${arq.length})`]]:[]);
+  const opSel=[['','Selecione'],['__novo','＋ Criar lote novo']].concat(opLotesSel(false,hj)).concat(arq.length?[['__arq',`📦 Lotes finalizados (${arq.length})`]]:[]);
   let topo=campo({k:'enSel',l:'Lote de entrada',t:'sel',busca:1,op:opSel,v:sel}),corpo='';
   if(sel==='__arq'){const ca=l=>curralEm(l,fimLote(l)||hj)||'—';
     const opA=[['','Selecione']].concat(arq.slice().sort((a,b)=>alfa(ca(a),ca(b))||alfa(a.nome,b.nome)).map(l=>[l.uid,`${ca(l)} · ${l.nome}${fimLote(l)?' · saiu '+dCurto(fimLote(l)):''}`]));
@@ -2010,7 +2010,7 @@ function imgPer(){const ini=GT.ini,fim=GT.fim,D=periodoDados(ini,fim);let T={cd:
 function imgComp(){const todosL=gTodos('lote').filter(l=>GT.compEnc?!ativo(l):true).sort(porCurral);const cores=[];
   const L=todosL.map(l=>{const C=calcLote(l),V=vendaEst(l,C);cores.push([null,null,null,null,null,null,null,ok(V.res)?(V.res>=0?corV:corR):null]);
     return [l.nome,C.fim?'Arquivado':curralEm(l,hojeKey()),nf(C.dias),nf(C.cabV?C.gmdV:l.gmd,2)+(C.cabV?'':' (meta)'),nf(C.msCab,2),rs(C.custo/C.cabE),ok(V.venda)?rs(V.venda/C.cabE):'—',ok(V.res)?rs(V.res/C.cabE)+(C.fim?'':' est.'):'—'];});
-  enviarImg('Comparativo de lotes',[{cab:GT.compEnc?'Lotes arquivados':'Todos os lotes',cols:[['Lote',190,'l'],['Curral',130,'l'],['Dias',60,'r'],['GMD',110,'r'],['MS/cab',85,'r'],['Custo/cab',130,'r'],['Venda/cab',130,'r'],['Result./cab',150,'r']],linhas:L,cores}],'Comparativo de lotes');}
+  enviarImg('Comparativo de lotes',[{cab:GT.compEnc?'Lotes finalizados':'Todos os lotes',cols:[['Lote',190,'l'],['Curral',130,'l'],['Dias',60,'r'],['GMD',110,'r'],['MS/cab',85,'r'],['Custo/cab',130,'r'],['Venda/cab',130,'r'],['Result./cab',150,'r']],linhas:L,cores}],'Comparativo de lotes');}
 /* formato antigo (tabelas) — guardado */
 function imgLoteTab(id){const l=G.it[id],C=calcLote(l),cabE=C.cabE;
   const sec=[kv('Lote',[['Lote',l.nome],['Período',`${dB(l.ent.dia)} a ${dB(C.ate)} (${nf(C.dias)} dias)`],['Situação',C.fim?'Encerrado':'Ativo'],...dadosLotePares(l,C)]),
@@ -3585,7 +3585,7 @@ function extrasFinal(l,C){const F=efLote(C),cabR=C.cabE-(C.cabT||0)-(C.faltas||0
     pv:C.pv,mn:C.mnCab,caV:C.conv,eaV:F.eaV,ebC:F.ebC,caC:F.caC,eaC:F.eaC,rg:F.gmc>0&&C.gmdV>0?F.gmc/C.gmdV*100:NaN,
     alim:C.alim,op:C.op,outros:C.outros,cSC,mnL,prMN:mnL>0?C.alim/mnL:NaN,diaAlim:C.diaAlim,diaria:C.diaria,custoCabSC:cabR?cSC/cabR:NaN,custoArr:C.custoArr,cabR,
     arrC,pCmp,cmpCab:cabR?C.compra/cabR:NaN,vendaCab:cabT2?((C.receita||0)+(C.recInt||0))/cabT2:NaN,cabT2,arrCabV:cabT2?arrT/cabT2:NaN,arrT,pArr:arrT?(brV+recI)/arrT:NaN,sPV,sPA,rcT:sPV>0?sPA/sPV*100:NaN};}
-async function lotesFinalExp(g){const R=linhasFinal(),loc=gLoc==='C'?' · Confinamento':gLoc==='P'?' · Pasto':'',tit=`Lotes arquivados · resumo final${loc}${gArqIni||gArqFim?` · fechados ${gArqIni?'de '+dB(gArqIni):''}${gArqFim?' até '+dB(gArqFim):''}`:''} · ${dB(hojeKey())}`;
+async function lotesFinalExp(g){const R=linhasFinal(),loc=gLoc==='C'?' · Confinamento':gLoc==='P'?' · Pasto':'',tit=`Lotes finalizados · resumo final${loc}${gArqIni||gArqFim?` · fechados ${gArqIni?'de '+dB(gArqIni):''}${gArqFim?' até '+dB(gArqFim):''}`:''} · ${dB(hojeKey())}`;
   if(!R.length)return toast('Nenhum lote arquivado');
   const som=f=>R.reduce((a,x)=>a+(ok(f(x))?f(x):0),0),med=(f,w)=>{let s=0,n=0;R.forEach(x=>{const v=f(x),p=w(x);if(ok(v)&&p>0){s+=v*p;n+=p;}});return n?s/n:NaN;},M=(v,fn)=>ok(v)?fn(v):'—',cor=v=>!ok(v)?null:v<0?'#b3261e':'#2e7d32';
   const dL=som(x=>ok(x.lucro)&&ok(x.lucroCab)&&x.lucroCab?x.lucro/x.lucroCab:NaN),   // cabeças do lucro/cab (as mesmas do relatório final)
@@ -3600,17 +3600,17 @@ async function lotesFinalExp(g){const R=linhasFinal(),loc=gLoc==='C'?' · Confin
   const totF=(f,t)=>Array.isArray(t)?t[1]:t==='s'?som(f):t==='v'?med(f,pV):t==='e'?med(f,pE):NaN,corF=['Lucro\n/cab','Lucro\n/lote','Rent.\na.m.'];
   if(g==='lotesXls'){const tipo=n0=>{const n=n0.replace('\n',' ');return /Rend|Rent/.test(n)?'pct':/Diária|Custo|Preço|Compra|Venda|Lucro/.test(n)?'rs':/Vendidos|Período/.test(n)?'int':'dec';},cel=(f,x)=>{const v=f[1](x);if(typeof v==='string')return xc(v);const t=tipo(f[0]);return xc(t==='pct'&&ok(v)?v/100:v,t);};
     const cab=['Local','Curral','Lote','Entrada','Saída'].concat(F.slice(1).map(f=>f[0].replace('\n',' ')),['Base da compra']);
-    return gExcel(`Lotes arquivados ${dB(hojeKey()).replace(/\//g,'-')}`,[['Resumo final',cab,R.map(x=>[xc(x.loc),xc(x.c),xc(x.nome),xc(x.ent,'dia'),xc(x.fim,'dia')].concat(F.slice(1).map(f=>cel(f,x)),[xc(x.base)])),[12,12,22,11,11].concat(F.slice(1).map(()=>13),[30])]]);}
+    return gExcel(`Lotes finalizados ${dB(hojeKey()).replace(/\//g,'-')}`,[['Resumo final',cab,R.map(x=>[xc(x.loc),xc(x.c),xc(x.nome),xc(x.ent,'dia'),xc(x.fim,'dia')].concat(F.slice(1).map(f=>cel(f,x)),[xc(x.base)])),[12,12,22,11,11].concat(F.slice(1).map(()=>13),[30])]]);}
   window.__expPdf=g==='lotesPdf';
   const secs=[{cab:'Resultado por curral',cols:F.map(f=>[f[0],f[4],['Venda\n/cab','Lucro\n/cab','Lucro\n/lote'].includes(f[0])?'r':'c']),
     linhas:R.map(x=>F.map(f=>{const v=f[1](x);return typeof v==='string'?v:ok(v)?f[2](v):'—';})),
     cores:R.map(x=>F.map(f=>corF.includes(f[0])?cor(f[1](x)):null)),
     total:['TOTAL'].concat(F.slice(1).map(f=>{const v=totF(f[1],f[3]);return ok(v)?f[2](v):'';}))}];
   secs.push({cab:'Somatório dos lotes',cols:[['Custo total',312,'c'],['Receita líquida',312,'c'],['Lucro',312,'c'],['Lucro/cab',312,'c'],['Rentabilidade',312,'c']],linhas:[[rs(cu),rs(re),rs(lu),M(dL?lu/dL:NaN,rs),M(rT,v=>pc(v,1)+(ok(rTM)?` · ${pc(rTM,2)} a.m.`:''))]],cores:[[null,null,cor(lu),cor(lu),cor(lu)]]});
-  return enviarImg(tit,secs,`Lotes arquivados ${dB(hojeKey()).replace(/\//g,'-')}`);}
+  return enviarImg(tit,secs,`Lotes finalizados ${dB(hojeKey()).replace(/\//g,'-')}`);}
 document.addEventListener('click',e=>{const b=e.target.closest('#gBox [data-g="lotesImg"],#gBox [data-g="lotesXls"],#gBox [data-g="lotesPdf"]');if(!b)return;e.stopPropagation();lotesExp(b.dataset.g,!!b.dataset.enc);},true);
 function lotesExp(g,enc){if(enc)return lotesFinalExp(g);const b={dataset:{g}};
-  const R=linhasLotes(enc),loc=gLoc==='C'?' · Confinamento':gLoc==='P'?' · Pasto':'',tit=`${enc?'Lotes arquivados':'Lotes ativos'}${loc} · ${dB(hojeKey())}`;
+  const R=linhasLotes(enc),loc=gLoc==='C'?' · Confinamento':gLoc==='P'?' · Pasto':'',tit=`${enc?'Lotes finalizados':'Lotes ativos'}${loc} · ${dB(hojeKey())}`;
   if(!R.length)return toast('Nenhum lote');
   window.__expPdf=b.dataset.g==='lotesPdf';
   if(b.dataset.g==='lotesImg'||b.dataset.g==='lotesPdf'){
