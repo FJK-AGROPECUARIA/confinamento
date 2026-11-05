@@ -1228,17 +1228,59 @@ function tSaiForm(t){const l=G.it[t.id],m=t.o==='morte',cfg=gCfg(),E=t.sid?G.it[
     <div class="gCampo meia"><label for="gf_cprCat">Tipo</label><select id="gf_cprCat">${TIPOS_CPR.map(x=>`<option>${esc(x)}</option>`).join('')}</select></div></div>`;
   const causas=m?[...new Set(['Pneumonia','Timpanismo','Acidente / trauma','Tristeza parasitária','Clostridiose','Intoxicação','Não identificada'].concat(gTodos('saida').filter(x=>x.mot==='morte'&&x.causa).map(x=>x.causa)))]:[];
   return `${voltar()}<section class="panel"><h2>${E?'Editar ':''}${m?'✝ Morte':'Venda / saída'} · ${esc(l.nome)}${curralEm(l,hojeKey())?' <small>('+esc(curralEm(l,hojeKey()))+')</small>':''}</h2><p class="note">Quantidade no lote agora: ${nf(cabAtual(l))}.</p>
-    <div class="gForm">${fs.map(campo).join('')}</div>${m?`<datalist id="gCausas">${causas.map(c=>`<option value="${esc(c)}">`).join('')}</datalist>`:''}${novo}${m?'':`<h3 class="gSubT">📊 Resultado desses animais</h3>
+    ${!m&&E&&E.conj?`<p class="avisoJa">🔗 Esta venda é parte de uma venda conjunta (${nf(E.conj.lotes.length)} lotes pesados juntos, ${nf(E.conj.cabT)} cab). Alterar aqui muda só este lote.</p>`:''}<div class="gForm">${fs.map(campo).join('')}</div>${!m&&!E?conjHTML(l):''}${m?`<datalist id="gCausas">${causas.map(c=>`<option value="${esc(c)}">`).join('')}</datalist>`:''}${novo}${m?'':`<h3 class="gSubT">📊 Resultado desses animais</h3>
     <p class="note">Compra proporcional às cabeças (peso de entrada ${nf(pesoEntMed(l),1)} kg) e custos de alimentação, operacional e outros até o dia anterior. No relatório de resultado dá para recalcular a compra pelo preço da @ vendida.</p><div id="gVdRes" class="gApRes"></div>`}${!m&&!E?campoFaltas('gf_v',{}):''}<button class="primary" data-g="salvaSai" data-id="${l.uid}" data-o="${m?'morte':'venda'}"${E?` data-sid="${E.uid}"`:''}>Salvar</button>${m||E?'':'<button class="danger" data-g="vendaCanc">✕ Cancelar venda</button>'}</section>${m?(()=>{const ms=saidasDe(l).filter(x=>x.mot==='morte').sort((a,b)=>a.dia<b.dia?1:-1),tot=ms.reduce((a,x)=>a+(+x.cab||0),0);
     return `<section class="panel"><h2>✝ Mortes neste lote</h2>${ms.length?`<div class="tablebox"><table class="gTab"><thead><tr><th>Data</th><th>Qtd.</th><th>Causa / observação</th><th></th></tr></thead><tbody>${ms.map(x=>`<tr><td>${dB(x.dia)}</td><td>${nf(x.cab)}</td><td>${esc([x.causa,x.obs].filter(Boolean).join(' · ')||'—')}</td><td class="acoes"><button class="mini danger" data-g="apaga" data-id="${x.uid}" data-o="morte">✕</button></td></tr>`).join('')}</tbody></table></div>
       <p class="note">Total: <b>${nf(tot)} cab</b> · ${pc(cabEntTot(l)?tot/cabEntTot(l)*100:NaN,2)} dos que entraram.</p>`:'<p class="note">Nenhuma morte lançada neste lote.</p>'}</section>`;})():''}`;}
+/* ---------- venda conjunta: lotes pesados e vendidos juntos. Os totais do formulário são de todos; divide pela quantidade de cada lote ---------- */
+function conjHTML(l){const hj=hojeKey(),L=gTodos('lote').filter(o=>o.uid!==l.uid&&cabPres(o,hj)>0).sort((a,b)=>alfa(curralEm(a,hj),curralEm(b,hj))||porNome(a,b));if(!L.length)return '';
+  const it=(o,fixo)=>`<label class="gConjIt${fixo?' gConjEste':''}">${fixo?'<span class="gConjMk">✓</span>':`<input type="checkbox" data-conj="${o.uid}">`}<span><b>${esc(curralEm(o,hj)||'—')} · ${esc(o.nome)}</b><small>${nf(cabPres(o,hj))} cab no lote${fixo?' · este lote':''}</small></span><input type="text" inputmode="numeric" class="gConjCab" data-conjcab="${o.uid}" value="${cabPres(o,hj)}"${fixo?'':' disabled'} aria-label="Quantidade ${esc(o.nome)}"></label>`;
+  return `<details class="gMais gConj" id="gConjBox"><summary><b>🔗 Pesou e vendeu junto com outro lote?</b></summary>
+    <p class="note">Marque os lotes que foram pesados e vendidos juntos e a quantidade de cada um. Aí a <b>Quantidade</b>, o <b>peso total</b>, o <b>peso abatido</b>, o <b>valor</b> e os <b>descontos</b> acima são do <b>total</b>. O app divide entre os lotes pela quantidade de cada um: todos ficam com o mesmo peso médio, rendimento e preço.</p>
+    <div class="gConjLista"><div id="gConjEste" hidden>${it(l,true)}</div>${L.map(o=>it(o,false)).join('')}</div></details>`;}
+function conjLer(){const b=$('gConjBox');if(!b)return null;const ps=[...b.querySelectorAll('input[data-conj]')].filter(i=>i.checked).map(i=>i.dataset.conj);if(!ps.length)return null;
+  const q=u=>{const e=b.querySelector(`[data-conjcab="${u}"]`);return e?Math.round(gNum(e.value)||0):0;};return [GT.id].concat(ps).map(u=>({l:G.it[u],cab:q(u)}));}
+function conjAtual(){const b=$('gConjBox');if(!b)return;const P=conjLer(),ce=$('gf_cab'),lab=document.querySelector('label[for="gf_cab"]'),este=b.querySelector(`[data-conjcab="${GT.id}"]`);
+  b.querySelectorAll('input[data-conj]').forEach(i=>{const e=b.querySelector(`[data-conjcab="${i.dataset.conj}"]`);if(e)e.disabled=!i.checked;i.closest('.gConjIt').classList.toggle('sel',i.checked);});
+  const eh=$('gConjEste');if(eh){if(P&&eh.hidden&&este&&ce)este.value=ce.value||este.value;eh.hidden=!P;}
+  if(ce){if(P){const t=P.reduce((a,p)=>a+p.cab,0);ce.value=t?String(t):'';ce.readOnly=true;ce.classList.add('gConjTot');}else if(ce.readOnly){ce.readOnly=false;ce.classList.remove('gConjTot');if(este)ce.value=este.value;}}
+  if(lab)lab.textContent=P?'Quantidade total (todos os lotes)':'Quantidade';try{calcSai('cab');}catch(e){}vdPrevia();}
+/* divide os totais pela quantidade de cada lote (o último fica com a sobra do arredondamento: a soma bate exato) */
+function conjPartes(P){const T=P.reduce((a,p)=>a+p.cab,0),peso=fn('peso'),r2=v=>Math.round(v*100)/100;let rc=fn('rc'),pesoVT=fn('pesoVT')||0,carcT=fn('carcT')||0;const carcM=fn('carcM')||0;
+  if(!(pesoVT>0)&&peso>0)pesoVT=peso*T;if(!(carcT>0)&&carcM>0)carcT=carcM*T;if(pesoVT>0&&carcT>0)rc=carcT/pesoVT*100;
+  const unid=fv('unid'),preco=fn('preco')||0,desc=fn('desc')||0,vTot=fn('vTot')||0,rest={pv:pesoVT,ct:carcT,vt:vTot,ds:desc};
+  const out=P.map((p,i)=>{const ult=i===P.length-1,f=T?p.cab/T:0,tk=(k,tot)=>{const v=ult?r2(rest[k]):r2(tot*f);rest[k]-=v;return v;};
+    const pt=tk('pv',pesoVT),ct=carcT>0?tk('ct',carcT):null,vt=vTot>0?tk('vt',vTot):null,ds=tk('ds',desc);
+    return {l:p.l,cab:p.cab,peso:p.cab?r2(pt/p.cab):peso,pesoVT:pt,carcT:ct,carcM:ct&&p.cab?r2(ct/p.cab):null,rc:rc>0&&rc<100?r2(rc):50,unid,preco,desc:ds,vTot:vt};});
+  return {T,peso,pesoVT,carcT,rc,out};}
+function salvaConj(){const P=conjLer(),dia=fv('dia');if(!dia)return toast('Coloque a data');
+  for(const p of P){const nm=p.l?(curralEm(p.l,dia)||p.l.nome):'';if(!p.l)return toast('Lote não encontrado');if(!(p.cab>0))return toast(`Coloque a quantidade do ${nm}`);if(dia<p.l.ent.dia)return toast(`A data é antes da entrada do lote ${nm}`);
+    const tem=cabPres(p.l,dia);if(p.cab>tem)return toast(`${nm}: nessa data o lote tem ${nf(tem)} animais`);}
+  if(fn('vfalta')>0)return toast('Na venda conjunta, lance a falta separado no lote');
+  if(!(fn('peso')>0)&&!(fn('pesoVT')>0))return toast('Coloque o peso de saída');
+  const D=conjPartes(P);if(fv('unid')==='arroba'&&!(fn('rc')>0&&fn('rc')<100)&&!(D.carcT>0))return toast('Preço em R$/@ morto: coloque o rendimento de carcaça (ou o peso de carcaça)');
+  if(!fv('comp'))return toast('Escolha o comprador');
+  let cp=fv('comp');if(cp==='__novo'){const nm=(($('gf_cprNome')||{}).value||'').trim();if(!nm)return toast('Digite o nome do novo comprador');
+    const ja=gTodos('comprador').find(c=>alfa(c.nome,nm)===0);if(ja)cp=ja.uid;else{cp=novoId('cpr');gPut({uid:cp,tipo:'comprador',nome:nm,cat:$('gf_cprCat').value});}}
+  if(!(fn('preco')>0)&&!confirm('Salvar sem o preço de venda?'))return;
+  const cid=novoId('conj'),gp=fv('grp')&&fv('grp')!=='media'?fv('grp'):null,obs=fv('obs'),info={id:cid,lotes:P.map(p=>p.l.uid),cabT:D.T,pesoVT:Math.round(D.pesoVT*100)/100,carcT:D.carcT>0?Math.round(D.carcT*100)/100:null};
+  D.out.forEach((x,i)=>{const s={uid:novoId('sai'),tipo:'saida',mot:'venda',lote:x.l.uid,dia,cab:x.cab,obs,peso:x.peso,rc:x.rc,pesoVT:x.pesoVT,carcT:x.carcT,carcM:x.carcM,unid:x.unid,preco:x.preco,desc:x.desc,vTot:x.vTot,comp:cp,conj:info,grp:i===0?gp:null};
+    const K=saiCalc(x.l,dia,x.cab,s.peso,null,s.grp);s.cst=K.cst;s.custo=custoSai(s);gPut(s);});
+  toast(`Venda conjunta lançada: ${nf(D.T)} cab em ${P.length} lotes`);return gVoltar();}
 /* venda: compra real, custos embutidos e resultado desses animais (ao vivo) */
-function vdPrevia(){const box=$('gVdRes'),l=G.it[GT.id];if(!box||!l)return;const d=fv('dia')||hojeKey(),cab=fn('cab'),peso=fn('peso');if(!(cab>0)){box.innerHTML='';return;}
+function vdPrevia(){{const P=conjLer();if(P)return conjPrevia(P);}const box=$('gVdRes'),l=G.it[GT.id];if(!box||!l)return;const d=fv('dia')||hojeKey(),cab=fn('cab'),peso=fn('peso');if(!(cab>0)){box.innerHTML='';return;}
   const gp=fv('grp')&&fv('grp')!=='media'?fv('grp'):null,T=saiCalc(l,d,cab,peso,GT.sid,gp),cus=T.total,rc=fn('rc'),
     v=valorVenda({cab,peso:peso>0?peso:T.p,rc:rc>0&&rc<100?rc:50,unid:fv('unid'),preco:fn('preco')||0,desc:fn('desc')||0,vTot:fn('vTot')||0}),r=v-cus;
   box.innerHTML=`<div class="gLinhas">${lin(T.porGrupo?'· compra (pelo preço do grupo escolhido)':'· compra (proporcional às cabeças)',rs(T.cst.compra))}${lin('· alimentação',rs(T.cst.alim))}${lin('· operacional',rs(T.cst.op))}${lin('· outros custos',rs(T.cst.outros))}
     ${lin('Custo desses animais',rs(cus))}${lin('Venda líquida',v>0?rs(v):'—')}${lin(r>=0?'Lucro desses animais':'Prejuízo desses animais',v>0?rs(r):'—',v>0?(r>=0?'ok':'bad'):'')}</div>
     ${T.shC>=1?'<p class="note">Saem todos os animais: a compra prevista é o que sobrou da compra do lote.</p>':''}`;}
+function conjPrevia(P){const box=$('gVdRes');if(!box)return;const d=fv('dia')||hojeKey(),D=conjPartes(P),gp=fv('grp')&&fv('grp')!=='media'?fv('grp'):null;let tc=0,tv=0;
+  const kg=v=>v>0?nf(v)+' kg':'—';
+  const rows=D.out.map((x,i)=>{const nm=curralEm(x.l,d)||x.l.nome,K=x.cab>0?saiCalc(x.l,d,x.cab,x.peso,null,i===0?gp:null):null,v=x.cab>0?valorVenda({cab:x.cab,peso:x.peso,rc:x.rc,unid:x.unid,preco:x.preco,desc:x.desc,vTot:x.vTot||0,carcT:x.carcT}):0,cu=K?K.total:0,r=v-cu;tc+=cu;tv+=v;
+    return `<tr><td><b>${esc(nm)} · ${nf(x.cab)} cab</b><small>vivo ${kg(x.pesoVT)} · carcaça ${kg(x.carcT)}</small><small>custo ${rs(cu)}</small></td><td style="white-space:nowrap;text-align:right">${v>0?rs(v):'—'}<small class="${v>0?(r>=0?'ok':'bad'):''}" style="font-weight:700">${v>0?(r>=0?'lucro ':'prejuízo ')+rs(r):''}</small></td></tr>`;}).join('');
+  box.innerHTML=`<div class="tablebox"><table class="gTab"><thead><tr><th>Lote</th><th style="text-align:right">Venda líquida</th></tr></thead><tbody>${rows}
+    <tr class="grp"><td>Total · ${nf(D.T)} cab<small>vivo ${kg(D.pesoVT)} · carcaça ${kg(D.carcT)}</small><small>custo ${rs(tc)}</small></td><td style="white-space:nowrap;text-align:right">${tv>0?rs(tv):'—'}<small class="${tv>0?(tv-tc>=0?'ok':'bad'):''}" style="font-weight:700">${tv>0?(tv-tc>=0?'lucro ':'prejuízo ')+rs(tv-tc):''}</small></td></tr></tbody></table></div>
+    <p class="note">Cada lote fica com ${D.T&&D.pesoVT>0?`<b>${nf(D.pesoVT/D.T,1)} kg</b> vivo por cabeça`:'o mesmo peso médio'}${D.rc>0&&D.rc<100?` e <b>${pc(D.rc,2)}</b> de rendimento`:''}. O custo de cada lote é a compra e o trato do próprio lote.</p>`;}
 /* ---------- compradores ---------- */
 const TIPOS_CPR=['Frigorífico','Corretor','Pecuarista / recria','Leilão','Outro'];
 const opCompradores=()=>[['','Selecione']].concat(gTodos('comprador').sort(porNome).map(c=>[c.uid,c.nome+(c.cat?' · '+c.cat:'')]),[['__novo','＋ Cadastrar novo comprador…']]);
@@ -2053,7 +2095,7 @@ function canvasLote(l,C){
     ret(M,y+4,bwT,50,10,ok(FI.res)?(FI.res>=0?VD:VM):AZ);txt(FI.todos?'RESULTADO DO GRUPO':'RESULTADO DO GRUPO (parcial / estimado)',M+16,y+29,'800',18,'#fff');txt(ok(FI.res)?rs(FI.res)+(ok(FI.rentab)?` · ${pc(FI.rentab,1)}`:''):'—',W-M-14,y+29,'800',20,'#fff','right');y+=80;}
   /* 4. venda */
   const trsVI=C.trs.filter(s=>+s.vi>0),sumi=saidasDe(l).filter(s=>s.mot==='falta'&&faltaPend(s)>0);
-  if((C.cabV||trsVI.length)&&!AP){bloco('4','Vendas',`${vendas.length} venda(s)${trsVI.length?` · ${trsVI.length} venda(s) para outros lotes`:''}${sumi.length?` · ${nf(sumi.reduce((a,s)=>a+faltaPend(s),0))} sumido(s)`:''}`);
+  if((C.cabV||trsVI.length)&&!AP){bloco('4','Vendas',`${vendas.length} venda(s)${vendas.some(s=>s.conj)?' · venda conjunta (pesados junto com outro lote: peso médio igual)':''}${trsVI.length?` · ${trsVI.length} venda(s) para outros lotes`:''}${sumi.length?` · ${nf(sumi.reduce((a,s)=>a+faltaPend(s),0))} sumido(s)`:''}`);
     const arrI=trsVI.reduce((a,s)=>a+(+s.cab||0)*(+s.peso||0)*(+s.rcV||50)/100/15,0),recI=trsVI.reduce((a,s)=>a+(+s.vi||0),0),cabI=trsVI.reduce((a,s)=>a+(+s.cab||0),0),brV=vendas.reduce((a,s)=>a+valorVenda(s)+(+s.desc||0),0);
     const recT=C.receita+recI,arrT=C.arrV+arrI,cabT2=C.cabV+cabI;   /* vendas para outros lotes entram junto */
     const rcMed=C.arrV&&C.cabV?C.arrV*15/(C.cabV*C.pesoV)*100:NaN,pArr=arrT?(brV+recI)/arrT:NaN,recPerd=s=>{const p=faltaPend(s),pv=ok(C.pesoV)?C.pesoV:+s.peso;return p*pv*(ok(rcMed)?rcMed:50)/100/15*(ok(pArr)?pArr:0);};
@@ -2063,7 +2105,7 @@ function canvasLote(l,C){
     const X1=M+8,X2=M+112,X3=M+320,X4=M+440,X5=M+565,X6=M+640,X6b=M+750,X7=W-M-8,lin1=(i,cor,dia,cpr,cab,pv,pa,rc,arr,val)=>{if(i%2){c.fillStyle='#f7f9fb';c.fillRect(M,y,bwT,40);}txt(dia,X1,y+20,'600',16,cor);txt(cpr,X2,y+20,'700',16,cor,'left',X3-X2-34);txt(cab,X3,y+20,'600',16,cor,'right');txt(pv,X4,y+20,'600',16,cor,'right');txt(pa,X5,y+20,'600',16,cor,'right');txt(rc,X6,y+20,'600',16,cor,'right');txt(arr,X6b,y+20,'600',16,cor,'right');txt(val,X7,y+20,'700',16,cor,'right');y+=40;};
     y+=12;const yV0=y-22;ret(M,y-22,bwT,44,8,AZ);txt('DATA',X1,y,'800',13,'#fff');txt('COMPRADOR',X2,y,'800',13,'#fff');txt('CAB.',X3,y,'800',13,'#fff','right');txt('PESO TOTAL',X4,y-8,'800',13,'#fff','right');txt('VIVO',X4,y+8,'800',13,'#fff','right');txt('PESO TOTAL',X5,y-8,'800',13,'#fff','right');txt('ABATIDO',X5,y+8,'800',13,'#fff','right');txt('REND.',X6,y,'800',13,'#fff','right');txt('PREÇO/@',X6b,y,'800',13,'#fff','right');txt('VALOR TOTAL',X7,y,'800',13,'#fff','right');y+=26;let k=0,sPV=0,sPA=0;
     const kg=v=>ok(v)&&v>0?nf(v)+' kg':'—';y+=4;
-    vendas.forEach(s=>{const a=arrobaVenda(s),pv=+s.pesoVT>0?+s.pesoVT:(+s.cab||0)*(+s.peso||0),pa=+s.carcT>0?+s.carcT:a*15;sPV+=pv;sPA+=pa;lin1(k++,AZ,dB(s.dia),nomeCpr(s),nf(s.cab),kg(pv),kg(pa),pv>0?pc(pa/pv*100,2):'—',rs(a?(valorVenda(s)+(+s.desc||0))/a:NaN),rs(valorVenda(s)));});
+    vendas.forEach(s=>{const a=arrobaVenda(s),pv=+s.pesoVT>0?+s.pesoVT:(+s.cab||0)*(+s.peso||0),pa=+s.carcT>0?+s.carcT:a*15;sPV+=pv;sPA+=pa;lin1(k++,AZ,dB(s.dia),nomeCpr(s)+(s.conj?' · conjunta':''),nf(s.cab),kg(pv),kg(pa),pv>0?pc(pa/pv*100,2):'—',rs(a?(valorVenda(s)+(+s.desc||0))/a:NaN),rs(valorVenda(s)));});
     trsVI.forEach(s=>{const rcV=+s.rcV||50,pv=(+s.cab||0)*(+s.peso||0),pa=+s.carcT>0?+s.carcT:pv*rcV/100,a=pa/15,d=G.it[s.destino];sPV+=pv;sPA+=pa;lin1(k++,AZ,dB(s.dia),'→ '+(d?curralEm(d,s.dia)||d.nome:'outro lote')+' (venda interna)',nf(s.cab),kg(pv),kg(pa),pv>0?pc(pa/pv*100,2):'—',rs(a?(+s.vi)/a:NaN),rs(+s.vi));});
     saidasDe(l).filter(s=>s.mot==='morte').forEach(s=>lin1(k++,VM,dB(s.dia),`✝ Morte${s.causa?' · '+s.causa:''} · prejuízo ${rs(+s.custo||0)}`,nf(s.cab),'—','—','—','—','—'));
     sumi.forEach(s=>{const p=faltaPend(s);lin1(k++,VM,dB(s.dia),'❓ Sumidos (custo separado)'+(s.obs?' · '+s.obs:''),nf(p),kg(p*(+s.peso||0)),'—','—','—','—');});
@@ -2717,6 +2759,7 @@ $('gBox').addEventListener('click',e=>{
     if(!(vt>0)&&!confirm('Salvar a entrada sem o valor da compra? O custo desses animais fica fora do lote.'))return;
     const eOld=b.dataset.eid&&G.it[b.dataset.eid]?G.it[b.dataset.eid]:null;
     gPut(Object.assign({},eOld||{},{uid:eOld?eOld.uid:novoId('entl'),tipo:'entlote',lote:id,dia,cab,peso,rs:vt,preco:prA,rcC:rcE,obs:fv('obs'),sexo:sxE,cat:catE||'',raca:racaE||'',idade:idE}));recalcCurral(curralEm(l,dia),dia);if(eOld){recalcSaidas(l);toast('Entrada alterada');return gVoltar();}{const n=recalcSaidas(l);if(n)toast(`+${nf(cab)} animais · custos de ${n} saída(s) refeitos`);else toast(`+${nf(cab)} animais no ${l.nome}`);};return gVoltar();}
+  if(a==='salvaSai'&&b.dataset.o!=='morte'&&!b.dataset.sid&&conjLer())return salvaConj();
   if(a==='salvaSai'){const l=G.it[id],m=b.dataset.o==='morte',dia=fv('dia'),cab=fn('cab');
     if(!dia||!(cab>0))return toast('Coloque a data e a quantidade');if(dia<l.ent.dia)return toast('A data é antes da entrada do lote');
     const old=b.dataset.sid?G.it[b.dataset.sid]:null,tem=cabPres(l,dia,saidasDe(l).filter(x=>!old||x.uid!==old.uid)),cabF=!m&&!old?Math.max(0,fn('vfalta')||0):0;if(cab+cabF>tem)return toast(`Nessa data o lote tem ${nf(tem)} animais`+(cabF?' (vendidos + faltaram)':''));
@@ -2916,8 +2959,10 @@ $('gBox').addEventListener('input',e=>{
   if((GT.t==='entForm'||(GT.t==='entNova'&&GT.sel!=='__novo'&&GT.id))&&/^gf_(cab|peso|pesoT|dia|prA|rcE|rs)$/.test(t.id))calcEnt(t.id.slice(3));
   if((GT.t==='loteForm'||(GT.t==='entNova'&&GT.sel==='__novo'))&&/^gf_(cab|peso|pesoC|unid|preco|rcC|outros|vTotC)$/.test(t.id))lfCalc(t.id.slice(3));
   if(GT.t==='saiForm'&&/^gf_(cab|peso|pesoVT|carcT|carcM|arrT|rc|unid|preco|vTot|desc)$/.test(t.id))calcSai(t.id.slice(3));
+  if(GT.t==='saiForm'&&t.closest&&t.closest('#gConjBox'))return conjAtual();
   if(GT.t==='saiForm'&&GT.o!=='morte')vdPrevia();
 });
+$('gBox').addEventListener('change',e=>{if(GT.t==='saiForm'&&e.target.matches&&e.target.matches('#gConjBox input[data-conj]'))conjAtual();});
 /* leitura de cocho: % IMS digitado → calcula na hora o trato do dia (kg de matéria natural) e põe no campo kg */
 /* kg digitado → mostra na hora o % de IMS (e vale como leitura mesmo sem nota) */
 $('gBox').addEventListener('input',e=>{const t=e.target;if(!t.matches||!t.matches('input[data-kg]'))return;const c=t.dataset.kg,dia=GT.dia||hojeKey(),kg=gNum(t.value);GT.sel=GT.sel||{};
