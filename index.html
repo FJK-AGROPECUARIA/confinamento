@@ -1279,7 +1279,7 @@ body.naInicio .topoTxt h1{font-size:clamp(16px,5vw,28px)!important}
 <div class="toast" id="toast" hidden></div>
 <script>
 'use strict';
-const APP_VERSAO='299';
+const APP_VERSAO='300';
 const APP_DATA='19/10/2026';
 const KEY='confinamento-completo-v1';
 const $=id=>document.getElementById(id);
@@ -2518,9 +2518,9 @@ function secaoTratoImg(cab,linhas){
 // resumo por curral (soma dos tratos)
 function secaoCurralImg(regs,cab){const [ia,ib]=intervaloHist();
   const m=new Map();regs.forEach(r=>{if(!m.has(r.curral))m.set(r.curral,{p:0,f:0,t:new Set()});const o=m.get(r.curral);o.p+=r.prev;o.f+=r.forn;o.t.add(r.trato);});
-  const ordem=n=>{const i=S.cadastro.indexOf(n);return i<0?999:i;};
   let tp=0,tf=0;
-  const L=[...m.entries()].sort((a,b)=>ordem(a[0])-ordem(b[0])||a[0].localeCompare(b[0])).map(([n,o])=>{tp+=o.p;tf+=o.f;
+  /* sempre em ordem alfabética (C-1, C-2 … C-10, CARRAPICHO, COCAL …) */
+  const L=[...m.entries()].sort((a,b)=>String(a[0]).localeCompare(String(b[0]),'pt-BR',{numeric:true,sensitivity:'base'})).map(([n,o])=>{tp+=o.p;tf+=o.f;
     const pv=window.pvCurral?pvCurral(n,ia,ib):NaN;
     return {v:[n,dietaDe(n),String(o.t.size),fmt(o.p),fmt(o.f),sgn(o.f-o.p),isFinite(pv)?pv.toFixed(2).replace('.',',')+'%':'—'],prev:o.p,dif:o.f-o.p,neg:[0,4]};});
   return {cab,cols:COLS_CURRAL,linhas:L,total:['TOTAL','','',fmt(tp),fmt(tf),sgn(tf-tp),'']};
@@ -2918,15 +2918,15 @@ var BTNHED='<div class="row pvImsBtns"><button class="primary" type="button" dat
 /* ---- Previsto/Realizado: os botões do Previsto (alterar previsto, ordem, incluir) também aqui.
    Eles usam a própria tela do Previsto, trazida para dentro desta aba enquanto altera; ao terminar, volta tudo para cá ---- */
 window.HPV=null;let hpvCasa=null;
-function hpvPode(){try{return !modoVer&&!HD.per&&hModo==='T'&&(HD.dia===hojeKey()||(HD.dia===amanhaKey()&&temLeitura(HD.dia)));}catch(e){return false;}}
+function hpvPode(m){try{return !modoVer&&!HD.per&&hModo==='T'&&(HD.dia===hojeKey()||(HD.dia===amanhaKey()&&(m==='ordem'||temLeitura(HD.dia))));}catch(e){return false;}}  /* a ordem dos currais é uma só: muda hoje ou amanhã */
 /* Dia todo: Alterar previsto (% IMS ou kg/dia), Alterar ordem e Incluir previsto · Todos os tratos / Trato N: Editar previsto / realizado (todos com a senha) */
 function pintarHPv(){const el=$('hPvBtns');if(!el)return;if(window.HPV||modoVer||HD.per||hModo!=='T'){el.innerHTML='';return;}
   if(HD.t>=0){el.innerHTML=window.hEdModo?BTNHED:'<button class="dangerfill" data-hedmodo="1">✎ Editar previsto / realizado</button>';return;}
   if(window.hEdModo){window.hEdModo=false;window.HEDPEND={p:{},r:{}};}  /* Dia todo é só o total: não edita na linha */
-  if(!hpvPode()){el.innerHTML='';return;}const hj=HD.dia===hojeKey();
+  if(!hpvPode()){el.innerHTML=hpvPode('ordem')?'<button data-hpv="ordem">↕ Alterar ordem</button>':'';return;}
   el.innerHTML='<button class="dangerfill" data-hpv="ims">✎ Editar previsto <small style="font-size:.82em;font-weight:600;white-space:nowrap">(% IMS ou kg/dia)</small></button>'+
-    (hj?'<button data-hpv="ordem">↕ Alterar ordem</button>':'');}
-function hpvAbrir(m){if(!hpvPode()||window.HPV)return;if(typeof fecharTeclado==='function')fecharTeclado();
+    '<button data-hpv="ordem">↕ Alterar ordem</button>';}
+function hpvAbrir(m){if(!hpvPode(m)||window.HPV)return;if(typeof fecharTeclado==='function')fecharTeclado();
   PV.dia=PV.ini=PV.fim=HD.dia;PV.per=false;PV.am=null;PV.t=HD.t>0?HD.t:0;PV.ed={};PV.ims=false;PV.incl=false;linhaSel=localSel||'T';
   const v=$('viewPrev');if(!hpvCasa)hpvCasa={p:v.parentNode,n:v.nextSibling};$('hPvBox').appendChild(v);v.hidden=false;v.dataset.aberta='1';
   window.HPV=m;$('viewHist').classList.add('hpvOn');renderPrev();
