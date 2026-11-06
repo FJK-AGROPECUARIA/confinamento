@@ -450,7 +450,10 @@ function resumoNumsLote(l){const hj=hojeKey(),fim=fimLote(l),ref=fim&&fim<hj?fim
   <span><b>${ok(V.venda)?rs(V.venda):'—'}</b> venda</span><span class="${crc(V.res)}"><b>${ok(V.res)?rs(V.res):'—'}</b> resultado</span><span class="${crc(rc)}"><b>${ok(rc)?rs(rc):'—'}</b> resultado/cab/total</span><span class="${crc(rcd)}"><b>${ok(rcd)?rs(rcd):'—'}</b> resultado/cab/dia</span></div>
   <small class="gLoteDica">Médias de todos os tratos do lote · custo/cab/total = tratos por cabeça (sem a compra) · custo/lote/total inclui a compra · resultado/cab/dia = resultado/cab/total ÷ dias do lote</small>`;}
 function seloCurral(c){const p=/^P-/.test(c),t=p?c.replace(/^P-/,''):c;
-  return `<div class="gSelo${p?' pasto':''}"><small>${p?'Pasto':'Curral'}</small><b class="${t.length<=4?'t1':t.length<=6?'t2':t.length<=9?'t3':'t4'}">${esc(t||'—').replace(/-/g,'\u2011')}</b></div>`;}
+  return `<div class="gSelo${p?' pasto':''}"><small>${p?'Pasto':'Curral'}</small>${(()=>{/* nome comprido com hífen (ex.: APRISCO-ESTRADA): quebra em duas linhas no hífen para caber inteiro */
+    const i=t.indexOf('-');if(t.length>10&&i>0&&i<t.length-1){const a1=t.slice(0,i+1),a2=t.slice(i+1),m=Math.max(a1.length,a2.length);
+      return `<b class="t5 ${m<=6?'t2':m<=9?'t3':'t4'}">${esc(a1)}<br>${esc(a2).replace(/-/g,'\u2011')}</b>`;}
+    return `<b class="${t.length<=4?'t1':t.length<=6?'t2':t.length<=9?'t3':'t4'}">${esc(t||'—').replace(/-/g,'\u2011')}</b>`;})()}</div>`;}
 
 /* cartão padrão de um lote nos relatórios: selo do curral + nome + números em grade de 3 */
 function cartaoLote(l,c,sub,pares,cls){return `<button class="gLoteRel ${cls||''}" data-g="lote" data-id="${l.uid}"><div class="gRelTopo">${seloCurral(c)}<div class="gLoteInfo"><b>${esc(l.nome)}</b>${sub?`<span>${sub}</span>`:''}</div></div>
@@ -4689,3 +4692,11 @@ document.addEventListener('input',e=>{const t=e.target;if(!t||t.tagName!=='INPUT
 const dataRuim=e=>e&&e.type==='date'&&e.validity&&e.validity.badInput;
 ['change','focusout'].forEach(ev=>document.addEventListener(ev,e=>{const t=e.target;if(!t||t.type!=='date')return;const r=dataRuim(t);t.classList.toggle('gBadData',!!r);if(r&&ev==='change')toast('Essa data não existe (ex.: 31/09 — setembro tem 30 dias). Confira o dia e o mês.');},true));
 document.addEventListener('click',e=>{const b=e.target.closest&&e.target.closest('[data-g^="salva"]');if(!b)return;const r=[...document.querySelectorAll('#gBox input[type=date]')].find(dataRuim);if(r){e.preventDefault();e.stopPropagation();r.classList.add('gBadData');r.focus();toast('Essa data não existe (ex.: 31/09 — setembro tem 30 dias). Confira o dia e o mês.');}},true);
+
+/* selo do curral: se o nome não cabe na largura do selo, diminui a letra até caber (nunca corta o nome) */
+(function(){let ag=0;const fit=()=>{ag=0;document.querySelectorAll('.gSelo b').forEach(b=>{const P=b.parentNode;if(!P||!P.clientWidth)return;const k=b.textContent+'|'+P.clientWidth;if(b.dataset.fit===k)return;
+  b.style.fontSize='';const cs=getComputedStyle(P),av=P.clientWidth-parseFloat(cs.paddingLeft)-parseFloat(cs.paddingRight);let f=parseFloat(getComputedStyle(b).fontSize),n=0;
+  while(b.scrollWidth>av+.5&&f>8&&n<40){f*=.93;b.style.fontSize=f.toFixed(1)+'px';n++;}b.dataset.fit=k;});};
+  const pede=()=>{if(!ag)ag=requestAnimationFrame(fit);};
+  try{new MutationObserver(pede).observe(document.documentElement,{childList:true,subtree:true});addEventListener('resize',pede);document.fonts&&document.fonts.ready.then(pede);}catch(e){}
+  window.fitSelos=fit;})();
