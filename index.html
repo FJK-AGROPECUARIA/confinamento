@@ -1282,7 +1282,7 @@ body.naInicio .topoTxt h1{font-size:clamp(16px,5vw,28px)!important}
 <div class="toast" id="toast" hidden></div>
 <script>
 'use strict';
-const APP_VERSAO='309';
+const APP_VERSAO='310';
 const APP_DATA='19/10/2026';
 const KEY='confinamento-completo-v1';
 const $=id=>document.getElementById(id);
@@ -1981,12 +1981,14 @@ function renderPrev(){
   pvBotoesOrdem();$('viewPrev').classList.toggle('pvTrava',!PV.per&&!edM);$('pvImsTxt').innerHTML=PV.t===0?'Altere o <b>% IMS</b> ou o <b>kg/dia</b> de cada curral (na mesma linha vale o último que alterar). Nada muda até tocar em <b>Aplicar</b>; <b>Cancelar</b> volta tudo como estava.':`Altere o kg do <b>Trato ${PV.t}</b> de cada curral. Nada muda até tocar em <b>Aplicar</b>; <b>Cancelar</b> volta tudo como estava.`;$('viewPrev').classList.toggle('pvImsOn',ims);$('viewPrev').classList.toggle('pvTodos',PV.t===0&&!PV.per);$('btnIms').classList.toggle('on',ims);
   $('pvHead').innerHTML=PV.per?'<tr><th></th><th>Curral</th><th>Total do período (kg)</th><th></th></tr>':
     PV.t===0?`<tr><th></th><th>Curral</th>${ims?'<th>% IMS</th>':''}<th>Previsto dia</th>${comReal?'<th>Realiz.</th><th>Dif.</th>':''}${comAm?'<th class="pvAmTh">Amanhã</th>':''}<th></th></tr>`:`<tr><th></th>${comReal?'<th class="hora">Hora</th>':''}<th class="pvCurTh">Curral</th><th class="pvPrevTh">Previsto T${PV.t}</th>${comReal?'<th>Realiz.</th><th>Dif.</th>':''}<th></th></tr>`;
+  /* Alterar ordem: só os currais com lote no dia (curral vazio não aparece para arrastar) */
+  const emOrd=$('viewPrev').classList.contains('ordem'),cLote=emOrd&&!PV.per&&typeof cochoCurrais==='function'&&gOk()?(()=>{try{return new Set(cochoCurrais(PV.dia));}catch(e){return null;}})():null;
   $('tbPrev').innerHTML=S.cadastro.map((c,i)=>{const v=m[c],esc_=esc(c),tr=travado(c),rl=comReal?realDe(c):null,pvN=typeof v==='number'?v:0;
     const colR=comReal?(PV.t===0?`<td class="num pvReal">${rl!=null?fmt(rl):''}</td><td class="num ${rl!=null&&pvN?classeDesv(rl-pvN,pvN):''}">${rl!=null&&pvN?sgn(rl-pvN):''}</td>`
       :`<td class="num pvReal">${rl!=null?fmt(rl):''}</td><td class="num ${rl!=null&&pvN?classeDesv(rl-pvN,pvN):''}">${rl!=null&&pvN?sgn(rl-pvN):''}</td>`):'';
     /* Trato N: só os currais que têm esse trato (previsto, já tratado ou quantidade de tratos do curral) */
     const foraDoTrato=PV.t>0&&!PV.per&&!(pvN>0||v==='?'||rl!=null||(()=>{try{const pos=tratosAtivos().map(Number).indexOf(+PV.t)+1;return pos>0&&nTratos(c,o)>=pos;}catch(e){return true;}})());
-    const ocultar=!curralAtivo(c)||(linhaSel!=='T'&&linhaDe(c)!==linhaSel)||foraDoTrato;
+    const ocultar=!curralAtivo(c)||(linhaSel!=='T'&&linhaDe(c)!==linhaSel)||foraDoTrato||(emOrd&&cLote&&!cLote.has(c)&&!(pvN>0)&&rl==null);
     const nome=`<td class="c" style="cursor:default">${esc_}</td>`;
     const eI=edM&&PV.ed?PV.ed[c]:null,kgEd=eI?(eI.tipo==='kg'?eI.val:(window.gMnIms&&gMnIms(c,eI.val,PV.dia)!=null?arredPrev(gMnIms(c,eI.val,PV.dia)):null)):undefined;
     const cel=`<td><input class="cell${v==='?'?' duv':''}${tr?' feito':''}${eI?(eI.tipo==='kg'?' mudou':' calc'):''}" type="text" readonly tabindex="-1" inputmode="none" data-n="${i}" value="${esc(eI?valPrev(kgEd):valPrev(typeof v==='number'?(v||null):v))}" placeholder="—" aria-label="Previsto ${esc_}"${ed&&!tr?'':' disabled'}${tr?' title="Já tratado: não muda mais"':''}></td>`;
