@@ -3989,8 +3989,7 @@ function tFezes(t){const hj=hojeKey();t.dia=t.dia||hj;t.loc=t.loc||'T';const dia
     <div class="tablebox"><table class="gTab fzTab"><thead><tr><th>Curral</th><th>N</th><th>1</th><th>2</th><th>3</th><th>4</th><th>5</th><th>Média</th></tr></thead><tbody>
     ${R.map(o=>`<tr data-g="fzCur" data-c="${esc(o.c)}"><td class="c">${esc(o.c)}</td><td>${o.k.tot}</td>${o.k.pct.map((p,i)=>`<td class="${i===2?'fz3':''}">${p?p.toFixed(0)+'%':'·'}</td>`).join('')}<td class="${fzStatus(o.k).cl}"><b>${fz1(o.k.media)}</b></td></tr>`).join('')}
     <tr class="grp"><td>Geral</td><td>${KG.tot}</td>${KG.pct.map(p=>`<td>${p.toFixed(0)}%</td>`).join('')}<td class="${fzStatus(KG).cl}"><b>${fz1(KG.media)}</b></td></tr></tbody></table></div>
-    <p class="note">Ideal: maioria no escore 3 e média entre 2,5 e 3,5. Mais de 20% em 1+2 = fezes moles (risco de acidose). Mais de 20% em 4+5 = fezes firmes.</p>
-    <div class="row compart fz3"><button class="verde" data-g="fzPdf">📄 PDF</button><button class="verde" data-g="fzImg">🖼 Foto</button><button class="verde" data-g="fzXls">📊 Excel</button></div></section>`
+    <p class="note">Ideal: maioria no escore 3 e média entre 2,5 e 3,5. Mais de 20% em 1+2 = fezes moles (risco de acidose). Mais de 20% em 4+5 = fezes firmes.</p></section>`
     :`<section class="panel"><p class="note">Nenhuma avaliação de fezes em ${dB(dia)}${t.loc!=='T'?' neste local':''}.</p></section>`;
   /* histórico */
   const hN=[7,15,30].includes(+t.hN)?+t.hN:30,cH=t.hCur||'',ini=fzIni(t,dia,cH);
@@ -4006,6 +4005,7 @@ function tFezes(t){const hj=hojeKey();t.dia=t.dia||hj;t.loc=t.loc||'T';const dia
       ${dias.map(d=>{const k=fzCalc(porDia[d]);return `<tr><td class="c">${dB(d).slice(0,5)}</td><td>${k.tot}</td>${k.pct.map((p,i)=>`<td class="${i===2?'fz3':''}">${p?p.toFixed(0)+'%':'·'}</td>`).join('')}<td class="${fzStatus(k).cl}"><b>${fz1(k.media)}</b></td></tr>`;}).join('')}</tbody></table></div>
       <div class="row compart fz3"><button class="verde" data-g="fzHPdf">📄 PDF</button><button class="verde" data-g="fzHImg">🖼 Foto</button><button class="verde" data-g="fzXlsHist">📊 Excel</button></div>`:'<p class="note">Sem avaliações nesse período.</p>'}</section>`;
   return `<section class="panel"><h2>Escore de fezes</h2>${navData('fzDia',dia,'')}${typeof selSetas==='function'&&window.LOC_OPS?`<div class="gCoLocNav">${selSetas('Local',LOC_OPS,Math.max(0,LOC_OPS.findIndex(o=>o[0]===t.loc)),'data-g="fzLocP" data-n','data-fzlsel')}</div>`:locBotoes('fzLoc',t.loc)}
+    ${!t.cur&&R.length?`<div class="row compart fz3 fzExpTopo"><button class="verde" data-g="fzPdf">📄 PDF</button><button class="verde" data-g="fzImg">🖼 Foto</button><button class="verde" data-g="fzXls">📊 Excel</button></div>`:''}
     ${t.cur?`<p class="note fzEditando">✏️ Avaliando o <b>${esc(t.cur)}</b>. Salve o score ou cancele para escolher outro curral.</p>`:`<p class="note">Escolha o curral e toque em + para cada fezes avaliada.</p>
     <div class="fzChips">${chips||'<p class="note">Nenhum curral com lote neste local.</p>'}</div>`}</section>${ficha}${t.cur?'':rel+hist}`;}
 function fzMudar(i,d){const t=GT,c=t.cur;if(!c||!t.fzR)return;t.fzR.c[i-1]=Math.max(0,t.fzR.c[i-1]+d);
@@ -4167,14 +4167,14 @@ const FZ_COR=['#c62828','#f2b705','#2e7d32','#8d6e63','#4e342e'];
 function fzDadosDia(){const t=GT;return gTodos('fezes').filter(x=>x.dia===t.dia&&doLocal(t.loc,x.curral)).map(x=>({c:x.curral,k:fzCalc(x.c),obs:x.obs||'',fotos:x.fotos||[]})).filter(o=>o.k.tot)
   .sort((a,b)=>alfa(a.c,b.c));}
 /* um quadro com o gráfico de barras do curral */
-function fzQuadro(x,X,Y,W,H,o,dia){const k=o.k,st=fzStatus(k),L=gTodos('lote').filter(l=>nAt(curralEm(l,dia))===nAt(o.c)&&cabPres(l,dia)>0);
+function fzQuadro(x,X,Y,W,H,o,dia,semObs){const k=o.k,st=fzStatus(k),L=gTodos('lote').filter(l=>nAt(curralEm(l,dia))===nAt(o.c)&&cabPres(l,dia)>0);
   x.fillStyle='#fff';x.strokeStyle='#d5dde5';x.lineWidth=2;x.beginPath();x.roundRect?x.roundRect(X,Y,W,H,16):x.rect(X,Y,W,H);x.fill();x.stroke();
   x.textAlign='left';x.fillStyle='#13243d';x.font='bold 34px Arial';x.fillText(o.c,X+24,Y+48);
   x.font='20px Arial';x.fillStyle='#5d6b7a';x.fillText(L.map(l=>[[catNorm(l.cat)||l.nome,l.raca||''].filter(Boolean).join(' '),nf(cabPres(l,dia))+' cab',nf(pesoEm(l,dia))+' kg proj.'].join(' – ')).join('  |  ')+(ok(o.pv1)?` – % IMS PV D-1: ${nf(o.pv1,2)}%`:''),X+24,Y+78);
   x.textAlign='right';x.fillStyle='#13243d';x.font='bold 22px Arial';x.fillText(`${k.tot} fezes avaliadas`,X+W-24,Y+44);
   x.fillStyle=st.cl==='bad'?'#b3261e':st.cl==='warn'?'#a86b00':'#2e7d32';x.font='bold 22px Arial';x.fillText(`Média ${fz1(k.media)} · ${st.txt}`,X+W-24,Y+74);
   /* barras */
-  const top=Y+110,base=Y+H-(o.obs?96:70),ch=base-top-40,bw=(W-48)/5,mx=Math.max(1,...k.pct);
+  const top=Y+110,base=Y+H-(o.obs&&!semObs?96:70),ch=base-top-40,bw=(W-48)/5,mx=Math.max(1,...k.pct);
   x.strokeStyle='#e3e8ee';x.lineWidth=1;for(let g=0;g<=4;g++){const yy=base-ch*g/4;x.beginPath();x.moveTo(X+24,yy);x.lineTo(X+W-24,yy);x.stroke();}
   k.pct.forEach((p,i)=>{const bx=X+24+i*bw+bw*0.18,w=bw*0.64,h=ch*p/mx,by=base-h;
     x.fillStyle=FZ_COR[i];x.fillRect(bx,by,w,Math.max(h,p?2:0));
@@ -4183,7 +4183,15 @@ function fzQuadro(x,X,Y,W,H,o,dia){const k=o.k,st=fzStatus(k),L=gTodos('lote').f
     x.fillStyle='#13243d';x.font='bold 22px Arial';x.fillText('Escore '+(i+1),bx+w/2,base+28);
     x.fillStyle='#5d6b7a';x.font='18px Arial';x.fillText(FZ_DESC[i+1],bx+w/2,base+52);});
   x.strokeStyle='#9aa7b4';x.lineWidth=2;x.beginPath();x.moveTo(X+24,base);x.lineTo(X+W-24,base);x.stroke();
-  if(o.obs){x.textAlign='left';x.fillStyle='#5d6b7a';x.font='italic 18px Arial';x.fillText('Obs.: '+o.obs.slice(0,95),X+24,Y+H-12);}}
+  if(o.obs&&!semObs){x.fillStyle='#fdecea';x.strokeStyle='#ef9a9a';x.lineWidth=2;x.beginPath();x.roundRect?x.roundRect(X+16,Y+H-40,W-32,32,8):x.rect(X+16,Y+H-40,W-32,32);x.fill();x.stroke();
+    x.textAlign='left';x.fillStyle='#8e1b1b';x.font='bold 19px Arial';let ot='📝 Obs.: '+o.obs;if(x.measureText(ot).width>W-64){while(ot.length>10&&x.measureText(ot+'…').width>W-64)ot=ot.slice(0,-1);ot=ot.trim()+'…';}x.fillText(ot,X+28,Y+H-17);}}
+/* quadro separado (vermelho claro) com as observações do curral; quebra o texto em linhas. Devolve a altura usada */
+function fzObsBox(x,X,Y,W,txt,maxL){maxL=maxL||4;const LB='📝 Observações: ';x.font='bold 22px Arial';const lw=x.measureText(LB).width;x.font='21px Arial';
+  const ws=String(txt).split(/\s+/),L=[];let ln='';ws.forEach(w=>{const tt=ln?ln+' '+w:w,lim=W-48-(L.length?0:lw);if(x.measureText(tt).width>lim&&ln){L.push(ln);ln=w;}else ln=tt;});if(ln)L.push(ln);
+  const ls=L.slice(0,maxL);if(L.length>maxL){let u=ls[maxL-1];while(u.length>3&&x.measureText(u+'…').width>W-48-(maxL===1?lw:0))u=u.slice(0,-1);ls[maxL-1]=u.trim()+'…';}
+  const h=24+ls.length*30;x.fillStyle='#fdecea';x.strokeStyle='#e57373';x.lineWidth=2;x.beginPath();x.roundRect?x.roundRect(X,Y,W,h,14):x.rect(X,Y,W,h);x.fill();x.stroke();
+  x.textAlign='left';x.fillStyle='#b3261e';x.font='bold 22px Arial';x.fillText(LB,X+24,Y+34);
+  x.fillStyle='#5a1414';x.font='21px Arial';ls.forEach((t,k)=>x.fillText(t,X+24+(k?0:lw),Y+34+k*30));return h;}
 /* monta as páginas (A4 em pé, 3 currais por página) */
 /* páginas do PDF: curral COM fotos vai sozinho numa página, com as fotos embaixo do gráfico; os SEM fotos vão 3 por página */
 function fzPaginas(imgs){const D=fzDadosDia(),dia=GT.dia,W=1240,H=1754,pags=[];if(!D.length)return pags;imgs=imgs||{};
@@ -4201,9 +4209,10 @@ function fzPaginas(imgs){const D=fzDadosDia(),dia=GT.dia,W=1240,H=1754,pags=[];i
     x.textAlign='right';x.fillStyle='#fff';x.font='bold 24px Arial';x.fillText(`Geral: ${KG.tot} fezes · média ${fz1(KG.media)}`,W-40,62);
     x.font='20px Arial';x.fillText(`${D.length} curral(is) · página ${p+1} de ${total}`,W-40,100);
     const bh=(H-130-90-3*24)/3;
-    if(g.length===1&&comF(g[0])){const o=g[0];fzQuadro(x,40,154,W-80,bh,o,dia);
+    if(g.length===1&&comF(g[0])){const o=g[0];fzQuadro(x,40,154,W-80,bh,o,dia,true);
+      const oh=o.obs?fzObsBox(x,40,154+bh+28,W-80,o.obs)+62:0;
       /* fotos: até 6, 3 por fileira abaixo do gráfico */
-      const fs=o.fotos.map(f=>imgs[f.id]||imgs[f.idMini]).filter(Boolean).slice(0,FZ_MAXF),y0=154+bh+30,areaH=H-y0-100,cols=fs.length<=2?Math.max(1,fs.length):3,rows=Math.ceil(fs.length/cols),gap=20;
+      const fs=o.fotos.map(f=>imgs[f.id]||imgs[f.idMini]).filter(Boolean).slice(0,FZ_MAXF),y0=154+bh+30+oh,areaH=H-y0-100,cols=fs.length<=2?Math.max(1,fs.length):3,rows=Math.ceil(fs.length/cols),gap=20;
       const cw=(W-80-(cols-1)*gap)/cols,ch=(areaH-(rows-1)*gap)/rows;
       x.fillStyle='#24502a';x.textAlign='left';x.font='bold 24px Arial';x.fillText(`📷 Fotos · ${o.c}`,40,y0-6);
       fs.forEach((im,i)=>{const cx=40+(i%cols)*(cw+gap),cy=y0+14+Math.floor(i/cols)*(ch+gap),bw=cw,bh2=ch-14;
@@ -4211,7 +4220,9 @@ function fzPaginas(imgs){const D=fzDadosDia(),dia=GT.dia,W=1240,H=1754,pags=[];i
         const deit=im.width>im.height,iw=deit?im.height:im.width,ih=deit?im.width:im.height,k=Math.max(bw/iw,bh2/ih);
         x.save();x.beginPath();x.rect(cx,cy,bw,bh2);x.clip();x.translate(cx+bw/2,cy+bh2/2);if(deit)x.rotate(Math.PI/2);
         x.drawImage(im,-im.width*k/2,-im.height*k/2,im.width*k,im.height*k);x.restore();x.strokeStyle='#d5dccd';x.lineWidth=2;x.strokeRect(cx,cy,bw,bh2);});}
-    else g.forEach((o,j)=>fzQuadro(x,40,154+j*(bh+24),W-80,bh,o,dia));
+    else g.forEach((o,j)=>{const y=154+j*(bh+24);if(!o.obs)return fzQuadro(x,40,y,W-80,bh,o,dia);
+      /* com observação: gráfico um pouco menor e a observação num quadro separado logo abaixo */
+      const oh=84,qh=bh-oh-18;fzQuadro(x,40,y,W-80,qh,o,dia,true);fzObsBox(x,40,y+qh+18,W-80,o.obs,2);});
     x.textAlign='left';x.fillStyle='#5d6b7a';x.font='18px Arial';
     x.fillText('Escala: 1 líquida · 2 mole · 3 ideal (pastosa) · 4 firme · 5 seca. Ideal: maioria no escore 3, média entre 2,5 e 3,5.',40,H-48);
     x.fillText('Mais de 20% em 1+2 = fezes moles (risco de acidose) · mais de 20% em 4+5 = fezes firmes.',40,H-22);
