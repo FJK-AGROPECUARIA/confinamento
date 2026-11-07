@@ -948,6 +948,8 @@ body.naInicio .topoTxt h1{font-size:clamp(16px,5vw,28px)!important}
 /* Estoque › Movimentações: filtros mais juntos */
 .gEstRel .gMinzCab{margin-bottom:0!important}
 .gEstRel .gEstDatas{margin:4px 0 8px!important;gap:8px}
+.gEstRel .gEstSalChk{display:inline-flex!important;width:auto!important;max-width:max-content;align-items:center;gap:6px;margin:2px 0 6px;padding:3px 10px;border:1px solid var(--line);border-radius:999px;font-size:.8rem;font-weight:600;text-transform:none;letter-spacing:0;color:var(--fg);white-space:nowrap;cursor:pointer}.gEstRel .gEstSalChk input{width:16px;height:16px;margin:0;flex:0 0 16px}
+.gEstRel .gEstTodas{display:block;margin:-2px 0 8px auto;width:auto;font-size:.8rem;padding:5px 10px}
 .gEstRel .gEstDatas>div{flex:1;min-width:0;display:flex;flex-direction:column;gap:3px}
 .gEstRel .gEstDatas small{font-size:.75rem;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;font-weight:700}
 .gEstRel .gEstDatas label.gDataBox{flex:none;flex-direction:row;align-items:center;gap:0;width:100%;box-sizing:border-box;justify-content:flex-start;padding:0 14px;min-height:46px;font-size:1.05rem;text-transform:none;letter-spacing:0;color:var(--fg)}
@@ -1282,7 +1284,7 @@ body.naInicio .topoTxt h1{font-size:clamp(16px,5vw,28px)!important}
 <div class="toast" id="toast" hidden></div>
 <script>
 'use strict';
-const APP_VERSAO='314';
+const APP_VERSAO='315';
 const APP_DATA='19/10/2026';
 const KEY='confinamento-completo-v1';
 const $=id=>document.getElementById(id);
@@ -4107,7 +4109,7 @@ let atualizarPend=false;
 /* ---------- Visualizar: só ver, filtrar e exportar. Tudo que altera fica travado ---------- */
 const VER_VIEWS='#viewGest,#viewPrev,#viewHist,#viewTrato,#viewCarga,#viewAuto,#viewAutoC';
 const VER_FILTRO='.gRelExpL,.gRelModo,.gRelDatas,.gRelAtalhos,#gRelIni,#gRelFim,.hNavUm,.gNavData,.hColCab,.zHistCab,.gPagNav,.gPagSel,.gMinzCab,.gCfgGrpCab,.fz3,.expTopo,.lotesExp,#hModo,.hModo,.dPer,.dPerCampos,.dLinha,.gCoLocNav,.zLocNav,.gPerDatas,#hPerBox,.aoVivo,.avBarra,.gGrpCab,#subGest,.gLotesAbre,.gBaseOp>summary,#gf_rForn,#gf_rIns,.gHojeTop,#gf_grafLocF,#gf_perF,#gf_tipoF,#gf_prodF,#gf_fornF,.gEstFil .gSug,#fzHCur,#gVenIni,#gVenFim,#gVenCpr,#gVenPor,.mdDatas,#gf_mdQ,#gf_mdDe,#gf_mdAte,#gPsIni,#gPsFim,#gMsDe,#gMsAte';
-const VER_OK_G=new Set(['msFP','msFLimpa','medLimpa','fzCur','cmpModo','coAbre','coFecha','voltar','raiz','ir','lote','dataPasso','dataHoje','filtroLoc','lotLocP','loteTog','lotTodos','curGrp','coLocP','fzLocP','perP','pgN','pgP','cfgGrp','estOrd','estPer','estPerE','estFilP','estFilLimpa','estIrRel','estVerMov','evolN','evLoc','grafCur','grafLoc','celGraf','perAtalho','fzHN','fzFotoVer','nfVer','compRel','compDia','cbExp','estInsExp']);
+const VER_OK_G=new Set(['msFP','msFLimpa','medLimpa','fzCur','cmpModo','coAbre','coFecha','voltar','raiz','ir','lote','dataPasso','dataHoje','filtroLoc','lotLocP','loteTog','lotTodos','curGrp','coLocP','fzLocP','perP','pgN','pgP','cfgGrp','estOrd','estPer','estPerE','estFilP','estFilLimpa','estTodas','estIrRel','estVerMov','evolN','evLoc','grafCur','grafLoc','celGraf','perAtalho','fzHN','fzFotoVer','nfVer','compRel','compDia','cbExp','estInsExp']);
 const VER_NAO_G=new Set(['senhaTurno','ntLoc','nota','msAbre','libLeit','baseDia','baseM']);
 function verPermite(el){const sb=el.closest('.gDataBox');if(sb){const s=sb.querySelector('select');if(s)return !s.disabled;}const g=el.closest('[data-g]');
   if(g){const a=g.dataset.g;if(VER_NAO_G.has(a))return false;if(a==='ir')return !/Form$/.test(g.dataset.t||'');
