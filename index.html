@@ -1318,7 +1318,7 @@ body.naInicio .topoTxt h1{font-size:clamp(16px,5vw,28px)!important}
 <div class="toast" id="toast" hidden></div>
 <script>
 'use strict';
-const APP_VERSAO='326';
+const APP_VERSAO='327';
 const APP_DATA='19/10/2026';
 const KEY='confinamento-completo-v1';
 const $=id=>document.getElementById(id);
@@ -1488,6 +1488,12 @@ function prevDiaCurral(c,P,dia,regsDia){const ks=[];for(let k=1;k<=MAXT;k++){con
   let pul=new Set();try{if(comp)pul=new Set(tratosPulados(c,dia,ks).map(p=>p.k));}catch(e){}
   let t=0;ks.forEach(k=>{const v=+((P[String(k)]||P[k]||{})[c]),x=rk(k);t+=comp&&k!==ult&&x.length?x.reduce((a,r)=>a+(+r.forn||0),0):comp&&k!==ult&&pul.has(k)?0:x.length?x.reduce((a,r)=>a+(+r.prev||0),0):v;});
   R.filter(r=>!ks.includes(+r.trato)).forEach(r=>t+=(+r.prev||0));return t;}
+/* previsto do DIA de um curral nos relatórios (soma dos tratos): com a compensação, a diferença dos tratos anteriores já foi
+   para o previsto do último trato. Somar os previstos contaria a diferença duas vezes (ex.: C-2 560+280+650 = 1.490, mas o
+   previsto do dia era 1.120). Então, quando o último trato do curral já foi feito: tratos anteriores valem o realizado + previsto do último. */
+function prevDiaRegs(c,rs){const sp=rs.reduce((a,r)=>a+(+r.prev||0),0);try{const cfgG=gOk()&&typeof gCfg==='function'?gCfg():{};if(cfgG.compensa===false)return sp;
+  const ks=[...new Set(rs.map(r=>+r.trato))].sort((a,b)=>a-b);if(ks.length<2)return sp;const ult=ks[ks.length-1],nt=nTratos(c);if(nt&&ult<nt)return sp;
+  return rs.reduce((a,r)=>a+(+r.trato===ult?(+r.prev||0):(+r.forn||0)),0);}catch(e){return sp;}}
 function totalDia(c,obj,dia){obj=obj||S.prev||{};dia=dia||hojeKey();const ks=[];for(let k=1;k<=MAXT;k++){const v=(obj[k]||{})[c];if(typeof v==='number'&&v>0)ks.push(k);}
   const cfgG=gOk()&&typeof gCfg==='function'?gCfg():{};if(ks.length<2||cfgG.compensa===false)return totalCurral(c,obj);
   const regs=HIST.filter(r=>r.dia===dia&&r.curral===c),pul=new Set(tratosPulados(c,dia,ks).map(p=>p.k));if(!regs.length&&!pul.size)return totalCurral(c,obj);
@@ -2412,8 +2418,9 @@ function gerarXlsx(regsIn){
   const L2=gs.length+1,T2=L2+1;
   r2.push([{v:'TOTAL',s:9},{v:'',s:9},{v:'',s:9},{f:`SUM(D2:D${L2})`,v:sp,s:7},{f:`SUM(E2:E${L2})`,v:sf,s:7},{f:`E${T2}-D${T2}`,v:sf-sp,s:8},{f:`IF(D${T2}=0,0,F${T2}/D${T2})`,v:sp?(sf-sp)/sp:0,s:10}]);
   // Aba 3: por curral em cada dia (soma dos tratos)
-  const m=new Map();regs.forEach(r=>{const k=r.dia+'|'+r.curral;if(!m.has(k))m.set(k,{dia:r.dia,curral:r.curral,p:0,f:0,t:new Set()});const o=m.get(k);o.p+=r.prev;o.f+=r.forn;o.t.add(r.trato);});
-  const cs=[...m.values()].sort((a,b)=>a.dia<b.dia?-1:a.dia>b.dia?1:a.curral.localeCompare(b.curral,'pt-BR',{numeric:true}));
+  const m=new Map();regs.forEach(r=>{const k=r.dia+'|'+r.curral;if(!m.has(k))m.set(k,{dia:r.dia,curral:r.curral,p:0,f:0,t:new Set(),rs:[]});const o=m.get(k);o.p+=r.prev;o.f+=r.forn;o.t.add(r.trato);o.rs.push(r);});
+  m.forEach(o=>{o.p=prevDiaRegs(o.curral,o.rs);});
+  const cs=[...m.values()].sort((a,b)=>a.dia<b.dia?-1:a.dia>b.dia?1:alfa(a.curral,b.curral));
   const r3=[[H('Data'),H('Curral'),H('Local'),H('Previsto (kg)'),H('Realizado (kg)'),H('Diferença (kg)'),H('Diferença (%)'),H('Tratos')]];
   cs.forEach((o,i)=>{const n=i+2;r3.push([{v:diaSerial(o.dia),s:2},{v:o.curral},{v:localDe(o.curral)},{v:o.p,s:4},{v:o.f,s:4},{f:`E${n}-D${n}`,v:o.f-o.p,s:5},{f:`IF(D${n}=0,0,F${n}/D${n})`,v:o.p?(o.f-o.p)/o.p:0,s:6},{v:[...o.t].sort().join(', ')}]);});
   const L3=cs.length+1,T3=L3+1;
@@ -2571,10 +2578,12 @@ function secaoTratoImg(cab,linhas){
 }
 // resumo por curral (soma dos tratos)
 function secaoCurralImg(regs,cab){const [ia,ib]=intervaloHist();
-  const m=new Map();regs.forEach(r=>{if(!m.has(r.curral))m.set(r.curral,{p:0,f:0,t:new Set()});const o=m.get(r.curral);o.p+=r.prev;o.f+=r.forn;o.t.add(r.trato);});
+  const m=new Map();regs.forEach(r=>{if(!m.has(r.curral))m.set(r.curral,{p:0,f:0,t:new Set(),rs:[]});const o=m.get(r.curral);o.p+=r.prev;o.f+=r.forn;o.t.add(r.trato);o.rs.push(r);});
+  /* previsto do dia por curral (sem contar a compensação duas vezes), somando cada dia separado */
+  m.forEach((o,c)=>{const pd=new Map();o.rs.forEach(r=>{if(!pd.has(r.dia))pd.set(r.dia,[]);pd.get(r.dia).push(r);});o.p=[...pd.values()].reduce((a,rs)=>a+prevDiaRegs(c,rs),0);});
   let tp=0,tf=0;
-  /* sempre em ordem alfabética (C-1, C-2 … C-10, CARRAPICHO, COCAL …) */
-  const L=[...m.entries()].sort((a,b)=>String(a[0]).localeCompare(String(b[0]),'pt-BR',{numeric:true,sensitivity:'base'})).map(([n,o])=>{tp+=o.p;tf+=o.f;
+  /* ordem alfabética, primeiro os do Confinamento e depois os do Pasto */
+  const L=[...m.entries()].sort((a,b)=>alfa(a[0],b[0])).map(([n,o])=>{tp+=o.p;tf+=o.f;
     const pv=window.pvCurral?pvCurral(n,ia,ib):NaN;
     return {v:[n,dietaDe(n),String(o.t.size),fmt(o.p),fmt(o.f),sgn(o.f-o.p),isFinite(pv)?pv.toFixed(2).replace('.',',')+'%':'—'],prev:o.p,dif:o.f-o.p,neg:[0,4]};});
   return {cab,cols:COLS_CURRAL,linhas:L,total:['TOTAL','','',fmt(tp),fmt(tf),sgn(tf-tp),'']};
