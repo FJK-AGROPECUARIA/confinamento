@@ -300,6 +300,8 @@ function gRender(){if(GT&&GT.t!=='rel')RELCMP=null;if(GT&&GT.t!=='lotes')gLotAb.
   const raiz=GT.raiz||RAIZ[GT.t]||'home';document.querySelectorAll('#subGest button[data-gt]').forEach(x=>x.setAttribute('aria-selected',String(x.dataset.gt===raiz)));
   const cb=$('cfgTBox');if(cb&&$('cfgTParque')&&cb.parentNode!==$('cfgTParque'))$('cfgTParque').appendChild(cb); // ajustes da balança: guarda antes de redesenhar
   b.innerHTML=GT.nova&&GT.t!=='saiSel'?saiTopo(GT)+f(GT).replace(/<button class="gVoltar"[^>]*>[^<]*<\/button>/,''):f(GT);
+  {const v=b.firstElementChild;if(v&&v.classList.contains('gVoltar')&&/^❮ (Animais|Relatórios|Rações|Currais)$/.test(v.textContent.trim()))v.remove();}   // o caminho fica só na barrinha verde de cima
+  if(window.menuPinta)try{menuPinta();}catch(e){}
   try{const fz=GT.t==='fezes',ms=GT.t==='ms',lt=window.abaAtual==='leit';if($('tabMed'))$('tabMed').setAttribute('aria-selected',String(GT.t==='med'&&lt));if($('tabFez'))$('tabFez').setAttribute('aria-selected',String(fz&&lt));if($('tabMS'))$('tabMS').setAttribute('aria-selected',String(ms&&lt));if($('tabLeit')&&lt)$('tabLeit').setAttribute('aria-selected',String(!fz&&!ms&&GT.t!=='med'));}catch(e){}
   if(GT.t==='cfg'&&cb&&$('cfgBalHost')){$('cfgBalHost').appendChild(cb);if(window.cfgTAoAbrir)cfgTAoAbrir();}
   if(GT.t==='cfg'&&GT.cfgSel!=='confbal')cfgMinimizar();   // Conf. balança: a lista de relatórios já aparece aberta
@@ -606,7 +608,7 @@ function locBotoesAnt(attr,sel,conta,extra){conta=null;return `<div class="linha
 const doLocal=(k,c)=>k==='T'||linhaDe(c)===k;
 /* Gestão › Animais: submenu com tudo dos lotes e da entrada/saída de animais */
 function tAnimais(){const B=(c,ic,tx,at,cl)=>`<button type="button" style="--c:${c}"${cl?` class="${cl}"`:''} ${at}><span class="gIc">${ic}</span><span>${tx}</span></button>`;
-  return `<section class="panel"><h2>🐂 Animais</h2><div class="gAniTiles">
+  return `<section class="panel gAniPanel"><div class="gAniTiles">
     ${B('#3f80c4','➕','Novo lote','data-g="novoLote"')}${B('#24507f','🐂','Lotes ativos','data-g="ir" data-t="lotes"')}
     ${B('#2e8b3d','📥','Entrada de<br>animais','data-g="ir" data-t="entradas"')}${B('#c62828','📤','Saída de<br>animais','data-g="ir" data-t="saidas"')}
     ${B('#b8860b','⚖️','Pesagem','data-g="ir" data-t="pesNova"')}${B('#7b4fa0','🔒','Lotes<br>finalizados','data-g="ir" data-t="lotes" data-enc="1"')}
@@ -2741,9 +2743,9 @@ function tCfg(){const c=gCfg(),hj=hojeKey(),tx=vig(c.taxa,hj),txP=vig(c.taxaP||[
   if(ab===GT.cfgSel)tudo+=h;}
   /* quadrados por tipo (Tratos · Gestão · Relatórios · Sistema); tocou num, abre só ele */
   const sel=CFG_ABAS.find(o=>o[0]===GT.cfgSel);
-  if(!sel)return `<div class="gCfgTit">⚙ Configurações</div><div class="gCfgTiles">${CFG_TILES.map(k=>{const [,t]=CFG_ABAS.find(o=>o[0]===k),[g,cor]=CFG_TIPO[k];
+  if(!sel)return `<div class="gCfgTiles">${CFG_TILES.map(k=>{const [,t]=CFG_ABAS.find(o=>o[0]===k),[g,cor]=CFG_TIPO[k];
     return `<button type="button" data-g="cfgSel" data-k="${k}" style="--c:${cor}"><small>${g}</small><span class="gIc">${CFG_ICO[k]||''}</span><span>${k==='senha'?'Senhas':t}</span></button>`;}).join('')}</div>`;
-  return `<button type="button" class="gCfgVolta" data-g="cfgSel" data-k=""><span>◀ Configurações</span><span>${CFG_ICO[sel[0]]||''} ${sel[0]==='senha'?'Senhas':sel[1]}</span></button>`+tudo;}
+  return tudo;}   // o caminho (Gestão › Configurações › …) fica só na barrinha verde de cima
 /* ---------- batidas retroativas: uma batida por dia × trato × ração com o realizado dos tratos ---------- */
 let RETRO=null;
 async function retroCalc(){const box=document.getElementById('gRetro');if(box)box.innerHTML='<p class="note">Buscando os tratos na nuvem…</p>';
