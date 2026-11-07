@@ -86,7 +86,7 @@ const NOTAS_PADRAO=[-4,-3,-2,-1,0,1,2,3,4].map(n=>({n,t:n>0?'Aumentar':n<0?'Dimi
 const NOTAS_VER=3;
 function gCfg(){const c=G.it.config&&!G.it.config.del?G.it.config:{uid:'config',tipo:'config'};
   if(!Array.isArray(c.taxa))c.taxa=[];if(!Array.isArray(c.notas)||!c.notas.length||c.notasV!==NOTAS_VER)c.notas=NOTAS_PADRAO.map(x=>Object.assign({},x));
-  if(!Array.isArray(c.racas)||!c.racas.length)c.racas=RACAS_PADRAO.slice();if(!Array.isArray(c.sexos)||!c.sexos.length)c.sexos=SEXOS_PADRAO.map(x=>Object.assign({},x));if(!Array.isArray(c.cats)||!c.cats.length)c.cats=CATS_PADRAO.slice();else c.cats=[...new Set(c.cats.map(x=>CAT_PLURAL[x]||x))];if(!ok(c.arred))c.arred=10;if(!ok(c.pvIni))c.pvIni=2.2;if(!ok(c.rc))c.rc=52;return c;}
+  if(!Array.isArray(c.racas)||!c.racas.length)c.racas=RACAS_PADRAO.slice();if(!Array.isArray(c.sexos)||!c.sexos.length)c.sexos=SEXOS_PADRAO.map(x=>Object.assign({},x));if(!Array.isArray(c.cats)||!c.cats.length)c.cats=CATS_PADRAO.slice();else c.cats=[...new Set(c.cats.map(x=>CAT_PLURAL[x]||x))];if(!ok(c.arred))c.arred=10;if(!ok(c.pvIni))c.pvIni=2.2;if(!ok(c.pvIniC))c.pvIniC=2;if(!ok(c.pvIniP))c.pvIniP=1.2;if(!ok(c.rc))c.rc=52;return c;}
 const taxaEm=dia=>{const v=vig(gCfg().taxa,dia);return v?+v.rs||0:0;};
 
 /* ---------- insumos e rações ---------- */
@@ -1539,7 +1539,7 @@ function tCocho(t){
     const chips=[1,2,3].map(i=>{const d=somaDias(dia,-i),v=ix.get(d+'|'+c)||0;return `<button type="button" class="mini${bm==='dia'&&bs&&bs.d===d?' sel':''}" data-g="baseDia" data-c="${esc(c)}" data-d="${d}"${v?'':' disabled'}>${diaBR(d).slice(0,5)}<small>${v?nf(v)+' kg':'sem trato'}</small></button>`;}).join('');
     const opB=(m,txt)=>`<button type="button" class="gBaseBt${bm===m?' sel':''}" data-g="baseM" data-c="${esc(c)}" data-m="${m}">${txt}</button>`;
     if(!base&&!bs&&pt){base=pt;orig='previsto atual';}
-    if(!base&&!bs){const ms=L.reduce((a,l)=>{const r=racaoEm(l,dia),cp=r&&compRacao(r,dia);return a+(cp?cabPres(l,dia)*pesoEm(l,dia)*cfg.pvIni/100/(cp.ms/100):0);},0);base=Math.round(ms);orig=`sugestão ${nf(cfg.pvIni,1)}% PV`;}
+    if(!base&&!bs){base=Math.round(sugLoteNovo(c,dia));orig=`sugestão ${nf(pvSug(c),1)}% PV`;}
     if(lt0&&!lt0.del&&ok(+lt0.base)&&leitTravada(dia,c)){base=+lt0.base;orig='usada na leitura';}
     const lt=G.it[idLeit(dia,c)],sel=GT.sel[c]||(lt&&!lt.del?{n:lt.nota,kg:lt.novo,ims:lt.ims}:null);
     const nota=sel&&sel.n!=null?sel.n:null,cn=notas.find(x=>x.n===nota);
@@ -1784,6 +1784,36 @@ function ajustarLeiturasMS(){try{if(typeof modoVer!=='undefined'&&modoVer)return
   Object.keys(objs).forEach(d=>prevApi.guardarPrevDia(d,objs[d]));if(mudHoje){if(typeof marcarPrev==='function')marcarPrev();if(typeof render==='function')render();}
   return n;}catch(e){console.error(e);return 0;}}
 window.ajustarLeiturasMS=ajustarLeiturasMS;
+/* ---------- previsto só com leitura de cocho ----------
+   O curral só tem previsto no dia quando a leitura de cocho dele está lançada.
+   Exceção: lote novo (entra no dia, curral vazio no dia anterior) — o previsto sai sozinho pela sugestão em % do PV
+   (Confinamento 2%, Pasto 1,2% em MS; Config › Leitura), gravado como uma leitura automática (nota 0) que pode ser trocada. */
+const pvSug=c=>{const cfg=gCfg();return (typeof linhaDe==='function'&&linhaDe(c)==='P')?(+cfg.pvIniP||1.2):(+cfg.pvIniC||2);};
+function sugLoteNovo(c,dia){const pv=pvSug(c);let t=0;gTodos('lote').forEach(l=>{if(curralEm(l,dia)!==c)return;const cb=cabPres(l,dia);if(!(cb>0))return;
+  const r=racaoEm(l,dia),cp=r&&compRacao(r,dia);if(cp&&cp.ms>0)t+=cb*pesoEm(l,dia)*pv/100/(cp.ms/100);});return t;}
+function ehLoteNovo(c,dia){const ont=somaDias(dia,-1),L=gTodos('lote');
+  return L.some(l=>l.ent&&l.ent.dia===dia&&curralEm(l,dia)===c&&cabPres(l,dia)>0)&&!L.some(l=>curralEm(l,ont)===c&&cabPres(l,ont)>0);}
+/* quantos tratos para o lote novo: o da Config/histórico do curral; se não tiver, o mais comum entre os currais do mesmo local no último dia com trato */
+function nTrLoteNovo(c,obj){const H0=typeof HIST!=='undefined'?HIST:[],tem=(typeof ntMapa==='function'&&+ntMapa()[c]>=1)||[1,2,3,4,5,6,7,8].some(k=>+((obj[k]||{})[c])>0)||H0.some(r=>nAt(r.curral)===nAt(c)&&r.dia<hojeKey());
+  if(tem)return prevApi.nTratos(c,obj);let n=0;try{const lc=typeof linhaDe==='function'?linhaDe(c):'',H1=H0.filter(r=>r.dia<hojeKey()),Hl=H1.filter(r=>!lc||linhaDe(r.curral)===lc),H=Hl.length?Hl:H1;
+  if(H.length){const u=H.reduce((a,x)=>x.dia>a?x.dia:a,''),m={};H.filter(x=>x.dia===u).forEach(x=>{(m[x.curral]=m[x.curral]||new Set()).add(+x.trato);});const f={};Object.values(m).forEach(st=>f[st.size]=(f[st.size]||0)+1);
+    n=+Object.keys(f).sort((a,b)=>f[b]-f[a])[0];}}catch(e){}return n>=1?n:1;}
+function regraLeitura(){try{if(typeof modoVer!=='undefined'&&modoVer)return;if(!gOk()||!window.prevApi||typeof S==='undefined'||!S)return;
+  const hj=hojeKey(),cfg=gCfg(),H=typeof HIST!=='undefined'?HIST:[],MX=prevApi.MAXT||8;
+  [hj,somaDias(hj,1)].forEach(d=>{const hoje=d===hj,g=hoje?null:prevApi.prevGuardado(d);let obj=hoje?S.prev:(g?JSON.parse(JSON.stringify(g)):null),mud=false;
+    const temLt=c=>{const lt=G.it[idLeit(d,c)];return !!(lt&&!lt.del);},trat=c=>H.some(r=>r.dia===d&&nAt(r.curral)===nAt(c));
+    /* 1) uma vez por dia: tira do previsto o curral sem leitura (que ainda não começou a ser tratado no dia) */
+    const fl='regraleit_'+d;if(obj&&!G.it[fl]){const rem=new Set();
+      for(let k=1;k<=MX;k++){const m=obj[String(k)];if(!m||typeof m!=='object')continue;Object.keys(m).forEach(c=>{if(temLt(c)||ehLoteNovo(c,d)||trat(c))return;delete m[c];rem.add(c);mud=true;});}
+      gPut({uid:fl,tipo:'regraleit',dia:d,rem:[...rem],ts0:Date.now()});}
+    /* 2) lote novo sem leitura: leitura automática com a sugestão (% do PV) e previsto */
+    cochoCurrais(d).forEach(c=>{if(typeof curralAtivo==='function'&&!curralAtivo(c))return;if(G.it[idLeit(d,c)]||!ehLoteNovo(c,d)||trat(c))return;
+      const s=sugLoteNovo(c,d);if(!(s>0))return;const kg=arred(s,cfg.arred);
+      gPut({uid:idLeit(d,c),tipo:'leitura',dia:d,curral:c,nota:0,ims:null,hora:new Date().toTimeString().slice(0,5),pct:0,base:kg,baseM:'ontem',baseDia:null,novo:kg,msF:1,auto:'lote_novo'});
+      if(!obj)obj={};prevApi.distribuir(c,kg,nTrLoteNovo(c,obj),obj);mud=true;});
+    if(mud){if(hoje){marcarPrev();if(typeof render==='function')render();}else prevApi.guardarPrevDia(d,obj);}});
+  }catch(e){console.error(e);}}
+window.regraLeitura=regraLeitura;setTimeout(regraLeitura,15000);setInterval(regraLeitura,3*60000);
 setTimeout(ajustarLeiturasMS,9000);setInterval(ajustarLeiturasMS,5*60000);
 function salvaCocho(so){
   const dia=GT.dia,hoje=dia===hojeKey(),cfg=gCfg();let n=0,ap=0,rm=0;
@@ -1791,7 +1821,7 @@ function salvaCocho(so){
   /* todos os currais da lista já tiveram trato neste dia: não tem leitura nova para salvar */
   {const els=[...document.querySelectorAll('#gBox .gCocho[data-c],#gBox .gCochoMin[data-c]')].filter(el=>!so||el.dataset.c===so);
     if(els.length&&els.every(el=>leitTravada(dia,el.dataset.c)))return toast(so?`🔒 Não é possível salvar nova leitura: o ${so} já teve trato neste dia`:'🔒 Não é possível salvar nova leitura: todos os currais já tiveram trato neste dia');}
-  const amanha=dia===somaDias(hojeKey(),1),obj=hoje?S.prev:JSON.parse(JSON.stringify(prevApi.prevGuardado(dia)||S.prev||{}));
+  const amanha=dia===somaDias(hojeKey(),1),obj=hoje?S.prev:JSON.parse(JSON.stringify(prevApi.prevGuardado(dia)||{}));  /* dia seguinte: começa vazio — só entra no previsto o curral que tiver leitura */
   const feitosC=new Set();document.querySelectorAll('#gBox .gCocho').forEach(el=>{const c=el.dataset.c,s=GT.sel[c];if(so&&c!==so)return;if(leitTravada(dia,c))return;feitosC.add(c);const inp=el.querySelector('input[data-kg]');const kg=gNum(inp.value);
     const lt=G.it[idLeit(dia,c)];if(s&&s.n==null&&!(s.ims>0)){if(lt&&!lt.del){gDel(lt.uid);rm++;
       /* apaga também o previsto que a leitura gerou (só dos tratos que ainda não foram fornecidos) */
@@ -2520,7 +2550,7 @@ function tCfg(){const c=gCfg(),hj=hojeKey(),tx=vig(c.taxa,hj),ab=GT.cab||'custo'
     ${GT.notasEd.map((x,k)=>`<div class="gNotaCfg"><input class="cell num" inputmode="text" data-nn="${k}" value="${esc(vIn(x.n))}"><input type="text" data-nt="${k}" value="${esc(x.t)}"><input class="cell num" inputmode="text" data-np="${k}" value="${esc(vIn(x.p))}"><button class="mini danger" data-g="notaRm" data-i="${k}">✕</button></div>`).join('')}
     <div class="row"><button data-g="notaAdd">+ Adicionar nota</button><button data-g="notaPadrao">Voltar ao padrão (−4 a +4)</button></div>
     <p class="note">Nota positiva aumenta o trato, negativa diminui. O ajuste é em cima do realizado do dia anterior. Use o sinal de menos (−) para diminuir.</p>
-    <div class="gForm">${campo({k:'pvIni',l:'Consumo inicial sugerido',suf:'% do PV em MS',t:'num',v:c.pvIni,meia:1,ajuda:'Usado na leitura de cocho quando o curral ainda não tem trato.'})}</div>${salvar}</section>`;
+    <div class="gForm">${campo({k:'pvIniC',l:'Lote novo · Confinamento',suf:'% do PV em MS',t:'num',v:c.pvIniC,meia:1,ajuda:'Previsto do dia da entrada (sem leitura) e sugestão da leitura quando o curral ainda não tem trato.'})}${campo({k:'pvIniP',l:'Lote novo · Pasto',suf:'% do PV em MS',t:'num',v:c.pvIniP,meia:1})}</div>${salvar}</section>`;
   if(ab==='raca')h=`<section class="panel gCfgP"><h2>Sexos</h2>
     <div class="gEdLista">${GT.sexosEd.map((r,k)=>`<div><span>${esc(r.n)}</span><button class="mini" data-g="sexoEd" data-i="${k}">✎ Editar</button><button class="mini danger" data-g="sexoRm" data-i="${k}">✕ Excluir</button></div>`).join('')}</div>
     <div class="gRacaAdd"><input type="text" id="gNovoSexo" placeholder="Novo sexo" autocomplete="off"><button class="lima" data-g="sexoAdd">+ Incluir</button></div>
@@ -2632,7 +2662,7 @@ function salvaCfg(){const c=JSON.parse(JSON.stringify(gCfg()));const t=fn('taxa'
   lerNotasEd();const ns=GT.notasEd.filter(x=>ok(x.n)&&ok(x.p));
   if(new Set(ns.map(x=>x.n)).size!==ns.length)return toast('Tem nota repetida');if(!ns.length)return toast('Coloque pelo menos uma nota');
   c.racas=(GT.racasEd||c.racas).slice();GT.racasEd=null;if(GT.sexosEd&&GT.sexosEd.length)c.sexos=GT.sexosEd.map(x=>({c:x.c,n:x.n}));GT.sexosEd=null;c.cats=(GT.catsEd||c.cats).slice();GT.catsEd=null;c.notas=ns.map(x=>({n:x.n,t:x.t||(x.p>0?'Aumentar':x.p<0?'Diminuir':'Manter'),p:x.p})).sort((a,b)=>a.n-b.n);c.notasV=NOTAS_VER;
-  const a=fn('arred'),rc=fn('rc'),pv=fn('pvIni');if(ok(a)&&a>=0)c.arred=a;if(rc>0)c.rc=rc;if(pv>0)c.pvIni=pv;
+  const a=fn('arred'),rc=fn('rc'),pvC=fn('pvIniC'),pvP=fn('pvIniP');if(ok(a)&&a>=0)c.arred=a;if(rc>0)c.rc=rc;if(pvC>0)c.pvIniC=pvC;if(pvP>0)c.pvIniP=pvP;
   const rR=GT.renR||{},rC=GT.renC||{};GT.renR=null;GT.renC=null;
   gTodos('lote').forEach(l=>{let mud=false;const x=JSON.parse(JSON.stringify(l));if(rR[x.raca]){x.raca=rR[x.raca];mud=true;}const cn=catNorm(x.cat);if(rC[cn]){x.cat=rC[cn];mud=true;}if(mud)gPut(x);});
   gPut(c);GT.notasEd=null;toast('Configurações salvas');gRender();}
