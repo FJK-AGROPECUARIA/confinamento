@@ -1282,7 +1282,7 @@ body.naInicio .topoTxt h1{font-size:clamp(16px,5vw,28px)!important}
 <div class="toast" id="toast" hidden></div>
 <script>
 'use strict';
-const APP_VERSAO='310';
+const APP_VERSAO='311';
 const APP_DATA='19/10/2026';
 const KEY='confinamento-completo-v1';
 const $=id=>document.getElementById(id);
@@ -1944,7 +1944,7 @@ function pvIni(){if(!PV.dia){PV.dia=hojeKey();PV.ini=PV.fim=PV.dia;}}
 function temLeitura(d){try{return gOk()&&typeof gTodos==='function'&&gTodos('leitura').some(x=>x.dia===d);}catch(e){return false;}}
 function pvEditavel(){pvIni();if(PV.per||modoVer)return false;if(PV.dia===hojeKey())return true;return PV.dia===amanhaKey()&&temLeitura(PV.dia);}
 function pvObj(){pvIni();if(PV.dia===hojeKey())return S.prev;
-  if(PV.dia===amanhaKey()){if(!PV.am||!PV.ims)PV.am=JSON.parse(JSON.stringify(prevGuardado(PV.dia)||(temLeitura(PV.dia)?S.prev:null)||{}));return PV.am;}return prevDoDia(PV.dia);} // sem leitura: dia futuro fica sem previsto
+  if(PV.dia===amanhaKey()){if(!PV.am||!PV.ims)PV.am=JSON.parse(JSON.stringify(prevGuardado(PV.dia)||{}));return PV.am;}return prevDoDia(PV.dia);} // sem leitura: dia futuro fica sem previsto
 function mapaPv(k){const o=pvObj();k=String(k);if(!o[k])o[k]={};return o[k];}
 function marcarPv(){if(PV.dia===hojeKey())marcarPrev();else if(PV.dia===amanhaKey())guardarPrevDia(PV.dia,PV.am);}
 /* o que a tabela mostra: total de cada curral (Todos), um trato, ou o total do período */
@@ -2868,8 +2868,10 @@ function renderHist(){try{aplicarRenomesHist();}catch(e){}
      if(pd){$('hPrev').textContent=fmt(pd);$('hDif').textContent=sgn(f-pd);$('hDif').className='num '+classeDesv(f-pd,pd);}}}
   $('hN').textContent=regs.length?`${regs.length} registro(s)`:'';
   if(!HD.per&&HD.t===-1&&PDC){selModo=false;const [pa]=intervaloHist(),L=totaisPorCurral(regs),mp=new Map(L.map(x=>[x.curral,x]));
-    const ord=c=>{const i=S.cadastro.indexOf(c);return i<0?999:i;},cs=[...new Set(Object.keys(PDC).concat(L.map(x=>x.curral)))].sort((a,b)=>ord(a)-ord(b)||alfa(a,b));
+    const ord=c=>{const i=S.cadastro.indexOf(c);return i<0?999:i;},semL=new Set(pa>=hojeKey()&&typeof cochoCurrais==='function'&&gOk()?(()=>{try{return cochoCurrais(pa).filter(c=>curralAtivo(c)&&!(PDC[c]>0)&&!mp.has(c)&&(localSel==='T'||linhaDe(c)===localSel));}catch(e){return [];}})():[]),
+      cs=[...new Set(Object.keys(PDC).concat(L.map(x=>x.curral),[...semL]))].sort((a,b)=>ord(a)-ord(b)||alfa(a,b));
     let TP=0,TF=0;const lin=cs.map(c=>{const pv=PDC[c]||0,x=mp.get(c),fo=x?x.forn:0;TP+=pv;TF+=fo;const dif=fo-pv;
+      if(semL.has(c))return `<tr class="hSemLt"><td class="hora"></td><td class="c">${esc(c)}</td><td colspan="3" style="text-align:left;color:#b26a00;font-weight:700">⏳ sem leitura de cocho</td></tr>`;
       return `<tr><td class="hora"></td><td class="c">${esc(c)}</td><td>${fmt(pv)}</td><td><b>${x?fmt(fo):'—'}</b></td><td class="${classeDesv(dif,pv)}">${sgn(dif)}</td></tr>`;}).join('');
     $('tbHist').innerHTML=cs.length?`<tr class="grp"><td colspan="5">${diaBR(pa)} · Dia todo (todos os tratos)</td></tr>`+totHTML(TP,TF,TF-TP)+lin:`<tr><td colspan="5" class="note" style="text-align:left">Nada previsto nem realizado nesse dia.</td></tr>`;if($('hEdFim'))$('hEdFim').innerHTML='';}
   else if(HD.per||HD.t===-1){selModo=false;const L=totaisPorCurral(regs),[pa,pb]=intervaloHist();
