@@ -830,6 +830,8 @@ body.somenteVer:not(.menuFechado):not(.naInicio) #viewPrev,body.somenteVer:not(.
 #subGest.gTiles button{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;min-height:118px;padding:14px 8px;border-radius:18px;border:0;background:var(--c);color:#fff;font-size:1.3rem;font-weight:800;box-shadow:0 2px 6px rgba(0,0,0,.12)}
 #subGest.gTiles button>span:last-child{text-align:center;line-height:1.25}#subGest.gTiles .gIc{font-size:2.3rem;line-height:1}#subGest.gTiles .gIc svg{width:2.6rem;height:2.6rem;display:block}
 #subGest.gTiles button[aria-selected="true"]{outline:none}
+#tratoTiles .gIniVer,body.somenteVer #tratoTiles .gIniOp{display:none}body.somenteVer #tratoTiles .gIniVer{display:inline}
+#tratoTiles button.gIniBar,#subGest.gTiles button.gIniBar{grid-column:1/-1;flex-direction:row;justify-content:space-between;align-items:center;gap:8px;min-height:0;padding:9px 12px;border-radius:10px;background:#2e6b2f;color:#fff;font-size:.92rem;font-weight:700;line-height:1.2;text-align:left;box-shadow:none}
 /* Gestão › Animais: submenu em quadrados (2 por linha) */
 .gAniTiles{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
 .gAniTiles button{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;min-height:104px;padding:12px 8px;border-radius:18px;border:0;background:var(--c);color:#fff;font-size:1.15rem;font-weight:800;text-transform:none;letter-spacing:0;box-shadow:0 2px 6px rgba(0,0,0,.12);cursor:pointer;line-height:1.2;text-align:center}
@@ -1020,6 +1022,7 @@ body.naInicio .topoTxt h1{font-size:clamp(16px,5vw,28px)!important}
     <button id="tabMan" aria-selected="false" title="Manual (só se a Automação não estiver funcionando)">✋<small>Manual</small></button>
   </div>
   <div class="tTiles" id="tratoTiles">
+    <button type="button" class="gIniBar" id="gIniBarT"><span><span class="gIniOp">☰ 🚜 Operacional</span><span class="gIniVer">☰ 👁 Visualizar</span></span><span>▼ menu</span></button>
     <button type="button" id="avBtn" class="avBtn" hidden>● AO VIVO</button>
     <button type="button" data-tt="leit" style="--c:#3f80c4"><span class="gIc">🔍</span><span>Leitura de cocho</span></button>
     <button type="button" data-tt="hist" style="--c:#24507f"><span class="gIc">📖</span><span class="tPvRl">Previsto<i></i>Realizado</span></button>
@@ -1038,6 +1041,7 @@ body.naInicio .topoTxt h1{font-size:clamp(16px,5vw,28px)!important}
     <button id="tabAuto" aria-selected="false" hidden>Fornecer</button>
   </div>
   <div class="subtabs gTiles" id="subGest" hidden>
+    <button type="button" class="gIniBar" id="gIniBar"><span>☰ 📊 Gestão</span><span>▼ menu</span></button>
     <button data-gt="currais" style="--c:#7cb342"><span class="gIc"><svg class="icoCurral" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 21V7.5L5.5 5 7 7.5V21M10.5 21V7.5L12 5l1.5 2.5V21M17 21V7.5L18.5 5 20 7.5V21" fill="#c9a26b" stroke="#7a4f21" stroke-width="1.3" stroke-linejoin="round"/><path d="M2.5 10.5h19M2.5 16h19" stroke="#7a4f21" stroke-width="2.2" stroke-linecap="round"/></svg></span><span>Currais</span></button>
     <button data-gt="animais" style="--c:#2e8b3d"><span class="gIc">🐂</span><span>Animais</span></button>
     <button data-gt="racoes" style="--c:#b8860b"><span class="gIc">🌽</span><span>Rações</span></button>
@@ -1309,7 +1313,7 @@ body.naInicio .topoTxt h1{font-size:clamp(16px,5vw,28px)!important}
 <div class="toast" id="toast" hidden></div>
 <script>
 'use strict';
-const APP_VERSAO='322';
+const APP_VERSAO='323';
 const APP_DATA='19/10/2026';
 const KEY='confinamento-completo-v1';
 const $=id=>document.getElementById(id);
@@ -3811,6 +3815,7 @@ $('btnAtualizar').onclick=async()=>{if(atualizando)return;
   setTimeout(()=>{$('btnAtualizar').classList.remove('girando');atualizando=false;},Math.max(0,700-(Date.now()-t0)));
 };
 $('btnVoltarIni').onclick=voltarInicio;
+['gIniBar','gIniBarT'].forEach(i=>$(i).addEventListener('click',e=>{e.stopPropagation();e.preventDefault();voltarInicio();}));   // barrinha em cima dos quadrados da Gestão: volta ao menu principal
 // no modo visualização, busca o que os outros lançam a cada 15 segundos
 setInterval(()=>{if(modoVer&&navigator.onLine&&document.visibilityState==='visible'){puxarRegistros(true).catch(()=>{});puxarPrevisto(true).catch(()=>{});}},15000);
 /* ---------- Ao vivo: quem está em Executar manda o que está fazendo; o Visualizar mostra ---------- */
