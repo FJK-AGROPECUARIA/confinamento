@@ -2044,9 +2044,11 @@ const tabInsumos=acc=>{const e=Object.entries(acc).sort((a,b)=>b[1].kg-a[1].kg);
 /* ---------- imagens dos relatórios (mesmo padrão das imagens dos tratos) ----------
    secoes: [{cab:'título', cols:[[nome,largura,'l'|'c'|'r'],...], linhas:[[...]], total:[...]|null, cores:[[...]]}] */
 function gImagem(titulo,secoes){
-  const W0=Math.max(...secoes.map(s=>s.cols.reduce((a,c)=>a+c[1],0))),M=30,W=M*2+W0,RH=44,esc=2,F='-apple-system,"Segoe UI",Roboto,Arial,sans-serif';
+  const W0=Math.max(...secoes.map(s=>s.cols.reduce((a,c)=>a+c[1],0))),M=30,W=M*2+W0,RH=44,esc0=2,F='-apple-system,"Segoe UI",Roboto,Arial,sans-serif';
   let H=120;const todas=[...secoes,...(secoes.depois||[])];todas.forEach(s=>{H+=50+(s.cols.some(c=>c[0])?40:6)+RH*s.linhas.length+(s.total?52:0)+24;});H+=20+(secoes.totalGeral?(secoes.depois?96:70):0);
-  const cv=document.createElement('canvas');cv.width=W*esc;cv.height=H*esc;const c=cv.getContext('2d');c.scale(esc,esc);
+  /* o iPhone não desenha canvas com mais de ~16,7 milhões de pixels: relatório comprido baixa a resolução; comprido demais avisa */
+  const esc=Math.min(esc0,Math.sqrt(15e6/(W*H)));if(esc<0.7){const e=new Error('grande');e.grande=true;throw e;}
+  const cv=document.createElement('canvas');cv.width=Math.floor(W*esc);cv.height=Math.floor(H*esc);const c=cv.getContext('2d');c.scale(esc,esc);
   c.fillStyle='#ffffff';c.fillRect(0,0,W,H);c.fillStyle='#11253d';c.fillRect(0,0,W,90);c.fillStyle='#a7bc09';c.fillRect(0,90,W,6);
   c.textBaseline='middle';c.fillStyle='#ffffff';let fs=30;c.font=`700 ${fs}px ${F}`;while(c.measureText(titulo).width>W-2*M&&fs>18){fs--;c.font=`700 ${fs}px ${F}`;}const umaL=secoes.umaLinha;c.fillText(titulo,M,umaL?46:40);
   if(!umaL){c.font=`600 16px ${F}`;c.fillStyle='#c8dd1e';c.fillText('Gestão de Tratos · FJK',M,70);}
@@ -2068,15 +2070,23 @@ function gImagem(titulo,secoes){
       s.total.forEach((v,k)=>{if(v==null||v===''||!cols[k])return;c.textAlign=k===0?'left':al(cols[k][2]);c.fillStyle=s.sub?(/^(Carregado|Realizado)$/.test(cols[k][0])?'#eef7b0':'#ffffff'):(k===0?'#ffffff':'#c8dd1e');const tv=String(v);let f=19;c.font=`700 ${f}px ${F}`;if(k>0)while(c.measureText(tv).width>cols[k][1]-10&&f>10){f--;c.font=`700 ${f}px ${F}`;}c.fillText(tv,k===0?M+12:px(k,cols[k][2]),y+28);});y+=52;}  // total: diminui a letra até caber na coluna
     y+=24;});
   if(!tgFeito)desTG();
-  return new Promise(ok=>cv.toBlob(ok,'image/png'));
+  return new Promise((ok,no)=>cv.toBlob(b=>b?ok(b):no(new Error('toBlob')),'image/png'));
 }
+/* PDF comprido: quebra as linhas em páginas (até 'max' linhas por página); o total de cada seção fica na última parte dela */
+function paginarSecoes(secoes,max=45){const tot=secoes.reduce((a,s)=>a+s.linhas.length,0)+(secoes.depois||[]).reduce((a,s)=>a+s.linhas.length,0);if(tot<=max+10)return [secoes];
+  const P=[];let cur=[],n=0;const fecha=()=>{if(cur.length){P.push(cur);cur=[];n=0;}};
+  secoes.forEach(s=>{const L=s.linhas;if(!L.length){cur.push(s);n+=3;return;}let i=0;
+    while(i<L.length){if(n>=max-3)fecha();const k=Math.min(L.length-i,max-n);cur.push(Object.assign({},s,{cab:i?s.cab+' (continuação)':s.cab,linhas:L.slice(i,i+k),cores:s.cores?s.cores.slice(i,i+k):s.cores,total:i+k>=L.length?s.total:null}));n+=k+3;i+=k;}});
+  fecha();const ult=P[P.length-1];if(secoes.depois)ult.depois=secoes.depois;if(secoes.totalGeral)ult.totalGeral=secoes.totalGeral;P.forEach(p=>{p.umaLinha=secoes.umaLinha;});return P;}
 const nomeArq=s=>s.replace(/[\\/:*?"<>|]/g,'-');
 /* nome do arquivo do resultado do lote: Resultado (curral) lote - data em que fechou (ou a data de hoje, se ainda ativo) */
 const nomeRes=(l,C)=>nomeArq(`Resultado (${curralEm(l,C.ate)||'—'}) ${l.nome} - ${dB(C.ate).replace(/\//g,'-')}`);
 async function enviarImg(titulo,secoes,nome){if(!secoes.some(s=>s.linhas.length))return toast('Nada para mostrar');
   const pdf=window.__expPdf;window.__expPdf=false;
-  try{const b=await gImagem(titulo,secoes);if(pdf)return await compartilharArquivo(await pngsParaPdf([b]),nomeArq(nome)+'.pdf','application/pdf');
-    await compartilharArquivo(b,nomeArq(nome)+'.png','image/png');}catch(e){toast(pdf?'Não consegui gerar o PDF':'Não consegui gerar a imagem');}}
+  try{if(pdf){const P=paginarSecoes(secoes),B=[];for(let k=0;k<P.length;k++)B.push(await gImagem(P.length>1?`${titulo} · pág. ${k+1}/${P.length}`:titulo,P[k]));
+      return await compartilharArquivo(await pngsParaPdf(B),nomeArq(nome)+'.pdf','application/pdf');}
+    const b=await gImagem(titulo,secoes);await compartilharArquivo(b,nomeArq(nome)+'.png','image/png');}
+  catch(e){console.error(e);toast(e&&e.grande?'Muitas linhas para uma foto só: use o PDF (sai em páginas) ou diminua o período':pdf?'Não consegui gerar o PDF':'Não consegui gerar a imagem');}}
 /* imagens (png) → um PDF, uma imagem por página */
 async function pngsParaPdf(blobs){const cvs=[];for(const b of blobs){const im=await createImageBitmap(b),cv=document.createElement('canvas');cv.width=im.width;cv.height=im.height;const x=cv.getContext('2d');x.fillStyle='#fff';x.fillRect(0,0,cv.width,cv.height);x.drawImage(im,0,0);cvs.push(cv);}return fzPdf(cvs);}
 window.pngsParaPdf=pngsParaPdf;
@@ -3001,6 +3011,7 @@ $('gBox').addEventListener('click',e=>{
     (window.perg?perg(`Excluir o fornecedor ${f.nome}?`,'Ele sai da lista de fornecedores.','Sim, excluir','Não',false):Promise.resolve(confirm('Excluir?'))).then(v=>{if(!v)return;gDel(id);toast('Fornecedor excluído');gRender();});return;}
   if(a==='entRelExp')return entRelExp(b.dataset.o);
   if(a==='relDiaFmt'){const c=JSON.parse(JSON.stringify(gCfg()));c.relDiaFmt=b.dataset.v;gPut(c);toast('Relatórios do dia: '+({pdf:'PDF',img:'Foto',xls:'Excel'})[c.relDiaFmt]);return gRender();}
+  if(a==='estTodas'){const hj=hojeKey();GT.perEDe=b.dataset.v==='7'?somaDias(hj,-6):estPrimDia();GT.perEAte=hj;GT.pgEP=1;return gRender();}
   if(a==='estFilLimpa'){GT.tipoE=GT.prodE=GT.fornE=GT.obsE='';GT.pgEP=1;return gRender();}
   if(a==='estIrRel'){gMinAb.add('estRel');gRender();const el=document.querySelector('.gEstRel');if(el)el.scrollIntoView({behavior:'smooth',block:'start'});return;}
   if(a==='estVerMov'){gMinAb.add('estRel');gPilha.length=0;GT={t:'estoque',prodE:(G.it[id]&&G.it[id].nome)||'',tipoE:'',fornE:''};gRender();setTimeout(()=>{const el=document.querySelector('.gEstRel');if(el)el.scrollIntoView({block:'start'});},60);return;}
@@ -3832,8 +3843,8 @@ const EST_TIPO=[['','Todas'],['ent','Entradas'],['sai','Saídas']];
 function estFiltros(){const tipo=EST_TIPO.some(o=>o[0]===GT.tipoE)?GT.tipoE:'',fo=String(GT.fornE||'').trim(),pq=String(GT.prodE||'').trim(),ob=String(GT.obsE||'').trim();
   const todos=gTodos('insumo').sort(porNome),exato=pq&&todos.find(i=>fSem(i.nome)===fSem(pq));
   const I=exato?[exato]:todos.filter(i=>pq?fSem(i.nome).includes(fSem(pq)):!i.inativo);return {tipo,fo,pq,ob,I,ins:exato?exato.uid:''};}
-/* movimentações: sempre duas datas (De · Até), começando no dia de hoje; para ver mais para trás, troca as datas */
-function estMovs(){{const hj=hojeKey();if(GT.perEDia!==hj){GT.perEDia=hj;GT.perEDe=hj;GT.perEAte=hj;}}GT.perE=-1;const per=-1,[de,ate]=perFaixa(per,'perE'),novo=GT.ordE!=='antigo',{tipo,fo,pq,ob,I,ins}=estFiltros();
+/* movimentações: sempre duas datas (De · Até), já abrindo com os últimos 7 dias (hoje e os 6 anteriores); para ver mais para trás, troca as datas */
+function estMovs(){{const hj=hojeKey();if(GT.perEDia!==hj){GT.perEDia=hj;GT.perEDe=somaDias(hj,-6);GT.perEAte=hj;}}GT.perE=-1;const per=-1,[de,ate]=perFaixa(per,'perE'),novo=GT.ordE!=='antigo',{tipo,fo,pq,ob,I,ins}=estFiltros();
   const passa=m=>(!tipo||(tipo==='ent'&&m.mov==='ent')||(tipo==='sai'&&(m.mov==='bat'||m.mov==='sai')))
     &&(!fo||(m.mov==='ent'&&fSem(m.forn).includes(fSem(fo))))
     &&(!ob||fSem(m.obs||'').includes(fSem(ob)));   // observação: qualquer pedaço do que foi escrito
@@ -3844,6 +3855,8 @@ function estMovs(){{const hj=hojeKey();if(GT.perEDia!==hj){GT.perEDia=hj;GT.perE
   const kg=k=>L.filter(m=>k.includes(m.mov)).reduce((a,m)=>a+m.kg,0),vEnt=L.filter(m=>m.mov==='ent').reduce((a,m)=>a+(+m.rs||0),0),kgV=L.filter(m=>m.mov==='ent'&&m.rs>0).reduce((a,m)=>a+m.kg,0);
   const filtro=[perTexto(per,'perE'),tipo?EST_TIPO.find(o=>o[0]===tipo)[1].toLowerCase():'',pq?(ins?G.it[ins].nome:'produto "'+pq+'"'):'',fo?'fornecedor '+fo:'',ob?'observação "'+ob+'"':''].filter(Boolean).join(' · ');
   return {L,per,novo,tipo,ins,fo,pq,ob,de,ate,P,filtro,tot:{ent:kg(['ent']),bat:kg(['bat']),sai:kg(['sai']),vEnt,pm:kgV>0?vEnt/kgV:NaN,nInv:L.filter(m=>m.mov==='inv').length}};}
+/* primeiro dia com movimento no estoque (para o botão "Ver todas as datas") */
+function estPrimDia(){let p=hojeKey();gTodos('insumo').forEach(i=>{const M=estoqueIns(i).M;if(M.length&&M[0].dia<p)p=M[0].dia;});return p;}
 const movSinal=m=>(m.mov==='ent'?'+':m.mov==='inv'?'=':'−')+nf(m.kg);
 const movDet=m=>[m.obs||'',m.mov==='inv'&&ok(m.dif)?`acerto ${m.dif>=0?'+':''}${nf(m.dif)} kg`:'',m.mov==='ent'&&m.rs?rs(m.rs)+(m.kg?` (${rs(m.rs/m.kg)}/kg)`:''):''].filter(Boolean).join(' · ');
 function estMovHTML(){const D=estMovs(),{L,per,novo,tipo,ins,fo,pq,ob,tot}=D,PGE=paginar(L,'pgE'),[pa,pb]=perFaixa(per,'perE');
@@ -3852,22 +3865,28 @@ function estMovHTML(){const D=estMovs(),{L,per,novo,tipo,ins,fo,pq,ob,tot}=D,PGE
   const ab=gMinAb.has('estRel');
   return `<section class="panel gEstRel gMinz${ab?' aberto':''}" data-min-k="estRel"><div class="curhead gMinzCab"><h2>📋 Movimentações</h2><span class="note">${L.length}</span><em class="gGrpDica">${ab?'clique para fechar':'clique para abrir'}</em></div>
     <div class="gPerDatas gEstDatas"><div><small>Período · de</small><label class="gDataBox gDiaCampo"><span>${dB(pa)}</span><input type="date" data-perd="perEDe" value="${pa}"></label></div><div><small>até</small><label class="gDataBox gDiaCampo"><span>${dB(pb)}</span><input type="date" data-perd="perEAte" value="${pb}"></label></div></div>
+    ${(()=>{const p0=estPrimDia(),hj=hojeKey(),todas=pa<=p0&&pb>=hj;return `<button type="button" class="mini gEstTodas" data-g="estTodas" data-v="${todas?'7':'tudo'}">${todas?'↺ Últimos 7 dias':'📅 Ver todas as datas'}</button>`;})()}
     <div class="gForm gEstFil">${campo({k:'tipoF',l:'Tipo',t:'sel',op:EST_TIPO,v:tipo})}
       ${campo({k:'prodF',l:'Produto',v:pq,sug:'prodF',ph:'Todos · digite para procurar'})}${campo({k:'fornF',l:'Fornecedor',v:fo,sug:'fornF',ph:'Todos · digite para procurar'})}${campo({k:'obsF',l:'Observação',v:ob,ph:'Todas · digite para procurar'})}</div>
     ${tipo||pq||fo||ob?`<button type="button" class="mini gEstLimpa" data-g="estFilLimpa">✕ Limpar filtros</button>`:''}
     <div class="stat gStat3">${mostraEnt?st('Entradas',nf(tot.ent)+' kg'+(tot.vEnt?`<small>${rs(tot.vEnt)}${ok(tot.pm)?' · '+rs(tot.pm)+'/kg':''}</small>`:'')):''}${mostraSai?st('Carregamentos',nf(tot.bat)+' kg')+st('Saídas manuais',nf(tot.sai)+' kg'):''}${P1?st('Saldo no início',nf(P1.ini)+' kg')+st('Saldo no fim',P1.fim==null?'—':nf(P1.fim)+' kg'):''}</div>
+    <label class="gEstSalChk"><input type="checkbox" data-estsal="1"${GT.estSemSaldo?'':' checked'}>Mostrar o estoque no relatório</label>
     <div class="row compart fz3"><button class="verde" data-g="estPdf">📄 PDF</button><button class="verde" data-g="estImg">🖼 Foto</button><button class="verde" data-g="estXls">📊 Excel</button></div>
     <div class="linhas gFiltro"><button data-g="estOrd" data-o="novo" class="${novo?'sel':''}">↓ Mais novo primeiro</button><button data-g="estOrd" data-o="antigo" class="${novo?'':'sel'}">↑ Mais antigo primeiro</button></div>
     ${L.length?`${PGE.sel}<div class="tablebox"><table class="gTab gEstTab"><thead><tr><th>Dia</th><th>Produto · movimento</th><th>kg</th><th>Saldo</th></tr></thead><tbody>${PGE.itens.map(m=>`<tr><td class="hora">${dB(m.dia).slice(0,5)}</td><td class="c">${esc(m.nome)}<small>${MOV_NOME[m.mov]}${movDet(m)?' · '+esc(movDet(m)):''}${m.nf&&m.nf.id?` <button class="mini" data-g="nfVer" data-id="${esc(m.nf.id)}" data-mini="${esc(m.nf.idMini||'')}">📎 NF</button>`:''}${ed(m)}</small></td><td class="${m.mov==='ent'?'ok':m.mov==='inv'?'':'bad'}">${movSinal(m)}</td><td><b>${nf(m.saldo)}</b></td></tr>`).join('')}</tbody></table></div>${PGE.nav}`:'<p class="note">Nenhum movimento com esses filtros.</p>'}</section>`;}
-function estExp(tipo){const D=estMovs(),{L}=D,I=gTodos('insumo').filter(i=>D.ins?i.uid===D.ins:!i.inativo).sort(porNome).map(i=>({i,e:estoqueIns(i)})),d=dB(hojeKey()),nome=`Estoque ${d.replace(/\//g,'-')}`,perTxt=D.filtro;if(!L.length&&!I.length)return toast('Nada nesse filtro');
-  if(tipo==='xls')return gExcel(nome,[['Saldo',['Produto','Saldo (kg)','Consumo/dia 7 dias (kg)','Estoque para (dias)','Estoque mínimo (kg)'],I.map(({i,e})=>[xc(i.nome),xc(e.saldo,'int'),xc(e.cons>0?e.cons:NaN,'int'),xc(ok(e.dias)?e.dias:NaN,'dec'),xc(e.min||NaN,'int')]),[24,12,20,13,17]],
+/* fornecedor no relatório: só os 15 primeiros caracteres do nome (a NF continua inteira) */
+const fornCurto=f=>{f=String(f||'').trim();return f.length>15?f.slice(0,15).trim()+'…':f;};
+const movObsRel=m=>m.mov==='ent'?[fornCurto(m.forn),m.nota?'NF '+m.nota:''].filter(Boolean).join(' · '):(m.obs||'');
+document.addEventListener('change',e=>{const c=e.target;if(c.matches&&c.matches('#gBox input[data-estsal]'))GT.estSemSaldo=!c.checked;});
+function estExp(tipo){const D=estMovs(),{L}=D,comSal=!GT.estSemSaldo,I=!comSal?[]:gTodos('insumo').filter(i=>D.ins?i.uid===D.ins:!i.inativo).sort(porNome).map(i=>({i,e:estoqueIns(i)})),d=dB(hojeKey()),nome=`Estoque ${d.replace(/\//g,'-')}`,perTxt=D.filtro;if(!L.length&&!I.length)return toast('Nada nesse filtro');
+  if(tipo==='xls')return gExcel(nome,[...(comSal?[['Saldo',['Produto','Saldo (kg)','Consumo/dia 7 dias (kg)','Estoque para (dias)','Estoque mínimo (kg)'],I.map(({i,e})=>[xc(i.nome),xc(e.saldo,'int'),xc(e.cons>0?e.cons:NaN,'int'),xc(ok(e.dias)?e.dias:NaN,'dec'),xc(e.min||NaN,'int')]),[24,12,20,13,17]]]:[]),
     ['Movimentações',['Data','Produto','Movimento','Quantidade (kg)','Valor total (R$)','Valor por kg (R$)','Fornecedor / observação','Acerto da contagem (kg)','Saldo (kg)'],L.map(m=>[xc(m.dia,'dia'),xc(m.nome),xc(MOV_NOME[m.mov]),xc((m.mov==='ent'||m.mov==='inv'?1:-1)*m.kg,'int'),xc(m.mov==='ent'&&m.rs?m.rs:NaN,'rs'),xc(m.mov==='ent'&&m.rs&&m.kg?m.rs/m.kg:NaN,'rs'),xc(m.obs||''),xc(m.mov==='inv'&&ok(m.dif)?m.dif:NaN,'int'),xc(m.saldo,'int')]),[11,22,14,14,15,15,34,16,11]]]);
   window.__expPdf=tipo==='pdf';
-  return enviarImg(`FJK - Estoque - ${d}`,[{cab:`Saldo do estoque · ${d}`,cols:[['Produto',300,'l'],['Saldo',170,'r'],['Consumo/dia',170,'r'],['Estoque para',170,'r'],['Mínimo',160,'r']],
+  return enviarImg(`FJK - Estoque - ${d}`,[...(!comSal?[]:[{cab:`Saldo do estoque · ${d}`,cols:[['Produto',300,'l'],['Saldo',170,'r'],['Consumo/dia',170,'r'],['Estoque para',170,'r'],['Mínimo',160,'r']],
       linhas:I.map(({i,e})=>[i.nome,e.saldo==null?'—':nf(e.saldo)+' kg',e.cons>0?nf(e.cons)+' kg':'—',ok(e.dias)?nf(e.dias,1)+' dia(s)':'—',e.min?nf(e.min)+' kg':'—']),
-      cores:I.map(({e})=>{const c=estCor(e);return [null,c==='r'?'#b3261e':c==='a'?'#b26a00':c==='v'?'#2e7d32':null,null,c==='r'?'#b3261e':c==='a'?'#b26a00':c==='v'?'#2e7d32':null];})},
+      cores:I.map(({e})=>{const c=estCor(e);return [null,c==='r'?'#b3261e':c==='a'?'#b26a00':c==='v'?'#2e7d32':null,null,c==='r'?'#b3261e':c==='a'?'#b26a00':c==='v'?'#2e7d32':null];})}]),
     {cab:`Movimentações · ${perTxt}`,cols:[['Data',100,'l'],['Produto',210,'l'],['Movimento',150,'l'],['Quantidade',130,'r'],['Valor total',150,'r'],['R$/kg',110,'r'],['Fornecedor / obs.',260,'l'],['Saldo',120,'r']],
-      linhas:L.map(m=>[dB(m.dia).slice(0,5),m.nome,MOV_NOME[m.mov]+(m.mov==='inv'&&ok(m.dif)?` (${m.dif>=0?'+':''}${nf(m.dif)})`:''),movSinal(m)+' kg',m.mov==='ent'&&m.rs?rs(m.rs):'—',m.mov==='ent'&&m.rs&&m.kg?rs(m.rs/m.kg):'—',m.obs||'—',nf(m.saldo)]),
+      linhas:L.map(m=>[dB(m.dia).slice(0,5),m.nome,MOV_NOME[m.mov]+(m.mov==='inv'&&ok(m.dif)?` (${m.dif>=0?'+':''}${nf(m.dif)})`:''),movSinal(m)+' kg',m.mov==='ent'&&m.rs?rs(m.rs):'—',m.mov==='ent'&&m.rs&&m.kg?rs(m.rs/m.kg):'—',movObsRel(m)||'—',nf(m.saldo)]),
       cores:L.map(m=>[null,null,null,m.mov==='ent'?'#2e7d32':m.mov==='inv'?null:'#b3261e'])}],nome);}
 /* exportar as entradas e saídas de um produto (no período escolhido) */
 function estInsExp(id,tipo){const i=G.it[id];if(!i)return;const e=estoqueIns(i),per=perNorm(GT.per==null?30:GT.per),[de,ate]=perFaixa(per,'per'),perTxt=perTexto(per,'per');
