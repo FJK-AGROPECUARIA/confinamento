@@ -656,6 +656,9 @@ input[type=date]::-webkit-calendar-picker-indicator{margin-left:2px;padding:0}
 @media (max-width:760px){.gLoteTopo:has(.gLoteNomeRel){flex-wrap:wrap}.gLoteNomeRel{display:contents}.gLoteNomeL{flex:1;min-width:0}.gLoteNomeRel .gRelTit{flex:1 1 100%;box-sizing:border-box;padding:8px}.gRelTitBts{justify-content:center;width:100%}.gRelTitBts .mini{flex:1 1 0;min-width:0;padding:8px 6px;font-size:.9rem}.gLoteTopo:has(.gLoteNomeRel){align-items:flex-start}.gLoteTopo:has(.gLoteNomeRel) .gSelo{align-self:flex-start}.gCmpDig{display:flex;width:100%}.gCmpDig input{flex:1;min-width:0}}.gRelTitBts .mini{margin:0;padding:6px 12px;min-height:0;font-size:.85rem;white-space:nowrap}
 .gRelBt{width:auto!important;margin:0!important;padding:10px 16px!important;white-space:nowrap}
 .gLoteSeloAb{display:flex;flex-direction:column;gap:8px;align-items:stretch;width:44%;min-width:44%;flex:none}.gLoteArq .gLoteSeloAb .gSelo{width:100%;min-width:100%!important;max-width:100%!important;flex:1}.gResLin{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:0 0 12px;padding:6px 6px 6px 12px;border-radius:10px;border:2px solid;font-weight:800;font-size:.8rem;white-space:nowrap;text-transform:none;letter-spacing:0;cursor:pointer}
+.gResObs{margin:-6px 0 12px}.gResObs label{display:block;font-size:.75rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;margin:0 0 4px}
+.gResObs textarea{width:100%;box-sizing:border-box;min-height:56px;padding:8px 10px;border-radius:10px;border:2px solid var(--line);font:inherit;font-size:.95rem;background:#fff;resize:vertical}
+.gResObs.ok textarea{border-color:#a5d6a7}.gResObs.no textarea{border-color:#ef9a9a}
 .gResLin.ok{border-color:#2e8b3d;background:#e8f5e9;color:#1b5e20}.gResLin.no{border-color:#c62828;background:#fdecea;color:#b71c1c}
 .gResLin span{overflow:hidden;text-overflow:ellipsis;min-width:0}.gResLin select{flex:0 0 auto;width:auto!important;min-width:72px;min-height:34px!important;padding:3px 24px 3px 10px!important;margin:0!important;border-radius:8px;font-weight:800;color:#fff;border:0}
 .gResLin.ok select{background-color:#2e8b3d}.gResLin.no select{background-color:#c62828}
@@ -1301,7 +1304,7 @@ body.naInicio .topoTxt h1{font-size:clamp(16px,5vw,28px)!important}
 <div class="toast" id="toast" hidden></div>
 <script>
 'use strict';
-const APP_VERSAO='319';
+const APP_VERSAO='320';
 const APP_DATA='19/10/2026';
 const KEY='confinamento-completo-v1';
 const $=id=>document.getElementById(id);
