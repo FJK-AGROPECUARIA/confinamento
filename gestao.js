@@ -452,7 +452,9 @@ function calcLote0(l){
     lucroCab:fimN&&cabE-cabT+cabTV-faltas>0?(receita+resInt-custo-perd)/(cabE-cabT+cabTV-faltas):NaN,lucroArr:fimN&&arrProd>0?(receita+resInt-custo-perd)/arrProd:NaN,rentab:fimN&&custo?(receita+resInt-custo-perd)/(custo+perd)*100:NaN,rentabM:rentAM(fimN&&custo?(receita+resInt-custo-perd)/(custo+perd)*100:NaN,difDias(iniH(l,null),ate))};
 }
 /* na Gestão os currais/pastos vão sempre em ordem alfabética (nos Tratos continua a ordem definida) */
-const alfa=(a,b)=>String(a||'').localeCompare(String(b||''),'pt-BR',{numeric:true,sensitivity:'base'});
+/* ordem alfabética; quando são currais, primeiro todos do Confinamento (A→Z) e depois os do Pasto (A→Z) */
+const curRk=n=>{try{const s=String(n||'');if(!(S.cadastro||[]).includes(s))return 0;const t=linhaDe(s);return t==='C'?1:t==='P'?2:3;}catch(e){return 0;}};
+const alfa=(a,b)=>(curRk(a)-curRk(b))||String(a||'').localeCompare(String(b||''),'pt-BR',{numeric:true,sensitivity:'base'});
 const porCurral=(a,b)=>{const h=hojeKey();return alfa(curralEm(a,h),curralEm(b,h))||porNome(a,b);};
 /* curral em destaque: "C-10" -> CURRAL / C-10 ; "P-REPRESA-1" -> PASTO / REPRESA-1 */
 /* resumo de números do lote (médias de trato, custos, venda e resultado) — usado na tela do lote arquivado */
@@ -4541,7 +4543,7 @@ function zootDados(dia,loc){const X=gCtx(),L=gTodos('lote').filter(l=>l.ent&&cab
       pvG:media(l,l.ent.dia,dia,y=>y.pv),pvD:x.mn>0?x.pv:NaN,pv1:d1&&d1.mn>0?d1.pv:NaN,pv5:media(l,ini0,dia,y=>y.pv),
       /* financeiro: custo do dia por cabeça (ração + operacional) e acumulado por cabeça desde a entrada */
       fD:((ok(x.custoR)?x.custoR:0)+x.custoOp)/x.cab,fA:(()=>{let a=0;for(let d=l.ent.dia,i=0;d<=dia&&i<4000;d=somaDias(d,1),i++){const y=diaLote(l,d,X);if(y&&y.cab)a+=((ok(y.custoR)?y.custoR:0)+y.custoOp)/y.cab;}return a;})()});});
-  rows.sort((a,b)=>(a.rac==='Conf'?0:1)-(b.rac==='Conf'?0:1)||alfa(a.c,b.c)||alfa(a.lote,b.lote));
+  rows.sort((a,b)=>alfa(a.c,b.c)||alfa(a.lote,b.lote));   // Confinamento (A→Z) e depois Pasto (A→Z)
   /* totais: médias ponderadas pelas cabeças */
   const cab=rows.reduce((a,r)=>a+r.cab,0),pond=k=>{let s=0,w=0;rows.forEach(r=>{if(ok(r[k])){s+=r[k]*r.cab;w+=r.cab;}});return w?s/w:NaN;};
   const T={cab};['dias','msRac','pE','pP','gmd','mnG','mnD','msG','msD','ms1','ms5','pvG','pvD','pv1','pv5','fD','fA'].forEach(k=>T[k]=pond(k));
