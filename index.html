@@ -206,7 +206,7 @@ button.fFinal{margin-top:8px!important;background:#f2b705!important;border-color
 @keyframes tgPisca{50%{opacity:.55}}
 .gTres{display:grid;grid-template-columns:.9fr 1.35fr .95fr;gap:6px;width:100%;grid-column:1/-1}.gTresNota{grid-column:1/-1}.gForm .gTres .gCampo{min-width:0;grid-column:auto!important}.gTres{align-items:end}.gTres label{font-size:.74rem}.gTres input{min-width:0;width:100%;font-size:.86rem!important;padding:9px 5px!important}.gTresNota{margin:4px 0 8px}
 .gLoteArq .gFechDt{background:#1565c0;color:#fff;border:2px solid #0d47a1;border-radius:10px;padding:6px 8px;text-align:center;font-weight:700;font-size:.9rem}.gLoteArq .gFechDt b{font-weight:900}.gLoteArq .gArqLin1 .gRacLote{display:inline}
-.gLotesBts .mini.gBtFin{background:#1565c0!important;border-color:#0d47a1!important;color:#fff!important;font-weight:800}.gLotesTopo{display:flex!important;flex-wrap:nowrap!important;align-items:center;gap:6px}.gLotesTopo h2{margin:0;white-space:nowrap;flex:0 1 auto!important;min-width:0}.gLotesBts{margin-left:auto;display:flex;gap:6px}.gLotesBts .mini{padding:6px 8px;font-size:.76rem;white-space:nowrap;margin:0}.gLotesTopo h2{letter-spacing:.04em}.lotesExp{margin:8px 0 12px}
+.gNt.gNtMud{background:#fff8e1;border-radius:8px}.gCurNt{margin-left:auto;margin-right:8px;font-size:.8rem;color:#5d6b7a;font-weight:700;white-space:nowrap}.gLotesBts .mini.gBtFin{background:#1565c0!important;border-color:#0d47a1!important;color:#fff!important;font-weight:800}.gLotesTopo{display:flex!important;flex-wrap:nowrap!important;align-items:center;gap:6px}.gLotesTopo h2{margin:0;white-space:nowrap;flex:0 1 auto!important;min-width:0}.gLotesBts{margin-left:auto;display:flex;gap:6px}.gLotesBts .mini{padding:6px 8px;font-size:.76rem;white-space:nowrap;margin:0}.gLotesTopo h2{letter-spacing:.04em}.lotesExp{margin:8px 0 12px}
 .cBotoes .mini.mud{border-color:#2e6b2f!important;color:#2e6b2f!important;background:#eef5e4!important;font-weight:800}
 .cJuntoLista button{display:flex;flex-direction:column;align-items:center;justify-content:center;min-width:92px;line-height:1.15;gap:2px}.cJuntoLista button small{display:block;font-size:.78rem;font-weight:600;opacity:.8}
 .cJuntoLista button.sel{background:#2e6b2f!important;border-color:#2e6b2f!important;color:#fff!important}.cJuntoLista button.sel small{opacity:1}
@@ -1282,7 +1282,7 @@ body.naInicio .topoTxt h1{font-size:clamp(16px,5vw,28px)!important}
 <div class="toast" id="toast" hidden></div>
 <script>
 'use strict';
-const APP_VERSAO='313';
+const APP_VERSAO='314';
 const APP_DATA='19/10/2026';
 const KEY='confinamento-completo-v1';
 const $=id=>document.getElementById(id);
@@ -3709,7 +3709,7 @@ const turnoAtual=()=>hojeKey()+(new Date().getHours()<12?'M':'T');
 const senhaPorTurno=()=>{try{return typeof gCfg==='function'&&gCfg().senhaTurno===true;}catch(e){return false;}};
 function pedirSenha(m){const k=SENHA_DE[m]||m;if(!senhaDe(k)){entrarModo(m);return;}
   if(senhaPorTurno()){let ok=false;try{ok=localStorage.getItem('senhaOk_'+k)===turnoAtual();}catch(e){}if(ok){entrarModo(m);return;}}
-  senhaModo=m;senhaDig='';$('senhaTit').textContent=m==='gest'?'Senha da Gestão':m==='ver'?'Senha para Visualizar':m==='rel'?'Senha para Relatórios do dia':'Senha dos Tratos';mostrarSenha();verSenha(true);}
+  senhaModo=m;senhaDig='';$('senhaTit').textContent=m==='gest'?'Senha da Gestão':m==='ver'?'Senha para Visualizar':m==='rel'?'Senha para Relatórios do dia':'Senha do Operacional';mostrarSenha();verSenha(true);}
 $('btnModoExec').onclick=()=>pedirSenha('trato');
 $('btnModoGest').onclick=()=>pedirSenha('gest');
 $('btnRelDia').onclick=()=>pedirSenha('rel');
