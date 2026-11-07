@@ -1798,6 +1798,12 @@ function nTrLoteNovo(c,obj){const H0=typeof HIST!=='undefined'?HIST:[],tem=(type
   if(tem)return prevApi.nTratos(c,obj);let n=0;try{const lc=typeof linhaDe==='function'?linhaDe(c):'',H1=H0.filter(r=>r.dia<hojeKey()),Hl=H1.filter(r=>!lc||linhaDe(r.curral)===lc),H=Hl.length?Hl:H1;
   if(H.length){const u=H.reduce((a,x)=>x.dia>a?x.dia:a,''),m={};H.filter(x=>x.dia===u).forEach(x=>{(m[x.curral]=m[x.curral]||new Set()).add(+x.trato);});const f={};Object.values(m).forEach(st=>f[st.size]=(f[st.size]||0)+1);
     n=+Object.keys(f).sort((a,b)=>f[b]-f[a])[0];}}catch(e){}return n>=1?n:1;}
+/* lote novo: o volume vai só nos tratos que ainda faltam no dia (no local dele). Ex.: já fizeram T1 e T2 → tudo no T3 */
+function distLoteNovo(c,kg,obj,d){const n=nTrLoteNovo(c,obj),ks=(typeof tratosAtivos==='function'?tratosAtivos():[1,2,3]).slice(0,n),lc=typeof linhaDe==='function'?linhaDe(c):'';
+  const mx=(typeof HIST!=='undefined'?HIST:[]).filter(r=>r.dia===d&&(!lc||linhaDe(r.curral)===lc)).reduce((a,r)=>Math.max(a,+r.trato||0),0);
+  let rem=ks.filter(k=>k>mx);if(rem.length===ks.length)return prevApi.distribuir(c,kg,n,obj);if(!rem.length)rem=[ks[ks.length-1]];
+  const pc=prevApi.divisao(rem.length),ar=prevApi.arredPrev;let resto=ar(kg);for(let k=1;k<=(prevApi.MAXT||8);k++){if(obj[String(k)])delete obj[String(k)][c];}
+  rem.forEach((k,i)=>{const v=i===rem.length-1?resto:Math.max(0,ar(kg*pc[i]/100));(obj[String(k)]=obj[String(k)]||{})[c]=v;resto-=v;});return obj;}
 function regraLeitura(){try{if(typeof modoVer!=='undefined'&&modoVer)return;if(!gOk()||!window.prevApi||typeof S==='undefined'||!S)return;
   const hj=hojeKey(),cfg=gCfg(),H=typeof HIST!=='undefined'?HIST:[],MX=prevApi.MAXT||8;
   [hj,somaDias(hj,1)].forEach(d=>{const hoje=d===hj,g=hoje?null:prevApi.prevGuardado(d);let obj=hoje?S.prev:(g?JSON.parse(JSON.stringify(g)):null),mud=false;
@@ -1810,7 +1816,7 @@ function regraLeitura(){try{if(typeof modoVer!=='undefined'&&modoVer)return;if(!
     cochoCurrais(d).forEach(c=>{if(typeof curralAtivo==='function'&&!curralAtivo(c))return;if(G.it[idLeit(d,c)]||!ehLoteNovo(c,d)||trat(c))return;
       const s=sugLoteNovo(c,d);if(!(s>0))return;const kg=arred(s,cfg.arred);
       gPut({uid:idLeit(d,c),tipo:'leitura',dia:d,curral:c,nota:0,ims:null,hora:new Date().toTimeString().slice(0,5),pct:0,base:kg,baseM:'ontem',baseDia:null,novo:kg,msF:1,auto:'lote_novo'});
-      if(!obj)obj={};prevApi.distribuir(c,kg,nTrLoteNovo(c,obj),obj);mud=true;});
+      if(!obj)obj={};distLoteNovo(c,kg,obj,d);mud=true;});
     if(mud){if(hoje){marcarPrev();if(typeof render==='function')render();}else prevApi.guardarPrevDia(d,obj);}});
   }catch(e){console.error(e);}}
 window.regraLeitura=regraLeitura;setTimeout(regraLeitura,15000);setInterval(regraLeitura,3*60000);
