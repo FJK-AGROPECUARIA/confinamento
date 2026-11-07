@@ -612,7 +612,10 @@ function tAnimais(){const B=(c,ic,tx,at,cl)=>`<button type="button" style="--c:$
 /* resultado do lote: considerar ou desconsiderar (relatório feito só para ter média / lançamento, resultado fictício) */
 const resDesc=l=>!!(l&&l.resDesc);
 const resBts=(l,mini)=>{const d=resDesc(l);if(mini)return `<span class="gResTag ${d?'no':'ok'}">${d?'⛔ Relatório NÃO':'✅ Relatório OK'}</span>`;
-  return `<label class="gResLin ${d?'no':'ok'}"><span>Considerar resultado deste relatório</span><select data-rescons="${l.uid}"><option value="1"${d?'':' selected'}>Sim</option><option value="0"${d?' selected':''}>Não</option></select></label>`;};
+  return `<label class="gResLin ${d?'no':'ok'}"><span>Considerar resultado deste relatório</span><select data-rescons="${l.uid}"><option value="1"${d?'':' selected'}>Sim</option><option value="0"${d?' selected':''}>Não</option></select></label>
+  <div class="gResObs ${d?'no':'ok'}"><label for="gResObs">Observação deste relatório</label><textarea id="gResObs" data-resobs="${l.uid}" rows="2" placeholder="Escreva aqui alguma observação sobre este relatório">${esc(l.resObs||'')}</textarea></div>`;};
+document.addEventListener('change',e=>{const x=e.target;if(!x.matches||!x.matches('#gBox textarea[data-resobs]'))return;if(typeof bloqueado==='function'&&bloqueado()){gRender();return;}
+  const l=G.it[x.dataset.resobs];if(!l)return;const v=x.value.trim();if((l.resObs||'')===v)return;const c=JSON.parse(JSON.stringify(l));c.resObs=v;gPut(c);toast('Observação salva');});
 document.addEventListener('change',e=>{const s_=e.target;if(!s_.matches||!s_.matches('#gBox select[data-rescons]'))return;if(typeof bloqueado==='function'&&bloqueado()){gRender();return;}
   const l=G.it[s_.dataset.rescons];if(!l)return;const c=JSON.parse(JSON.stringify(l)),d=s_.value==='0';if(!!c.resDesc===d)return;c.resDesc=d;gPut(c);toast(d?'Não considerar este relatório (fica em vermelho)':'Considerar este relatório');const y=window.scrollY;gRender();window.scrollTo({top:y});});
 function tLotes(t){
