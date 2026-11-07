@@ -288,7 +288,7 @@ function gRaiz(t){GT={t};gPilha.length=0;const alvo=RAIZ[t]==='cocho'&&!document
 window.gAbrir=modo=>{const leit=RAIZ[GT.t]==='cocho';if(modo==='leit'&&!leit)GT={t:'cocho'};if(modo==='gest'&&leit&&!document.body.classList.contains('modoGest'))GT={t:'home'};gRender();if(navigator.onLine)gSync(true).catch(()=>{});};
 function gRender(){if(GT&&GT.t!=='rel')RELCMP=null;if(GT&&GT.t!=='lotes')gLotAb.clear();   // saiu da lista de lotes: ao voltar, todos os cards abrem minimizados
   else if(GT&&GT.t==='lotes'&&gRender.ultEnc!==undefined&&gRender.ultEnc!==!!GT.enc)gLotAb.clear();if(GT&&GT.t==='lotes')gRender.ultEnc=!!GT.enc;
-  if(GT&&GT.t==='lotes'&&!['lotes','lote','rel','loteForm','saiForm','custoForm','entNova'].includes(gRender.ultTela)){const hj=hojeKey();gArqIni=somaDias(hj,-30);gArqFim=hj;gArqSel=false;gArqDesm.clear();}   // arquivados: ao chegar de outro menu, filtro volta para os últimos 30 dias
+  if(GT&&GT.t==='lotes'&&!['lotes','lote','rel','loteForm','saiForm','custoForm','entNova'].includes(gRender.ultTela)){const hj=hojeKey();gArqIni=somaDias(hj,-30);gArqFim=hj;gArqSel=false;gArqDesm.clear();gResFil='S';}   // arquivados: ao chegar de outro menu, filtro volta para os últimos 30 dias
   gRender.ultTela=GT&&GT.t;
   const b=$('gBox');if(!b)return;b.dataset.tela=GT&&GT.t||'';   // tela atual (o CSS usa para separar os quadros do lote)
   if(window.abaAtual==='gest'&&RAIZ[GT.t]==='cocho'&&!document.body.classList.contains('modoGest')){aba('leit');return;}  // leitura abre no menu Tratos
@@ -333,6 +333,7 @@ document.addEventListener('click',e=>{const c=e.target.closest('#gBox .gMinz>.gM
   gMinAb.has(k)?gMinAb.delete(k):gMinAb.add(k);sec.classList.toggle('aberto',gMinAb.has(k));const d=c.querySelector('.gGrpDica');if(d)d.textContent=gMinAb.has(k)?'clique para fechar':'clique para abrir';});
 const SEN_TIPOS=[['trato','🚜 Senha do Operacional','entrar no Operacional (Leitura, Previsto, Carregar, Fornecer, Automação)'],['ver','👁 Senha do Visualizar','entrar no Visualizar'],['rel','📤 Senha dos Relatórios do dia','enviar os Relatórios do dia da tela inicial'],['gest','📊 Senha da Gestão / Configurações','entrar na Gestão e nas Configurações'],['acao','✏️ Senha de edição e exclusão','editar e apagar registros, carregamentos e cadastros, e restaurar cópia']];
 function senhaGrava(k,v){const c=JSON.parse(JSON.stringify(gCfg())),s={trato:senhaDe('trato'),ver:senhaDe('ver'),rel:senhaDe('rel'),gest:senhaDe('gest'),acao:senhaDe('acao')};s[k]=v;c.senhas=s;gPut(c);}
+let gResFil='S';const RES_OPS=[['T','Todos'],['S','✅ OK'],['N','⛔ NÃO']];   // finalizados: filtro do relatório (sempre começa nos considerados)
 let gLoc='T',gLotCur='',gArqIni='',gArqFim='',gArqSel=false;const gArqDesm=new Set();   // gArqSel: modo de escolher lotes para o relatório; gArqDesm: lotes desmarcados
  // gArqIni/gArqFim: filtro da data de fechamento dos lotes arquivados ('' = sem limite) // filtro dos lotes: T todos, C confinamento, P pasto; curral ('' = todos)
 const gLotAb=new Set(),gCurAb=new Set(); // lotes abertos (vários ao mesmo tempo) e grupos de currais abertos
@@ -608,17 +609,23 @@ function tAnimais(){const B=(c,ic,tx,at,cl)=>`<button type="button" style="--c:$
     ${B('#2e8b3d','📥','Entrada de<br>animais','data-g="ir" data-t="entradas"')}${B('#c62828','📤','Saída de<br>animais','data-g="ir" data-t="saidas"')}
     ${B('#b8860b','⚖️','Pesagem','data-g="ir" data-t="pesNova"')}${B('#7b4fa0','🔒','Lotes<br>finalizados','data-g="ir" data-t="lotes" data-enc="1"')}
     ${B('#24507f','📈','Relatórios','data-g="raiz" data-t="rels"','gAniLarga')}</div></section>`;}
+/* resultado do lote: considerar ou desconsiderar (relatório feito só para ter média / lançamento, resultado fictício) */
+const resDesc=l=>!!(l&&l.resDesc);
+const resBts=(l,mini)=>{const d=resDesc(l);if(mini)return `<span class="gResTag ${d?'no':'ok'}">${d?'⛔ Relatório NÃO':'✅ Relatório OK'}</span>`;
+  return `<label class="gResLin ${d?'no':'ok'}"><span>Considerar resultado deste relatório</span><select data-rescons="${l.uid}"><option value="1"${d?'':' selected'}>Sim</option><option value="0"${d?' selected':''}>Não</option></select></label>`;};
+document.addEventListener('change',e=>{const s_=e.target;if(!s_.matches||!s_.matches('#gBox select[data-rescons]'))return;if(typeof bloqueado==='function'&&bloqueado()){gRender();return;}
+  const l=G.it[s_.dataset.rescons];if(!l)return;const c=JSON.parse(JSON.stringify(l)),d=s_.value==='0';if(!!c.resDesc===d)return;c.resDesc=d;gPut(c);toast(d?'Não considerar este relatório (fica em vermelho)':'Considerar este relatório');const y=window.scrollY;gRender();window.scrollTo({top:y});});
 function tLotes(t){
   const hj=hojeKey(),X=gCtx(),loc=gLoc,noLocal=l=>loc==='T'||linhaDe(curralEm(l,fimLote(l)||hj))===loc;
   const curDe=l=>curralEm(l,fimLote(l)||hj),base0=gTodos('lote').filter(noLocal).filter(l=>t.enc?!ativo(l):ativo(l));
   const curOps=[['','Todos']].concat([...new Set(base0.map(curDe).filter(Boolean))].sort(alfa).map(n=>[n,n]));if(gLotCur&&!curOps.some(o=>o[0]===gLotCur))gLotCur='';
   const noPer=l=>{const f=fimLote(l)||'';return (!gArqIni||f>=gArqIni)&&(!gArqFim||f<=gArqFim);};   // arquivados: data do fechamento dentro do período
-  const todosL=gTodos('lote').filter(noLocal).filter(l=>!gLotCur||curDe(l)===gLotCur),lista=(t.enc?todosL.filter(l=>!ativo(l)&&noPer(l)).sort((a,b)=>(fimLote(b)||'').localeCompare(fimLote(a)||'')||porNome(a,b)):todosL.filter(ativo).sort(porCurral));
-  const navCur=typeof selSetas==='function'?`<div class="gCoLocNav">${selSetas('Curral',curOps,Math.max(0,curOps.findIndex(o=>o[0]===gLotCur)),'data-g="lotCurP" data-n','data-lotcsel')}</div>`:'';
+  const todosL=gTodos('lote').filter(noLocal).filter(l=>!gLotCur||curDe(l)===gLotCur).filter(l=>!t.enc||gResFil==='T'||(gResFil==='N')===resDesc(l)),lista=(t.enc?todosL.filter(l=>!ativo(l)&&noPer(l)).sort((a,b)=>(fimLote(b)||'').localeCompare(fimLote(a)||'')||porNome(a,b)):todosL.filter(ativo).sort(porCurral));
+  const navCur=typeof selSetas==='function'?`<div class="gCoLocNav">${selSetas('Curral',curOps,Math.max(0,curOps.findIndex(o=>o[0]===gLotCur)),'data-g="lotCurP" data-n','data-lotcsel')}</div>${t.enc?`<div class="gCoLocNav">${selSetas('Relatório',RES_OPS,Math.max(0,RES_OPS.findIndex(o=>o[0]===gResFil)),'data-g="resFilP" data-n','data-resfsel')}</div>`:''}`:'';
   const cards=lista.map(l=>{const fim=fimLote(l),ref=fim&&fim<hj?fim:hj,cab=cabPres(l,ref),r=racaoEm(l,ref),c=curralEm(l,ref),m=mediaLote(l,X);
     const sub=[sexoTxt(l.sexo),l.raca,catNorm(l.cat)].filter(Boolean).join(' · ');
     const ab=gLotAb.has(l.uid);
-    if(t.enc)return `<div class="gLote gLoteV gLoteMin gLoteArq${gArqSel&&gArqDesm.has(l.uid)?' gArqFora':''}"><div class="gLoteTopo">${gArqSel?`<label class="gArqChk"><input type="checkbox" data-arqchk="${l.uid}"${gArqDesm.has(l.uid)?'':' checked'}></label>`:''}<div class="gLoteSeloAb"><div class="gFechDt">🔒 Fechado em <b>${fim?dB(fim):'—'}</b></div>${seloCurral(c)}<button type="button" class="lima gLoteAbrir" data-g="lote" data-id="${l.uid}">Abrir lote ›</button></div>
+    if(t.enc)return `<div class="gLote gLoteV gLoteMin gLoteArq${gArqSel&&gArqDesm.has(l.uid)?' gArqFora':''}${resDesc(l)?' gResDescL':''}"><div class="gLoteTopo">${gArqSel?`<label class="gArqChk"><input type="checkbox" data-arqchk="${l.uid}"${gArqDesm.has(l.uid)?'':' checked'}></label>`:''}<div class="gLoteSeloAb">${seloCurral(c)}<div class="gFechDt">🔒 Finalizado em <b>${fim?dB(fim):'—'}</b></div>${resBts(l,true)}<button type="button" class="lima gLoteAbrir" data-g="lote" data-id="${l.uid}">Abrir lote ›</button></div>
       <div class="gLoteInfo"><b>${esc(l.nome)}</b>${(()=>{const C=calcLoteFix(l),lu=C.lucro;return `<span class="gArqLin1">${sub?esc(sub)+' · ':''}<span class="gRacLote">🌾 ${esc(r?r.nome:'sem ração')}</span> · entrou ${dCurto(l.ent.dia)} · <b>${nf(Math.max(0,difDias(l.ent.dia,ref)))}</b> dias</span>
         <span class="gLoteResumo"><b>${nf(C.cabE)}</b> entraram${ok(C.pesoE)?` · <b>${nf(C.pesoE,1)} kg</b>`:''} · <b>${nf(C.cabV)}</b> vendidos${ok(C.pesoV)?` · <b>${nf(C.pesoV,1)} kg</b>`:''}${C.mortes?` · <b>${nf(C.mortes)}</b> mortes`:''}${C.cabT?` · <b>${nf(C.cabT)}</b> transferidos`:''}</span>
         ${ok(lu)?`<span class="gLoteResumo" style="color:${lu>=0?'#2e7d32':'#c62828'}">${lu>=0?'Lucro':'Prejuízo'} <b>${rs(lu)}</b>${ok(C.lucroCab)?` · ${rs(C.lucroCab)}/cab`:''}${ok(C.rentabM)?` · ${pc(C.rentabM,2)} a.m.`:''}</span>`:''}
@@ -933,7 +940,7 @@ function tLote(t){
     <button class="dangerfill" data-g="apagaLote" data-id="${l.uid}">Apagar lote</button></section>`;
   const RESTO_LOTE=()=>fim?P_entArq()+P_cusArq()+P_sai()+P_pes()+P_cus()+P_evolArq()+P_fimArq():P_dia()+P_evol()+P_pes()+P_ent()+P_cus()+P_sai()+P_fic();   // lote arquivado: entradas, pesagens, saídas, ficha e evolução no fim
   const relEmb=fim&&!partesApart(l).length;   // lote arquivado: o relatório final aparece na própria tela do lote
-  if(relEmb)return `${voltar('Lotes')}<section class="panel"><div class="gLoteTopo">${seloCurral(curralEm(l,ref))}<div class="gLoteNomeRel"><div class="gLoteNomeL"><h2>${esc(l.nome)}</h2><span class="pill">Arquivado em ${dB(fim)}</span>
+  if(relEmb)return `${voltar('Lotes')}<section class="panel${resDesc(l)?' gResDescL':''}">${resBts(l)}<div class="gLoteTopo">${seloCurral(curralEm(l,ref))}<div class="gLoteNomeRel"><div class="gLoteNomeL"><h2>${esc(l.nome)}</h2><span class="pill">Arquivado em ${dB(fim)}</span>
       ${(()=>{const t=[sexoTxt(l.sexo),l.raca,catNorm(l.cat)].filter(x=>x&&x!=='—').join(' · ');return t?`<p class="note">${esc(t)}</p>`:'';})()}<p class="note">${dB(e.dia)} a ${dB(fim)} · ${nf(difDias(e.dia,fim))} dias · 🌾 ${esc(r?r.nome:'—')}</p>${l.obs?`<p class="note">📝 ${esc(l.obs)}</p>`:''}</div>
       <div class="gRelTit"><b>📊 Relatório final</b><div class="gRelTitBts"><button class="verde mini" data-g="pdfLote" data-id="${l.uid}">📄 PDF</button><button class="verde mini" data-g="imgLote" data-id="${l.uid}">🖼 Foto</button><button class="verde mini" data-g="xlsLote" data-id="${l.uid}">📊 Excel</button></div></div></div></div>
     <div class="gAcoes"><button data-g="ir" data-t="loteForm" data-id="${l.uid}">✎ Editar dados</button></div></section>
@@ -2808,8 +2815,11 @@ $('gBox').addEventListener('click',e=>{
     senhaGrava(k,n);GT.snEd=null;toast('Senha salva: '+SEN_TIPOS.find(x=>x[0]===k)[1]);return gRender();}
   if(a==='senTira'){const k=b.dataset.k,t=SEN_TIPOS.find(x=>x[0]===k)[1];
     (window.confirmaVermelho?confirmaVermelho(`Tirar a ${t.toLowerCase()}?`,k==='gest'?'Qualquer pessoa com o aplicativo vai poder entrar na Gestão e nas Configurações sem senha.':k==='trato'?'Qualquer pessoa vai poder entrar no Operacional sem senha.':'Editar e apagar não vão mais pedir senha.','Sim, tirar','Não'):Promise.resolve(confirm('Tirar a senha?'))).then(x=>{if(!x)return;senhaGrava(k,'');toast('Senha tirada');gRender();});return;}
+  if(a==='resFilP'){const i=Math.max(0,RES_OPS.findIndex(o=>o[0]===gResFil)),j=Math.max(0,Math.min(RES_OPS.length-1,i+(+b.dataset.n)));gResFil=RES_OPS[j][0];return gRender();}
   if(a==='lotCurP'){const O=[['','']].concat([...document.querySelectorAll('select[data-lotcsel] option')].slice(1).map(o=>[o.value])),i=Math.max(0,O.findIndex(o=>o[0]===gLotCur)),j=Math.max(0,Math.min(O.length-1,i+(+b.dataset.n)));gLotCur=O[j][0];return gRender();}
   if(a==='lotLocP'){const L=['T','C','P'];let i=Math.max(0,L.indexOf(gLoc));gLoc=L[Math.max(0,Math.min(2,i+(+b.dataset.n)))];return gRender();}
+  if(a==='resCons'){if(typeof bloqueado==='function'&&bloqueado())return;const l=G.it[id];if(!l)return;const c=JSON.parse(JSON.stringify(l)),d=b.dataset.v==='0';if(!!c.resDesc===d)return;c.resDesc=d;gPut(c);
+    toast(d?'Resultado desconsiderado (fica em vermelho)':'Resultado considerado');const y=window.scrollY;gRender();window.scrollTo({top:y});return;}
   if(a==='loteTog'){const y=window.scrollY;gLotAb.has(id)?gLotAb.delete(id):gLotAb.add(id);gRender();window.scrollTo({top:y});return;}
   if(a==='lotTodos'){const y=window.scrollY;document.querySelectorAll('#gBox [data-g="loteTog"]').forEach(el=>b.dataset.v==='1'?gLotAb.add(el.dataset.id):gLotAb.delete(el.dataset.id));gRender();window.scrollTo({top:y});return;}
   if(a==='curGrp'){const y=window.scrollY,k=b.dataset.k;gCurAb.has(k)?gCurAb.delete(k):gCurAb.add(k);gRender();window.scrollTo({top:y});return;}
@@ -3163,6 +3173,7 @@ $('gBox').addEventListener('change',e=>{
   if(t.matches&&t.matches('input[data-perd]')){if(t.value){GT[t.dataset.perd]=t.value;}return gRender();}
   if(t.matches&&t.matches('select[data-locsel]')&&LOC_SET[t.dataset.locsel]){LOC_SET[t.dataset.locsel](t.value);const y=window.scrollY;gRender();window.scrollTo({top:y});return;}
   if(t.matches&&t.matches('select[data-lotcsel]')){gLotCur=t.value;return gRender();}
+  if(t.matches&&t.matches('select[data-resfsel]')){gResFil=t.value;return gRender();}
   if(t.matches&&t.matches('select[data-lotlsel]')){gLoc=t.value;return gRender();}
   if(t.matches&&t.matches('select[data-colsel]')){document.querySelectorAll('#gBox .gCocho').forEach(el=>{const i=el.querySelector('input[data-kg]'),c=el.dataset.c;if(i&&GT.sel&&GT.sel[c]&&i.value)GT.sel[c].kg=gNum(i.value);});GT.coLoc=t.value;return gRender();}
   if(t.id==='gCbDia'){GT.cbDia=t.value||hojeKey();const y=window.scrollY;gRender();window.scrollTo({top:y});return;}
