@@ -279,7 +279,7 @@ const opInsumos=()=>gTodos('insumo').sort(porNome).map(r=>[r.uid,r.nome+(r.inati
 const UNID_C=[['arroba','R$/@ morto'],['arrV','R$/@ vivo'],['cab','R$/cabeça'],['kg','R$/kg vivo']];
 const UNID_V=[['arroba','R$/@ morto'],['arrV','R$/@ vivo'],['cab','R$/cabeça'],['kg','R$/kg vivo']];
 
-const RAIZ={home:'home',entradas:'entradas',saidas:'saidas',estoque:'estoque',estIns:'estoque',estForm:'estoque',estNF:'estoque',fornec:'estoque',fornForm:'estoque',entRel:'estoque',currais:'currais',curForm:'currais',lotes:'lotes',pesNova:'lotes',entNova:'entradas',saiSel:'saidas',lote:'lotes',loteForm:'lotes',pesForm:'lotes',entForm:'lotes',apartForm:'lotes',transfForm:'lotes',fechaForm:'lotes',achouForm:'lotes',saiForm:'lotes',mudForm:'lotes',rel:'lotes',custoForm:'lotes',
+const RAIZ={home:'home',entradas:'entradas',saidas:'saidas',estoque:'estoque',estIns:'estoque',estForm:'estoque',estNF:'estoque',fornec:'estoque',fornForm:'estoque',entRel:'estoque',currais:'currais',curNt:'currais',curForm:'currais',lotes:'lotes',pesNova:'lotes',entNova:'entradas',saiSel:'saidas',lote:'lotes',loteForm:'lotes',pesForm:'lotes',entForm:'lotes',apartForm:'lotes',transfForm:'lotes',fechaForm:'lotes',achouForm:'lotes',saiForm:'lotes',mudForm:'lotes',rel:'lotes',custoForm:'lotes',
   cocho:'cocho',cochoGraf:'cocho',fezes:'cocho',med:'cocho',rels:'rels',dia:'rels',indices:'rels',confBal:'rels',periodo:'rels',comp:'rels',vendas:'rels',pesagens:'rels',compradores:'rels',cprForm:'rels',racoes:'racoes',racForm:'racoes',racCur:'racoes',mudCur:'currais',insumos:'estoque',insForm:'estoque',insMS:'insumos',ms:'cocho',cfg:'cfg'};
 /* Leitura de cocho fica no menu Tratos (aba 'leit'); o resto da Gestão na aba 'gest' — as duas usam a mesma tela */
 function gRaiz(t){GT={t};gPilha.length=0;const alvo=RAIZ[t]==='cocho'&&!document.body.classList.contains('modoGest')?'leit':'gest';if(window.abaAtual!==alvo)aba(alvo);else gRender();window.scrollTo({top:0});}
@@ -291,7 +291,7 @@ function gRender(){if(GT&&GT.t!=='rel')RELCMP=null;if(GT&&GT.t!=='lotes')gLotAb.
   const b=$('gBox');if(!b)return;b.dataset.tela=GT&&GT.t||'';   // tela atual (o CSS usa para separar os quadros do lote)
   if(window.abaAtual==='gest'&&RAIZ[GT.t]==='cocho'&&!document.body.classList.contains('modoGest')){aba('leit');return;}  // leitura abre no menu Tratos
   if(window.abaAtual==='leit'&&RAIZ[GT.t]!=='cocho'){aba('gest');return;}
-  const f={home:tHome,estoque:tEstoque,estIns:tEstIns,estForm:tEstForm,estNF:tEstNF,fornec:tFornec,fornForm:tFornForm,entRel:tEntRel,currais:tCurrais,curForm:tCurForm,lotes:tLotes,pesNova:tPesNova,entNova:tEntNova,saiSel:tSaiSel,entradas:tEntradas,saidas:tSaidas,lote:tLote,loteForm:tLoteForm,pesForm:tPesForm,entForm:tEntForm,apartForm:tApartForm,transfForm:tTransfForm,fechaForm:tFechaForm,achouForm:tAchouForm,saiForm:tSaiForm,mudForm:tMudForm,rel:tRelLote,custoForm:tCustoForm,
+  const f={home:tHome,estoque:tEstoque,estIns:tEstIns,estForm:tEstForm,estNF:tEstNF,fornec:tFornec,fornForm:tFornForm,entRel:tEntRel,currais:tCurrais,curForm:tCurForm,curNt:tCurNt,lotes:tLotes,pesNova:tPesNova,entNova:tEntNova,saiSel:tSaiSel,entradas:tEntradas,saidas:tSaidas,lote:tLote,loteForm:tLoteForm,pesForm:tPesForm,entForm:tEntForm,apartForm:tApartForm,transfForm:tTransfForm,fechaForm:tFechaForm,achouForm:tAchouForm,saiForm:tSaiForm,mudForm:tMudForm,rel:tRelLote,custoForm:tCustoForm,
     cocho:tCocho,cochoGraf:tCochoGraf,fezes:t=>tFezes(t),med:t=>tMed(t),rels:tRels,dia:tDia,indices:tIndices,periodo:tPeriodo,comp:tComp,vendas:tVendas,pesagens:tPesagens,compradores:tCompradores,cprForm:tCprForm,racoes:tRacoes,racForm:tRacForm,racCur:tRacCur,mudCur:tMudCur,mudEd:tMudEd,insumos:tInsumos,insForm:tInsForm,insMS:tInsMS,ms:tInsMS,cfg:tCfg}[GT.t]||tHome;
   const raiz=GT.raiz||RAIZ[GT.t]||'home';document.querySelectorAll('#subGest button[data-gt]').forEach(x=>x.setAttribute('aria-selected',String(x.dataset.gt===raiz)));
   const cb=$('cfgTBox');if(cb&&$('cfgTParque')&&cb.parentNode!==$('cfgTParque'))$('cfgTParque').appendChild(cb); // ajustes da balança: guarda antes de redesenhar
@@ -329,7 +329,7 @@ function cfgMinimizar(){document.querySelectorAll('#gBox section.panel').forEach
   const k=(cab.querySelector('h2')||cab).textContent.trim();sec.classList.add('gMinz');sec.dataset.minK=k;cab.classList.add('gMinzCab');sec.classList.toggle('aberto',gMinAb.has(k));});}
 document.addEventListener('click',e=>{const c=e.target.closest('#gBox .gMinz>.gMinzCab');if(!c)return;const sec=c.parentNode,k=sec.dataset.minK;
   gMinAb.has(k)?gMinAb.delete(k):gMinAb.add(k);sec.classList.toggle('aberto',gMinAb.has(k));const d=c.querySelector('.gGrpDica');if(d)d.textContent=gMinAb.has(k)?'clique para fechar':'clique para abrir';});
-const SEN_TIPOS=[['trato','🚜 Senha dos Tratos','entrar nos Tratos (Leitura, Previsto, Carregar, Fornecer, Automação)'],['ver','👁 Senha do Visualizar','entrar no Visualizar'],['rel','📤 Senha dos Relatórios do dia','enviar os Relatórios do dia da tela inicial'],['gest','📊 Senha da Gestão / Configurações','entrar na Gestão e nas Configurações'],['acao','✏️ Senha de edição e exclusão','editar e apagar registros, carregamentos e cadastros, e restaurar cópia']];
+const SEN_TIPOS=[['trato','🚜 Senha do Operacional','entrar no Operacional (Leitura, Previsto, Carregar, Fornecer, Automação)'],['ver','👁 Senha do Visualizar','entrar no Visualizar'],['rel','📤 Senha dos Relatórios do dia','enviar os Relatórios do dia da tela inicial'],['gest','📊 Senha da Gestão / Configurações','entrar na Gestão e nas Configurações'],['acao','✏️ Senha de edição e exclusão','editar e apagar registros, carregamentos e cadastros, e restaurar cópia']];
 function senhaGrava(k,v){const c=JSON.parse(JSON.stringify(gCfg())),s={trato:senhaDe('trato'),ver:senhaDe('ver'),rel:senhaDe('rel'),gest:senhaDe('gest'),acao:senhaDe('acao')};s[k]=v;c.senhas=s;gPut(c);}
 let gLoc='T',gLotCur='',gArqIni='',gArqFim='',gArqSel=false;const gArqDesm=new Set();   // gArqSel: modo de escolher lotes para o relatório; gArqDesm: lotes desmarcados
  // gArqIni/gArqFim: filtro da data de fechamento dos lotes arquivados ('' = sem limite) // filtro dos lotes: T todos, C confinamento, P pasto; curral ('' = todos)
@@ -2640,10 +2640,6 @@ function tCfg(){const c=gCfg(),hj=hojeKey(),tx=vig(c.taxa,hj),ab=GT.cab||'custo'
     <p class="note">Só os tratos ativos aparecem nas telas que perguntam o trato (Carregar, Fornecer, Previsto). O nome é opcional (ex.: Manhã, 7h).</p>
     <div class="gEdLista gTrLista">${TC.map(t=>`<div class="${t.ativo?'':'gInativa'}"><span><b>Trato ${t.k}</b>${t.nome?' · '+esc(t.nome):''} <span class="pill${t.ativo?' done':''}">${t.ativo?'ativo':'inativo'}</span></span><button class="mini" data-g="trEd" data-k="${t.k}">✎ Editar</button><button class="mini${t.ativo?' danger':''}" data-g="trAt" data-k="${t.k}">${t.ativo?'Desativar':'Ativar'}</button></div>`).join('')}</div>
     ${(()=>{const ina=TC.find(t=>!t.ativo);return ina?`<button class="lima" data-g="trAdd">+ Novo trato (Trato ${ina.k})</button>`:TC.length<tratosApi.MAXT?`<button class="lima" data-g="trAdd">+ Novo trato (Trato ${TC.length+1})</button>`:'';})()}</section>
-  <section class="panel gCfgP"><h2>Quantidade de tratos por curral</h2>
-    <p class="note">Em quantas vezes o total do dia do curral é dividido. <b>Salva sozinho</b> ao escolher (aparece a confirmação embaixo) e o previsto de hoje já é redividido. O botão “Salvar divisão” é só para os % abaixo.</p>
-    ${(()=>{const A=(S.cadastro||[]).filter(n=>typeof curralAtivo!=='function'||curralAtivo(n));return locBotoes('ntLoc',lt,k=>A.filter(c=>doLocal(k,c)).length);})()}
-    <div class="gNtLista">${cads.map(cu=>{const n=P?P.nTratos(cu):1;return `<label class="gNt"><span>${esc(cu)}</span><select data-ntc="${esc(cu)}">${tratosAtivos().map((_,i)=>i+1).map(x=>`<option value="${x}"${x===n?' selected':''}>${x} trato${x>1?'s':''}</option>`).join('')}</select></label>`;}).join('')||'<p class="note">Cadastre os currais no Previsto.</p>'}</div></section>
   <section class="panel gCfgP"><h2>Divisão do trato (%)</h2>
     <p class="note">Quando o curral tem 2 ou mais tratos, o total do dia é dividido assim. 1 trato = 100% no Trato 1.</p>
     ${tratosAtivos().map((_,i)=>i+1).filter(n=>n>1).map(n=>{const v=P?P.divisao(n):[];return `<div class="gDiv"><b>${n} tratos</b><div class="gDivIn">${v.map((x,k)=>`<label><small>T${tratosAtivos()[k]}</small><input class="cell" inputmode="decimal" data-div="${n}" value="${String(x).replace('.',',')}"></label>`).join('')}</div><small class="gDivSoma" data-divsoma="${n}">${nf(v.reduce((a,b)=>a+b,0),1)}%</small></div>`;}).join('')}
@@ -2657,7 +2653,7 @@ function tCfg(){const c=gCfg(),hj=hojeKey(),tx=vig(c.taxa,hj),ab=GT.cab||'custo'
   if(ab==='senha'){const tu=c.senhaTurno===true;
     h=`<section class="panel gCfgP"><h2>Senha para entrar</h2>
     <div class="linhas gFiltro"><button data-g="senhaTurno" data-v="0" class="${tu?'':'sel'}">Pedir sempre</button><button data-g="senhaTurno" data-v="1" class="${tu?'sel':''}">1 vez de manhã e 1 vez à tarde</button></div>
-    <p class="note"><b>1 vez de manhã e 1 vez à tarde:</b> em cada celular, a senha é pedida na primeira entrada da manhã (até 11:59) e na primeira entrada depois do meio-dia. Nas outras vezes do mesmo turno, entra direto. Vale para cada botão da tela inicial (Tratos, Visualizar, Relatórios do dia e Gestão), cada um com a sua senha. Um celular que ainda não colocou a senha naquele turno não entra.<br>Editar e apagar registros e carregamentos continuam pedindo a senha de alterar e excluir toda vez.</p></section>
+    <p class="note"><b>1 vez de manhã e 1 vez à tarde:</b> em cada celular, a senha é pedida na primeira entrada da manhã (até 11:59) e na primeira entrada depois do meio-dia. Nas outras vezes do mesmo turno, entra direto. Vale para cada botão da tela inicial (Operacional, Visualizar, Relatórios do dia e Gestão), cada um com a sua senha. Um celular que ainda não colocou a senha naquele turno não entra.<br>Editar e apagar registros e carregamentos continuam pedindo a senha de alterar e excluir toda vez.</p></section>
     ${modoVer?'':`<section class="panel gCfgP gMinzSim"><h2>🔑 Alterar senhas</h2>
     <p class="note">Só números, de 4 a 8. Quem está aqui nas configurações pode cadastrar, alterar ou tirar. <b>Sem senha</b> = entra ou altera direto, sem pedir.</p>
     ${SEN_TIPOS.map(([k,t,aj])=>{const v=senhaDe(k),ed=GT.snEd===k,ver=GT.snVer===k;
@@ -2775,7 +2771,7 @@ $('gBox').addEventListener('click',e=>{
     if(!/^\d{4,8}$/.test(n))return toast('A senha precisa ter de 4 a 8 números');if(n!==c_)return toast('As duas senhas não estão iguais');
     senhaGrava(k,n);GT.snEd=null;toast('Senha salva: '+SEN_TIPOS.find(x=>x[0]===k)[1]);return gRender();}
   if(a==='senTira'){const k=b.dataset.k,t=SEN_TIPOS.find(x=>x[0]===k)[1];
-    (window.confirmaVermelho?confirmaVermelho(`Tirar a ${t.toLowerCase()}?`,k==='gest'?'Qualquer pessoa com o aplicativo vai poder entrar na Gestão e nas Configurações sem senha.':k==='trato'?'Qualquer pessoa vai poder entrar nos Tratos sem senha.':'Editar e apagar não vão mais pedir senha.','Sim, tirar','Não'):Promise.resolve(confirm('Tirar a senha?'))).then(x=>{if(!x)return;senhaGrava(k,'');toast('Senha tirada');gRender();});return;}
+    (window.confirmaVermelho?confirmaVermelho(`Tirar a ${t.toLowerCase()}?`,k==='gest'?'Qualquer pessoa com o aplicativo vai poder entrar na Gestão e nas Configurações sem senha.':k==='trato'?'Qualquer pessoa vai poder entrar no Operacional sem senha.':'Editar e apagar não vão mais pedir senha.','Sim, tirar','Não'):Promise.resolve(confirm('Tirar a senha?'))).then(x=>{if(!x)return;senhaGrava(k,'');toast('Senha tirada');gRender();});return;}
   if(a==='lotCurP'){const O=[['','']].concat([...document.querySelectorAll('select[data-lotcsel] option')].slice(1).map(o=>[o.value])),i=Math.max(0,O.findIndex(o=>o[0]===gLotCur)),j=Math.max(0,Math.min(O.length-1,i+(+b.dataset.n)));gLotCur=O[j][0];return gRender();}
   if(a==='lotLocP'){const L=['T','C','P'];let i=Math.max(0,L.indexOf(gLoc));gLoc=L[Math.max(0,Math.min(2,i+(+b.dataset.n)))];return gRender();}
   if(a==='loteTog'){const y=window.scrollY;gLotAb.has(id)?gLotAb.delete(id):gLotAb.add(id);gRender();window.scrollTo({top:y});return;}
@@ -3039,6 +3035,8 @@ $('gBox').addEventListener('click',e=>{
 });
 ['pointerdown','pointermove'].forEach(ev=>$('gBox').addEventListener(ev,e=>{const r=e.target.closest&&e.target.closest('.gEvHit');if(r)evolMostrar(+r.dataset.ev);}));
 $('gBox').addEventListener('click',e=>{const i=e.target.closest('.gDataBox input');if(i&&i.showPicker){try{i.showPicker();}catch(_){}}});
+/* quantidade de tratos do curral (agora no cadastro do curral): grava e já redivide o previsto de hoje */
+function aplicarNT(cu,n){if(!window.prevApi||!(n>=1))return;const t=window.mudarNTratos?mudarNTratos(cu,n,S.prev,hojeKey()):(prevApi.setNTratos(cu,n),prevApi.totalCurral(cu));if(t>0){if(!window.mudarNTratos)prevApi.distribuir(cu,t,n,S.prev);if(typeof marcarPrev==='function')marcarPrev();if(typeof render==='function')render();}}
 $('gBox').addEventListener('change',e=>{const s_=e.target.closest('select[data-ntc]');if(!s_||!window.prevApi)return;if(typeof bloqueado==='function'&&bloqueado())return;
   const cu=s_.dataset.ntc,n=+s_.value;const t=window.mudarNTratos?mudarNTratos(cu,n,S.prev,hojeKey()):(prevApi.setNTratos(cu,n),prevApi.totalCurral(cu));if(t>0){if(!window.mudarNTratos)prevApi.distribuir(cu,t,n,S.prev);if(typeof marcarPrev==='function')marcarPrev();if(typeof render==='function')render();}toast(`${cu}: ${n} trato${n>1?'s':''}`);});
 /* venda + sobra: médio ↔ total pela quantidade (vendidos, abatidos, outro lote e faltas); rendimento ↔ peso abatido */
@@ -3497,7 +3495,7 @@ $('tabCarga').addEventListener('click',()=>aba('carga'));
 window.cAoAbrir=()=>{cLimparSetup();cRender();cBuscarRemoto();};window.cLimparSetup=cLimparSetup;window.cFecha=cFecha;
 
 /* confirmação com aviso em vermelho (ex.: cancelar batida) */
-function confirmaVermelho(tit,txt,sim,nao,verde,extra,terc){   // terc: 3º botão (devolve 'x')
+function confirmaVermelho(tit,txt,sim,nao,verde,extra,terc,outra){   // terc: 3º botão (devolve 'x') · outra: {ini,max} botão 'Enviar de outra data' (devolve 'd:AAAA-MM-DD')
    // extra: HTML já montado (escapado) que vai logo abaixo do texto
 return new Promise(res=>{   // verde=true: tudo certo (caixa verde em vez do alerta vermelho)
   if(!document.getElementById('cvEstilo')){const st=document.createElement('style');st.id='cvEstilo';st.textContent=`.cvFundo{position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:9999;display:flex;align-items:center;justify-content:center;padding:16px}
@@ -3505,11 +3503,12 @@ return new Promise(res=>{   // verde=true: tudo certo (caixa verde em vez do ale
 .cvCaixa h3{margin:0 0 10px;color:#d32f2f;font-size:1.25rem}.cvCaixa p{white-space:pre-line;margin:0 0 18px;color:#d32f2f;font-weight:600;line-height:1.35}
 .cvCaixa.verde{border-color:#2e7d32}.cvCaixa.verde h3,.cvCaixa.verde p{color:#2e7d32}.cvCaixa.verde .cvSim{background:#2e7d32;border-color:#2e7d32}
 .cvFaltas{display:flex;flex-wrap:wrap;gap:6px 18px;margin:-10px 0 14px;font-size:.8rem;line-height:1.3;color:#33475b}.cvFaltas>div{display:flex;flex-direction:column;min-width:64px}.cvFaltas b{font-size:.82rem;color:#b3261e;margin-bottom:2px}.cvCaixa p.cvPerg{margin-top:0}
-.cvCaixa .cvBt{display:grid;gap:10px}.cvCaixa .cvTerc{background:#fff;color:#b3261e;border:2px dashed #d32f2f;font-size:.92rem;padding:11px}.cvCaixa button{padding:14px;font-size:1rem;border-radius:12px}.cvCaixa .cvSim{background:#d32f2f;color:#fff;border-color:#d32f2f}`;document.head.appendChild(st);}
+.cvCaixa .cvBt{display:grid;gap:10px}.cvCaixa .cvTerc{background:#fff;color:#b3261e;border:2px dashed #d32f2f;font-size:.92rem;padding:11px}.cvCaixa button{padding:14px;font-size:1rem;border-radius:12px}.cvCaixa .cvSim{background:#d32f2f;color:#fff;border-color:#d32f2f}.cvCaixa .cvOutraL{border:2px solid #9aa7b4;border-radius:12px;padding:8px 10px}.cvCaixa .cvOutraL>span{display:block;font-weight:700;color:#11253d;font-size:.9rem;margin-bottom:6px}.cvCaixa .cvData{display:flex;gap:8px;align-items:stretch}.cvCaixa .cvDia{flex:1 1 auto;min-width:0;padding:10px;font-size:1rem;border-radius:10px;border:2px solid #9aa7b4;box-sizing:border-box}.cvCaixa .cvEnvD{flex:0 0 auto;padding:10px 18px;background:#11253d;color:#fff;border-color:#11253d;font-weight:800}`;document.head.appendChild(st);}
   const f=document.createElement('div');f.className='cvFundo';
-  f.innerHTML=`<div class="cvCaixa${verde?' verde':''}" role="alertdialog"><h3>${verde?'✅':'⚠️'} ${esc(tit)}</h3><p>${esc(txt)}</p>${extra||''}<div class="cvBt"><button class="cvSim">${esc(sim)}</button><button class="cvNao">${esc(nao)}</button>${terc?`<button class="cvTerc">${esc(terc)}</button>`:''}</div></div>`;
+  f.innerHTML=`<div class="cvCaixa${verde?' verde':''}" role="alertdialog"><h3>${verde?'✅':'⚠️'} ${esc(tit)}</h3><p>${esc(txt)}</p>${extra||''}<div class="cvBt"><button class="cvSim">${esc(sim)}</button><button class="cvNao">${esc(nao)}</button>${outra?`<div class="cvOutraL"><span>📅 Selecionar data e enviar</span><div class="cvData"><input type="date" class="cvDia" value="${outra.ini||''}"${outra.max?` max="${outra.max}"`:''} aria-label="Data do relatório"><button class="cvEnvD">Enviar</button></div></div>`:''}${terc?`<button class="cvTerc">${esc(terc)}</button>`:''}</div></div>`;
   const fim=v=>{f.remove();res(v);};
   f.querySelector('.cvSim').onclick=()=>fim(true);f.querySelector('.cvNao').onclick=()=>fim(false);if(terc)f.querySelector('.cvTerc').onclick=()=>fim('x');
+  if(outra){f.querySelector('.cvEnvD').onclick=()=>{const v=f.querySelector('.cvDia').value;if(!v)return;fim('d:'+v);};}
   f.addEventListener('click',e=>{if(e.target===f)fim(false);});document.body.appendChild(f);});}
 window.confirmaVermelho=confirmaVermelho;
 
@@ -3610,11 +3609,11 @@ document.addEventListener('click',async e=>{const b=e.target.closest('[data-hbed
 /* ---------- Gestão › Currais: nome, tipo (confinamento/pasto) e ativo/inativo ---------- */
 function tCurrais(){const A=window.curraisApi;if(!A)return '';const L=A.lista().map(n=>({n,i:A.info(n)}));
   const lotesEm=n=>gTodos('lote').filter(l=>cabPres(l,hojeKey())>0&&curralEm(l,hojeKey())===n).length;
-  const item=x=>`<button class="gItem${x.i.inativo?' gInativa':''}" data-g="ir" data-t="curForm" data-id="${esc(x.n)}"><div class="gItemTopo"><b>${esc(x.n)}${x.i.tag?' <small title="Tem tag">🏷</small>':''}</b><span class="pill${lotesEm(x.n)?' done':''}">${x.i.inativo?'inativo':lotesEm(x.n)?lotesEm(x.n)+' lote(s)':'sem lote'}</span></div></button>`;
+  const item=x=>`<button class="gItem${x.i.inativo?' gInativa':''}" data-g="ir" data-t="curForm" data-id="${esc(x.n)}"><div class="gItemTopo"><b>${esc(x.n)}${x.i.tag?' <small title="Tem tag">🏷</small>':''}</b><span class="gCurNt">${window.prevApi?(n=>`${n} trato${n>1?'s':''}`)(prevApi.nTratos(x.n)):''}</span><span class="pill${lotesEm(x.n)?' done':''}">${x.i.inativo?'inativo':lotesEm(x.n)?lotesEm(x.n)+' lote(s)':'sem lote'}</span></div></button>`;
   const grupo=(tit,arr,k)=>{if(!arr.length)return '';const ab=gCurAb.has(k);return `<button type="button" class="gGrpCab${ab?' aberto':''}" data-g="curGrp" data-k="${k}"><span>${tit}</span><small>${arr.length} curral(is)</small><em class="gGrpDica">${ab?'clique para fechar':'clique para abrir'}</em><span class="gLoteSeta">▼</span></button>${ab?`<div class="gGrpCorpo">${arr.map(item).join('')}</div>`:''}`;};
   const at=L.filter(x=>!x.i.inativo),ina=L.filter(x=>x.i.inativo);
   return `<section class="panel"><h2>Currais</h2><p class="note">O local diz se o curral é do confinamento ou do pasto; vale para os filtros, o Carregar e o Fornecer. Inativo não aparece no Previsto, no Fornecer nem nos lotes (os registros continuam).</p>
-    <div class="gAcoes"><button class="lima" data-g="ir" data-t="curForm">+ Novo curral</button><button class="primary" data-g="ir" data-t="mudCur">↔ Mudar animais de curral</button></div>
+    <div class="gAcoes"><button class="lima" data-g="ir" data-t="curForm">+ Novo curral</button><button class="primary" data-g="ir" data-t="mudCur">↔ Mudar animais de curral</button><button data-g="ir" data-t="curNt">🔁 Tratos de vários currais</button></div>
     ${grupo(ICO_C+' Confinamento',at.filter(x=>x.i.tipo==='C'),'C')}${grupo('🌿 Pasto',at.filter(x=>x.i.tipo==='P'),'P')}${grupo('Sem tipo',at.filter(x=>x.i.tipo!=='C'&&x.i.tipo!=='P'),'S')}${grupo('⏸ Inativos',ina,'I')}${mudHistHTML()}</section>`;}
 /* ---------- histórico das mudanças de curral (recolhido no fim de Currais): editar e excluir pedem senha ---------- */
 function mudHist(){const R=[];gTodos('lote').forEach(l=>{const cs=(l.curr||[]).slice().sort((a,b)=>a.desde<b.desde?-1:1);
@@ -3644,10 +3643,28 @@ document.addEventListener('click',async e=>{const b=e.target.closest('[data-g="m
     if(d!==desde&&l.curr.some(z=>z.desde===d))return toast('Já tem outra mudança deste lote nessa data');
     const velho=x.c;l.curr=l.curr.filter(z=>z.desde!==desde);const n={c:para,de:x.de,ts:x.ts||Date.now(),ed:Date.now()};if(obs)n.obs=obs;Object.keys(n).forEach(k=>n[k]==null&&delete n[k]);setHist(l.curr,d,n);gPut(l);
     const d0=d<desde?d:desde;[velho,para,x.de].filter(Boolean).forEach(c=>recalcCurral(c,d0));toast('Mudança alterada');GT={t:'currais'};gCurAb.add('M');gRender();window.scrollTo({top:0});}},true);
+/* editar a quantidade de tratos de vários currais de uma vez (lista com todos) */
+function tCurNt(){const P=window.prevApi,lt=GT.ntLoc||'T',N=typeof tratosAtivos==='function'?tratosAtivos().length:3;
+  const A=(S.cadastro||[]).filter(n=>typeof curralAtivo!=='function'||curralAtivo(n)),cads=A.filter(n=>lt==='T'||linhaDe(n)===lt).sort(alfa);
+  const LO=window.LOC_OPS||[['T','Todos'],['C','Confinamento'],['P','Pasto']];
+  return `${voltar('Currais')}<section class="panel"><h2>🔁 Quantidade de tratos por curral</h2>
+    <p class="note">Mude os que quiser e toque em <b>Salvar todos</b> no fim. O previsto de hoje já é redividido nos currais alterados.</p>
+    ${typeof selSetas==='function'?`<div class="gCoLocNav">${selSetas('Local',LO,Math.max(0,LO.findIndex(o=>o[0]===lt)),'data-g="ntLocP" data-n','data-ntlsel="1"')}</div>`:''}
+    <div class="gNtLista">${cads.map(cu=>{const n=P?P.nTratos(cu):1;return `<label class="gNt"><span>${esc(cu)}</span><select data-ntm="${esc(cu)}" data-ori="${n}">${Array.from({length:N},(_,k)=>k+1).map(x=>`<option value="${x}"${x===n?' selected':''}>${x} trato${x>1?'s':''}</option>`).join('')}</select></label>`;}).join('')||'<p class="note">Nenhum curral ativo nesse local.</p>'}</div>
+    <button class="primary" data-g="salvaNtM" style="margin-top:12px">💾 Salvar todos</button></section>`;}
+document.addEventListener('change',e=>{const s_=e.target.closest&&e.target.closest('#gBox select[data-ntm]');if(s_)s_.closest('.gNt').classList.toggle('gNtMud',s_.value!==s_.dataset.ori);
+  if(e.target.matches&&e.target.matches('#gBox select[data-ntlsel]')&&GT.t==='curNt'){GT.ntLoc=e.target.value;gRender();}});
+document.addEventListener('click',e=>{const b=e.target.closest('#gBox [data-g="salvaNtM"],#gBox [data-g="ntLocP"]');if(!b||GT.t!=='curNt')return;e.preventDefault();e.stopPropagation();
+  if(b.dataset.g==='ntLocP'){const O=(window.LOC_OPS||[['T'],['C'],['P']]).map(o=>o[0]),i=Math.max(0,O.indexOf(GT.ntLoc||'T'));GT.ntLoc=O[Math.max(0,Math.min(O.length-1,i+(+b.dataset.n)))];return gRender();}
+  if(typeof bloqueado==='function'&&bloqueado())return;
+  const mud=[...document.querySelectorAll('#gBox select[data-ntm]')].filter(x=>x.value!==x.dataset.ori);if(!mud.length)return toast('Nada mudou');
+  mud.forEach(x=>aplicarNT(x.dataset.ntm,+x.value));toast(`${mud.length} curral(is) salvo(s)`);const y=window.scrollY;gRender();window.scrollTo({top:y});},true);
 function tCurForm(t){const A=window.curraisApi,n=t.id||'',i=n?A.info(n):{tipo:'C',inativo:false};
   return `${voltar()}<section class="panel"><h2>${n?'Curral '+esc(n):'Novo curral'}</h2>
     <div class="gForm">${campo({k:'cnome',l:'Nome do curral',v:n,ph:'Ex.: C-11 ou P-REPRESA-2'})}
     ${campo({k:'ctipo',l:'Local',t:'sel',op:[['C','🏠 Confinamento'],['P','🌿 Pasto']],v:i.tipo==='P'?'P':'C'})}
+    ${(()=>{const N=typeof tratosAtivos==='function'?tratosAtivos().length:3,nt=n&&window.prevApi?prevApi.nTratos(n):(i.tipo==='P'?1:Math.min(3,N));
+      return campo({k:'cnt',l:'Quantidade de tratos por dia',t:'sel',op:Array.from({length:N},(_,k)=>[String(k+1),`${k+1} trato${k?'s':''}`]),v:String(Math.min(nt,N))})+`<p class="note gCampo">Em quantas vezes o total do dia do curral é dividido (a divisão em % fica em Config. › Tratos). Ao salvar, o previsto de hoje já é redividido.</p>`;})()}
     ${n?'':campo({k:'catv',l:'Situação',t:'sel',op:[['1','Ativo'],['0','Inativo (pausado)']],v:i.inativo?'0':'1'})}
     ${n?'':`<p class="note gCampo"><b>Inativo</b> só tira o curral do previsto, do carregar, do fornecer e da leitura de cocho. Não apaga nada: o lote, os custos e o histórico continuam, dá para lançar a venda e tirar o relatório normalmente, e você pode voltar para <b>Ativo</b> quando quiser.</p>`}
     <div class="gCampo"><label for="gf_ctag">Tag do curral (leitor de tag)</label><div class="gTagLin"><input type="text" id="gf_ctag" value="${esc(i.tag||'')}" placeholder="Ex.: E28011C1200001D461D50375" autocomplete="off" autocapitalize="characters"><button type="button" class="mini lima" data-g="lerTag">🏷 Ler tag</button></div><p class="note" id="gTagMsg">Toque em Ler tag e passe o leitor na tag deste curral. Pode também digitar o código.</p></div></div>
@@ -3660,7 +3677,9 @@ document.addEventListener('click',e=>{const b=e.target.closest('#gBox [data-g="s
   if(tag&&tag.length<8)return toast('Tag muito curta: confira o código');
   if(tag){const outro=A.lista().find(x=>x!==n&&String(A.info(x).tag||'').toUpperCase()===tag);if(outro)return toast(`Esta tag já está no ${outro}`);}
   if(window.tagCaptura)tagCaptura(null);
-  const erro=n?A.salvar(n,nome,info):A.novo(nome,info);if(erro)return toast(erro);toast('Curral salvo');gVoltar();},true);
+  const erro=n?A.salvar(n,nome,info):A.novo(nome,info);if(erro)return toast(erro);
+  {const nt=+fv('cnt'),cu=String(nome||n).trim();if(nt>=1&&window.prevApi&&(!n||prevApi.nTratos(cu)!==nt))aplicarNT(cu,nt);}
+  toast('Curral salvo');gVoltar();},true);
 
 document.addEventListener('click',e=>{const b=e.target.closest('#gBox [data-g="lerTag"]');if(!b)return;const inp=$('gf_ctag'),m=$('gTagMsg');if(!inp)return;
   if(!window.tagCaptura){toast('Leitor de tag indisponível');return;}
@@ -4729,8 +4748,8 @@ async function relDiaEnviar(){if(relDiaRodando)return;let dia=hojeKey();const se
     if(F.length){const tx=F.slice(0,8).map(x=>`Trato ${x.t} · ${x.c}`).join(', ')+(F.length>8?` e mais ${F.length-8}`:'');
       const ontem=somaDias(dia,-1),porT={};F.forEach(x=>(porT[x.t]=porT[x.t]||[]).push(x.c));
       const col=`<div class="cvFaltas">${Object.keys(porT).sort((a,b)=>a-b).map(t=>`<div><b>Trato ${t}</b>${porT[t].map(c=>`<span>${esc(c)}</span>`).join('')}</div>`).join('')}</div><p class="cvPerg">Deseja o relatório do dia anterior (${dB(ontem)}) completo?</p>`;
-      const v=await (typeof confirmaVermelho==='function'?confirmaVermelho('Relatório do dia não finalizado','Hoje ainda faltam tratos:','Sim, enviar o dia anterior','Não',false,col,'📤 Enviar o relatório incompleto de hoje'):Promise.resolve(confirm('Relatório do dia não finalizado. Deseja o relatório do dia anterior?')));
-      if(!v)return;if(v!=='x')dia=ontem;}
+      const v=await (typeof confirmaVermelho==='function'?confirmaVermelho('Relatório do dia não finalizado','Hoje ainda faltam tratos:','Sim, enviar o dia anterior','Não',false,col,'📤 Enviar o relatório incompleto de hoje',{ini:ontem,max:hojeKey()}):Promise.resolve(confirm('Relatório do dia não finalizado. Deseja o relatório do dia anterior?')));
+      if(!v)return;if(typeof v==='string'&&v.startsWith('d:'))dia=v.slice(2);else if(v!=='x')dia=ontem;}
     toast(`Gerando ${sel.length} relatório(s)…`);await ate(6000);
     const fmt=relDiaFmt(),cap=[];window.__capArq=cap;const nomes=[];
     for(const k of sel){const n0=cap.length;try{if(fmt==='pdf')await relDiaGerar(k,dia);else await relExpGerar(k,dia,fmt,dia,dia);}catch(e){console.error(e);}
