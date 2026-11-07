@@ -972,7 +972,7 @@ body.naInicio .topoTxt h1{font-size:clamp(16px,5vw,28px)!important}
 </header>
 <div class="wrap">
   <div class="inicio" id="inicio">
-    <button class="grande gExec" id="btnModoExec">🚜 Tratos</button>
+    <button class="grande gExec" id="btnModoExec">🚜 Operacional</button>
     <button class="grande gVer" id="btnModoVer">👁 Visualizar</button>
     <button class="grande gRel" id="btnRelDia">📤 Relatórios do dia</button>
     <button class="grande gGest" id="btnModoGest">📊 Gestão</button>
@@ -1282,7 +1282,7 @@ body.naInicio .topoTxt h1{font-size:clamp(16px,5vw,28px)!important}
 <div class="toast" id="toast" hidden></div>
 <script>
 'use strict';
-const APP_VERSAO='312';
+const APP_VERSAO='313';
 const APP_DATA='19/10/2026';
 const KEY='confinamento-completo-v1';
 const $=id=>document.getElementById(id);
@@ -2871,7 +2871,7 @@ function renderHist(){try{aplicarRenomesHist();}catch(e){}
     const ord=c=>{const i=S.cadastro.indexOf(c);return i<0?999:i;},semL=new Set(pa>=hojeKey()&&typeof cochoCurrais==='function'&&gOk()?(()=>{try{return cochoCurrais(pa).filter(c=>curralAtivo(c)&&!(PDC[c]>0)&&!mp.has(c)&&(localSel==='T'||linhaDe(c)===localSel));}catch(e){return [];}})():[]),
       cs=[...new Set(Object.keys(PDC).concat(L.map(x=>x.curral),[...semL]))].sort((a,b)=>ord(a)-ord(b)||alfa(a,b));
     let TP=0,TF=0;const lin=cs.map(c=>{const pv=PDC[c]||0,x=mp.get(c),fo=x?x.forn:0;TP+=pv;TF+=fo;const dif=fo-pv;
-      if(semL.has(c))return `<tr class="hSemLt"><td class="hora"></td><td class="c">${esc(c)}</td><td colspan="3" style="text-align:left;color:#b26a00;font-weight:700">⏳ sem leitura de cocho</td></tr>`;
+      if(semL.has(c))return `<tr class="hSemLt"><td class="hora"></td><td class="c">${esc(c)}</td><td colspan="3" style="text-align:left;color:#b26a00;font-weight:700;white-space:nowrap">⏳ falta leitura</td></tr>`;
       return `<tr><td class="hora"></td><td class="c">${esc(c)}</td><td>${fmt(pv)}</td><td><b>${x?fmt(fo):'—'}</b></td><td class="${classeDesv(dif,pv)}">${sgn(dif)}</td></tr>`;}).join('');
     $('tbHist').innerHTML=cs.length?`<tr class="grp"><td colspan="5">${diaBR(pa)} · Dia todo (todos os tratos)</td></tr>`+totHTML(TP,TF,TF-TP)+lin:`<tr><td colspan="5" class="note" style="text-align:left">Nada previsto nem realizado nesse dia.</td></tr>`;if($('hEdFim'))$('hEdFim').innerHTML='';}
   else if(HD.per||HD.t===-1){selModo=false;const L=totaisPorCurral(regs),[pa,pb]=intervaloHist();
@@ -4106,8 +4106,8 @@ function podeAtualizar(){
 let atualizarPend=false;
 /* ---------- Visualizar: só ver, filtrar e exportar. Tudo que altera fica travado ---------- */
 const VER_VIEWS='#viewGest,#viewPrev,#viewHist,#viewTrato,#viewCarga,#viewAuto,#viewAutoC';
-const VER_FILTRO='.gRelExpL,.gRelModo,.gRelDatas,.gRelAtalhos,#gRelIni,#gRelFim,.hNavUm,.gNavData,.hColCab,.zHistCab,.gPagNav,.gPagSel,.gMinzCab,.gCfgGrpCab,.fz3,.expTopo,.lotesExp,#hModo,.hModo,.dPer,.dPerCampos,.dLinha,.gCoLocNav,.zLocNav,.gPerDatas,#hPerBox,.aoVivo,.avBarra,.gGrpCab,#subGest,.gLotesAbre,.gBaseOp>summary,#gf_rForn,#gf_rIns,.gHojeTop,#gf_grafLocF,#gf_perF,#gf_tipoF,#gf_prodF,#gf_fornF,.gEstFil .gSug,#fzHCur,#gVenIni,#gVenFim,#gVenCpr,#gVenPor';
-const VER_OK_G=new Set(['fzCur','cmpModo','coAbre','coFecha','voltar','raiz','ir','lote','dataPasso','dataHoje','filtroLoc','lotLocP','loteTog','lotTodos','curGrp','coLocP','fzLocP','perP','pgN','pgP','cfgGrp','estOrd','estPer','estPerE','estFilP','estFilLimpa','estIrRel','estVerMov','evolN','evLoc','grafCur','grafLoc','celGraf','perAtalho','fzHN','fzFotoVer','nfVer','compRel','compDia','cbExp','estInsExp']);
+const VER_FILTRO='.gRelExpL,.gRelModo,.gRelDatas,.gRelAtalhos,#gRelIni,#gRelFim,.hNavUm,.gNavData,.hColCab,.zHistCab,.gPagNav,.gPagSel,.gMinzCab,.gCfgGrpCab,.fz3,.expTopo,.lotesExp,#hModo,.hModo,.dPer,.dPerCampos,.dLinha,.gCoLocNav,.zLocNav,.gPerDatas,#hPerBox,.aoVivo,.avBarra,.gGrpCab,#subGest,.gLotesAbre,.gBaseOp>summary,#gf_rForn,#gf_rIns,.gHojeTop,#gf_grafLocF,#gf_perF,#gf_tipoF,#gf_prodF,#gf_fornF,.gEstFil .gSug,#fzHCur,#gVenIni,#gVenFim,#gVenCpr,#gVenPor,.mdDatas,#gf_mdQ,#gf_mdDe,#gf_mdAte,#gPsIni,#gPsFim,#gMsDe,#gMsAte';
+const VER_OK_G=new Set(['msFP','msFLimpa','medLimpa','fzCur','cmpModo','coAbre','coFecha','voltar','raiz','ir','lote','dataPasso','dataHoje','filtroLoc','lotLocP','loteTog','lotTodos','curGrp','coLocP','fzLocP','perP','pgN','pgP','cfgGrp','estOrd','estPer','estPerE','estFilP','estFilLimpa','estIrRel','estVerMov','evolN','evLoc','grafCur','grafLoc','celGraf','perAtalho','fzHN','fzFotoVer','nfVer','compRel','compDia','cbExp','estInsExp']);
 const VER_NAO_G=new Set(['senhaTurno','ntLoc','nota','msAbre','libLeit','baseDia','baseM']);
 function verPermite(el){const sb=el.closest('.gDataBox');if(sb){const s=sb.querySelector('select');if(s)return !s.disabled;}const g=el.closest('[data-g]');
   if(g){const a=g.dataset.g;if(VER_NAO_G.has(a))return false;if(a==='ir')return !/Form$/.test(g.dataset.t||'');
