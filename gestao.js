@@ -87,7 +87,9 @@ const NOTAS_VER=3;
 function gCfg(){const c=G.it.config&&!G.it.config.del?G.it.config:{uid:'config',tipo:'config'};
   if(!Array.isArray(c.taxa))c.taxa=[];if(!Array.isArray(c.notas)||!c.notas.length||c.notasV!==NOTAS_VER)c.notas=NOTAS_PADRAO.map(x=>Object.assign({},x));
   if(!Array.isArray(c.racas)||!c.racas.length)c.racas=RACAS_PADRAO.slice();if(!Array.isArray(c.sexos)||!c.sexos.length)c.sexos=SEXOS_PADRAO.map(x=>Object.assign({},x));if(!Array.isArray(c.cats)||!c.cats.length)c.cats=CATS_PADRAO.slice();else c.cats=[...new Set(c.cats.map(x=>CAT_PLURAL[x]||x))];if(!ok(c.arred))c.arred=10;if(!ok(c.pvIni))c.pvIni=2.2;if(!ok(c.pvIniC))c.pvIniC=2;if(!ok(c.pvIniP))c.pvIniP=1.2;if(!ok(c.rc))c.rc=52;return c;}
-const taxaEm=dia=>{const v=vig(gCfg().taxa,dia);return v?+v.rs||0:0;};
+/* taxa operacional por cabeça/dia: uma para o confinamento e outra para o pasto (podem ser iguais ou diferentes).
+   Pasto sem taxa própria naquela data usa a do confinamento (assim os dias antigos não mudam) */
+const taxaEm=(dia,c)=>{const g=gCfg(),p=c&&linhaDe(c)==='P'&&Array.isArray(g.taxaP)?vig(g.taxaP,dia):null,v=p||vig(g.taxa,dia);return v?+v.rs||0:0;};
 
 /* ---------- insumos e rações ---------- */
 /* preço do insumo (R$ por tonelada, matéria natural): o preço médio do estoque (automático pelas entradas com valor);
@@ -198,7 +200,7 @@ function diaLote(l,dia,X){
   const mn=tot*sh,rac=racaoEm(l,dia),cp=rac?compRacao(rac,dia):null;
   const ms=cp?mn*cp.ms/100:NaN,cabOp=cabEm(l,dia,sd);
   return {dia,c,cab,cabOp,peso,mn,ms,mnCab:mn/cab,msCab:ms/cab,pv:ms/cab/peso*100,
-    custoR:cp?mn*cp.custoMN:NaN,custoOp:cabOp*taxaEm(dia),rac:rac?rac.nome:'—',tem:tot>0,juntos:juntos.length,cp};
+    custoR:cp?mn*cp.custoMN:NaN,custoOp:cabOp*taxaEm(dia,c),rac:rac?rac.nome:'—',tem:tot>0,juntos:juntos.length,cp};
 }
 /* ---------- transferência a custo leva a HISTÓRIA dos animais: nos dias antes da transferência, o consumo (MN/MS), o custo de alimentação e operacional,
    as cabeças-dia e o peso saem do lote de origem e entram no lote de destino (mesma conta por cabeça do dia). Só nos números do LOTE:
@@ -792,6 +794,15 @@ function filtroHist(t){const fl=t.fl||'T',fc=t.fc||'',O=hOps(t);
   return {html,passa};}
 /* histórico de entradas / saídas de animais: PDF, foto ou Excel do que está filtrado na tela */
 const histExpBts=n=>n?`<div class="row compart fz3 gHistExp"><button class="verde" data-g="histExp" data-f="pdf">📄 PDF</button><button class="verde" data-g="histExp" data-f="img">🖼 Foto</button><button class="verde" data-g="histExp" data-f="xls">📊 Excel</button></div>`:'';
+/* medicamentos: relatório com o que está filtrado (datas + pesquisa) */
+function medExp(f){const t=GT,L=medLista(t),per=t.de||t.ate?`${t.de?dB(t.de):'início'} a ${t.ate?dB(t.ate):dB(hojeKey())}`:'todas as datas';
+  window.__hExp={nome:'Medicamentos',per:per+(t.q?` · pesquisa "${t.q}"`:''),cols:[['Data',110,'l','dia'],['Brinco',150,'l'],['Sintomas',380,'l'],['Ação realizada',560,'l']],
+    linhas:L.map(x=>[x.dia,x.brinco||'—',(x.sint||'').replace(/\s+/g,' '),(x.acao||'').replace(/\s+/g,' ')]),total:['TOTAL',`${nf(L.length)} registro(s)`,'','']};return histExp(f);}
+/* alteração de matéria seca: relatório com o que está filtrado (datas + insumo) */
+function msExp(f){const F=GT.msF||{},H=msHistTodos().filter(x=>(!F.de||x.dia>=F.de)&&(!F.ate||x.dia<=F.ate)&&(!F.ins||x.uid===F.ins)),i=F.ins&&G.it[F.ins];
+  const per=F.de||F.ate?`${F.de?dB(F.de):'início'} a ${F.ate?dB(F.ate):dB(hojeKey())}`:'todas as datas';
+  window.__hExp={nome:'Alteração de matéria seca',per:per+(i?` · ${i.nome}`:''),cols:[['A partir de',120,'l','dia'],['Hora',80,'l'],['Produto',300,'l'],['MS de (%)',130,'r'],['MS para (%)',140,'r']],
+    linhas:H.map(x=>[x.dia,x.hora||'',x.nome,x.ini?'inicial':pc(+x.de,1),pc(+x.para,1)]),total:['TOTAL','',`${nf(H.length)} alteração(ões)`,'','']};return histExp(f);}
 function histExp(f){const H=window.__hExp;if(!H||!H.linhas.length)return toast('Nada nesse filtro');const d=dB(hojeKey()),nome=`${H.nome} ${H.per.replace(/\//g,'-')}`;
   const nada=v=>v==null||v===''||(typeof v==='number'&&!isFinite(v));
   const fx=(v,c)=>nada(v)?'—':c[3]==='dia'?dB(v):c[3]==='int'?nf(v):c[3]==='rs'?rs(v):String(v);
@@ -2583,9 +2594,10 @@ function tInsMS(t){const I=gTodos('insumo').sort(porNome),H0=msHistTodos(),sel=(
   /* filtros do histórico (tela inicial): data De/Até e insumo */
   const F=GT.msF=GT.msF||{de:'',ate:'',ins:''},filtra=!GT.msAberto&&(F.de||F.ate||F.ins),H=GT.msAberto?H0:H0.filter(x=>(!F.de||x.dia>=F.de)&&(!F.ate||x.dia<=F.ate)&&(!F.ins||x.uid===F.ins));
   const IO=[['','Todos']].concat([...new Map(H0.map(x=>[x.uid,x.nome])).entries()].filter(e=>e[0]).sort((a,b)=>alfa(a[1],b[1])));
-  const filtrosMS=`<div class="gForm"><div class="gCampo"><label for="gMsDe">De</label><input type="date" id="gMsDe" value="${F.de||''}"></div><div class="gCampo"><label for="gMsAte">Até</label><input type="date" id="gMsAte" value="${F.ate||''}"></div></div>
+  const filtrosMS=`<style>#gBox .mdDatas .gCampo,#gBox .mdDatas .gDataBox,#gBox .mdDatas input{width:100%!important;min-width:0!important;max-width:none!important;flex:1 1 auto!important}</style><div class="gForm"><div class="mdDatas" style="display:flex;gap:10px;width:100%;grid-column:1/-1"><div style="flex:1 1 0;min-width:0"><div class="gCampo"><label for="gMsDe">Data de</label><input type="date" id="gMsDe" value="${F.de||''}"></div></div><div style="flex:1 1 0;min-width:0"><div class="gCampo"><label for="gMsAte">Até</label><input type="date" id="gMsAte" value="${F.ate||''}"></div></div></div></div>
     ${typeof selSetas==='function'?`<div class="gCoLocNav">${selSetas('Insumo',IO,Math.max(0,IO.findIndex(o=>o[0]===(F.ins||''))),'data-g="msFP" data-n','data-msfsel="1"')}</div>`:''}
-    ${filtra?'<button class="mini" data-g="msFLimpa">Limpar filtros</button>':''}`;
+    ${filtra?'<button class="mini" data-g="msFLimpa">Limpar filtros</button>':''}
+    <div class="row compart fz3 gHistExp" style="margin-top:10px"><button class="verde" data-g="msExp" data-f="pdf">📄 PDF</button><button class="verde" data-g="msExp" data-f="img">🖼 Foto</button><button class="verde" data-g="msExp" data-f="xls">📊 Excel</button></div>`;
   let vis=0;const linhas=H.map(x=>{const v=(!sel||x.uid===sel)&&(filtra||vis<7);if(v)vis++;return `<tr data-msh="${esc(x.uid||'')}"${v?'':' hidden'}><td>${dB(x.dia)}${x.hora?`<small>${esc(x.hora)}</small>`:''}</td><td class="c">${esc(x.nome)}</td><td>${x.ini?'inicial':pc(+x.de,1)}</td><td><b>${pc(+x.para,1)}</b></td></tr>`;}).join('');
   if(!GT.msAberto)return `${t&&t.t==='ms'?'':voltar()}<section class="panel"><h2>💧 Matéria seca</h2>
     <button class="primary" data-g="msAbre">💧 Alterar matéria seca</button></section>
@@ -2653,14 +2665,18 @@ const gCfgGrpAb=new Set(),CFG_ICO={confbal:'📊',rels:'📤',custo:'💲',venda
 const CFG_TILES=['notas','tratos','balanca','custo','venda','raca','rels','senha','backup','confbal'];
 const CFG_TIPO={notas:['Tratos','#4f9a52'],tratos:['Tratos','#3d8442'],balanca:['Tratos','#2e7d32'],custo:['Gestão','#b8860b'],venda:['Gestão','#946a0c'],raca:['Gestão','#8a6a4a'],rels:['Relatórios','#3f80c4'],confbal:['Relatórios','#2c6aa8'],senha:['Sistema','#5f6b73'],backup:['Sistema','#455a64']};
 const CFG_ABAS=[['custo','Custo'],['venda','Venda'],['notas','Leitura de cocho'],['raca','Animais'],['tratos','Tratos'],['balanca','Balança'],['senha','Senha'],['rels','Relatórios'],['backup','Backup'],['confbal','Conf. balança']];
-function tCfg(){const c=gCfg(),hj=hojeKey(),tx=vig(c.taxa,hj),ab=GT.cab||'custo';
+function tCfg(){const c=gCfg(),hj=hojeKey(),tx=vig(c.taxa,hj),txP=vig(c.taxaP||[],hj),ab=GT.cab||'custo';
   if(!GT.racasEd)GT.racasEd=c.racas.slice().sort(alfa);if(!GT.sexosEd)GT.sexosEd=c.sexos.map(x=>Object.assign({},x));if(!GT.catsEd)GT.catsEd=c.cats.slice();
   if(!GT.notasEd)GT.notasEd=c.notas.slice().sort((a,b)=>a.n-b.n).map(x=>Object.assign({},x));
   const salvar='<button class="primary" data-g="salvaCfg">Salvar</button>';
   let tudo='';for(const [ab,titAba] of CFG_ABAS){if(ab!==GT.cfgSel)continue;let h='';
-  if(ab==='custo')h=`<section class="panel gCfgP"><h2>Custo operacional</h2><div class="gForm">${[
+  if(ab==='custo')h=`<section class="panel gCfgP"><h2>Custo operacional</h2>
+    <h3 class="gSubT">🏠 Confinamento</h3><div class="gForm">${[
     {k:'taxa',l:'Taxa operacional',suf:'por cabeça por dia',t:'rs',v:tx?tx.rs:'',meia:1},{k:'tdesde',l:'Vale a partir de',t:'dia',v:tx?hj:'2000-01-01',meia:1}].map(campo).join('')}</div>
-    ${(c.taxa||[]).length?`<p class="note">${c.taxa.map(x=>`Desde ${dB(x.desde)}: ${rs(+x.rs)}`).join(' · ')}</p>`:''}${salvar}</section>`;
+    ${(c.taxa||[]).length?`<p class="note">${c.taxa.map(x=>`Desde ${dB(x.desde)}: ${rs(+x.rs)}`).join(' · ')}</p>`:''}
+    <h3 class="gSubT">🌿 Pasto</h3><div class="gForm">${[
+    {k:'taxaP',l:'Taxa operacional',suf:'por cabeça por dia',t:'rs',v:txP?txP.rs:'',ph:tx?nf(+tx.rs,2):'',meia:1},{k:'tdesdeP',l:'Vale a partir de',t:'dia',v:hj,meia:1}].map(campo).join('')}</div>
+    <p class="note">${(c.taxaP||[]).length?c.taxaP.map(x=>`Desde ${dB(x.desde)}: ${rs(+x.rs)}`).join(' · '):'Sem taxa própria: o pasto usa a mesma do confinamento. Preencha se for diferente.'}</p>${salvar}</section>`;
   if(ab==='venda')h=tEstVenda();
   if(ab==='notas')h=`<section class="panel gCfgP"><h2>Notas da leitura de cocho</h2>
     <div class="gNotaCfg gNotaCab"><span>Nota</span><span>Descrição</span><span>Ajuste %</span><span></span></div>
@@ -2772,6 +2788,7 @@ function salvaDiv(){const c=JSON.parse(JSON.stringify(gCfg()));c.div=c.div||{};l
   gPut(c);toast('Divisão dos tratos salva');gRender();}
 function salvaCfg(){const c=JSON.parse(JSON.stringify(gCfg()));const t=fn('taxa'),d=fv('tdesde')||hojeKey();
   if(ok(t)){const v=vig(c.taxa,d);if(!v||+v.rs!==t)setHist(c.taxa,d,{rs:t});}
+  {const tP=document.getElementById('gf_taxaP')?fn('taxaP'):NaN,dP=fv('tdesdeP')||hojeKey();if(!Array.isArray(c.taxaP))c.taxaP=[];if(ok(tP)){const v=vig(c.taxaP,dP);if(!v||+v.rs!==tP)setHist(c.taxaP,dP,{rs:tP});}}
   lerNotasEd();const ns=GT.notasEd.filter(x=>ok(x.n)&&ok(x.p));
   if(new Set(ns.map(x=>x.n)).size!==ns.length)return toast('Tem nota repetida');if(!ns.length)return toast('Coloque pelo menos uma nota');
   c.racas=(GT.racasEd||c.racas).slice();GT.racasEd=null;if(GT.sexosEd&&GT.sexosEd.length)c.sexos=GT.sexosEd.map(x=>({c:x.c,n:x.n}));GT.sexosEd=null;c.cats=(GT.catsEd||c.cats).slice();GT.catsEd=null;c.notas=ns.map(x=>({n:x.n,t:x.t||(x.p>0?'Aumentar':x.p<0?'Diminuir':'Manter'),p:x.p})).sort((a,b)=>a.n-b.n);c.notasV=NOTAS_VER;
@@ -3052,6 +3069,8 @@ $('gBox').addEventListener('click',e=>{
   if(a==='relDiaFmt'){const c=JSON.parse(JSON.stringify(gCfg()));c.relDiaFmt=b.dataset.v;gPut(c);toast('Relatórios do dia: '+({pdf:'PDF',img:'Foto',xls:'Excel'})[c.relDiaFmt]);return gRender();}
   if(a==='estTodas'){const hj=hojeKey();GT.perEDe=b.dataset.v==='7'?somaDias(hj,-6):estPrimDia();GT.perEAte=hj;GT.pgEP=1;return gRender();}
   if(a==='histExp')return histExp(b.dataset.f);
+  if(a==='medExp')return medExp(b.dataset.f);
+  if(a==='msExp')return msExp(b.dataset.f);
   if(a==='estFilLimpa'){GT.tipoE=GT.prodE=GT.fornE=GT.obsE='';GT.pgEP=1;return gRender();}
   if(a==='estIrRel'){gMinAb.add('estRel');gRender();const el=document.querySelector('.gEstRel');if(el)el.scrollIntoView({behavior:'smooth',block:'start'});return;}
   if(a==='estVerMov'){gMinAb.add('estRel');gPilha.length=0;GT={t:'estoque',prodE:(G.it[id]&&G.it[id].nome)||'',tipoE:'',fornE:''};gRender();setTimeout(()=>{const el=document.querySelector('.gEstRel');if(el)el.scrollIntoView({block:'start'});},60);return;}
@@ -3742,7 +3761,7 @@ document.addEventListener('change',e=>{if(e.target.id==='gf_sistema'&&GT.t==='en
 
 /* Lotes: exportar a lista (com o filtro de local) em imagem e Excel */
 function linhasLotes(enc){const hj=hojeKey(),X=gCtx(),loc=gLoc,noLocal=l=>loc==='T'||linhaDe(curralEm(l,fimLote(l)||hj))===loc;
-  const todos=gTodos('lote').filter(noLocal),L=enc?todos.filter(l=>!ativo(l)).sort(porNome):todos.filter(ativo).sort(porCurral);
+  const todos=gTodos('lote').filter(noLocal).filter(l=>!gLotCur||curralEm(l,fimLote(l)||hj)===gLotCur),L=enc?todos.filter(l=>!ativo(l)).sort(porNome):todos.filter(ativo).sort(porCurral);
   return L.map(l=>{const fim=fimLote(l),ref=fim&&fim<hj?fim:hj,m=mediaLote(l,X),C=calcLote(l),r=racaoEm(l,ref);
     return {c:curralEm(l,ref)||'',nome:l.nome,desc:[sexoTxt(l.sexo),l.raca,catNorm(l.cat)].filter(Boolean).join(' · '),rac:r?r.nome:'',cab:cabPres(l,ref),pe:pesoEntMed(l)||0,pp:pesoEm(l,ref),
       dias:Math.max(0,difDias(l.ent.dia,ref)),dct:m.n,...(()=>{const A=ativo(l)?projAbate(l):null;return A?{pf:A.peso,ad:A.dia,af:difDias(hj,A.dia),apor:A.por}:{pf:NaN,ad:'',af:NaN,apor:''};})(),mn:m.n?m.mn/m.n:NaN,ms:m.nms?m.ms/m.nms:NaN,ims:m.nms?m.pv/m.nms:NaN,...(()=>{const V=vendaEst(l,C),cb=cabPres(l,ref),dd=Math.max(0,difDias(l.ent.dia,ref)),rc=ok(V.res)&&cb?V.res/cb:NaN;return {ve:V.venda,vr:V.res,vreal:!!V.real,rc,rcd:ok(rc)&&dd?rc/dd:NaN};})(),cd:C.custoCabDia,ctr:C.cabE?(C.alim+C.op)/C.cabE:NaN,cco:C.cabE?C.compra/C.cabE:NaN,ct:C.cabE?C.custo/C.cabE:NaN,tot:C.custo,ent:l.ent.dia,fim:fim||''};});}
@@ -4310,8 +4329,15 @@ function diaCampoSync(){document.querySelectorAll('.gDiaCampo').forEach(b=>{cons
 ['input','change'].forEach(ev=>document.addEventListener(ev,e=>{if(e.target&&e.target.closest&&e.target.closest('.gDiaCampo'))diaCampoSync();},true));setInterval(diaCampoSync,800);
 /* ---------- Medicamentos (Tratos): data, brinco, sintomas, ação realizada · filtro por data e pesquisa ---------- */
 const medNz=t=>String(t||'').normalize('NFD').replace(/[̀-ͯ]/g,'').toLowerCase();
-function medLista(t){const q=medNz(t.q).trim(),de=t.de||'',ate=t.ate||'';
-  return gTodos('med').filter(x=>(!de||x.dia>=de)&&(!ate||x.dia<=ate)&&(!q||medNz([x.brinco,x.sint,x.acao].join(' ')).includes(q)))
+/* sintomas e ações cadastrados (Medicamentos › Cadastrar) para marcar na hora de lançar */
+const medOpc=k=>{const v=gCfg()[k];return Array.isArray(v)?v.filter(Boolean):[];};
+const medSintTodos=()=>{const m=new Map();medOpc('medSint').forEach(x=>m.set(medNz(x),x));gTodos('med').forEach(x=>(x.sintL||[]).forEach(y=>{if(!m.has(medNz(y)))m.set(medNz(y),y);}));return [...m.values()].sort(alfa);};
+function medEscolha(k,tit,ops,selL,outro,ph,rows){const S=new Set((selL||[]).map(medNz)),extra=(selL||[]).filter(y=>!ops.some(o=>medNz(o)===medNz(y))),todas=ops.concat(extra),temO=!!(outro&&outro.trim());
+  return `<div class="gCampo gMedEsc"><label>${tit}</label>${todas.length?`<div class="gMedChips">${todas.map(o=>`<label class="gMedChip"><input type="checkbox" data-m${k.toLowerCase()}="1" value="${esc(o)}"${S.has(medNz(o))?' checked':''}><span>${esc(o)}</span></label>`).join('')}<label class="gMedChip gMedOutro"><input type="checkbox" data-moutro="${k}"${temO||!todas.length?' checked':''}><span>✏ Outro</span></label></div>`:''}
+    <textarea id="gf_md${k}" rows="${rows}" placeholder="${todas.length?'Escreva o outro aqui':ph}" style="width:100%;box-sizing:border-box;resize:vertical;font:inherit;min-height:0;height:auto${todas.length&&!temO?';display:none':''}">${esc(outro||'')}</textarea></div>`;}
+const medJunta=(L,o)=>L.concat(o?[o]:[]).join(', ');
+function medLista(t){const q=medNz(t.q).trim(),de=t.de||'',ate=t.ate||'',sf=medNz(t.sf||'');
+  return gTodos('med').filter(x=>(!de||x.dia>=de)&&(!ate||x.dia<=ate)&&(!q||medNz([x.brinco,x.sint,x.acao].join(' ')).includes(q))&&(!sf||(x.sintL||[]).some(y=>medNz(y)===sf)||medNz(x.sint).includes(sf)))
     .sort((a,b)=>a.dia!==b.dia?(a.dia<b.dia?1:-1):(+b.ts||0)-(+a.ts||0));}
 function medItensHTML(t){const L=medLista(t),vis=typeof modoVer!=='undefined'&&modoVer;
   if(!L.length)return `<p class="note">${gTodos('med').length?'Nada encontrado com esse filtro.':'Nenhum registro ainda. Toque em + Novo registro.'}</p>`;
@@ -4322,36 +4348,57 @@ function medItensHTML(t){const L=medLista(t),vis=typeof modoVer!=='undefined'&&m
     ${vis?'':`<div class="row" style="margin-top:8px"><button class="mini" data-g="medEd" data-id="${x.uid}">✏ Editar</button><button class="mini danger" data-g="medRm" data-id="${x.uid}">🗑 Excluir</button></div>`}</div>`).join('');}
 function tMed(t){const vis=typeof modoVer!=='undefined'&&modoVer;
   if(t.de===undefined&&t.ate===undefined){t.ate=hojeKey();t.de=somaDias(t.ate,-89);}   // abre sempre nos últimos 90 dias
+  if(t.cad){const k=t.cad==='medAcao'?'medAcao':'medSint',L=medOpc(k),tit=k==='medSint'?'Sintomas':'Ações realizadas',ed=t.cadEd;
+    return `<section class="panel"><h2>⚙ ${tit}</h2><p class="note">Aparecem para marcar na hora de lançar (pode marcar mais de um, e ainda tem o “Outro” para escrever).</p>
+      <div class="gMedCadAdd"><input type="text" id="gf_medCadNovo" placeholder="${k==='medSint'?'Novo sintoma (ex.: tosse)':'Nova ação (ex.: aplicado antibiótico)'}" autocomplete="off"><button class="primary" data-g="medCadAdd" data-k="${k}">+ Cadastrar</button></div>
+      <div class="gMedCadLista">${L.length?L.map((x,i)=>ed===i?`<div class="gMedCadIt"><input type="text" id="gf_medCadEd" value="${esc(x)}" autocomplete="off"><button class="mini lima" data-g="medCadOk" data-k="${k}" data-i="${i}">💾 Salvar</button><button class="mini" data-g="medCadEdX" data-k="${k}">Cancelar</button></div>`
+        :`<div class="gMedCadIt"><span>${esc(x)}</span><button class="mini" data-g="medCadEd" data-k="${k}" data-i="${i}">✎ Editar</button><button class="mini danger" data-g="medCadRm" data-k="${k}" data-i="${i}">✕</button></div>`).join(''):'<p class="note">Nada cadastrado ainda.</p>'}</div>
+      <button data-g="medVolta">❮ Voltar</button></section>`;}
   if(t.form){const x=t.id?G.it[t.id]:null;
     return `<section class="panel"><h2>💉 ${x?'Editar registro':'Novo registro'}</h2><div class="gForm">${[{k:'mdDia',l:'Data',t:'dia',v:x?x.dia:hojeKey()}].map(campo).join('')}
       <div class="gCampo"><label for="gf_mdBrinco">Brinco do animal</label><input type="text" id="gf_mdBrinco" data-tecg="brinco" data-kg="brinco" inputmode="none" autocomplete="off" value="${esc(x?x.brinco||'':'')}" placeholder="Toque para digitar"></div>
-      <div class="gCampo"><label for="gf_mdSint">Sintomas</label><textarea id="gf_mdSint" rows="2" placeholder="Ex.: tosse, febre, mancando" style="width:100%;box-sizing:border-box;resize:vertical;font:inherit;min-height:0;height:auto">${esc(x?x.sint||'':'')}</textarea></div>
-      <div class="gCampo"><label for="gf_mdAcao">Ação realizada</label><textarea id="gf_mdAcao" rows="4" placeholder="Ex.: aplicado 10 ml de …" style="width:100%;box-sizing:border-box;resize:vertical;font:inherit;min-height:0;height:auto">${esc(x?x.acao||'':'')}</textarea></div></div>
+      ${medEscolha('Sint','Sintomas',medOpc('medSint'),x?x.sintL:null,x?(x.sintL?x.sintO||'':x.sint||''):'','Ex.: tosse, febre, mancando',2)}
+      ${medEscolha('Acao','Ação realizada',medOpc('medAcao'),x?x.acaoL:null,x?(x.acaoL?x.acaoO||'':x.acao||''):'','Ex.: aplicado 10 ml de …',3)}</div>
       <button class="primary" data-g="medSalva" data-id="${x?x.uid:''}">💾 Salvar</button><button data-g="medVolta">Cancelar</button></section>`;}
   return `<section class="panel"><h2>💉 Medicamentos</h2>
-    ${vis?'':'<button class="primary" data-g="medNovo">+ Novo registro</button>'}
+    ${vis?'':'<div class="gMedTopo"><button class="primary" data-g="medNovo">+ Novo registro</button><button data-g="medCad" data-k="medSint">⚙ Sintomas</button><button data-g="medCad" data-k="medAcao">⚙ Ações</button></div>'}
     <style>#gBox .mdDatas .gCampo,#gBox .mdDatas .gDataBox,#gBox .mdDatas input{width:100%!important;min-width:0!important;max-width:none!important;flex:1 1 auto!important}</style><div class="gForm" style="margin-top:10px"><div class="mdDatas" style="display:flex;gap:10px;width:100%;grid-column:1/-1"><div style="flex:1 1 0;min-width:0">${campo({k:'mdDe',l:'Data de',t:'dia',v:t.de||''})}</div><div style="flex:1 1 0;min-width:0">${campo({k:'mdAte',l:'Até',t:'dia',v:t.ate||''})}</div></div>
       ${campo({k:'mdQ',l:'🔍 Pesquisar',v:t.q||'',ph:'Brinco, sintoma ou ação…'})}</div>
+    ${(()=>{const O=[['','Todos']].concat(medSintTodos().map(x=>[x,x]));return typeof selSetas==='function'&&O.length>1?`<div class="gCoLocNav">${selSetas('Sintoma',O,Math.max(0,O.findIndex(o=>o[0]===(t.sf||''))),'data-g="medSfP" data-n','data-medsfsel="1"')}</div>`:'';})()}
     ${t.de||t.ate?'<button class="mini" data-g="medLimpa">Ver todas as datas</button>':''}
+    <div class="row compart fz3 gHistExp" style="margin-top:10px"><button class="verde" data-g="medExp" data-f="pdf">📄 PDF</button><button class="verde" data-g="medExp" data-f="img">🖼 Foto</button><button class="verde" data-g="medExp" data-f="xls">📊 Excel</button></div>
     <div id="medLista" style="margin-top:10px">${medItensHTML(t)}</div></section>`;}
 document.addEventListener('input',e=>{const t=e.target;if(!t||t.id!=='gf_obsF')return;GT.obsE=t.value;GT.pgEP=1;gMinAb.add('estRel');const c=t.selectionStart;gRender();
   const n=$('gf_obsF');if(n){n.focus();try{n.setSelectionRange(c,c);}catch(x){}}});   /* filtro de observação: vai filtrando a cada letra */
 document.addEventListener('input',e=>{if(!e.target||GT.t!=='med')return;const id=e.target.id;
   if(id==='gf_mdQ'){GT.q=e.target.value;const w=$('medLista');if(w)w.innerHTML=medItensHTML(GT);}});
+document.addEventListener('change',e=>{const o=e.target&&e.target.dataset&&e.target.dataset.moutro;if(!o||GT.t!=='med')return;const ta=$('gf_md'+o);if(ta){ta.style.display=e.target.checked?'':'none';if(e.target.checked)ta.focus();}});
+document.addEventListener('change',e=>{if(!e.target||GT.t!=='med'||!e.target.matches||!e.target.matches('select[data-medsfsel]'))return;GT.sf=e.target.value;const y=window.scrollY;gRender();window.scrollTo({top:y});});
 document.addEventListener('change',e=>{if(!e.target||GT.t!=='med')return;const id=e.target.id;
   if(id==='gf_mdDe'||id==='gf_mdAte'){GT[id==='gf_mdDe'?'de':'ate']=e.target.value||'';const y=window.scrollY;gRender();window.scrollTo({top:y});}});
-document.addEventListener('click',async e=>{const b=e.target.closest('[data-g="medNovo"],[data-g="medEd"],[data-g="medRm"],[data-g="medSalva"],[data-g="medVolta"],[data-g="medLimpa"]');if(!b)return;
-  e.preventDefault();e.stopPropagation();if(typeof bloqueado==='function'&&b.dataset.g!=='medLimpa'&&bloqueado())return;const a=b.dataset.g,id=b.dataset.id;
-  const filt={de:GT.de||'',ate:GT.ate||'',q:GT.q||''};
+document.addEventListener('click',async e=>{const b=e.target.closest('[data-g="medNovo"],[data-g="medEd"],[data-g="medRm"],[data-g="medSalva"],[data-g="medVolta"],[data-g="medLimpa"],[data-g="medCad"],[data-g="medCadAdd"],[data-g="medCadOk"],[data-g="medCadRm"],[data-g="medCadEd"],[data-g="medCadEdX"],[data-g="medSfP"]');if(!b)return;
+  e.preventDefault();e.stopPropagation();if(typeof bloqueado==='function'&&b.dataset.g!=='medLimpa'&&b.dataset.g!=='medSfP'&&bloqueado())return;const a=b.dataset.g,id=b.dataset.id;
+  const filt={de:GT.de||'',ate:GT.ate||'',q:GT.q||'',sf:GT.sf||''};
+  if(a==='medSfP'){const O=['',...medSintTodos()],i=Math.max(0,O.indexOf(GT.sf||'')),j=Math.max(0,Math.min(O.length-1,i+(+b.dataset.n)));GT.sf=O[j];const y=window.scrollY;gRender();window.scrollTo({top:y});return;}
+  if(a==='medCad'){GT=Object.assign({t:'med',cad:b.dataset.k},filt);gRender();window.scrollTo({top:0});return;}
+  if(a==='medCadAdd'||a==='medCadOk'||a==='medCadRm'||a==='medCadEd'||a==='medCadEdX'){const k=b.dataset.k,i=+b.dataset.i,c=JSON.parse(JSON.stringify(gCfg())),L=Array.isArray(c[k])?c[k].slice():[];
+    if(a==='medCadEd'){GT.cadEd=i;gRender();const n=$('gf_medCadEd');if(n)n.focus();return;}
+    if(a==='medCadEdX'){GT.cadEd=null;return gRender();}
+    if(a==='medCadRm'){if(!await confirmaVermelho('Excluir da lista?',L[i]||'','Sim, excluir','Não'))return;L.splice(i,1);}
+    else{const v=((a==='medCadAdd'?$('gf_medCadNovo'):$('gf_medCadEd'))||{}).value;const x=(v||'').trim();if(!x)return toast('Escreva o nome');
+      if(L.some((y,j)=>medNz(y)===medNz(x)&&!(a==='medCadOk'&&j===i)))return toast('Já está cadastrado');if(a==='medCadAdd')L.push(x);else L[i]=x;}
+    c[k]=L;gPut(c);GT.cadEd=null;toast(a==='medCadRm'?'Excluído':a==='medCadAdd'?'Cadastrado':'Alterado');gRender();const n=$('gf_medCadNovo');if(n&&a==='medCadAdd')n.focus();return;}
   if(a==='medNovo'){GT=Object.assign({t:'med',form:1},filt);gRender();window.scrollTo({top:0});return;}
   if(a==='medVolta'){GT=Object.assign({t:'med'},filt);gRender();return;}
   if(a==='medLimpa'){GT=Object.assign({t:'med'},filt,{de:'',ate:''});gRender();return;}
   if(a==='medEd'){if(window.pedirSenhaAcao&&!await pedirSenhaAcao('Senha para editar'))return;GT=Object.assign({t:'med',form:1,id},filt);gRender();window.scrollTo({top:0});return;}
   if(a==='medRm'){const x=G.it[id];if(!x)return;if(window.pedirSenhaAcao&&!await pedirSenhaAcao('Senha para excluir'))return;
     if(!await confirmaVermelho('Excluir este registro?',`Brinco ${x.brinco||'—'} · ${dB(x.dia)}`,'Sim, excluir','Não'))return;gDel(id);toast('Registro excluído');const y=window.scrollY;gRender();window.scrollTo({top:y});return;}
-  if(a==='medSalva'){const dia=fv('mdDia'),brinco=(fv('mdBrinco')||'').trim(),sint=(($('gf_mdSint')||{}).value||'').trim(),acao=(($('gf_mdAcao')||{}).value||'').trim();
+  if(a==='medSalva'){const marc=k=>[...document.querySelectorAll(`#gBox input[data-m${k}]:checked`)].map(i=>i.value),txt=k=>{const ta=$('gf_md'+k);if(!ta)return '';const o=document.querySelector(`#gBox input[data-moutro="${k}"]`);return o&&!o.checked?'':(ta.value||'').trim();};
+    const sintL=marc('sint'),sintO=txt('Sint'),acaoL=marc('acao'),acaoO=txt('Acao'),sint=medJunta(sintL,sintO),acao=medJunta(acaoL,acaoO);
+    const dia=fv('mdDia'),brinco=(fv('mdBrinco')||'').trim();
     if(!dia)return toast('Coloque a data');if(!brinco)return toast('Coloque o brinco do animal');if(!sint&&!acao)return toast('Coloque os sintomas ou a ação realizada');
-    const x0=id&&G.it[id];gPut(Object.assign({},x0||{},{uid:x0?x0.uid:novoId('med'),tipo:'med',dia,brinco,sint,acao}));
+    const x0=id&&G.it[id];gPut(Object.assign({},x0||{},{uid:x0?x0.uid:novoId('med'),tipo:'med',dia,brinco,sint,acao,sintL,sintO,acaoL,acaoO}));
     toast(x0?'Registro alterado':'Registro salvo');GT={t:'med',de:GT.de||'',ate:GT.ate||'',q:''};gRender();window.scrollTo({top:0});}},true);
 /* ---------- Escore de fezes: relatório com gráfico de cada curral (PDF e imagem) ---------- */
 const FZ_COR=['#c62828','#f2b705','#2e7d32','#8d6e63','#4e342e'];
