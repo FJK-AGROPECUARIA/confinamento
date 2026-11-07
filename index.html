@@ -834,9 +834,10 @@ body.somenteVer:not(.menuFechado):not(.naInicio) #viewPrev,body.somenteVer:not(.
 #tratoTiles button.gIniBar,#subGest.gTiles button.gIniBar{grid-column:1/-1;flex-direction:row;justify-content:space-between;align-items:center;gap:8px;min-height:0;padding:9px 12px;border-radius:10px;background:#2e6b2f;color:#fff;font-size:.92rem;font-weight:700;line-height:1.2;text-align:left;box-shadow:none}
 /* Gestão › Animais: submenu em quadrados (2 por linha) */
 .gAniTiles{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
-.gAniTiles button{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;min-height:104px;padding:12px 8px;border-radius:18px;border:0;background:var(--c);color:#fff;font-size:1.15rem;font-weight:800;text-transform:none;letter-spacing:0;box-shadow:0 2px 6px rgba(0,0,0,.12);cursor:pointer;line-height:1.2;text-align:center}
-.gAniTiles button .gIc{font-size:2rem;line-height:1}
-.gAniTiles button.gAniLarga{grid-column:1/-1;min-height:84px}
+.gAniTiles button{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;min-height:118px;padding:14px 8px;border-radius:18px;border:0;background:var(--c);color:#fff;font-size:1.3rem;font-weight:800;text-transform:none;letter-spacing:0;box-shadow:0 2px 6px rgba(0,0,0,.12);cursor:pointer;line-height:1.2;text-align:center}
+.gAniTiles button .gIc{font-size:2.3rem;line-height:1}.gAniTiles button>span:last-child{text-align:center;line-height:1.25}
+.gAniTiles button.gAniLarga{grid-column:1/-1}
+.panel.gAniPanel{border:0;border-radius:14px;padding:8px}
 .gAcHist{display:flex;gap:6px;justify-content:center;margin-top:4px}.gAcHist .mini{min-width:34px}
 .gRcLista{display:flex;flex-direction:column;gap:4px;margin:8px 0}.gRcLin{text-transform:none;letter-spacing:0;display:grid;grid-template-columns:28px 70px 1fr 1fr;gap:6px;align-items:center;padding:8px;border-radius:10px;background:#f4f7ee;font-size:.9rem}.gRcLin input{width:22px;height:22px}.gRcLin em{font-style:normal;color:#5d6b7a}.gRcCab{background:none;font-size:.72rem;text-transform:uppercase;color:#5d6b7a;font-weight:800}
 .gHistFil{display:flex!important;flex-direction:column;gap:10px!important;margin:6px 0 12px!important}.gSaiTipos{gap:10px!important}
@@ -848,7 +849,7 @@ body.modoGest:not(.menuFechado):not(.naInicio) #viewGest,body.modoGest:not(.menu
 .menuSeta{align-self:stretch;border:0;background:transparent;padding:4px 8px 0;font-size:.85rem;font-weight:700;color:#5d6b7a;line-height:1.2;border-radius:10px;text-align:center}
 body.menuFechado .wrap>.menu{position:sticky;top:env(safe-area-inset-top,0px);z-index:30;padding:4px;box-shadow:0 3px 10px rgba(17,37,61,.18)}
 body.menuFechado .wrap>.menu>*:not(.menuSeta){display:none!important}
-body.menuFechado .menuSeta{background:#2e6b2f;color:#fff;padding:9px 12px;font-size:.92rem;text-align:left;display:flex;justify-content:space-between;gap:8px}
+body.menuFechado .menuSeta>span:last-child{white-space:nowrap;flex:0 0 auto}body.menuFechado .menuSeta.mLongo{font-size:.8rem;align-items:center}body.menuFechado .menuSeta{background:#2e6b2f;color:#fff;padding:9px 12px;font-size:.92rem;text-align:left;display:flex;justify-content:space-between;gap:8px}
 
 .btnAtualizarApp{display:block;margin:8px auto 0;background:#ffe08a;color:#3b2a00;border:0;border-radius:99px;padding:8px 16px;font-weight:700;font-size:.9rem}
 /* tablet (Galaxy Tab etc.): tela mais larga, letras um pouco maiores e teclados centralizados */
@@ -1313,7 +1314,7 @@ body.naInicio .topoTxt h1{font-size:clamp(16px,5vw,28px)!important}
 <div class="toast" id="toast" hidden></div>
 <script>
 'use strict';
-const APP_VERSAO='323';
+const APP_VERSAO='324';
 const APP_DATA='19/10/2026';
 const KEY='confinamento-completo-v1';
 const $=id=>document.getElementById(id);
@@ -4237,9 +4238,12 @@ if('serviceWorker' in navigator){
 (function(){const m=$('menu');if(!m)return;const b=document.createElement('button');b.className='menuSeta';b.type='button';b.setAttribute('aria-label','Esconder ou mostrar o menu');m.appendChild(b);
   const sel=q=>{const x=document.querySelector(q+' button[aria-selected="true"]:not([hidden])');return x?x.textContent.replace(/[✋⚡⚙]/g,'').trim():'';};
   const caminho=()=>{const g=$('tabGrpGest').getAttribute('aria-selected')==='true'?'Gestão':'Tratos';
-    const p=[g];if(g==='Gestão'){p.push(sel('#subGest'));}else{const t=sel('#subTrato');p.push(t);if(/Manual|Automação/.test(t))p.push(sel('#subModo'));}
+    const p=[g];if(g==='Gestão'){const cfg=document.querySelector('#subGest button[data-gt="cfg"][aria-selected="true"]');p.push(cfg?'⚙️ Configurações':sel('#subGest'));
+      try{if(cfg&&GT.t==='cfg'&&GT.cfgSel){const o=CFG_ABAS.find(x=>x[0]===GT.cfgSel);if(o){p[1]='Configurações';p.push((CFG_ICO[o[0]]||'')+' '+(o[0]==='senha'?'Senhas':o[1]));}}
+        else if(!cfg&&GT&&GT.t&&GT.t!=='home'&&GT.t!==(GT.raiz||RAIZ[GT.t])){const h=document.querySelector('#gBox section.panel h2');if(h){const c=h.cloneNode(true);c.querySelectorAll('.note,button').forEach(x=>x.remove());const tx=c.textContent.replace(/\s+/g,' ').trim();if(tx)p.push(tx);}}}catch(e){}}else{const t=sel('#subTrato');p.push(t);if(/Manual|Automação/.test(t))p.push(sel('#subModo'));}
     return p.filter(Boolean).join(' › ');};
-  const pinta=()=>{if(window.semTela)semTela();const f=document.body.classList.contains('menuFechado');b.innerHTML=f?`<span>☰ ${esc(caminho())}</span><span>▼ menu</span>`:'▲ esconder menu';};
+  const pinta=()=>{if(window.semTela)semTela();const f=document.body.classList.contains('menuFechado');const cm=f?caminho():'';b.classList.toggle('mLongo',cm.split(' › ').length>2);b.innerHTML=f?`<span>☰ ${esc(cm)}</span><span>▼ menu</span>`:'▲ esconder menu';};
+  window.menuPinta=pinta;
   const fecha=()=>{document.body.classList.add('menuFechado');pinta();};
   const abre=()=>{document.body.classList.remove('menuFechado');if(typeof modoVer!=='undefined'&&modoVer&&window.avVer)avVer(false);pinta();const y=m.getBoundingClientRect().top+scrollY-8;if(scrollY>y)window.scrollTo({top:Math.max(0,y)});};
   b.onclick=()=>document.body.classList.contains('menuFechado')?abre():fecha();
