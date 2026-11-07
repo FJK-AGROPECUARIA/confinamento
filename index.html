@@ -704,7 +704,12 @@ body.comteclado .wrap{padding-bottom:300px!important}
 .gSeta{flex:0 0 42px;padding:0;font-size:1.1rem;background:var(--accent);color:#fff;border-color:var(--accent)}
 .gDataBox{flex:1;min-width:0;position:relative;margin:0;display:flex;align-items:center;justify-content:center;background:var(--bg);border:2px solid var(--line);border-radius:10px;min-height:46px;padding:0 6px;cursor:pointer;text-transform:none;letter-spacing:0;color:var(--fg);font-size:1rem}
 .gDataBox span{font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.gDataBox i{font-style:normal;font-size:.75rem;background:var(--lima);border-radius:99px;padding:1px 7px;margin-left:4px}
-.gDataBox input{position:absolute;inset:0;opacity:0;width:100%;height:100%;border:0;padding:0;cursor:pointer}.gCampo .gDiaCampo{width:100%;box-sizing:border-box;justify-content:flex-start;padding:0 38px 0 14px;min-height:50px;font-size:1.05rem}.gDiaCampo span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}.gCampo .gDiaCampo::after{content:'📅';position:absolute;right:12px;top:50%;transform:translateY(-50%);pointer-events:none;font-size:1rem}.gDiaCampo span.vazio{color:var(--muted)}
+.gDataBox input{position:absolute;inset:0;opacity:0;width:100%;height:100%;border:0;padding:0;cursor:pointer}
+.gDtAuto{width:100%;box-sizing:border-box;justify-content:flex-start;padding:0 38px 0 14px!important;min-height:46px;font-size:1.05rem}
+.gDtAuto::after{content:'📅';position:absolute;right:12px;top:50%;transform:translateY(-50%);pointer-events:none;font-size:1rem}
+.gDtAuto span.vazio{color:var(--muted);font-weight:500}
+.gDtAuto input[type=date]{position:absolute!important;inset:0!important;opacity:0!important;width:100%!important;height:100%!important;min-height:0!important;margin:0!important;padding:0!important;border:0!important}
+.dataLinha.manual .gDtAuto{background:#fff4e0;border-color:var(--warn);color:var(--warn)}.gCampo .gDiaCampo{width:100%;box-sizing:border-box;justify-content:flex-start;padding:0 38px 0 14px;min-height:50px;font-size:1.05rem}.gDiaCampo span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}.gCampo .gDiaCampo::after{content:'📅';position:absolute;right:12px;top:50%;transform:translateY(-50%);pointer-events:none;font-size:1rem}.gDiaCampo span.vazio{color:var(--muted)}
 .gHoje{align-self:flex-start;margin-top:6px}
 #gBox .stat b{font-size:1.18rem;line-height:1.15}
 .stat b,.res b,.gLoteNums b{white-space:nowrap;display:block;overflow:hidden}
@@ -1287,7 +1292,7 @@ body.naInicio .topoTxt h1{font-size:clamp(16px,5vw,28px)!important}
 <div class="toast" id="toast" hidden></div>
 <script>
 'use strict';
-const APP_VERSAO='316';
+const APP_VERSAO='317';
 const APP_DATA='19/10/2026';
 const KEY='confinamento-completo-v1';
 const $=id=>document.getElementById(id);
@@ -4112,7 +4117,7 @@ let atualizarPend=false;
 /* ---------- Visualizar: só ver, filtrar e exportar. Tudo que altera fica travado ---------- */
 const VER_VIEWS='#viewGest,#viewPrev,#viewHist,#viewTrato,#viewCarga,#viewAuto,#viewAutoC';
 const VER_FILTRO='.gRelExpL,.gRelModo,.gRelDatas,.gRelAtalhos,#gRelIni,#gRelFim,.hNavUm,.gNavData,.hColCab,.zHistCab,.gPagNav,.gPagSel,.gMinzCab,.gCfgGrpCab,.fz3,.expTopo,.lotesExp,#hModo,.hModo,.dPer,.dPerCampos,.dLinha,.gCoLocNav,.zLocNav,.gPerDatas,#hPerBox,.aoVivo,.avBarra,.gGrpCab,#subGest,.gLotesAbre,.gBaseOp>summary,#gf_rForn,#gf_rIns,.gHojeTop,#gf_grafLocF,#gf_perF,#gf_tipoF,#gf_prodF,#gf_fornF,.gEstFil .gSug,#fzHCur,#gVenIni,#gVenFim,#gVenCpr,#gVenPor,.mdDatas,#gf_mdQ,#gf_mdDe,#gf_mdAte,#gPsIni,#gPsFim,#gMsDe,#gMsAte';
-const VER_OK_G=new Set(['msFP','msFLimpa','medLimpa','fzCur','cmpModo','coAbre','coFecha','voltar','raiz','ir','lote','dataPasso','dataHoje','filtroLoc','lotLocP','loteTog','lotTodos','curGrp','coLocP','fzLocP','perP','pgN','pgP','cfgGrp','estOrd','estPer','estPerE','estFilP','estFilLimpa','estTodas','estIrRel','estVerMov','evolN','evLoc','grafCur','grafLoc','celGraf','perAtalho','fzHN','fzFotoVer','nfVer','compRel','compDia','cbExp','estInsExp']);
+const VER_OK_G=new Set(['msFP','msFLimpa','medLimpa','fzCur','cmpModo','coAbre','coFecha','voltar','raiz','ir','lote','dataPasso','dataHoje','filtroLoc','lotLocP','loteTog','lotTodos','curGrp','coLocP','fzLocP','perP','pgN','pgP','cfgGrp','estOrd','estPer','estPerE','estFilP','estFilLimpa','estTodas','histExp','histExp','estIrRel','estVerMov','evolN','evLoc','grafCur','grafLoc','celGraf','perAtalho','fzHN','fzFotoVer','nfVer','compRel','compDia','cbExp','estInsExp']);
 const VER_NAO_G=new Set(['senhaTurno','ntLoc','nota','msAbre','libLeit','baseDia','baseM']);
 function verPermite(el){const sb=el.closest('.gDataBox');if(sb){const s=sb.querySelector('select');if(s)return !s.disabled;}const g=el.closest('[data-g]');
   if(g){const a=g.dataset.g;if(VER_NAO_G.has(a))return false;if(a==='ir')return !/Form$/.test(g.dataset.t||'');
@@ -4188,6 +4193,19 @@ if('serviceWorker' in navigator){
     window.addEventListener('online',ver);
   }).catch(()=>{});
 }
+</script>
+<script>
+/* datas sempre no padrão dd/mm/aaaa: o campo de data do celular (que mostra "8 de out. de 2026") fica invisível por cima
+   de uma caixinha com a data escrita com barras; tocar abre o calendário normal do celular */
+(function(){const fmt=v=>{if(!v)return '';const p=String(v).split('-');return p.length===3?p[2]+'/'+p[1]+'/'+p[0]:v;};
+  const sync=i=>{const s=i.parentNode&&i.parentNode.firstChild;if(!s||s.tagName!=='SPAN')return;const t=fmt(i.value)||'dd/mm/aaaa';if(s.textContent!==t)s.textContent=t;s.classList.toggle('vazio',!i.value);};
+  const wrap=()=>{document.querySelectorAll('input[type=date]').forEach(i=>{if(i.dataset.dtw)return sync(i);if(i.closest('.gDataBox'))return;
+    i.dataset.dtw='1';const w=document.createElement('span');w.className='gDataBox gDtAuto';const s=document.createElement('span');w.appendChild(s);i.parentNode.insertBefore(w,i);w.appendChild(i);sync(i);});};
+  let pend=false;const agenda=()=>{if(pend)return;pend=true;requestAnimationFrame(()=>{pend=false;wrap();});};
+  new MutationObserver(agenda).observe(document.body,{childList:true,subtree:true});
+  ['input','change'].forEach(ev=>document.addEventListener(ev,e=>{const i=e.target;if(i&&i.dataset&&i.dataset.dtw)sync(i);},true));
+  setInterval(()=>document.querySelectorAll('input[data-dtw]').forEach(sync),800);   // valor trocado pelo programa (sem evento)
+  wrap();})();
 </script>
 <script src="gestao.js"></script>
 <script src="automacao.js"></script>
