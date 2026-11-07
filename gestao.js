@@ -283,7 +283,7 @@ const opInsumos=()=>gTodos('insumo').sort(porNome).map(r=>[r.uid,r.nome+(r.inati
 const UNID_C=[['arroba','R$/@ morto'],['arrV','R$/@ vivo'],['cab','R$/cabeça'],['kg','R$/kg vivo']];
 const UNID_V=[['arroba','R$/@ morto'],['arrV','R$/@ vivo'],['cab','R$/cabeça'],['kg','R$/kg vivo']];
 
-const RAIZ={home:'home',animais:'animais',entradas:'animais',saidas:'animais',estoque:'estoque',estIns:'estoque',estForm:'estoque',estNF:'estoque',fornec:'estoque',fornForm:'estoque',entRel:'estoque',currais:'currais',curNt:'currais',curForm:'currais',lotes:'animais',pesNova:'animais',entNova:'animais',saiSel:'animais',lote:'animais',loteForm:'animais',pesForm:'animais',entForm:'animais',apartForm:'animais',transfForm:'animais',fechaForm:'animais',achouForm:'animais',saiForm:'animais',mudForm:'animais',rel:'animais',custoForm:'animais',
+const RAIZ={home:'home',animais:'animais',entradas:'animais',saidas:'animais',estoque:'estoque',estIns:'estoque',estForm:'estoque',estNF:'estoque',fornec:'estoque',fornForm:'estoque',entRel:'estoque',currais:'currais',curNt:'currais',curOrd:'currais',curForm:'currais',lotes:'animais',pesNova:'animais',entNova:'animais',saiSel:'animais',lote:'animais',loteForm:'animais',pesForm:'animais',entForm:'animais',apartForm:'animais',transfForm:'animais',fechaForm:'animais',achouForm:'animais',saiForm:'animais',mudForm:'animais',rel:'animais',custoForm:'animais',
   cocho:'cocho',cochoGraf:'cocho',fezes:'cocho',med:'cocho',rels:'rels',dia:'rels',indices:'rels',confBal:'rels',periodo:'rels',comp:'rels',vendas:'rels',pesagens:'rels',compradores:'rels',cprForm:'rels',racoes:'racoes',racForm:'racoes',racCur:'racoes',mudCur:'currais',insumos:'estoque',insForm:'estoque',insMS:'insumos',ms:'cocho',cfg:'cfg'};
 /* Leitura de cocho fica no menu Tratos (aba 'leit'); o resto da Gestão na aba 'gest' — as duas usam a mesma tela */
 function gRaiz(t){GT={t};gPilha.length=0;const alvo=RAIZ[t]==='cocho'&&!document.body.classList.contains('modoGest')?'leit':'gest';if(window.abaAtual!==alvo)aba(alvo);else gRender();window.scrollTo({top:0});}
@@ -295,7 +295,7 @@ function gRender(){if(GT&&GT.t!=='rel')RELCMP=null;if(GT&&GT.t!=='lotes')gLotAb.
   const b=$('gBox');if(!b)return;b.dataset.tela=GT&&GT.t||'';   // tela atual (o CSS usa para separar os quadros do lote)
   if(window.abaAtual==='gest'&&RAIZ[GT.t]==='cocho'&&!document.body.classList.contains('modoGest')){aba('leit');return;}  // leitura abre no menu Tratos
   if(window.abaAtual==='leit'&&RAIZ[GT.t]!=='cocho'){aba('gest');return;}
-  const f={home:tHome,animais:tAnimais,estoque:tEstoque,estIns:tEstIns,estForm:tEstForm,estNF:tEstNF,fornec:tFornec,fornForm:tFornForm,entRel:tEntRel,currais:tCurrais,curForm:tCurForm,curNt:tCurNt,lotes:tLotes,pesNova:tPesNova,entNova:tEntNova,saiSel:tSaiSel,entradas:tEntradas,saidas:tSaidas,lote:tLote,loteForm:tLoteForm,pesForm:tPesForm,entForm:tEntForm,apartForm:tApartForm,transfForm:tTransfForm,fechaForm:tFechaForm,achouForm:tAchouForm,saiForm:tSaiForm,mudForm:tMudForm,rel:tRelLote,custoForm:tCustoForm,
+  const f={home:tHome,animais:tAnimais,estoque:tEstoque,estIns:tEstIns,estForm:tEstForm,estNF:tEstNF,fornec:tFornec,fornForm:tFornForm,entRel:tEntRel,currais:tCurrais,curForm:tCurForm,curNt:tCurNt,curOrd:tCurOrd,lotes:tLotes,pesNova:tPesNova,entNova:tEntNova,saiSel:tSaiSel,entradas:tEntradas,saidas:tSaidas,lote:tLote,loteForm:tLoteForm,pesForm:tPesForm,entForm:tEntForm,apartForm:tApartForm,transfForm:tTransfForm,fechaForm:tFechaForm,achouForm:tAchouForm,saiForm:tSaiForm,mudForm:tMudForm,rel:tRelLote,custoForm:tCustoForm,
     cocho:tCocho,cochoGraf:tCochoGraf,fezes:t=>tFezes(t),med:t=>tMed(t),rels:tRels,dia:tDia,indices:tIndices,periodo:tPeriodo,comp:tComp,vendas:tVendas,pesagens:tPesagens,compradores:tCompradores,cprForm:tCprForm,racoes:tRacoes,racForm:tRacForm,racCur:tRacCur,mudCur:tMudCur,mudEd:tMudEd,insumos:tInsumos,insForm:tInsForm,insMS:tInsMS,ms:tInsMS,cfg:tCfg}[GT.t]||tHome;
   const raiz=GT.raiz||RAIZ[GT.t]||'home';document.querySelectorAll('#subGest button[data-gt]').forEach(x=>x.setAttribute('aria-selected',String(x.dataset.gt===raiz)));
   const cb=$('cfgTBox');if(cb&&$('cfgTParque')&&cb.parentNode!==$('cfgTParque'))$('cfgTParque').appendChild(cb); // ajustes da balança: guarda antes de redesenhar
@@ -3686,7 +3686,7 @@ function tCurrais(){const A=window.curraisApi;if(!A)return '';const L=A.lista().
   const grupo=(tit,arr,k)=>{if(!arr.length)return '';const ab=gCurAb.has(k);return `<button type="button" class="gGrpCab${ab?' aberto':''}" data-g="curGrp" data-k="${k}"><span>${tit}</span><small>${arr.length} curral(is)</small><em class="gGrpDica">${ab?'clique para fechar':'clique para abrir'}</em><span class="gLoteSeta">▼</span></button>${ab?`<div class="gGrpCorpo">${arr.map(item).join('')}</div>`:''}`;};
   const at=L.filter(x=>!x.i.inativo),ina=L.filter(x=>x.i.inativo);
   return `<section class="panel"><h2>Currais</h2><p class="note">O local diz se o curral é do confinamento ou do pasto; vale para os filtros, o Carregar e o Fornecer. Inativo não aparece no Previsto, no Fornecer nem nos lotes (os registros continuam).</p>
-    <div class="gAcoes"><button class="lima" data-g="ir" data-t="curForm">+ Novo curral</button><button class="primary" data-g="ir" data-t="mudCur">↔ Mudar animais de curral</button><button data-g="ir" data-t="curNt">🔁 Tratos de vários currais</button></div>
+    <div class="gAcoes gCurAc"><button class="lima" data-g="ir" data-t="curForm">+ Novo curral</button><button class="primary" data-g="ir" data-t="mudCur">↔ Mudar animais de curral</button><button class="gCurAcF" data-g="ir" data-t="curNt">🔁 Qtd de trato por curral</button><button class="gCurAcF" data-g="ir" data-t="curOrd">↕ Ordem de trato</button></div>
     ${grupo(ICO_C+' Confinamento',at.filter(x=>x.i.tipo==='C'),'C')}${grupo('🌿 Pasto',at.filter(x=>x.i.tipo==='P'),'P')}${grupo('Sem tipo',at.filter(x=>x.i.tipo!=='C'&&x.i.tipo!=='P'),'S')}${grupo('⏸ Inativos',ina,'I')}${mudHistHTML()}</section>`;}
 /* ---------- histórico das mudanças de curral (recolhido no fim de Currais): editar e excluir pedem senha ---------- */
 function mudHist(){const R=[];gTodos('lote').forEach(l=>{const cs=(l.curr||[]).slice().sort((a,b)=>a.desde<b.desde?-1:1);
@@ -3716,14 +3716,31 @@ document.addEventListener('click',async e=>{const b=e.target.closest('[data-g="m
     if(d!==desde&&l.curr.some(z=>z.desde===d))return toast('Já tem outra mudança deste lote nessa data');
     const velho=x.c;l.curr=l.curr.filter(z=>z.desde!==desde);const n={c:para,de:x.de,ts:x.ts||Date.now(),ed:Date.now()};if(obs)n.obs=obs;Object.keys(n).forEach(k=>n[k]==null&&delete n[k]);setHist(l.curr,d,n);gPut(l);
     const d0=d<desde?d:desde;[velho,para,x.de].filter(Boolean).forEach(c=>recalcCurral(c,d0));toast('Mudança alterada');GT={t:'currais'};gCurAb.add('M');gRender();window.scrollTo({top:0});}},true);
+/* ordem de trato: a mesma do "↕ Alterar ordem" do Previsto (S.cadastro). Muda aqui ou lá, vale para os dois.
+   Só lista os currais em uso; os outros ficam no mesmo lugar do cadastro */
+function curOrdLista(){return (S.cadastro||[]).filter(n=>typeof curralAtivo!=='function'||curralAtivo(n));}
+function tCurOrd(t){if(!t.ord)t.ord=curOrdLista();const L=t.ord,mud=JSON.stringify(L)!==JSON.stringify(curOrdLista());
+  const loc=n=>linhaDe(n)==='P'?'🌿 Pasto':'Confinamento';
+  return `<section class="panel"><h2>↕ Ordem de trato</h2><p class="note">Toque em ▲ ▼ para mudar a ordem em que os currais aparecem no Previsto, no Carregar e no Fornecer. É a mesma ordem do "↕ Alterar ordem" do Previsto: mudar aqui ou lá vale para os dois.</p>
+    <div class="gOrdLista">${L.map((n,i)=>`<div class="gOrdLin"><b class="gOrdN">${i+1}</b><span><b>${esc(n)}</b><small>${loc(n)}</small></span><button type="button" class="mini" data-g="curOrdMv" data-i="${i}" data-n="-1"${i?'':' disabled'} aria-label="Subir">▲</button><button type="button" class="mini" data-g="curOrdMv" data-i="${i}" data-n="1"${i<L.length-1?'':' disabled'} aria-label="Descer">▼</button></div>`).join('')||'<p class="note">Nenhum curral em uso.</p>'}</div>
+    <div class="row pvImsBtns" style="margin-top:12px"><button class="primary" type="button" data-g="curOrdOk"${mud?'':' disabled'}>✓ Aplicar</button><button class="dangerfill" type="button" data-g="curOrdCanc">✕ Cancelar</button></div></section>`;}
+document.addEventListener('click',e=>{const b=e.target.closest('#gBox [data-g="curOrdMv"],#gBox [data-g="curOrdOk"],#gBox [data-g="curOrdCanc"]');if(!b||GT.t!=='curOrd')return;e.preventDefault();e.stopPropagation();
+  if(typeof bloqueado==='function'&&bloqueado())return;const L=GT.ord||curOrdLista();
+  if(b.dataset.g==='curOrdMv'){const i=+b.dataset.i,j=i+(+b.dataset.n);if(j<0||j>=L.length)return;[L[i],L[j]]=[L[j],L[i]];GT.ord=L;const y=window.scrollY;gRender();window.scrollTo({top:y});return;}
+  if(b.dataset.g==='curOrdCanc'){toast('Cancelado: ficou como estava');return gVoltar();}
+  /* aplica: os currais em uso entram na nova ordem, nos lugares que eles já ocupavam no cadastro */
+  const em=new Set(L),cad=(S.cadastro||[]).slice();let k=0;const novo=cad.map(n=>em.has(n)?L[k++]:n);
+  S.cadastro=novo;if(typeof marcarPrev==='function')marcarPrev();try{render();}catch(_){}toast('Ordem de trato aplicada');gVoltar();},true);
 /* editar a quantidade de tratos de vários currais de uma vez (lista com todos) */
 function tCurNt(){const P=window.prevApi,lt=GT.ntLoc||'T',N=typeof tratosAtivos==='function'?tratosAtivos().length:3;
-  const A=(S.cadastro||[]).filter(n=>typeof curralAtivo!=='function'||curralAtivo(n)),cads=A.filter(n=>lt==='T'||linhaDe(n)===lt).sort(alfa);
+  const CA=window.curraisApi,ord0=CA&&CA.lista?CA.lista():(S.cadastro||[]),A=ord0.filter(n=>typeof curralAtivo!=='function'||curralAtivo(n)),cads=A.filter(n=>lt==='T'||linhaDe(n)===lt);
+  /* igual à tela de Currais: primeiro Confinamento, depois Pasto, na ordem do cadastro */
+  const tipo=n=>{const t=CA&&CA.info?CA.info(n).tipo:linhaDe(n);return t==='C'?0:t==='P'?1:2;},GR=[[0,ICO_C+' Confinamento'],[1,'🌿 Pasto'],[2,'Sem tipo']];
   const LO=window.LOC_OPS||[['T','Todos'],['C','Confinamento'],['P','Pasto']];
   return `${voltar('Currais')}<section class="panel"><h2>🔁 Quantidade de tratos por curral</h2>
     <p class="note">Mude os que quiser e toque em <b>Salvar todos</b> no fim. O previsto de hoje já é redividido nos currais alterados.</p>
     ${typeof selSetas==='function'?`<div class="gCoLocNav">${selSetas('Local',LO,Math.max(0,LO.findIndex(o=>o[0]===lt)),'data-g="ntLocP" data-n','data-ntlsel="1"')}</div>`:''}
-    <div class="gNtLista">${cads.map(cu=>{const n=P?P.nTratos(cu):1;return `<label class="gNt"><span>${esc(cu)}</span><select data-ntm="${esc(cu)}" data-ori="${n}">${Array.from({length:N},(_,k)=>k+1).map(x=>`<option value="${x}"${x===n?' selected':''}>${x} trato${x>1?'s':''}</option>`).join('')}</select></label>`;}).join('')||'<p class="note">Nenhum curral ativo nesse local.</p>'}</div>
+    <div class="gNtLista">${GR.map(([g,tit])=>{const cs=cads.filter(n=>tipo(n)===g);if(!cs.length)return '';return `<div class="gNtGrp">${tit} <small>${cs.length} curral(is)</small></div>`+cs.map(cu=>{const n=P?P.nTratos(cu):1;return `<label class="gNt"><span>${esc(cu)}</span><select data-ntm="${esc(cu)}" data-ori="${n}">${Array.from({length:N},(_,k)=>k+1).map(x=>`<option value="${x}"${x===n?' selected':''}>${x} trato${x>1?'s':''}</option>`).join('')}</select></label>`;}).join('');}).join('')||'<p class="note">Nenhum curral ativo nesse local.</p>'}</div>
     <button class="primary" data-g="salvaNtM" style="margin-top:12px">💾 Salvar todos</button></section>`;}
 document.addEventListener('change',e=>{const s_=e.target.closest&&e.target.closest('#gBox select[data-ntm]');if(s_)s_.closest('.gNt').classList.toggle('gNtMud',s_.value!==s_.dataset.ori);
   if(e.target.matches&&e.target.matches('#gBox select[data-ntlsel]')&&GT.t==='curNt'){GT.ntLoc=e.target.value;gRender();}});
