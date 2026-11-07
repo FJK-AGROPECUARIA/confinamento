@@ -664,7 +664,8 @@ input[type=date]::-webkit-calendar-picker-indicator{margin-left:2px;padding:0}
 .gResTag.ok{color:#fff;border-color:#2e8b3d;background:#2e8b3d}.gResTag.no{color:#fff;border-color:#c62828;background:#c62828}
 .gResDescL{border-color:#c62828!important;border-left-color:#c62828!important;background:#fdecea!important}
 .gLoteSeloAb .gLoteAbrir{margin:0;padding:8px 10px;min-height:0;font-size:.9rem}.gConj{margin:10px 0}.gConj>summary{cursor:pointer;padding:10px 4px}.gConjLista{display:grid;gap:8px;margin:8px 0}.gConjIt{display:flex;align-items:center;gap:10px;border:2px solid #dde3ea;border-radius:12px;padding:8px 10px;background:#fff}.gConjIt.sel,.gConjIt.gConjEste{border-color:var(--lima);background:#f6fbe6}.gConjIt input[type=checkbox]{width:26px;height:26px;accent-color:#2e6b30;flex:none}.gConjIt>span{flex:1;display:flex;flex-direction:column}.gConjIt small{color:var(--muted)}.gConjIt>span.gConjMk{flex:none;width:26px;text-align:center;font-weight:800;color:#2e6b30}.gConjCab{width:80px!important;text-align:center}.gConjCab:disabled{opacity:.45}input.gConjTot{background:#f6fbe6!important;font-weight:800}
-.gArqSelBar{display:flex;flex-wrap:wrap;gap:8px;margin:4px 0}.gArqSelBar .mini{margin:0}.gArqChk{display:flex;align-items:center;padding:0 4px}.gArqChk input{width:26px;height:26px;accent-color:#2e6b30}.gArqFora{opacity:.45}
+.gArqSelBar{display:flex;flex-wrap:wrap;gap:8px;margin:4px 0}.gArqSelBar .mini{margin:0}
+.gArqSelBts{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;width:100%}.gArqSelBts .mini{padding:8px 2px!important;font-size:.78rem!important;white-space:nowrap}.gArqSelBts .dangerfill{background:#c62828!important;border-color:#c62828!important;color:#fff!important}.gArqChk{display:flex;align-items:center;padding:0 4px}.gArqChk input{width:26px;height:26px;accent-color:#2e6b30}.gArqFora{opacity:.45}
 .gLoteArq{cursor:default;border:2px solid #c9d3dd;border-left:6px solid var(--lima);border-radius:14px;padding:12px 14px;margin:0 0 14px;background:#fff;box-shadow:0 2px 8px rgba(17,37,61,.10)}.gResLote{display:grid;gap:8px}
 .gCmpFix{display:flex;flex-wrap:wrap;align-items:center;gap:6px 10px;margin:8px 0 0;padding:8px 10px;border-radius:10px;background:#fff8e1;border:1px solid #f0d27a;font-size:.85rem}.gCmpFix.ok{background:#eef6e6;border-color:#b9d79a}.gCmpFix small{color:var(--muted)}input.gBadData{border-color:#b3261e!important;background:#fde3e1!important}.gTab tr.gSaiRes td>div{position:sticky;left:8px;max-width:min(300px,calc(100vw - 90px))}.gTab tr.gSaiRes td{text-align:left;font-size:13px;color:#5d6b7a;padding-top:0;white-space:normal}.gTab tr.gSaiRes td b.ok{color:#1b5e20}.gTab tr.gSaiRes td b.bad{color:#b3261e}.gApRes .bad b{color:var(--bad,#b3261e)}
 .gLoteRel{display:flex;flex-direction:column;gap:8px;width:100%;text-align:left;padding:10px;background:var(--surface);border-radius:14px}
@@ -1300,7 +1301,7 @@ body.naInicio .topoTxt h1{font-size:clamp(16px,5vw,28px)!important}
 <div class="toast" id="toast" hidden></div>
 <script>
 'use strict';
-const APP_VERSAO='318';
+const APP_VERSAO='319';
 const APP_DATA='19/10/2026';
 const KEY='confinamento-completo-v1';
 const $=id=>document.getElementById(id);
