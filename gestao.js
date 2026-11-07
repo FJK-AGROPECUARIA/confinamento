@@ -3228,7 +3228,7 @@ function gRenderCom(o){Object.assign(GT,o);gRender();}
 
 /* ---------- menu: Gestão (Resumo, Lotes, Cocho, Relatórios, Rações, Insumos, Config.) ---------- */
 $('tabGrpGest').addEventListener('click',()=>tocarGrupo('gest'));
-$('subGest').addEventListener('click',e=>{const b=e.target.closest('button[data-gt]');if(b)gRaiz(b.dataset.gt);});
+$('subGest').addEventListener('click',e=>{const b=e.target.closest('button[data-gt]');if(b){gCurAb.clear();gRaiz(b.dataset.gt);}});   // voltou pelo menu: os grupos dos Currais abrem fechados (indo para uma tela de dentro e voltando, ficam como estavam)
 window.gAoAbrir=()=>{gRender();if(navigator.onLine)gSync(true).catch(()=>{});};
 /* nome do curral mudou no Previsto: o lote passa a usar o nome novo a partir de hoje */
 window.gRenomearCurral=(de,para)=>{const hj=hojeKey();gTodos('lote').forEach(l=>{if(ativo(l)&&curralEm(l,hj)===de){const x=JSON.parse(JSON.stringify(l));setHist(x.curr,hj,{c:para});gPut(x);}});setTimeout(()=>{try{migrarRenomes();}catch(e){}},300);};
@@ -3686,7 +3686,7 @@ function tCurrais(){const A=window.curraisApi;if(!A)return '';const L=A.lista().
   const grupo=(tit,arr,k)=>{if(!arr.length)return '';const ab=gCurAb.has(k);return `<button type="button" class="gGrpCab${ab?' aberto':''}" data-g="curGrp" data-k="${k}"><span>${tit}</span><small>${arr.length} curral(is)</small><em class="gGrpDica">${ab?'clique para fechar':'clique para abrir'}</em><span class="gLoteSeta">▼</span></button>${ab?`<div class="gGrpCorpo">${arr.map(item).join('')}</div>`:''}`;};
   const at=L.filter(x=>!x.i.inativo),ina=L.filter(x=>x.i.inativo);
   return `<section class="panel"><h2>Currais</h2><p class="note">O local diz se o curral é do confinamento ou do pasto; vale para os filtros, o Carregar e o Fornecer. Inativo não aparece no Previsto, no Fornecer nem nos lotes (os registros continuam).</p>
-    <div class="gAcoes gCurAc"><button class="lima" data-g="ir" data-t="curForm">+ Novo curral</button><button class="primary" data-g="ir" data-t="mudCur">↔ Mudar animais de curral</button><button class="gCurAcF" data-g="ir" data-t="curNt">🔁 Qtd de trato por curral</button><button class="gCurAcF" data-g="ir" data-t="curOrd">↕ Ordem de trato</button></div>
+    <div class="gAcoes gCurAc"><button class="lima" data-g="ir" data-t="curForm">+ Novo curral</button><button data-g="ir" data-t="mudCur">↔ Mudar animais de curral</button><button class="gCurAcF" data-g="ir" data-t="curNt">🔁 Qtd de tratos por curral</button><button class="gCurAcF" data-g="ir" data-t="curOrd">↕ Ordem de trato</button></div>
     ${grupo(ICO_C+' Confinamento',at.filter(x=>x.i.tipo==='C'),'C')}${grupo('🌿 Pasto',at.filter(x=>x.i.tipo==='P'),'P')}${grupo('Sem tipo',at.filter(x=>x.i.tipo!=='C'&&x.i.tipo!=='P'),'S')}${grupo('⏸ Inativos',ina,'I')}${mudHistHTML()}</section>`;}
 /* ---------- histórico das mudanças de curral (recolhido no fim de Currais): editar e excluir pedem senha ---------- */
 function mudHist(){const R=[];gTodos('lote').forEach(l=>{const cs=(l.curr||[]).slice().sort((a,b)=>a.desde<b.desde?-1:1);
