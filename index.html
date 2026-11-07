@@ -601,7 +601,12 @@ input[type=date]::-webkit-calendar-picker-indicator{margin-left:2px;padding:0}
 .gPesBox small{display:block;font-size:.72rem;text-transform:uppercase;letter-spacing:.08em;color:var(--led);font-weight:700}
 .gPesBox b{display:block;font-family:var(--display);font-stretch:condensed;font-size:2.4rem;line-height:1.05;color:#fff}
 .gPesBox span{display:block;font-size:.78rem;color:#c9d3df;margin-top:2px}
-.gChips{display:flex;flex-wrap:wrap;gap:5px}.gChips button{padding:4px 9px;font-size:.8rem;border-radius:99px}.gChips button.sel{background:var(--lima-claro);border-color:var(--lima)}
+.gChips{display:flex;flex-wrap:wrap;gap:5px}
+.gMedTopo{display:grid;grid-template-columns:1.3fr 1fr 1fr;gap:6px}.gMedTopo button{margin:0!important;padding:10px 4px!important;font-size:.88rem!important;min-height:0!important;white-space:nowrap}
+.gMedCadAdd{display:flex;gap:8px;margin:0 0 12px}.gMedCadAdd input{flex:1;min-width:0}.gMedCadAdd button{margin:0!important;width:auto!important;white-space:nowrap}
+.gMedCadIt{display:flex;align-items:center;gap:6px;padding:8px 0;border-bottom:1px solid var(--line)}.gMedCadIt>span{flex:1;font-weight:700}.gMedCadIt input{flex:1;min-width:0}.gMedCadIt .mini{margin:0!important;width:auto!important}
+.gMedChips{display:flex;flex-wrap:wrap;gap:6px;margin:0 0 8px}.gMedChip{display:inline-flex!important;align-items:center;gap:6px;width:auto!important;padding:7px 12px;border:2px solid var(--line);border-radius:99px;background:#fff;font-size:.92rem;font-weight:700;text-transform:none!important;letter-spacing:0!important;color:var(--fg)!important;cursor:pointer;margin:0!important}
+.gMedChip input{width:18px;height:18px;margin:0;accent-color:#2e6b30}.gMedChip:has(input:checked){border-color:#2e6b30;background:#e8f5e9}.gMedOutro{border-style:dashed}.gChips button{padding:4px 9px;font-size:.8rem;border-radius:99px}.gChips button.sel{background:var(--lima-claro);border-color:var(--lima)}
 .gHeat{border-collapse:collapse;font-size:.85rem;table-layout:fixed;width:100%;max-width:100%}
 .gHeat td{border:1px solid var(--surface)!important;border-radius:6px}
 .gHeat td,.gHeat th{overflow:hidden;white-space:nowrap}
@@ -1304,7 +1309,7 @@ body.naInicio .topoTxt h1{font-size:clamp(16px,5vw,28px)!important}
 <div class="toast" id="toast" hidden></div>
 <script>
 'use strict';
-const APP_VERSAO='321';
+const APP_VERSAO='322';
 const APP_DATA='19/10/2026';
 const KEY='confinamento-completo-v1';
 const $=id=>document.getElementById(id);
@@ -4129,7 +4134,7 @@ let atualizarPend=false;
 /* ---------- Visualizar: só ver, filtrar e exportar. Tudo que altera fica travado ---------- */
 const VER_VIEWS='#viewGest,#viewPrev,#viewHist,#viewTrato,#viewCarga,#viewAuto,#viewAutoC';
 const VER_FILTRO='.gRelExpL,.gRelModo,.gRelDatas,.gRelAtalhos,#gRelIni,#gRelFim,.hNavUm,.gNavData,.hColCab,.zHistCab,.gPagNav,.gPagSel,.gMinzCab,.gCfgGrpCab,.fz3,.expTopo,.lotesExp,#hModo,.hModo,.dPer,.dPerCampos,.dLinha,.gCoLocNav,.zLocNav,.gPerDatas,#hPerBox,.aoVivo,.avBarra,.gGrpCab,#subGest,.gLotesAbre,.gBaseOp>summary,#gf_rForn,#gf_rIns,.gHojeTop,#gf_grafLocF,#gf_perF,#gf_tipoF,#gf_prodF,#gf_fornF,.gEstFil .gSug,#fzHCur,#gVenIni,#gVenFim,#gVenCpr,#gVenPor,.mdDatas,#gf_mdQ,#gf_mdDe,#gf_mdAte,#gPsIni,#gPsFim,#gMsDe,#gMsAte';
-const VER_OK_G=new Set(['msFP','msFLimpa','medLimpa','fzCur','cmpModo','coAbre','coFecha','voltar','raiz','ir','lote','dataPasso','dataHoje','filtroLoc','lotLocP','loteTog','lotTodos','curGrp','coLocP','fzLocP','perP','pgN','pgP','cfgGrp','estOrd','estPer','estPerE','estFilP','estFilLimpa','estTodas','resFilP','histExp','histExp','estIrRel','estVerMov','evolN','evLoc','grafCur','grafLoc','celGraf','perAtalho','fzHN','fzFotoVer','nfVer','compRel','compDia','cbExp','estInsExp']);
+const VER_OK_G=new Set(['msFP','msFLimpa','medLimpa','fzCur','cmpModo','coAbre','coFecha','voltar','raiz','ir','lote','dataPasso','dataHoje','filtroLoc','lotLocP','loteTog','lotTodos','curGrp','coLocP','fzLocP','perP','pgN','pgP','cfgGrp','estOrd','estPer','estPerE','estFilP','estFilLimpa','estTodas','medSfP','medExp','msExp','resFilP','histExp','histExp','estIrRel','estVerMov','evolN','evLoc','grafCur','grafLoc','celGraf','perAtalho','fzHN','fzFotoVer','nfVer','compRel','compDia','cbExp','estInsExp']);
 const VER_NAO_G=new Set(['senhaTurno','ntLoc','nota','msAbre','libLeit','baseDia','baseM']);
 function verPermite(el){const sb=el.closest('.gDataBox');if(sb){const s=sb.querySelector('select');if(s)return !s.disabled;}const g=el.closest('[data-g]');
   if(g){const a=g.dataset.g;if(VER_NAO_G.has(a))return false;if(a==='ir')return !/Form$/.test(g.dataset.t||'');
