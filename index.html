@@ -1318,7 +1318,7 @@ body.naInicio .topoTxt h1{font-size:clamp(16px,5vw,28px)!important}
 <div class="toast" id="toast" hidden></div>
 <script>
 'use strict';
-const APP_VERSAO='328';
+const APP_VERSAO='329';
 const APP_DATA='19/10/2026';
 const KEY='confinamento-completo-v1';
 const $=id=>document.getElementById(id);
@@ -1482,21 +1482,40 @@ function totalCurral(c,obj){obj=obj||S.prev||{};let t=0;for(let k=1;k<=MAXT;k++)
    Ex.: total 2.230 = T1 1.120 + T2 1.110; T1 fez 1.110 → T2 vira 1.120 → previsto do dia continua 2.230 (não 1.120+1.120). */
 /* previsto do DIA do curral: tratos já feitos (menos o último) valem o que foi fornecido, porque a compensação joga a diferença para os próximos;
    o último trato vale o previsto dele (já compensado) e os que faltam, o previsto de agora. Sem compensação: soma simples */
-function prevDiaCurral(c,P,dia,regsDia){const ks=[];for(let k=1;k<=MAXT;k++){const v=+((P[String(k)]||P[k]||{})[c]);if(v>0)ks.push(k);}
+/* ---- previsto do DIA de um curral, sem contar a compensação duas vezes ----
+   Compensação: a diferença de cada trato feito vai para o previsto do ÚLTIMO trato do curral.
+   Então: tratos feitos antes do último valem o REALIZADO, o último vale o previsto dele (já compensado), os que faltam valem o previsto.
+   Casos especiais: vários registros no mesmo trato (recarga) repetem o previsto do trato → conta uma vez só;
+   o último trato zerado pela compensação (deu demais antes) → o previsto do dia é o total original (pela divisão dos tratos). */
+function prevTratoR(rs){if(!rs||!rs.length)return 0;const s=rs.slice().sort((a,b)=>(a.ts||0)-(b.ts||0));return +s[0].prev||0;}
+function ksDoDia(c,P){const ks=[];if(!P)return ks;let pos=false;for(let k=1;k<=MAXT;k++){const x=(P[String(k)]||P[k]||{})[c];if(x!=null&&x!==''&&isFinite(+x)&&+x>=0){ks.push(k);if(+x>0)pos=true;}}return pos?ks:[];}
+/* último trato zerado: total original = soma dos tratos de antes ÷ % deles na divisão */
+function prevOrigEstim(c,P,ks){try{const n=ks.length,pc=divisao(n),ult=ks[n-1];let s=0,pct=0;ks.forEach((k,i)=>{if(k===ult)return;s+=+((P[String(k)]||P[k]||{})[c])||0;pct+=+pc[i]||0;});
+  return pct>0&&pct<100?arredPrev(s*100/pct):null;}catch(e){return null;}}
+function prevDiaCurral(c,P,dia,regsDia){P=P||{};const ks=ksDoDia(c,P);
   const R=(regsDia||HIST.filter(r=>r.dia===dia)).filter(r=>r.curral===c),rk=k=>R.filter(r=>+r.trato===k);if(!ks.length&&!R.length)return null;
   const cfgG=gOk()&&typeof gCfg==='function'?gCfg():{},comp=ks.length>=2&&cfgG.compensa!==false,ult=ks[ks.length-1];
+  if(comp&&+((P[String(ult)]||P[ult]||{})[c])===0&&!prevTratoR(rk(ult))){const e=prevOrigEstim(c,P,ks);if(e!=null){let t=e;R.filter(r=>!ks.includes(+r.trato)).forEach(r=>t+=(+r.prev||0));return t;}}
   let pul=new Set();try{if(comp)pul=new Set(tratosPulados(c,dia,ks).map(p=>p.k));}catch(e){}
-  let t=0;ks.forEach(k=>{const v=+((P[String(k)]||P[k]||{})[c]),x=rk(k);t+=comp&&k!==ult&&x.length?x.reduce((a,r)=>a+(+r.forn||0),0):comp&&k!==ult&&pul.has(k)?0:x.length?x.reduce((a,r)=>a+(+r.prev||0),0):v;});
-  R.filter(r=>!ks.includes(+r.trato)).forEach(r=>t+=(+r.prev||0));return t;}
-/* previsto do DIA de um curral nos relatórios (soma dos tratos): com a compensação, a diferença dos tratos anteriores já foi
-   para o previsto do último trato. Somar os previstos contaria a diferença duas vezes (ex.: C-2 560+280+650 = 1.490, mas o
-   previsto do dia era 1.120). Então, quando o último trato do curral já foi feito: tratos anteriores valem o realizado + previsto do último. */
-function prevDiaRegs(c,rs){const sp=rs.reduce((a,r)=>a+(+r.prev||0),0);try{const cfgG=gOk()&&typeof gCfg==='function'?gCfg():{};if(cfgG.compensa===false)return sp;
-  const ks=[...new Set(rs.map(r=>+r.trato))].sort((a,b)=>a-b);if(ks.length<2)return sp;const ult=ks[ks.length-1],nt=nTratos(c);if(nt&&ult<nt)return sp;
-  return rs.reduce((a,r)=>a+(+r.trato===ult?(+r.prev||0):(+r.forn||0)),0);}catch(e){return sp;}}
+  let t=0;ks.forEach(k=>{const v=+((P[String(k)]||P[k]||{})[c])||0,x=rk(k);t+=comp&&k!==ult&&x.length?x.reduce((a,r)=>a+(+r.forn||0),0):comp&&k!==ult&&pul.has(k)?0:x.length?prevTratoR(x):v;});
+  const fora=new Map();R.filter(r=>!ks.includes(+r.trato)).forEach(r=>{if(!fora.has(+r.trato))fora.set(+r.trato,[]);fora.get(+r.trato).push(r);});fora.forEach(rs=>t+=prevTratoR(rs));return t;}
+/* nos relatórios (só os registros): mesma regra; o último trato do curral vem do previsto daquele dia */
+function prevDiaRegs(c,rs,dia){const porT=new Map();rs.forEach(r=>{const k=+r.trato;if(!porT.has(k))porT.set(k,[]);porT.get(k).push(r);});
+  let sp=0;porT.forEach(x=>sp+=prevTratoR(x));
+  try{const cfgG=gOk()&&typeof gCfg==='function'?gCfg():{};if(cfgG.compensa===false)return sp;
+    dia=dia||(rs[0]&&rs[0].dia);const P=dia&&typeof prevDoDia==='function'?prevDoDia(dia):null,ksP=ksDoDia(c,P);
+    const ksR=[...porT.keys()].sort((a,b)=>a-b);let ult;
+    if(ksP.length)ult=Math.max(ksP[ksP.length-1],ksR[ksR.length-1]);else{const n=nTratos(c);ult=n?tratosAtivos().map(Number).slice(0,n).pop():ksR[ksR.length-1];}
+    if((ksP.length||ksR.length)<2)return sp;
+    const pU=P?+((P[String(ult)]||P[ult]||{})[c]):NaN;
+    if(!porT.has(ult)){if(pU===0&&ksP.length>=2){const e=prevOrigEstim(c,P,ksP);if(e!=null)return e;}return sp;}
+    const pult=prevTratoR(porT.get(ult));if(pult===0&&ksP.length>=2){const e=prevOrigEstim(c,P,ksP);if(e!=null)return e;}
+    let t=pult;porT.forEach((x,k)=>{if(k!==ult)t+=x.reduce((a,r)=>a+(+r.forn||0),0);});return t;}catch(e){return sp;}}
 /* soma do previsto de vários registros (vários currais/dias) sem contar a compensação duas vezes: agrupa por curral e dia */
 function prevRegsTotal(regs){const g=new Map();(regs||[]).forEach(r=>{const k=r.curral+'|'+r.dia;if(!g.has(k))g.set(k,[]);g.get(k).push(r);});
-  let t=0;g.forEach((rs,k)=>{t+=prevDiaRegs(k.split('|')[0],rs);});return t;}
+  let t=0;g.forEach((rs,k)=>{const [c,d]=k.split('|');t+=prevDiaRegs(c,rs,d);});return t;}
+/* previsto de um trato (vários currais): cada curral conta uma vez, mesmo com recarga */
+function prevGrupoTrato(rs){const g=new Map();rs.forEach(r=>{const k=r.curral+'|'+r.dia+'|'+r.trato;if(!g.has(k))g.set(k,[]);g.get(k).push(r);});let t=0;g.forEach(x=>t+=prevTratoR(x));return t;}
 function totalDia(c,obj,dia){obj=obj||S.prev||{};dia=dia||hojeKey();const ks=[];for(let k=1;k<=MAXT;k++){const v=(obj[k]||{})[c];if(typeof v==='number'&&v>0)ks.push(k);}
   const cfgG=gOk()&&typeof gCfg==='function'?gCfg():{};if(ks.length<2||cfgG.compensa===false)return totalCurral(c,obj);
   const regs=HIST.filter(r=>r.dia===dia&&r.curral===c),pul=new Set(tratosPulados(c,dia,ks).map(p=>p.k));if(!regs.length&&!pul.size)return totalCurral(c,obj);
@@ -1517,7 +1536,7 @@ function distribuir(c,total,n,obj){obj=obj||S.prev;if(obj===S.prev&&S.prevOrig&&
   const ks=tratosAtivos().slice(0,n);
   for(let k=1;k<=MAXT;k++){const key=String(k);if(!obj[key])obj[key]={};const i=ks.indexOf(k);
     if(i<0||!total){delete obj[key][c];continue;}
-    const v=i===ks.length-1?resto:Math.max(0,arredPrev(total*pc[i]/100));obj[key][c]=v;resto-=v;}
+    const v=i===ks.length-1?resto:Math.min(resto,Math.max(0,arredPrev(total*pc[i]/100)));obj[key][c]=v;resto-=v;}   /* nunca negativo no último */
   return obj;}
 /* previsto guardado de um dia (cópia); para dias sem cópia monta pelos registros do Histórico */
 const idPrevDia=d=>'prev-'+d;
@@ -1994,7 +2013,7 @@ function mapaPv(k){const o=pvObj();k=String(k);if(!o[k])o[k]={};return o[k];}
 function marcarPv(){if(PV.dia===hojeKey())marcarPrev();else if(PV.dia===amanhaKey())guardarPrevDia(PV.dia,PV.am);}
 /* o que a tabela mostra: total de cada curral (Todos), um trato, ou o total do período */
 function pvMapa(){const o=pvObj(),m={};
-  if(PV.per){let d=PV.ini,n=0;while(d<=PV.fim&&n<400){const od=prevDoDia(d),dd=d;S.cadastro.forEach(c=>{const t=totalDia(c,od,dd);if(t)m[c]=(m[c]||0)+t;});/* total do dia sem contar a compensação duas vezes */d=somaDias(d,1);n++;}return m;}
+  if(PV.per){let d=PV.ini,n=0;while(d<=PV.fim&&n<400){const od=prevDoDia(d),dd=d;S.cadastro.forEach(c=>{const t=prevDiaCurral(c,od,dd)||0;if(t)m[c]=(m[c]||0)+t;});/* total do dia sem contar a compensação duas vezes */d=somaDias(d,1);n++;}return m;}
   if(PV.t===0){S.cadastro.forEach(c=>{const t=totalDia(c,o,PV.dia);if(t)m[c]=t;});return m;}
   return Object.assign({},o[String(PV.t)]||{});}
 function pvEstado(){const e=$('pvEstado'),hj=hojeKey();let t='';
@@ -2129,7 +2148,7 @@ $('linhas').addEventListener('click',e=>{const b=e.target.closest('[data-pvlp]')
 $('linhas').addEventListener('change',e=>{const s_=e.target.closest('select[data-pvlsel]');if(!s_)return;linhaSel=s_.value;if(typeof fecharTeclado==='function')fecharTeclado();renderPrev();});
 function resumoPrev(){
   const k=PV.t||'',m=pvMapa();let tot=0,n=0;
-  S.cadastro.forEach(c=>{const v=m[c];if(typeof v==='number'&&v>0){tot+=v;n++;}});
+  S.cadastro.forEach(c=>{const v=m[c];if(typeof v==='number'&&v>0&&(linhaSel==='T'||linhaDe(c)===linhaSel)&&(typeof curralAtivo!=='function'||curralAtivo(c))){tot+=v;n++;}});   /* segue o filtro de local, igual à lista */
   $('pvTot').textContent=`${n} curral(is) · ${fmt(tot)} kg`;
   somaLinhas();
   {const loc=linhaSel==='C'?' do Confinamento':linhaSel==='P'?' do Pasto':'';$('btnLimparPrev').textContent=PV.t?`Limpar previsto${loc} do Trato ${k}`:`Limpar previsto${loc} (todos os tratos)`;
@@ -2416,7 +2435,7 @@ function gerarXlsx(regsIn){
   // Aba 2: resumo por trato
   const gs=grupos(regs);
   const r2=[[H('Data'),H('Trato'),H('Currais'),H('Previsto (kg)'),H('Realizado (kg)'),H('Diferença (kg)'),H('Diferença (%)')]];
-  gs.forEach((g,i)=>{const n=i+2,p=g.rs.reduce((a,r)=>a+r.prev,0),f=g.rs.reduce((a,r)=>a+r.forn,0);
+  gs.forEach((g,i)=>{const n=i+2,p=prevGrupoTrato(g.rs),f=g.rs.reduce((a,r)=>a+r.forn,0);
     r2.push([{v:diaSerial(g.dia),s:2},{v:g.trato,s:4},{v:new Set(g.rs.map(r=>r.curral)).size,s:4},{v:p,s:4},{v:f,s:4},{f:`E${n}-D${n}`,v:f-p,s:5},{f:`IF(D${n}=0,0,F${n}/D${n})`,v:p?(f-p)/p:0,s:6}]);});
   const L2=gs.length+1,T2=L2+1;
   r2.push([{v:'TOTAL',s:9},{v:'',s:9},{v:'',s:9},{v:sp,s:7},{f:`SUM(E2:E${L2})`,v:sf,s:7},{f:`E${T2}-D${T2}`,v:sf-sp,s:8},{f:`IF(D${T2}=0,0,F${T2}/D${T2})`,v:sp?(sf-sp)/sp:0,s:10}]);
@@ -2433,8 +2452,8 @@ function gerarXlsx(regsIn){
   gs.forEach(g=>{const rs=g.rs.slice().sort((a,b)=>a.ts-b.ts);const linhas=[[H('Hora'),H('Curral'),H('Dieta'),H('Previsto (kg)'),H('Realizado (kg)'),H('Diferença (kg)'),H('Diferença (%)')]];
     rs.forEach((r,i)=>{const n=i+2,d=new Date(r.ts),dia=new Date(d.getFullYear(),d.getMonth(),d.getDate());let dt='';try{dt=typeof dietaDe==='function'?dietaDe(r.curral):'';}catch(e){}
       linhas.push([{v:excelSerial(d)-excelSerial(dia),s:3},{v:r.curral},{v:dt},{v:r.prev,s:4},{v:r.forn,s:4},{f:`E${n}-D${n}`,v:r.forn-r.prev,s:5},{f:`IF(D${n}=0,0,F${n}/D${n})`,v:r.prev?(r.forn-r.prev)/r.prev:0,s:6}]);});
-    const Lt=rs.length+1,Tt=Lt+1,p=rs.reduce((a,r)=>a+r.prev,0),f=rs.reduce((a,r)=>a+r.forn,0);
-    linhas.push([{v:'TOTAL',s:9},{v:'',s:9},{v:'',s:9},{f:`SUM(D2:D${Lt})`,v:p,s:7},{f:`SUM(E2:E${Lt})`,v:f,s:7},{f:`E${Tt}-D${Tt}`,v:f-p,s:8},{f:`IF(D${Tt}=0,0,F${Tt}/D${Tt})`,v:p?(f-p)/p:0,s:10}]);
+    const Lt=rs.length+1,Tt=Lt+1,p=prevGrupoTrato(rs),f=rs.reduce((a,r)=>a+r.forn,0);
+    linhas.push([{v:'TOTAL',s:9},{v:'',s:9},{v:'',s:9},{v:p,s:7},{f:`SUM(E2:E${Lt})`,v:f,s:7},{f:`E${Tt}-D${Tt}`,v:f-p,s:8},{f:`IF(D${Tt}=0,0,F${Tt}/D${Tt})`,v:p?(f-p)/p:0,s:10}]);
     let nm=`Trato ${g.trato} ${g.dia.slice(8,10)}-${g.dia.slice(5,7)}`;while(nomesT.has(nm))nm+='+';nomesT.add(nm);porT.push([nm,linhas,[9,16,18,13,14,14,13]]);});
   const ws=[['Registros',r1,[9,12,7,14,14,13,14,14,13,14,13]],['Resumo por trato',r2,[12,7,9,13,14,14,13]],['Por curral',r3,[12,14,14,13,14,14,13,10]]].concat(porT.length<=60?porT:[]);
   return montarXlsx(ws);
@@ -2880,7 +2899,9 @@ function filtrados(){
   return HIST.filter(r=>(!a||r.dia>=a)&&(!b||r.dia<=b)&&(!t||r.trato===t)&&(localSel==='T'||linhaDe(r.curral)===localSel));
 }
 /* período: só o total de cada curral, sem separar os tratos */
-function totaisPorCurral(regs){const m=new Map();regs.forEach(r=>{const x=m.get(r.curral)||{curral:r.curral,prev:0,forn:0,n:0};x.prev+=r.prev||0;x.forn+=r.forn||0;x.n++;m.set(r.curral,x);});
+function totaisPorCurral(regs){const m=new Map();regs.forEach(r=>{const x=m.get(r.curral)||{curral:r.curral,prev:0,forn:0,n:0,rs:[]};x.forn+=r.forn||0;x.n++;x.rs.push(r);m.set(r.curral,x);});
+  /* previsto de cada curral = soma do previsto de cada DIA (sem contar a compensação duas vezes) */
+  m.forEach(x=>{x.prev=prevRegsTotal(x.rs);delete x.rs;});
   const ordem=S.cadastro;return [...m.values()].sort((a,b)=>{const ia=ordem.indexOf(a.curral),ib=ordem.indexOf(b.curral);return (ia<0?999:ia)-(ib<0?999:ib)||alfa(a.curral,b.curral);});}
 var hModo='T';
 /* relatório zootécnico do dia (no fim do Histórico de tratos): dia próprio, segue o filtro de local */
@@ -2916,7 +2937,7 @@ function renderHist(){try{aplicarRenomesHist();}catch(e){}
    if(um){const [d]=intervaloHist(),P=prevDoDia(d)||{},t=HD.t<0?0:HD.t,feito=new Set(regs.map(r=>r.trato+'|'+r.curral));let pd=0,fa=0;
      PDC={};const add=(c,v)=>{PDC[c]=(PDC[c]||0)+v;};
      for(let k=1;k<=MAXT;k++){if(t&&k!==t)continue;const m=P[String(k)]||P[k]||{};Object.keys(m).forEach(c=>{const v=+m[c];if(!(v>0))return;if(localSel!=='T'&&linhaDe(c)!==localSel)return;
-       const fz=feito.has(k+'|'+c);if(!fz&&d===hojeKey()&&!curralAtivo(c))return;const vv=fz?regs.filter(r=>+r.trato===k&&r.curral===c).reduce((a,r)=>a+(+r.prev||0),0):v;pd+=vv;add(c,vv);if(!fz)fa+=v;});}
+       const fz=feito.has(k+'|'+c);if(!fz&&d===hojeKey()&&!curralAtivo(c))return;const vv=fz?prevTratoR(regs.filter(r=>+r.trato===k&&r.curral===c)):v;pd+=vv;add(c,vv);if(!fz)fa+=v;});}
      regs.forEach(r=>{if(!P[String(r.trato)]||!(+((P[String(r.trato)]||{})[r.curral])>0)){pd+=r.prev||0;add(r.curral,r.prev||0);}});
      /* dia todo: o previsto do curral é o TOTAL do dia (com a compensação, o último trato já traz a diferença dos anteriores; somar os previstos de cada trato contaria a diferença duas vezes) */
      if(!t){pd=0;Object.keys(PDC).forEach(c=>{const v=prevDiaCurral(c,P,d,regs);if(v!=null)PDC[c]=v;pd+=PDC[c];});}
@@ -2948,12 +2969,14 @@ function renderHist(){try{aplicarRenomesHist();}catch(e){}
       const cs=cad.filter(noTrato).concat([...new Set(rk.map(r=>r.curral))].filter(c=>!cad.includes(c)));
       let gp=0,gf=0,gt=0;
       const linhas=cs.map(c=>{const rs=rk.filter(r=>r.curral===c).sort((a,b)=>a.ts-b.ts);
-        if(rs.length){rs.forEach(r=>{gp+=r.prev||0;gt+=r.prev||0;gf+=r.forn||0;});return rs.map(linhaR).join('');}
+        if(rs.length){const pv1=prevTratoR(rs);gp+=pv1;gt+=pv1;rs.forEach(r=>{gf+=r.forn||0;});return rs.map(linhaR).join('');}   /* recarga no mesmo trato: o previsto conta uma vez */
         const pv=pk[c];if(+pv>0)gp+=+pv;
         const edP=window.hEdModo&&!modoVer&&dia===hojeKey();
         return `<tr class="naoTratado"><td class="hora"></td><td class="c">${esc(c)}</td><td>${edP?`<input class="hEdIn num" inputmode="numeric" data-hedprev="${k}|${esc(c)}" value="${hedVal('p',k+'|'+c,+pv>0?Math.round(+pv):'')}" placeholder="—" aria-label="Previsto do ${esc(c)} no Trato ${k}">`:+pv>0?fmt(+pv):'—'}</td><td>—</td><td></td></tr>`;}).join('');
       TP+=gp;TF+=gf;TT+=gt;
       return `<tr class="grp"><td colspan="5">${diaBR(dia)} · Trato ${k}</td></tr>`+totHTML(gp,gf,gt?gf-gt:null)+linhas;}).join('');
+    /* "Todos os tratos": previsto do dia de cada curral (sem contar a compensação duas vezes), igual ao quadro de cima */
+    {const cps=new Set(cad.concat(regs.map(r=>r.curral)));let tp2=0;cps.forEach(c=>{const v=prevDiaCurral(c,P,dia,regs);if(v)tp2+=v;});if(tp2)TP=tp2;if(TT)TT=prevRegsTotal(regs);}
     const topo=ks.length>1?`<tr class="grp"><td colspan="5">${diaBR(dia)} · Todos os tratos</td></tr>`+totHTML(TP,TF,TT?TF-TT:null):'';
     $('tbHist').innerHTML=(html&&topo+html)||`<tr><td colspan="5" class="note" style="text-align:left">Nenhum trato nem previsto para esse filtro.</td></tr>`;pintarHEd();}
   caberTabela($('tbHist'));
