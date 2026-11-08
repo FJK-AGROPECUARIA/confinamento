@@ -2824,7 +2824,8 @@ $('gBox').addEventListener('click',e=>{const b=e.target.closest('[data-g]');if(!
   (window.pedirSenhaAcao?pedirSenhaAcao('Senha para apagar'):Promise.resolve(true)).then(ok=>{if(!ok)return;b._senhaOk=1;try{b.click();}finally{b._senhaOk=0;}});},true);
 $('gBox').addEventListener('click',e=>{
   const b=e.target.closest('[data-g]');if(!b)return;const a=b.dataset.g,id=b.dataset.id;
-  if(!SO_VER.has(a)&&bloqueado())return;
+  /* modo visualização: vale a mesma lista de botões liberados do index (relatórios/filtros), senão PDF/Foto/Excel de % MS, Medicamentos etc. ficavam travados */
+  if(!SO_VER.has(a)&&!(typeof verPermite==='function'&&modoVer&&verPermite(b))&&bloqueado())return;
   if(a==='voltar')return gVoltar();
   if(a==='ir'){const t={t:b.dataset.t,id,o:b.dataset.o,enc:b.dataset.enc==='1'};if(b.dataset.mov)t.mov=b.dataset.mov;if(b.dataset.ins)t.ins=b.dataset.ins;if(b.dataset.sid)t.sid=b.dataset.sid;if(b.dataset.old)t.old=b.dataset.old;if(b.dataset.nome)t.nome=b.dataset.nome;if(b.dataset.dia){t.dia=b.dataset.dia;t.cbDia=b.dataset.dia;}if(b.dataset.ini){t.ini=b.dataset.ini;t.fim=b.dataset.fim;}
     if(GT.t==='lotes'&&t.t==='lotes'){GT=t;return gRender();}return gIr(t);}
