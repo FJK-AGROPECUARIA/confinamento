@@ -248,9 +248,9 @@ function resumoLote(l,ate){
 let GT={t:'home'};const gPilha=[];
 function gIr(t){gPilha.push(GT);GT=t;gRender();window.scrollTo({top:0});}
 function gVoltar(){GT=gPilha.pop()||{t:'home'};gRender();window.scrollTo({top:0});}
-const voltar=(txt)=>`<button class="gVoltar" data-g="voltar">❮ ${txt||'Voltar'}</button>`;
+const voltar=(txt)=>'';   /* voltar: é só tocar na barrinha verde de cima (◀ voltar) */
 /* telas que saem do submenu Animais: o voltar sempre leva para Animais */
-const voltarAni=()=>`<button class="gVoltar" data-g="raiz" data-t="animais">❮ Animais</button>`;
+const voltarAni=()=>'';
 const card=(t,b,cls)=>`<section class="panel ${cls||''}"><h2>${t}</h2>${b}</section>`;
 const st=(rot,val,cls)=>`<div class="${cls||''}"><small>${rot}</small><b class="num">${val}</b></div>`;
 function campo(f){const id='gf_'+f.k,v=f.v==null?'':f.v;let inp;
@@ -1674,12 +1674,16 @@ function tCocho(t){
     /* ＋ ao lado dos 3 dias: abre na própria tela o gráfico dos últimos 7 dias (nota, kg e % IMS de cada dia) */
     const grOn=!!(GT.coGraf||{})[c];
     const ult3L=`<div class="gUlt3Lin">${ult3}<button type="button" class="gCoGrafMais${grOn?' sel':''}" data-g="coGraf" data-c="${esc(c)}" aria-label="${grOn?'Fechar gráfico':'Gráfico dos últimos 7 dias'}">${grOn?'−':'＋'}</button></div>`;
-    const graf7=grOn?(()=>{const ds=[];for(let i=7;i>=1;i--)ds.push(somaDias(dia,-i));
-      const D=ds.map(d=>{const x=G.it[idLeit(d,c)],lx=x&&!x.del?x:null,kgd=ix.get(d+'|'+c)||0,bi=baseIms(c,d);return {d,nota:lx&&lx.nota!=null?+lx.nota:null,kg:kgd,ims:kgd&&bi?kgd/bi:NaN};});
+    const graf7=grOn?(()=>{
+      /* já tem a leitura do dia da tela: ele entra como último dia, com o PREVISTO (kg da leitura); depois que o dia acaba, passa a mostrar o realizado */
+      const ltD=lt&&!lt.del?lt:null,comHj=!!ltD,ds=[];for(let i=comHj?6:7;i>=(comHj?0:1);i--)ds.push(somaDias(dia,-i));
+      const D=ds.map(d=>{const x=G.it[idLeit(d,c)],lx=x&&!x.del?x:null,bi=baseIms(c,d);
+        if(d===dia&&ltD&&dia>=hojeKey()){const kp=+ltD.novo||0;return {d,nota:ltD.nota!=null?+ltD.nota:null,kg:kp,ims:ltD.ims>0?+ltD.ims:(kp&&bi?kp/bi:NaN),prev:true};}
+        const kgd=ix.get(d+'|'+c)||0;return {d,nota:lx&&lx.nota!=null?+lx.nota:null,kg:kgd,ims:kgd&&bi?kgd/bi:NaN};});
       const mx=Math.max(1,...D.map(x=>x.kg));
       return `<div class="gCoG7"><div class="gCoG7Tit">Últimos 7 dias · nota, kg e % IMS</div><div class="gCoG7Bars">${D.map(x=>{const h=x.kg?Math.max(48,Math.round(x.kg/mx*100)):0,cl=x.nota==null?'':x.nota>0?' pos':x.nota<0?' neg':' zero';
-        return `<div class="gCoG7Col"><div class="gCoG7Area"><div class="gCoG7Bar${x.kg?'':' vazio'}" style="height:${x.kg?h:100}%"><b class="gCoG7Nt${cl}">${x.nota!=null?notaTxt(x.nota):'·'}</b>${x.kg?`<span>${nf(x.kg)}</span><em>${ok(x.ims)?pc(x.ims,2):'—'}</em>`:'<span>sem<br>trato</span>'}</div></div><small>${diaBR(x.d).slice(0,5)}</small></div>`;}).join('')}</div>
-        <div class="gCoG7Leg"><span>na barra: <b>nota</b> · <b>kg</b> · <b>% IMS</b></span></div></div>`;})():'';
+        return `<div class="gCoG7Col"><div class="gCoG7Area">${x.prev?`<small class="gCoG7Pv" style="bottom:calc(${x.kg?h:100}% + 2px)">previsto</small>`:''}<div class="gCoG7Bar${x.kg?'':' vazio'}${x.prev?' gCoG7Prev':''}" style="height:${x.kg?h:100}%"><b class="gCoG7Nt${cl}">${x.nota!=null?notaTxt(x.nota):'·'}</b>${x.kg?`<span>${nf(x.kg)}</span><em>${ok(x.ims)?pc(x.ims,2):'—'}</em>`:'<span>sem<br>trato</span>'}</div></div><small>${diaBR(x.d).slice(0,5)}</small></div>`;}).join('')}</div>
+        </div>`;})():'';
     if(trv&&!(lt&&!lt.del))return `<div class="gCochoMin gCoTrav" data-c="${esc(c)}">${seloCurral(c)}<span><b>Sem leitura</b><small>🔒 já teve trato neste dia · a leitura não pode ser feita</small></span></div>`;
     if(lt&&!lt.del&&!GT.sel[c]&&!(GT.coAberto||{})[c])return `<button class="gCochoMin${trv?' gCoTrav':''}" data-g="coAbre" data-c="${esc(c)}">${seloCurral(c)}<span><b>${lt.nota!=null?'Nota '+notaTxt(lt.nota):''}${lt.ims>0?(lt.nota!=null?' · ':'')+'IMS '+pc(+lt.ims,2):''}</b>${ok(+lt.novo)?nf(+lt.novo)+' kg':'—'}<small>${trv?'✓ feita · 🔒 já teve trato · toque para ver':'✓ feita · toque para alterar'}</small></span><em class="gMinBase">${(()=>{const h=lt.hora||(lt.ts?new Date(+lt.ts).toTimeString().slice(0,5):'');return h?`<i class="gMinHora">🕒 ${esc(h)}</i>`:'';})()}</em></button>`;  // feita: fica recolhida
     return `<div class="gCocho${lt&&!lt.del?' feito':''}${trv?' gCoRO':''}" data-c="${esc(c)}" data-base="${base}" data-msf="${msFator}">
@@ -2555,7 +2559,7 @@ function tRacForm(t){
       <button class="${r.inativa?'lima':'danger'}" data-g="racAtiva" data-id="${r.uid}">${r.inativa?'✓ Reativar ração':'⏸ Inativar ração (não vai usar mais)'}</button></section>
     <section class="panel"><h2>Histórico da fórmula</h2>${vers}<button class="dangerfill" data-g="apagaRac" data-id="${r.uid}">Apagar ração</button></section>`:''}`;
 }
-function lerItensRac(){if($('gf_nome'))GT.nome=$('gf_nome').value;if($('gf_desde'))GT.desde=$('gf_desde').value;document.querySelectorAll('#gBox [data-ri]').forEach(s=>{const k=+s.dataset.ri;if(GT.itens[k])GT.itens[k].ins=s.value;});
+function lerItensRac(){if($('gf_nome'))GT.nome=$('gf_nome').value;if($('gf_desde'))GT.desde=$('gf_desde').value;document.querySelectorAll('#gBox [data-ri]').forEach(s=>{const k=+s.dataset.ri;if(GT.itens&&GT.itens[k])GT.itens[k].ins=s.value;});
   document.querySelectorAll('#gBox [data-rp]').forEach(s=>{const k=+s.dataset.rp;if(GT.itens[k])GT.itens[k].pMS=s.value;});}
 function calcRacao(){
   const box=$('gRacCalc');if(!box)return;lerItensRac();const hj=hojeKey();
@@ -4408,7 +4412,7 @@ function tMed(t){const vis=typeof modoVer!=='undefined'&&modoVer;
       <div class="gMedCadAdd"><input type="text" id="gf_medCadNovo" placeholder="${k==='medSint'?'Novo sintoma (ex.: tosse)':'Nova ação (ex.: aplicado antibiótico)'}" autocomplete="off"><button class="primary" data-g="medCadAdd" data-k="${k}">+ Cadastrar</button></div>
       <div class="gMedCadLista">${L.length?L.map((x,i)=>ed===i?`<div class="gMedCadIt"><input type="text" id="gf_medCadEd" value="${esc(x)}" autocomplete="off"><button class="mini lima" data-g="medCadOk" data-k="${k}" data-i="${i}">💾 Salvar</button><button class="mini" data-g="medCadEdX" data-k="${k}">Cancelar</button></div>`
         :`<div class="gMedCadIt"><span>${esc(x)}</span><button class="mini" data-g="medCadEd" data-k="${k}" data-i="${i}">✎ Editar</button><button class="mini danger" data-g="medCadRm" data-k="${k}" data-i="${i}">✕</button></div>`).join(''):'<p class="note">Nada cadastrado ainda.</p>'}</div>
-      <button data-g="medVolta">❮ Voltar</button></section>`;}
+</section>`;}
   if(t.form){const x=t.id?G.it[t.id]:null;
     return `<section class="panel"><h2>💉 ${x?'Editar registro':'Novo registro'}</h2><div class="gForm">${[{k:'mdDia',l:'Data',t:'dia',v:x?x.dia:hojeKey()}].map(campo).join('')}
       <div class="gCampo"><label for="gf_mdBrinco">Brinco do animal</label><input type="text" id="gf_mdBrinco" data-tecg="brinco" data-kg="brinco" inputmode="none" autocomplete="off" value="${esc(x?x.brinco||'':'')}" placeholder="Toque para digitar"></div>
