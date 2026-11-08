@@ -1160,7 +1160,7 @@ window.acRegistrar=async()=>{const B=acB(),it=acItem();if(!B||!it)return;if(AC.r
 /* "Próximo produto": se já carregou este produto, registra (e vai para o próximo); senão só passa para o próximo */
 window.acProximo=()=>{const B=acB(),it=acItem();if(!B||!it)return;const c=cfg();
   if(!ok(it.real)&&window.insFixo&&insFixo(it.ins))return acRegistrar();   // registra o previsto ao passar para o próximo
-  if(!ok(it.real)&&ok(it.ini)&&A.peso!=null&&(A.estavel?A.valEst:A.peso)>it.ini+Math.max(c.tol,5))return acRegistrar();
+  if(!ok(it.real)&&!AC.trava&&!AC.pausa&&ok(it.ini)&&A.peso!=null&&(A.estavel?A.valEst:A.peso)>it.ini+Math.max(c.tol,5))return acRegistrar();   // travada/pausada: um solavanco na balança não vira carregamento
   if(B.atual>=B.itens.length-1)return;
   B.atual++;const n=B.itens[B.atual];
   if(!ok(n.real)){const pv=B.itens[B.atual-1];n.ini=ok(pv.fim)&&ok(pv.real)?pv.fim:(A.estavel?A.valEst:null);n.fim=null;}
