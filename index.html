@@ -1044,7 +1044,7 @@ body.naInicio .topoTxt h1{font-size:clamp(16px,5vw,28px)!important}
     <button id="tabMan" aria-selected="false" title="Manual (só se a Automação não estiver funcionando)">✋<small>Manual</small></button>
   </div>
   <div class="tTiles" id="tratoTiles">
-    <button type="button" class="gIniBar" id="gIniBarT"><span><span class="gIniOp">☰ 🚜 Operacional</span><span class="gIniVer">☰ 👁 Visualizar</span></span><span>▼ menu</span></button>
+    <button type="button" class="gIniBar" id="gIniBarT"><span><span class="gIniOp">☰ 🚜 Operacional</span><span class="gIniVer">☰ 👁 Visualizar</span></span><span>◀ voltar</span></button>
     <button type="button" id="avBtn" class="avBtn" hidden>● AO VIVO</button>
     <button type="button" data-tt="leit" style="--c:#3f80c4"><span class="gIc">🔍</span><span>Leitura de cocho</span></button>
     <button type="button" data-tt="hist" style="--c:#24507f"><span class="gIc">📖</span><span class="tPvRl">Previsto<i></i>Realizado</span></button>
@@ -1063,7 +1063,7 @@ body.naInicio .topoTxt h1{font-size:clamp(16px,5vw,28px)!important}
     <button id="tabAuto" aria-selected="false" hidden>Fornecer</button>
   </div>
   <div class="subtabs gTiles" id="subGest" hidden>
-    <button type="button" class="gIniBar" id="gIniBar"><span>☰ 📊 Gestão</span><span>▼ menu</span></button>
+    <button type="button" class="gIniBar" id="gIniBar"><span>☰ 📊 Gestão</span><span>◀ voltar</span></button>
     <button data-gt="currais" style="--c:#7cb342"><span class="gIc"><svg class="icoCurral" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 21V7.5L5.5 5 7 7.5V21M10.5 21V7.5L12 5l1.5 2.5V21M17 21V7.5L18.5 5 20 7.5V21" fill="#c9a26b" stroke="#7a4f21" stroke-width="1.3" stroke-linejoin="round"/><path d="M2.5 10.5h19M2.5 16h19" stroke="#7a4f21" stroke-width="2.2" stroke-linecap="round"/></svg></span><span>Currais</span></button>
     <button data-gt="animais" style="--c:#2e8b3d"><span class="gIc">🐂</span><span>Animais</span></button>
     <button data-gt="racoes" style="--c:#b8860b"><span class="gIc">🌽</span><span>Rações</span></button>
@@ -1335,7 +1335,7 @@ body.naInicio .topoTxt h1{font-size:clamp(16px,5vw,28px)!important}
 <div class="toast" id="toast" hidden></div>
 <script>
 'use strict';
-const APP_VERSAO='332';
+const APP_VERSAO='333';
 const APP_DATA='19/10/2026';
 const KEY='confinamento-completo-v1';
 const $=id=>document.getElementById(id);
@@ -4313,7 +4313,7 @@ if('serviceWorker' in navigator){
     const h=pn.querySelector(':scope>h2,:scope>.curhead>h2');if(!h||h.classList.contains('gMinzCab')||h.closest('.gMinzCab,.hColCab'))return;
     const s=caminho().split(' › '),c=h.cloneNode(true);c.querySelectorAll('.note,button').forEach(x=>x.remove());
     const t=nz(c.textContent),u0=nz(s[s.length-1]),u=u0==='ms'?'materiaseca':u0,dup=!!t&&!!u&&t.includes(u);h.classList.toggle('gTitDup',dup);h.classList.toggle('gTitDupN',dup&&!!h.querySelector('.note,button'));}catch(e){}};
-  const pinta=()=>{if(window.semTela)semTela();titDup();const f=document.body.classList.contains('menuFechado');const cm=f?caminho():'';b.classList.toggle('mLongo',cm.split(' › ').length>2);const vt=f&&podeVoltar(cm);b.classList.toggle('mVolta',vt);b.innerHTML=f?`<span>☰ ${esc(cm)}</span><span>${vt?'◀ voltar':'▼ menu'}</span>`:'▲ esconder menu';};
+  const pinta=()=>{if(window.semTela)semTela();titDup();const f=document.body.classList.contains('menuFechado');const cm=f?caminho():'';b.classList.toggle('mLongo',cm.split(' › ').length>2);const vt=f&&podeVoltar(cm);b.classList.toggle('mVolta',vt);b.innerHTML=f?`<span>☰ ${esc(cm)}</span><span>◀ voltar</span>`:'▲ esconder menu';};
   window.menuPinta=pinta;
   /* barrinha verde: da 3ª tela em diante (Gestão › Currais › Mudar…) volta para a tela anterior; na 2ª abre o menu. Página inicial = ‹ ao lado do FJK */
   function tratoDentro(){try{return $('tabGrpGest').getAttribute('aria-selected')!=='true'&&GT&&GT.t&&(GT.t==='med'?!!(GT.cad||GT.form):!['cocho','ms','fezes'].includes(GT.t));}catch(e){return false;}}
