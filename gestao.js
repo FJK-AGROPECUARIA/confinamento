@@ -1798,25 +1798,40 @@ function sinaisDia(dia){const out=[],[Y,M,D]=dia.split('-').map(Number),tms=t=>{
     fecha();});
   return out.sort((a,b)=>a.ts-b.ts);}
 /* encaixa cada queda de sinal antes da linha (produto ou curral) registrada logo depois dela; o que vier depois do último fica no fim */
-function sinaisDoBloco(D,g,S){const ap=x=>x&&x.uid?String(x.uid).split('-')[1]||'':'',a=ap(g.b);
+/* batida aberta (▶ Iniciar carregamento) que ainda não virou carregamento registrado (em andamento ou cancelada) */
+function aberturasDia(dia,D){const [Y,M,Dd]=dia.split('-').map(Number),tms=t=>{const [h,m,x]=String(t||'0:0:0').split(':').map(Number);return new Date(Y,M-1,Dd,h||0,m||0,x||0).getTime();};
+  const cs=D.filter(g=>g.b).map(g=>g.ts),out=[];
+  gTodos('diag').filter(x=>x.dia===dia).forEach(it=>{const ap=it.aparelho||String(it.uid).split('-').pop();
+    (it.ev||[]).forEach(e=>{if(e.tipo!=='batida_prev')return;const ts=tms(e.t);if(cs.some(t=>Math.abs(t-ts)<180000))return;
+      if(out.some(x=>x.ap===ap&&Math.abs(x.ts-ts)<180000))return;out.push({ap,ts,t:e.t,local:e.local||'',tratos:e.tratos||[],total:e.total});});});
+  return out.sort((a,b)=>a.ts-b.ts);}
+function sinaisDoBloco(D,g,S,AB){const ap=x=>x&&x.uid?String(x.uid).split('-')[1]||'':'',a=ap(g.b);
   const prox=D.find(x=>x!==g&&x.ts>g.ts&&(!a||!x.b||ap(x.b)===a));
-  const E=S.filter(e=>(!a||e.ap===a)&&e.ts>=(g.ts||0)&&(!prox||e.ts<prox.ts));
+  /* a partir do momento em que abriu a próxima batida, os avisos da balança ficam nela (não no fornecimento anterior) */
+  const ab=(AB||[]).find(x=>x.ts>(g.ts||0)&&(!a||x.ap===a)),lim=Math.min(prox?prox.ts:Infinity,ab?ab.ts:Infinity);
+  const E=S.filter(e=>(!a||e.ap===a)&&e.ts>=(g.ts||0)&&e.ts<lim);
   const L=[...g.its,...g.rs],antes=new Map(),fim=[];
   E.forEach(e=>{const r=L.find(x=>x.ts&&x.ts>=e.ts);if(r){if(!antes.has(r))antes.set(r,[]);antes.get(r).push(e);}else fim.push(e);});
   return {antes,fim};}
+function sinaisAbertura(D,a,S,AB){const ap=x=>x&&x.uid?String(x.uid).split('-')[1]||'':'';
+  const prox=D.find(x=>x.ts>a.ts&&(!x.b||ap(x.b)===a.ap)),pa=AB.find(x=>x!==a&&x.ts>a.ts&&x.ap===a.ap),lim=Math.min(prox?prox.ts:Infinity,pa?pa.ts:Infinity);
+  return S.filter(e=>e.ap===a.ap&&e.ts>=a.ts&&e.ts<lim);}
+const abTit=a=>`${String(a.t).slice(0,5)} · Carregamento aberto${a.local==='P'?' · Pasto':a.local==='C'?' · Confinamento':''}${a.tratos&&a.tratos.length?' · Trato '+a.tratos.join(' e '):''} (ainda não finalizado)`;
 const sinalTxt=e=>`Balança sem sinal ${String(e.t0).slice(0,8)}${e.fim?' → voltou '+String(e.fim).slice(0,8):''}`;
 /* modo: 'blob' devolve a imagem (para juntar vários dias); 'rows' devolve as linhas do Excel */
 async function confBatExp(o,diaArg,modo){const dia=diaArg||GT.cbDia||hojeKey(),D=confBatDados(dia);if(!D.length)return modo?null:toast('Nada nesse dia');
   const nome=`FJK - Conferência do carregamento - ${dB(dia).replace(/\//g,'-')}`;
   if(o==='xls'){const H=t=>({v:t,s:1}),rows=[[H('Carregamento'),H('Tipo'),H('Hora'),H('Produto / curral'),H('Trato'),H('Previsto'),H('Realizado'),H('Balança início'),H('Balança final'),H('Salto')]];
-    const num=v=>ok(v)?{v,s:4}:{v:''},SS=sinaisDia(dia);
-    D.forEach(g=>{const bt=g.b?`${g.b.hora||''} ${g.b.racNome||''}`:'sem carregamento',SB=sinaisDoBloco(D,g,SS);
+    const num=v=>ok(v)?{v,s:4}:{v:''},SS=sinaisDia(dia),AB=aberturasDia(dia,D);
+    const abXls=g=>{const nx=D[D.indexOf(g)+1];AB.filter(a=>a.ts>(g?g.ts:-Infinity)&&(!nx||a.ts<nx.ts)).forEach(a=>sinaisAbertura(D,a,SS,AB).forEach(e=>rows.push([{v:String(a.t).slice(0,5)+' aberto'},{v:'Sem sinal'},{v:String(e.t0).slice(0,5)},{v:sinalTxt(e)},{v:''},{v:''},{v:''},num(e.antes),num(e.depois),ok(e.antes)&&ok(e.depois)?num(e.depois-e.antes):{v:''}])));};
+    if(D.length)AB.filter(a=>a.ts<D[0].ts).forEach(a=>sinaisAbertura(D,a,SS,AB).forEach(e=>rows.push([{v:String(a.t).slice(0,5)+' aberto'},{v:'Sem sinal'},{v:String(e.t0).slice(0,5)},{v:sinalTxt(e)},{v:''},{v:''},{v:''},num(e.antes),num(e.depois),ok(e.antes)&&ok(e.depois)?num(e.depois-e.antes):{v:''}])));
+    D.forEach(g=>{const bt=g.b?`${g.b.hora||''} ${g.b.racNome||''}`:'sem carregamento',SB=sinaisDoBloco(D,g,SS,AB);
       const sin=e=>rows.push([{v:bt},{v:'Sem sinal'},{v:String(e.t0).slice(0,5)},{v:sinalTxt(e)},{v:''},{v:''},{v:''},num(e.antes),num(e.depois),ok(e.antes)&&ok(e.depois)?num(e.depois-e.antes):{v:''}]);
       g.its.forEach(x=>{(SB.antes.get(x)||[]).forEach(sin);rows.push([{v:bt},{v:'Carregamento'},{v:x.hora||''},{v:x.nome},{v:''},num(x.prev),num(x.real),num(x.ini),num(x.fim),num(x.salto)]);});
       g.rs.forEach(x=>{(SB.antes.get(x)||[]).forEach(sin);rows.push([{v:bt},{v:'Fornecimento'},{v:x.hora||''},{v:x.nome},{v:x.trato||''},num(x.prev),num(x.real),num(x.ini),num(x.fim),num(x.salto)]);});
       SB.fim.forEach(sin);
       confBalLinhas(g).forEach(x=>rows.push([{v:bt,s:9},{v:'Balanço',s:9},{v:'',s:9},{v:x[0],s:9},{v:'',s:9},{v:'',s:9},{v:'',s:9},{v:'',s:9},{v:'',s:9},x[1]==null?{v:'',s:9}:{v:x[1],s:7}]));
-      rows.push([{v:bt,s:9},{v:'Balanço',s:9},{v:'',s:9},{v:g.dif!=null?'SOBROU A MAIS DO QUE DEVIA':'Balança ganhou sem carregar',s:9},{v:'',s:9},{v:'',s:9},{v:'',s:9},{v:'',s:9},{v:'',s:9},{v:g.dif!=null?g.dif:g.apareceu,s:7}]);});
+      rows.push([{v:bt,s:9},{v:'Balanço',s:9},{v:'',s:9},{v:g.dif!=null?'SOBROU A MAIS DO QUE DEVIA':'Balança ganhou sem carregar',s:9},{v:'',s:9},{v:'',s:9},{v:'',s:9},{v:'',s:9},{v:'',s:9},{v:g.dif!=null?g.dif:g.apareceu,s:7}]);abXls(g);});
     if(modo==='rows')return rows.slice(1).map(r=>{r[0]={v:dB(dia).slice(0,5)+' '+r[0].v,s:r[0].s};return r;});
     return compartilharArquivo(montarXlsx([['Conferência',rows,[18,14,8,24,7,11,11,13,13,10]]]),nome+'.xlsx',XT);}
   const cols=[['Hora',90,'c'],['Produto / curral',230,'c'],['Previsto',120,'r'],['Realizado',130,'r'],['Dif.',100,'r'],['Início',130,'r'],['Final',130,'r'],['Salto',110,'r']];
@@ -1829,13 +1844,15 @@ async function confBatExp(o,diaArg,modo){const dia=diaArg||GT.cbDia||hojeKey(),D
     return {v:[String(e.t0).slice(0,5),'📶 '+sinalTxt(e)+tx,'','','',ok(e.antes)?nf(e.antes):'—',ok(e.depois)?nf(e.depois):'—',d==null||meio?'':sg_(d)||'0'],neg:[],
     cor:['#6b7a8f','#6b7a8f',null,null,null,'#6b7a8f','#6b7a8f',d==null||meio?'#6b7a8f':corP(d)]};};
   const comS=(L,SB)=>L.flatMap(x=>[...(SB.antes.get(x)||[]).map(e=>linS(e,x)),lin(x)]);
-  const secs=[];D.forEach(g=>{const SB=sinaisDoBloco(D,g,SS),b=g.b,cb=b?`Carregamento ${b.hora||''} · ${b.racNome||''}${b.local==='P'?' · Pasto':b.local==='C'?' · Confinamento':''}`:'Tratos sem carregamento antes';
+  const AB=aberturasDia(dia,D),secAb=a=>{const L=sinaisAbertura(D,a,SS,AB);secs.push({cab:abTit(a),cols,linhas:L.length?L.map(e=>linS(e,null)):[{v:['','Nenhum aviso da balança','','','','','',''],neg:[],cor:['#6b7a8f','#6b7a8f']}],total:['CARREGAMENTO EM ANDAMENTO','','','','','','','']});};
+  const secs=[];if(D.length)AB.filter(a=>a.ts<D[0].ts).forEach(secAb);
+  D.forEach((g,iD)=>{const SB=sinaisDoBloco(D,g,SS,AB),b=g.b,cb=b?`Carregamento ${b.hora||''} · ${b.racNome||''}${b.local==='P'?' · Pasto':b.local==='C'?' · Confinamento':''}`:'Tratos sem carregamento antes';
     if(b&&g.its.length)secs.push({cab:`${b.hora||''} · Carregamento · `+cb.replace(/^Carregamento [^·]*· /,''),cols,linhas:comS(g.its,SB).concat(g.rs.length?[]:SB.fim.map(linS)),total:['CARREGADO','',nf(g.its.reduce((a,x)=>a+(x.prev||0),0)),nf(g.carregado),'','',ok(g.fimCarga)?nf(g.fimCarga):'',g.sProd?sg_(g.sProd):'']});
     runsT(g.rs).forEach((L,iR,RR)=>{const pv=L.reduce((a,x)=>a+(x.prev||0),0),fo=L.reduce((a,x)=>a+(x.real||0),0),sl=L.reduce((a,x)=>a+(ok(x.salto)?x.salto:0),0),uf=[...L].reverse().find(x=>ok(x.fim));
       secs.push({cab:`${L[0].hora||''} · Fornecimento · Trato ${L[0].trato}`+(g.b?` (carregamento das ${g.b.hora||''})`:' (sem carregamento antes)'),cols,linhas:comS(L,SB).concat(iR===RR.length-1?SB.fim.map(linS):[]),total:['FORNECIDO','',nf(pv),nf(fo),sg_(fo-pv),'',uf?nf(uf.fim):'',sl?sg_(sl):'']});});
     const corS=v=>v>=50?'#b3261e':v<=-50?'#1565c0':null;
     secs.push({cab:cb+' · balanço do vagão',cols,linhas:confBalLinhas(g).map(x=>({v:['',x[0],'','','','','',x[1]==null?'':x[2]?sg_(x[1]):nf(x[1])],neg:[1],cor:x[2]?[null,null,null,null,null,null,null,corS(x[1])]:x[0].startsWith('⚠')?[null,'#b3261e',null,null,null,null,null,'#b3261e']:null})),
-      total:g.dif!=null?['SOBROU A MAIS DO QUE DEVIA','','','','','','',(sg_(g.dif)||'0')+' kg']:g.junto?['BALANÇO NO CARREGAMENTO SEGUINTE','','','','','','','']:['BALANÇA GANHOU SEM CARREGAR','','','','','','',(sg_(g.apareceu)||'0')+' kg']});});
+      total:g.dif!=null?['SOBROU A MAIS DO QUE DEVIA','','','','','','',(sg_(g.dif)||'0')+' kg']:g.junto?['BALANÇO NO CARREGAMENTO SEGUINTE','','','','','','','']:['BALANÇA GANHOU SEM CARREGAR','','','','','','',(sg_(g.apareceu)||'0')+' kg']});{const nx=D[iD+1];AB.filter(a=>a.ts>g.ts&&(!nx||a.ts<nx.ts)).forEach(secAb);}});
   /* resumo do dia no topo: uma linha por carregamento */
   const RS=confResumo([dia]);if(RS.length)secs.unshift(secResumo(RS,'Resumo do dia · balanço de cada carregamento',false));
   const blob=await desenharTabela(secs,`FJK - Conferência do carregamento - ${dB(dia)}`);if(modo==='blob')return blob;
