@@ -758,8 +758,10 @@ body.comteclado .wrap{padding-bottom:300px!important}
 .gEvLin2{display:grid;grid-template-columns:1.25fr .8fr .8fr 1.25fr;gap:4px;margin-top:4px}.gEvLin2 input{width:100%;padding:7px 4px;font-size:.88rem;margin:0}
 .gEvLin2 input:nth-child(-n+2){background:#f4f8ea}.gEvLock{display:flex;align-items:center;justify-content:center;font-size:.8rem;color:var(--muted);background:#eceff1;border-radius:8px;padding:7px 2px;white-space:nowrap;overflow:hidden}.gEvTrava .gEvLock+input{}.gEvLin2 input:nth-child(n+3){background:#fffaf0}
 .gEvLin2.gEvCab span{font-size:.62rem;line-height:1.15;text-align:center}.gEvCab .gEvC{color:#4a6b14}.gEvCab .gEvV{color:#9a6200}
-.gCoTopo>div:last-child{min-width:0;flex:1 1 auto}.gUlt3Lin{display:flex;align-items:stretch;gap:5px;margin-top:6px;min-width:0}.gUlt3Lin .gUlt3{min-width:0}.gUlt3Lin .gUlt3{flex:1;margin-top:0}
-.gCoGrafMais{flex:0 0 34px;width:34px!important;min-height:0!important;margin:0!important;padding:0!important;border-radius:10px;border:2px solid #2e6b2f;background:#fff;color:#2e6b2f;font-size:1.6rem;font-weight:800;line-height:1;cursor:pointer}
+.gCoTopo>div:nth-child(2){min-width:0;flex:1 1 auto}.gCoG7Bar.gCoG7Prev{background:repeating-linear-gradient(135deg,#7fa86a,#7fa86a 6px,#6f9a5b 6px,#6f9a5b 12px);border:2px dashed #2e6b2f}.gCoG7Bar.gCoG7Prev em{color:#fff}
+.gCoG7Area{position:relative}.gCoG7Bars:has(.gCoG7Pv){padding-top:12px}.gCoG7Area small.gCoG7Pv{position:absolute;left:0;right:0;margin:0;text-align:center;color:#2e6b2f;font-weight:800;font-size:.55rem;white-space:nowrap}.gCoG7PvLeg{display:inline-block;width:10px;height:10px;border-radius:2px;background:#7fa86a;border:1px dashed #2e6b2f;vertical-align:-1px}
+.gCoTopo:has(.gCoFecha)>div>span:first-child{padding-right:44px}.gUlt3 .gU3{min-width:0;overflow:hidden}.gUlt3 .gU3 small{font-size:.56rem}.gUlt3 .gU3 b{font-size:.86rem}.gUlt3 .gU3 i{font-size:.6rem}.gUlt3 .gU3 em{font-size:.5rem;letter-spacing:-.03em}.gUlt3 .gU3 i{letter-spacing:-.02em}.gUlt3{gap:4px}.gUlt3Lin{display:flex;align-items:stretch;gap:5px;margin-top:6px;min-width:0}.gUlt3Lin .gUlt3{min-width:0}.gUlt3Lin .gUlt3{flex:1;margin-top:0}
+.gCoGrafMais{flex:0 0 34px;width:34px!important;height:34px!important;align-self:center;min-height:0!important;margin:0!important;padding:0!important;border-radius:10px;border:2px solid #2e6b2f;background:#fff;color:#2e6b2f;font-size:1.6rem;font-weight:800;line-height:1;cursor:pointer}
 .gCoGrafMais.sel{background:#2e6b2f;color:#fff}
 .gCoG7{margin:8px 0 4px;padding:8px 6px 6px;border:1px solid #dfe6d5;border-radius:12px;background:#fbfcf8}
 .gCoG7Tit{font-size:.78rem;font-weight:700;color:#2e6b2f;margin:0 2px 6px}
@@ -1333,7 +1335,7 @@ body.naInicio .topoTxt h1{font-size:clamp(16px,5vw,28px)!important}
 <div class="toast" id="toast" hidden></div>
 <script>
 'use strict';
-const APP_VERSAO='330';
+const APP_VERSAO='331';
 const APP_DATA='19/10/2026';
 const KEY='confinamento-completo-v1';
 const $=id=>document.getElementById(id);
@@ -4301,7 +4303,9 @@ if('serviceWorker' in navigator){
   const caminho=()=>{const g=$('tabGrpGest').getAttribute('aria-selected')==='true'?'Gestão':'Tratos';
     const p=[g];if(g==='Gestão'){const cfg=document.querySelector('#subGest button[data-gt="cfg"][aria-selected="true"]');p.push(cfg?'⚙️ Configurações':sel('#subGest'));
       try{if(cfg&&GT.t==='cfg'&&GT.cfgSel){const o=CFG_ABAS.find(x=>x[0]===GT.cfgSel);if(o){p[1]='Configurações';p.push((CFG_ICO[o[0]]||'')+' '+(o[0]==='senha'?'Senhas':o[1]));}}
-        else if(!cfg&&GT&&GT.t&&GT.t!=='home'&&GT.t!==(GT.raiz||RAIZ[GT.t])){const NOME3={indices:'📊 Índices do dia'},h=document.querySelector('#gBox section.panel h2');if(NOME3[GT.t])p.push(NOME3[GT.t]);else if(h){const c=h.cloneNode(true);c.querySelectorAll('.note,button').forEach(x=>x.remove());const tx=c.textContent.replace(/\s+/g,' ').trim();if(tx)p.push(tx);}}}catch(e){}}else{const t=sel('#subTrato')||($('tabMed')&&$('tabMed').getAttribute('aria-selected')==='true'?'💉 Medicamentos':'');p.push(t);if(/Manual|Automação/.test(t))p.push(sel('#subModo'));}
+        else if(!cfg&&GT&&GT.t&&GT.t!=='home'&&GT.t!==(GT.raiz||RAIZ[GT.t])){const NOME3={indices:'📊 Índices do dia'},h=document.querySelector('#gBox section.panel h2');if(NOME3[GT.t])p.push(NOME3[GT.t]);else if(h){const c=h.cloneNode(true);c.querySelectorAll('.note,button').forEach(x=>x.remove());const tx=c.textContent.replace(/\s+/g,' ').trim();if(tx)p.push(tx);}}}catch(e){}}else{const t=sel('#subTrato')||($('tabMed')&&$('tabMed').getAttribute('aria-selected')==='true'?'💉 Medicamentos':'');p.push(t);if(/Manual|Automação/.test(t))p.push(sel('#subModo'));
+      /* telas de dentro (Gráfico de notas, Sintomas, Novo registro…): o nome vai para a barrinha verde */
+      try{if(!$('viewGest').hidden&&tratoDentro()){const hh=document.querySelector('#gBox section.panel h2');if(hh){const c=hh.cloneNode(true);c.querySelectorAll('.note,button').forEach(x=>x.remove());const tx=c.textContent.replace(/\s+/g,' ').trim();if(tx)p.push(tx);}}}catch(e){}}
     return p.filter(Boolean).join(' › ');};
   /* o título da tela que repete o último nome da barrinha verde some (o caminho já mostra); contagem (.note) fica */
   const nz=s=>String(s||'').normalize('NFD').replace(/[^a-z0-9]/gi,'').toLowerCase();
@@ -4312,8 +4316,11 @@ if('serviceWorker' in navigator){
   const pinta=()=>{if(window.semTela)semTela();titDup();const f=document.body.classList.contains('menuFechado');const cm=f?caminho():'';b.classList.toggle('mLongo',cm.split(' › ').length>2);const vt=f&&podeVoltar(cm);b.classList.toggle('mVolta',vt);b.innerHTML=f?`<span>☰ ${esc(cm)}</span><span>${vt?'◀ voltar':'▼ menu'}</span>`:'▲ esconder menu';};
   window.menuPinta=pinta;
   /* barrinha verde: da 3ª tela em diante (Gestão › Currais › Mudar…) volta para a tela anterior; na 2ª abre o menu. Página inicial = ‹ ao lado do FJK */
-  function podeVoltar(cm){try{return $('tabGrpGest').getAttribute('aria-selected')==='true'&&!$('viewGest').hidden&&(cm||caminho()).split(' › ').length>2;}catch(e){return false;}}
-  function voltarTela(){try{if(GT.t==='cfg'&&GT.cfgSel){GT.cfgSel=null;gRender();window.scrollTo({top:0});return;}
+  function tratoDentro(){try{return $('tabGrpGest').getAttribute('aria-selected')!=='true'&&GT&&GT.t&&(GT.t==='med'?!!(GT.cad||GT.form):!['cocho','ms','fezes'].includes(GT.t));}catch(e){return false;}}
+  function podeVoltar(cm){try{if($('viewGest').hidden)return false;if($('tabGrpGest').getAttribute('aria-selected')!=='true')return tratoDentro();
+    return (cm||caminho()).split(' › ').length>2||(GT.t!=='home'&&GT.t!==(GT.raiz||RAIZ[GT.t]))||(GT.t==='cfg'&&!!GT.cfgSel);}catch(e){return false;}}
+  function voltarTela(){try{if(GT.t==='med'){GT={t:'med',de:GT.de||'',ate:GT.ate||'',q:GT.q||'',sf:GT.sf||''};gRender();window.scrollTo({top:0});return;}
+    if(GT.t==='cfg'&&GT.cfgSel){GT.cfgSel=null;gRender();window.scrollTo({top:0});return;}
     if(gPilha.length)return gVoltar();const r=GT.raiz||RAIZ[GT.t];if(r)return gRaiz(r==='cfg'?'cfg':r);}catch(e){}}
   const fecha=()=>{document.body.classList.add('menuFechado');pinta();};
   const abre=()=>{document.body.classList.remove('menuFechado');if(typeof modoVer!=='undefined'&&modoVer&&window.avVer)avVer(false);pinta();const y=m.getBoundingClientRect().top+scrollY-8;if(scrollY>y)window.scrollTo({top:Math.max(0,y)});};
