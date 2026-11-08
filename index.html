@@ -1318,7 +1318,7 @@ body.naInicio .topoTxt h1{font-size:clamp(16px,5vw,28px)!important}
 <div class="toast" id="toast" hidden></div>
 <script>
 'use strict';
-const APP_VERSAO='327';
+const APP_VERSAO='328';
 const APP_DATA='19/10/2026';
 const KEY='confinamento-completo-v1';
 const $=id=>document.getElementById(id);
@@ -1494,6 +1494,9 @@ function prevDiaCurral(c,P,dia,regsDia){const ks=[];for(let k=1;k<=MAXT;k++){con
 function prevDiaRegs(c,rs){const sp=rs.reduce((a,r)=>a+(+r.prev||0),0);try{const cfgG=gOk()&&typeof gCfg==='function'?gCfg():{};if(cfgG.compensa===false)return sp;
   const ks=[...new Set(rs.map(r=>+r.trato))].sort((a,b)=>a-b);if(ks.length<2)return sp;const ult=ks[ks.length-1],nt=nTratos(c);if(nt&&ult<nt)return sp;
   return rs.reduce((a,r)=>a+(+r.trato===ult?(+r.prev||0):(+r.forn||0)),0);}catch(e){return sp;}}
+/* soma do previsto de vários registros (vários currais/dias) sem contar a compensação duas vezes: agrupa por curral e dia */
+function prevRegsTotal(regs){const g=new Map();(regs||[]).forEach(r=>{const k=r.curral+'|'+r.dia;if(!g.has(k))g.set(k,[]);g.get(k).push(r);});
+  let t=0;g.forEach((rs,k)=>{t+=prevDiaRegs(k.split('|')[0],rs);});return t;}
 function totalDia(c,obj,dia){obj=obj||S.prev||{};dia=dia||hojeKey();const ks=[];for(let k=1;k<=MAXT;k++){const v=(obj[k]||{})[c];if(typeof v==='number'&&v>0)ks.push(k);}
   const cfgG=gOk()&&typeof gCfg==='function'?gCfg():{};if(ks.length<2||cfgG.compensa===false)return totalCurral(c,obj);
   const regs=HIST.filter(r=>r.dia===dia&&r.curral===c),pul=new Set(tratosPulados(c,dia,ks).map(p=>p.k));if(!regs.length&&!pul.size)return totalCurral(c,obj);
@@ -1991,7 +1994,7 @@ function mapaPv(k){const o=pvObj();k=String(k);if(!o[k])o[k]={};return o[k];}
 function marcarPv(){if(PV.dia===hojeKey())marcarPrev();else if(PV.dia===amanhaKey())guardarPrevDia(PV.dia,PV.am);}
 /* o que a tabela mostra: total de cada curral (Todos), um trato, ou o total do período */
 function pvMapa(){const o=pvObj(),m={};
-  if(PV.per){let d=PV.ini,n=0;while(d<=PV.fim&&n<400){const od=prevDoDia(d);S.cadastro.forEach(c=>{const t=totalCurral(c,od);if(t)m[c]=(m[c]||0)+t;});d=somaDias(d,1);n++;}return m;}
+  if(PV.per){let d=PV.ini,n=0;while(d<=PV.fim&&n<400){const od=prevDoDia(d),dd=d;S.cadastro.forEach(c=>{const t=totalDia(c,od,dd);if(t)m[c]=(m[c]||0)+t;});/* total do dia sem contar a compensação duas vezes */d=somaDias(d,1);n++;}return m;}
   if(PV.t===0){S.cadastro.forEach(c=>{const t=totalDia(c,o,PV.dia);if(t)m[c]=t;});return m;}
   return Object.assign({},o[String(PV.t)]||{});}
 function pvEstado(){const e=$('pvEstado'),hj=hojeKey();let t='';
@@ -2407,16 +2410,16 @@ function gerarXlsx(regsIn){
   regs.forEach((r,i)=>{const n=i+2,d=new Date(r.ts),dia=new Date(d.getFullYear(),d.getMonth(),d.getDate());
     r1.push([{v:excelSerial(d)-excelSerial(dia),s:3},{v:diaSerial(r.dia),s:2},{v:r.trato,s:4},{v:r.curral},{v:localDe(r.curral)},{v:r.prev,s:4},{v:r.forn,s:4},
       {f:`G${n}-F${n}`,v:r.forn-r.prev,s:5},{f:`IF(F${n}=0,0,H${n}/F${n})`,v:r.prev?(r.forn-r.prev)/r.prev:0,s:6},{v:r.ini,s:4},{v:r.fim,s:4}]);});
-  const L=regs.length+1,T=L+1,sp=regs.reduce((a,r)=>a+r.prev,0),sf=regs.reduce((a,r)=>a+r.forn,0);
+  const L=regs.length+1,T=L+1,sp=prevRegsTotal(regs),sf=regs.reduce((a,r)=>a+r.forn,0);
   const tot=(cols)=>cols;
-  r1.push([{v:'TOTAL',s:9},{v:'',s:9},{v:'',s:9},{v:'',s:9},{v:'',s:9},{f:`SUM(F2:F${L})`,v:sp,s:7},{f:`SUM(G2:G${L})`,v:sf,s:7},{f:`G${T}-F${T}`,v:sf-sp,s:8},{f:`IF(F${T}=0,0,H${T}/F${T})`,v:sp?(sf-sp)/sp:0,s:10},{v:'',s:9},{v:'',s:9}]);
+  r1.push([{v:'TOTAL',s:9},{v:'',s:9},{v:'',s:9},{v:'',s:9},{v:'',s:9},{v:sp,s:7},{f:`SUM(G2:G${L})`,v:sf,s:7},{f:`G${T}-F${T}`,v:sf-sp,s:8},{f:`IF(F${T}=0,0,H${T}/F${T})`,v:sp?(sf-sp)/sp:0,s:10},{v:'',s:9},{v:'',s:9}]);
   // Aba 2: resumo por trato
   const gs=grupos(regs);
   const r2=[[H('Data'),H('Trato'),H('Currais'),H('Previsto (kg)'),H('Realizado (kg)'),H('Diferença (kg)'),H('Diferença (%)')]];
   gs.forEach((g,i)=>{const n=i+2,p=g.rs.reduce((a,r)=>a+r.prev,0),f=g.rs.reduce((a,r)=>a+r.forn,0);
     r2.push([{v:diaSerial(g.dia),s:2},{v:g.trato,s:4},{v:new Set(g.rs.map(r=>r.curral)).size,s:4},{v:p,s:4},{v:f,s:4},{f:`E${n}-D${n}`,v:f-p,s:5},{f:`IF(D${n}=0,0,F${n}/D${n})`,v:p?(f-p)/p:0,s:6}]);});
   const L2=gs.length+1,T2=L2+1;
-  r2.push([{v:'TOTAL',s:9},{v:'',s:9},{v:'',s:9},{f:`SUM(D2:D${L2})`,v:sp,s:7},{f:`SUM(E2:E${L2})`,v:sf,s:7},{f:`E${T2}-D${T2}`,v:sf-sp,s:8},{f:`IF(D${T2}=0,0,F${T2}/D${T2})`,v:sp?(sf-sp)/sp:0,s:10}]);
+  r2.push([{v:'TOTAL',s:9},{v:'',s:9},{v:'',s:9},{v:sp,s:7},{f:`SUM(E2:E${L2})`,v:sf,s:7},{f:`E${T2}-D${T2}`,v:sf-sp,s:8},{f:`IF(D${T2}=0,0,F${T2}/D${T2})`,v:sp?(sf-sp)/sp:0,s:10}]);
   // Aba 3: por curral em cada dia (soma dos tratos)
   const m=new Map();regs.forEach(r=>{const k=r.dia+'|'+r.curral;if(!m.has(k))m.set(k,{dia:r.dia,curral:r.curral,p:0,f:0,t:new Set(),rs:[]});const o=m.get(k);o.p+=r.prev;o.f+=r.forn;o.t.add(r.trato);o.rs.push(r);});
   m.forEach(o=>{o.p=prevDiaRegs(o.curral,o.rs);});
@@ -2620,7 +2623,9 @@ async function histGerar(tipo,pdfH){
   if(tipo==='juntos'||tipo==='todos'){const gs=secoesHist();if(gs.length){const [pa,pb]=intervaloHist();
     /* um arquivo só: Trato 1, e logo abaixo Trato 2 (cada um com a sua faixa e o seu total) */
     const secs=gs.map(g=>{const x=secaoTratoImg(g.cab,g.linhas);if(gs.length>1)x.total[0]='SUBTOTAL';return x;});
-    let tg=null;if(gs.length>1){let tp=0,tf=0,tpf=0;gs.forEach(g=>g.linhas.forEach(l=>{if(l.prev!=null)tp+=l.prev;if(l.real!=null){tf+=l.real;tpf+=l.prev||0;}}));tg=['TOTAL','','',fmt(tp),fmt(tf),tf?sgn(tf-tpf):''];}
+    let tg=null;if(gs.length>1){let tp=0,tf=0;gs.forEach(g=>g.linhas.forEach(l=>{if(l.prev!=null&&l.real==null)tp+=l.prev;if(l.real!=null)tf+=l.real;}));
+      /* tratos já feitos: previsto do dia sem contar a compensação duas vezes; os que faltam entram com o previsto deles */
+      const tpf=prevRegsTotal(f);tp+=tpf;tg=['TOTAL','','',fmt(tp),fmt(tf),tf?sgn(tf-tpf):''];}
     blobs.push(await desenharTabela(secs,null,tg));nomes.push(`FJK - Tratos - ${dataArq(pa)}${pa!==pb?' a '+dataArq(pb):''} (tratos juntos).png`);}}
   if(tipo==='curral'||tipo==='todos'){const t=HD.per?'':(HD.t>0?HD.t:'');
     const cab=`${t?'Trato '+t:'Todos os tratos'} - ${rotuloData()}${localSel==='C'?' · Confinamento':localSel==='P'?' · Pasto':''}`;
@@ -2903,7 +2908,7 @@ function renderHist(){try{aplicarRenomesHist();}catch(e){}
     $('hBatN').textContent=L.length?`${L.length} carregamento(s)`:'';$('hBat').innerHTML=window.batidasHTML?batidasHTML(L,pa!==pb):'';return;}
   document.querySelectorAll('#hLocal button[data-loc]').forEach(b=>b.classList.toggle('sel',b.dataset.loc===localSel));
   const regs=filtrados();
-  const p=regs.reduce((a,r)=>a+r.prev,0),f=regs.reduce((a,r)=>a+r.forn,0);
+  const p=prevRegsTotal(regs),f=regs.reduce((a,r)=>a+r.forn,0);   // previsto sem contar a compensação duas vezes
   $('hPrev').textContent=regs.length?fmt(p):'—';$('hReal').textContent=regs.length?fmt(f):'—';
   $('hDif').textContent=regs.length?sgn(f-p):'—';$('hDif').className='num '+(regs.length?classeDesv(f-p,p):'');
   /* um dia só: previsto do DIA inteiro (todos os tratos ou o trato escolhido), o que já foi feito e o que falta */
