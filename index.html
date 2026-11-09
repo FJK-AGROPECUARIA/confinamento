@@ -1335,7 +1335,7 @@ body.naInicio .topoTxt h1{font-size:clamp(16px,5vw,28px)!important}
 <div class="toast" id="toast" hidden></div>
 <script>
 'use strict';
-const APP_VERSAO='333';
+const APP_VERSAO='334';
 const APP_DATA='19/10/2026';
 const KEY='confinamento-completo-v1';
 const $=id=>document.getElementById(id);
@@ -3145,6 +3145,19 @@ async function puxarTudo(){try{
   const novos=(j.registros||[]).filter(x=>x&&x.uid&&!tem.has(String(x.uid))).map(x=>({uid:String(x.uid),enviado:true,ts:+x.ts,dia:String(x.dia),trato:+x.trato||1,hora:x.hora,curral:String(x.curral),prev:+x.prev||0,forn:+x.forn||0,ini:+x.ini||0,fim:+x.fim||0}));
   if(novos.length){await dbAddMany(novos);HIST=await dbAll();}
   render();renderHist();}catch(e){}}
+/* uma vez por dia: confere TODOS os tratos com a nuvem (não só os últimos 7 dias): traz os que faltam e tira os que foram apagados/mudados de data em outro aparelho */
+async function reconciliarTudo(){try{if(!S||!apiUrl()||!navigator.onLine||typeof hojeKey!=='function')return;const hj=hojeKey();if(S.recDia===hj)return;
+  if(HIST.some(x=>!x.enviado)||(S.apagarNuvem||[]).length||(S.editarNuvem||[]).length)return;   // tem coisa para subir: confere outro dia
+  const j=await (await fetch(apiUrl()+'?acao=listar',{cache:'no-store'})).json();if(!j||!j.ok||!Array.isArray(j.registros)||!j.registros.length)return;
+  const naNuvem=new Map(j.registros.filter(x=>x&&x.uid).map(x=>[String(x.uid),x])),tem=new Set(HIST.map(x=>x.uid));
+  const novos=[...naNuvem.values()].filter(x=>!tem.has(String(x.uid))).map(x=>({uid:String(x.uid),enviado:true,ts:+x.ts,dia:String(x.dia),trato:+x.trato||1,hora:x.hora,curral:String(x.curral),prev:+x.prev||0,forn:+x.forn||0,ini:+x.ini||0,fim:+x.fim||0}));
+  const sumiram=HIST.filter(x=>x.enviado&&x.uid&&!naNuvem.has(String(x.uid)));
+  if(sumiram.length>40){S.recDia=hj;save();return;}   // muita diferença: não mexe (segurança)
+  for(const x of sumiram){try{await dbDel(x.id);}catch(e){}}
+  if(novos.length)await dbAddMany(novos);
+  if(novos.length||sumiram.length){HIST=await dbAll();render();if(!$('viewHist').hidden)renderHist();try{window.gRender&&!$('viewGest').hidden&&gRender();}catch(e){}}
+  S.recDia=hj;save();}catch(e){}}
+setTimeout(()=>reconciliarTudo(),9000);window.addEventListener('online',()=>setTimeout(reconciliarTudo,5000));document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')setTimeout(reconciliarTudo,4000);});
 $('restaurar').addEventListener('change',async e=>{
   $('lblRestaurar').hidden=true;$('btnRestaurar').hidden=false;
   const file=e.target.files[0];e.target.value='';if(!file)return;
