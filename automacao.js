@@ -1054,7 +1054,8 @@ function acItem(){const B=acB();return B?B.itens[B.atual]:null;}
 /* todo produto novo começa TRAVADO (quadro azul "▶ CARREGAR SILAGEM"): a balança só conta depois de tocar; o peso de agora vira o inicial */
 /* produto já liberado (tocou em CARREGAR) e ainda não registrado — ex.: o app fechou e voltou no meio da batida: não trava de novo e continua com o peso inicial guardado */
 function acNovoProduto(semTravar){A.holdManual=false;AC.est='aguardando';AC.ancV=null;AC.ancT=0;AC.fpMin=null;AC.pausa=null;const it=acItem();AC.trava=!semTravar&&!!(it&&!ok(it.real)&&!(it.lib&&ok(it.ini)));setTimeout(holdSync,0);}
-window.acLiberar=()=>{const it=acItem();if(!it)return;AC.trava=false;A.holdManual=false;if(A.holdFim)holdFimGrava(false);const pa=pesoVisor();if(pa!=null){it.ini=pa;it.fim=null;it.iniFix=true;it.lib=true;}  /* início = balança EXATA no toque (não muda depois) */
+window.acLiberar=()=>{const it=acItem();if(!it)return;AC.trava=false;A.holdManual=false;if(A.holdFim)holdFimGrava(false);const pa0=pesoVisor(),pa=pa0!=null&&pa0<=50&&ok(it.ini)&&it.ini>=100?it.ini:pa0;   /* balança mostrando 0 (reiniciando): fica o início que já tinha */
+  if(pa!=null){it.ini=pa;it.fim=null;it.iniFix=true;it.lib=true;}  /* início = balança EXATA no toque (não muda depois) */
   AC.est='aguardando';AC.ancV=null;AC.ancT=0;cSave();cRender();toast(`▶ Carregando ${it.nome}`);holdSync();};
 /* ⏸ Pausar no carregamento (trajeto no meio de um produto): a balança não conta; o que já foi carregado fica guardado.
    Ao continuar, o peso inicial é recalculado pela balança de agora (o que mudou no trajeto não conta). */
@@ -1064,7 +1065,7 @@ window.acPausar=()=>{const it=acItem();if(AC.pausa||AC.trava||!it||ok(it.real))r
   toast('⏸ Pausado: a balança não conta até você continuar');pintarCarga();holdSync();};
 window.acContinuarPausa=()=>{const P=AC.pausa,it=acItem();if(!P)return;AC.pausa=null;A.holdManual=false;if(A.holdFim)holdFimGrava(false);
   const pa=A.peso!=null?pesoVisor():null;
-  if(it&&!ok(it.real)&&pa!=null&&(ok(it.ini)||P.carr>0)){it.ini=pa-(+P.carr||0);it.fim=null;it.iniFix=true;it.lib=true;cSave();}
+  if(it&&!ok(it.real)&&pa!=null&&(ok(it.ini)||P.carr>0)&&!(pa<=50&&ok(it.ini)&&it.ini>=100)){it.ini=pa-(+P.carr||0);it.fim=null;it.iniFix=true;it.lib=true;cSave();}
   AC.est='aguardando';AC.ancV=null;AC.ancT=0;AC.fpMin=null;
   diagLog('despausou_carga',{produto:it?it.nome:'',ini:it?it.ini:null,peso:pa,carr:P.carr,seg:Math.round((Date.now()-P.ts)/1000)});
   toast(it?`▶ Continuando ${it.nome}`:'▶ Continuando');holdSync();cRender();};
@@ -1076,12 +1077,15 @@ function maquinaCarga(){
   if(AC.est==='aguardando'){
     const lim=Math.min(c.minDesc,Math.max(c.tol,it.prev/2)); // produto pequeno (núcleo): começa com menos
     if(ok(it.ini)&&A.suave>it.ini+lim){AC.est='carregando';AC.ancV=A.suave;AC.ancT=Date.now();AC.fpMin=null;return;}
-    if(A.estavel&&(!ok(it.ini)||(!it.iniFix&&A.valEst!==it.ini&&(A.valEst<it.ini||(A.estrito&&A.valEst-it.ini<=Math.max(+c.tol||0,10)))))){if(ok(it.ini)&&Math.abs(A.valEst-it.ini)>=5)diagLog('ini_ajustado_carga',{produto:it.nome,de:it.ini,para:A.valEst});it.ini=A.valEst;it.fim=null;cSave();}  // parado: o peso inicial é sempre o peso real da balança agora
+    /* leitura zerada (balança reiniciando / Bluetooth caindo com HOLD: manda 0 ou 2 kg) não é o peso de verdade: o início não cai para ela */
+    const zerada=ok(it.ini)&&it.ini>=100&&A.valEst!=null&&A.valEst<=50;
+    if(zerada&&A.estavel&&!it.iniFix&&Date.now()-(AC.zerLog||0)>60000){AC.zerLog=Date.now();try{diagLog('ini_ignorou_zero',{produto:it.nome,ini:it.ini,peso:A.valEst});}catch(e){}}
+    if(A.estavel&&!zerada&&(!ok(it.ini)||(!it.iniFix&&A.valEst!==it.ini&&(A.valEst<it.ini||(A.estrito&&A.valEst-it.ini<=Math.max(+c.tol||0,10)))))){if(ok(it.ini)&&Math.abs(A.valEst-it.ini)>=5)diagLog('ini_ajustado_carga',{produto:it.nome,de:it.ini,para:A.valEst});it.ini=A.valEst;it.fim=null;cSave();}  // parado: o peso inicial é sempre o peso real da balança agora
     if(!ok(it.ini)){const r=refProvisoria(1);if(r){it.ini=r.v;it.fim=null;cSave();}}  // balança tremendo ou já começou a carregar: não fica esperando
   }else{
     const passo=Math.max(4,(+c.tol||0)/2);
     if(A.suave>AC.ancV+passo){AC.ancV=A.suave;AC.ancT=Date.now();}
-    if(A.estavel&&!it.iniFix&&A.valEst<it.ini-c.minDesc){AC.est='aguardando';it.ini=A.valEst;cSave();toast('Peso caiu abaixo do início: peso inicial atualizado.');}
+    if(A.estavel&&!it.iniFix&&A.valEst<it.ini-c.minDesc&&!(it.ini>=100&&A.valEst<=50)){AC.est='aguardando';it.ini=A.valEst;cSave();toast('Peso caiu abaixo do início: peso inicial atualizado.');}
   }
 }
 function subindoAgora(){return AC.est==='carregando'&&AC.ancT>0&&Date.now()-AC.ancT<jCaindo()&&Date.now()-A.ultDado<jVivo();}
@@ -1130,7 +1134,7 @@ window.acDepois=()=>{acSyncTopo();try{pintarSinal();}catch(e){}  /* já desenha 
   const B=acB();if(B&&AC.idx!==B.atual){const volta=AC.idx==null;AC.idx=B.atual;acNovoProduto();
     const it=acItem();if(volta&&it&&it.lib&&ok(it.ini)&&!ok(it.real))toast(`↩ Carregamento continuando: ${it.nome} com peso inicial ${fmt(it.ini)} kg (o que já foi carregado não se perdeu)`);}pintarCarga();};
 window.acIniciou=()=>{acNovoProduto();   // o primeiro produto também começa travado (azul)
-  const B=acB();AC.idx=B?B.atual:null;const it=acItem();if(it&&A.estavel){it.ini=A.valEst;cSave();}pintarCarga();
+  const B=acB();AC.idx=B?B.atual:null;const it=acItem();if(it&&A.estavel&&!(A.valEst<=50&&ok(it.ini)&&it.ini>=100)){it.ini=A.valEst;cSave();}pintarCarga();
   if(!A.fonte)toast('Conecte a balança para carregar pela Automação');};
 window.acRegistrar=async()=>{const B=acB(),it=acItem();if(!B||!it)return;if(AC.registrando)return;
   if(ok(it.real)){toast('Este produto já foi registrado. Para refazer, toque em Desfazer último.');return;}
