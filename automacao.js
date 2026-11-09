@@ -335,19 +335,25 @@ async function conectarBt(soBalanca){
 }
 /* Bluetooth caiu: tenta reconectar sozinho, de novo e de novo, até voltar (ou até tocar em Desconectar) */
 function ligarQueda(dev){if(dev._queda)return;dev._queda=true;
-  dev.addEventListener('gattserverdisconnected',()=>{if(dev._manual||A.bt!==dev||A.btReconectando)return;reconectarBt('Bluetooth caiu');});}
+  dev.addEventListener('gattserverdisconnected',()=>{if(dev._manual||A.bt!==dev||A.btReconectando)return;
+    /* aviso atrasado da desconexão que o PRÓPRIO app fez ao reconectar (chegava depois de já ter reconectado e começava tudo de novo:
+       "parou de mandar → reconectou → Bluetooth caiu" em seguida). Confere de novo daqui a pouco em vez de derrubar na hora. */
+    if((dev.gatt&&dev.gatt.connected)||Date.now()-(dev._manualTs||0)<5000){setTimeout(()=>{if(A.bt===dev&&!A.btReconectando&&!(dev.gatt&&dev.gatt.connected)&&!dev._manual)reconectarBt('Bluetooth caiu');},4000);return;}
+    reconectarBt('Bluetooth caiu');});}
 async function reconectarBt(motivo){const dev=A.bt;if(!dev||A.btReconectando)return;A.btReconectando=true;let n=0;const gen=A.btGen||0;
   try{while(A.bt===dev&&A.fonte==='bt'&&(A.btGen||0)===gen){n++;setStatus(`${motivo} · reconectando${n>1?' (tentativa '+n+')':''}…`,'wait');bruto(motivo+': reconectando (tentativa '+n+')');if(n===1)semSinal('reconectando',{motivo});
-      try{dev._manual=true;if(dev.gatt.connected)dev.gatt.disconnect();}catch(e){}dev._manual=false;
+      try{dev._manual=true;dev._manualTs=Date.now();if(dev.gatt.connected)dev.gatt.disconnect();}catch(e){}dev._manual=false;
       await new Promise(r=>setTimeout(r,n===1?700:3000));if(A.bt!==dev||(A.btGen||0)!==gen)break;
       try{await btAbrir(dev);A.ultDado=Date.now();A.btCutucou=0;toast('Balança reconectada');diagLog('reconectou',{tentativas:n});break;}catch(e){bruto('não reconectou: '+(e.message||e));}}}
   finally{if((A.btGen||0)===gen)A.btReconectando=false;}}
-/* vigia: a balança Digi-Star manda o peso o tempo todo (umas 2 vezes por segundo). Se parar 2,5 s,
-   chama de novo (05); se chegar a 5 s sem peso, reconecta sozinho — mesmo que pareça "conectado". */
+/* vigia: a balança Digi-Star manda o peso o tempo todo (umas 2 vezes por segundo). Se parar 2,5 s, chama de novo (05);
+   chama outra vez aos 5 s; só aos 8 s sem peso reconecta sozinho — mesmo que pareça "conectado".
+   (antes reconectava aos 5 s: a própria reconexão derrubava o Bluetooth e uma pausa curta virava 10–30 s sem balança) */
 setInterval(()=>{if(A.fonte!=='bt'||!A.bt||!A.digiStar||A.btReconectando)return;
   const parado=Date.now()-Math.max(A.ultDado||0,A.tCon||0);
-  if(parado>2500&&!A.btCutucou&&A.dsEsc){A.btCutucou=Date.now();bruto('sem peso há 2,5 s: chamando a balança de novo');semSinal('sem_peso',{});A.dsEsc.writeValue(new Uint8Array([5])).catch(()=>{});}
-  if(parado>5000)reconectarBt('Balança parou de mandar o peso');},1000);
+  if(parado>2500&&!A.btCutucou&&A.dsEsc){A.btCutucou=Date.now();A.btCut2=0;bruto('sem peso há 2,5 s: chamando a balança de novo');semSinal('sem_peso',{});A.dsEsc.writeValue(new Uint8Array([5])).catch(()=>{});}
+  if(parado>5000&&!A.btCut2&&A.dsEsc){A.btCut2=Date.now();bruto('sem peso há 5 s: chamando de novo');A.dsEsc.writeValue(new Uint8Array([5])).catch(()=>{});}
+  if(parado>8000)reconectarBt('Balança parou de mandar o peso');},1000);
 /* ao abrir o app de novo (ou depois de atualizar), tenta voltar sozinho para a última balança, se o Chrome deixar */
 /* ao entrar na Automação (Carregar ou Fornecer): tenta conectar sozinho na balança já usada neste aparelho (NEW EZ),
    sem abrir a lista do Bluetooth. Se não der, fica como está: botão Conectar a balança. */
