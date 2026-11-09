@@ -136,7 +136,11 @@ function cabPres(l,dia,sd){if(!l.ent||dia<l.ent.dia)return 0;let c=+l.ent.cab||0
 function cabEm(l,dia,sd){if(!l.ent||dia<l.ent.dia)return 0;let c=+l.ent.cab||0;entradasDe(l).forEach(x=>{if(x.dia<=dia)c+=+x.cab||0;});(sd||saidasDe(l)).forEach(s=>{if(s.dia<=dia)c-=+s.cab||0;});return Math.max(0,c);}
 /* cabeças totais que entraram no lote (entrada inicial + entradas depois) e peso médio de entrada de todas */
 const cabEntTot=l=>(+l.ent.cab||0)+entradasDe(l).reduce((a,x)=>a+(+x.cab||0),0);
-function pesoEntMed(l){const E=entradasDe(l),p0=+(l.ent.pesoE||l.ent.peso);if(!E.length)return p0;const c0=+l.ent.cab||0;let k=c0,t=c0*(p0||0);E.forEach(x=>{k+=+x.cab||0;t+=(+x.cab||0)*(+(x.pesoE||x.peso)||0);});return k?t/k:p0;}   /* transferência a custo: vale o peso de entrada original (pesoE) */
+function pesoEntMedTodos(l){const E=entradasDe(l),p0=+(l.ent.pesoE||l.ent.peso);if(!E.length)return p0;const c0=+l.ent.cab||0;let k=c0,t=c0*(p0||0);E.forEach(x=>{k+=+x.cab||0;t+=(+x.cab||0)*(+(x.pesoE||x.peso)||0);});return k?t/k:p0;}
+/* saídas por transferência com peso de entrada REAL: esses animais levam o peso de entrada deles e a média dos que ficam é refeita sem eles */
+const saidasPER=l=>gTodos('saida').filter(s=>s.lote===l.uid&&s.mot==='transf'&&s.pesoER&&+s.pesoE>0&&+s.cab>0);
+function pesoEntMed(l){const pt=pesoEntMedTodos(l),R=saidasPER(l);if(!R.length)return pt;const k=cabEntTot(l);if(!(k>0))return pt;
+  const cR=R.reduce((a,s)=>a+(+s.cab||0),0),tR=R.reduce((a,s)=>a+(+s.cab||0)*(+s.pesoE),0);return k-cR>0?(k*pt-tR)/(k-cR):pt;}   /* transferência a custo: vale o peso de entrada original (pesoE) */
 const cabAtual=l=>cabEm(l,hojeKey());
 const curralEm=(l,dia)=>{const v=vig(l.curr,dia);return v?(typeof nomeAtual==='function'?nomeAtual(v.c):v.c):'';}; // sempre o nome ATUAL (curral renomeado)
 const racaoEm=(l,dia)=>{const v=vig(l.rac,dia);const r=v&&G.it[v.r];return r&&!r.del?r:null;};
@@ -149,11 +153,13 @@ const ganhoAtrasa=l=>{if(!l.ent||l.ent.deLote)return false;const dl=diaLancado(l
 function pesoEm(l,dia,pz){if(!l.ent)return NaN;let b={dia:l.ent.dia,peso:+l.ent.peso};(pz||pesagensDe(l)).forEach(p=>{if(p.dia<=dia)b=p;});
   /* outras entradas no MESMO dia da entrada do lote: o peso de partida é a média ponderada de todos que entraram nesse dia */
   if(!b.uid&&b.dia===l.ent.dia){const E0=entradasDe(l).filter(x=>x.dia===l.ent.dia);if(E0.length){const c0=+l.ent.cab||0;let k=c0,t=c0*(+l.ent.peso||0);E0.forEach(x=>{k+=+x.cab||0;t+=(+x.cab||0)*(+x.peso||+l.ent.peso||0);});if(k>0)b={dia:b.dia,peso:t/k};}}
-  const g=+l.gmd||0,E=entradasDe(l).filter(x=>x.dia>b.dia&&x.dia<=dia);
+  const g=+l.gmd||0,E=entradasDe(l).filter(x=>x.dia>b.dia&&x.dia<=dia).concat(saidasPER(l).filter(x=>x.dia>b.dia&&x.dia<=dia).map(x=>({sai:1,uid:x.uid,dia:x.dia,cab:-(+x.cab),peso:+x.peso,pe:+x.pesoE,pes:x.pesado}))).sort((a,b)=>a.dia<b.dia?-1:a.dia>b.dia?1:(a.sai||0)-(b.sai||0));
   if(b.dia===l.ent.dia&&!b.uid&&dia>b.dia&&ganhoAtrasa(l))b={dia:somaDias(b.dia,1),peso:+b.peso};
   /* entrou mais animal depois da última referência: o peso médio do lote naquele dia vira a média ponderada (os de antes × os que chegaram) */
-  if(E.length){const sd=saidasDe(l);let ref={dia:b.dia,peso:+b.peso};E.forEach(x=>{const antes=cabEm(l,somaDias(x.dia,-1),sd)+entradasDe(l).filter(y=>y.dia===x.dia&&y!==x&&y.uid<x.uid).reduce((a,y)=>a+(+y.cab||0),0);
-      const pA=+ref.peso+g*difDias(ref.dia,x.dia),cN=+x.cab||0;ref={dia:x.dia,peso:antes+cN>0?(antes*pA+cN*(+x.peso||pA))/(antes+cN):pA};});b=ref;}
+  if(E.length){const sd=saidasDe(l);let ref={dia:b.dia,peso:+b.peso};E.forEach(x=>{const antes=cabEm(l,somaDias(x.dia,-1),sd)+entradasDe(l).filter(y=>y.dia===x.dia&&y!==x&&(x.sai||y.uid<x.uid)).reduce((a,y)=>a+(+y.cab||0),0);
+      const pA=+ref.peso+g*difDias(ref.dia,x.dia),cN=+x.cab||0;
+      if(x.sai){const pX=x.pes&&x.peso>0?x.peso:x.pe+g*Math.max(0,difDias(l.ent.dia,x.dia)-(ganhoAtrasa(l)?1:0));ref={dia:x.dia,peso:antes+cN>0?(antes*pA+cN*pX)/(antes+cN):pA};return;}
+      ref={dia:x.dia,peso:antes+cN>0?(antes*pA+cN*(+x.peso||pA))/(antes+cN):pA};});b=ref;}
   return +b.peso+g*difDias(b.dia,dia);}
 const fimLote=l=>{if(cabAtual(l)>0)return null;const sd=saidasDe(l);return sd.length?sd[sd.length-1].dia:null;};
 const ativo=l=>cabAtual(l)>0||(l.ent&&l.ent.dia>hojeKey());
@@ -435,8 +441,8 @@ function calcLote0(l){
   const offE=cabE?(entradasDe(l).reduce((a,x)=>a+(+x.cab||0)*difDias(l.ent.dia,x.diaE||x.dia),0)+(l.ent.diaE?(+l.ent.cab||0)*difDias(l.ent.dia,l.ent.diaE):0))/cabE:0;   // transferência a custo: conta os dias desde a entrada original   // entrada de animais depois: média de dias a menos no cocho
   /* desempenho: animais que saíram pesados (vendidos e apartados) */
   const pes0=vendas.concat(aps),pes=pes0.length?pes0:trs,cabP=pes.reduce((a,s)=>a+(+s.cab||0),0);   // desempenho: vendidos (e apartados); transferidos ficam à parte (trP)
-  const trP=pes0.length&&trs.length?(()=>{const cab=trs.reduce((a,s)=>a+(+s.cab||0),0),kg=trs.reduce((a,s)=>a+s.cab*s.peso,0),g=kg-cab*pesoE,cd=trs.reduce((a,s)=>a+s.cab*Math.max(1,difDias(l.ent.dia,s.dia)),0);return {cab,peso:cab?kg/cab:NaN,ganho:g,gCab:cab?g/cab:NaN,gmd:cd?g/cd:NaN};})():null;
-  const ganhoV=pes.reduce((a,s)=>a+s.cab*(s.peso-pesoE),0),cabDiasV=pes.reduce((a,s)=>a+s.cab*Math.max(1,difDias(l.ent.dia,s.dia)-offE),0);
+  const trP=pes0.length&&trs.length?(()=>{const cab=trs.reduce((a,s)=>a+(+s.cab||0),0),kg=trs.reduce((a,s)=>a+s.cab*s.peso,0),g=kg-trs.reduce((a,s)=>a+s.cab*(s.pesoER&&+s.pesoE>0?+s.pesoE:pesoE),0),cd=trs.reduce((a,s)=>a+s.cab*Math.max(1,difDias(l.ent.dia,s.dia)),0);return {cab,peso:cab?kg/cab:NaN,ganho:g,gCab:cab?g/cab:NaN,gmd:cd?g/cd:NaN};})():null;
+  const ganhoV=pes.reduce((a,s)=>a+s.cab*(s.peso-(s.pesoER&&+s.pesoE>0?+s.pesoE:pesoE)),0),cabDiasV=pes.reduce((a,s)=>a+s.cab*Math.max(1,difDias(l.ent.dia,s.dia)-offE),0);
   /* transferências para outros lotes: tira o custo que os animais levaram (guardado no dia da transferência) */
   const fts=sd.filter(s=>s.mot==='falta'&&s.cst),tO=k=>trs.concat(fts).reduce((a,s)=>a+((k==='alim'||k==='op')&&s.mot==='transf'&&s.tc&&!(+s.vi>0)&&G.it[s.destino]&&!G.it[s.destino].del?0:(s.cst&&+s.cst[k]||0)),0),trOut=trs.reduce((a,s)=>a+(+s.custo||0),0),fOut=fts.reduce((a,s)=>a+(+s.custo||0),0),cabT=trs.reduce((a,s)=>a+(+s.cab||0),0);
   const alimB=R.custoR,opB=R.custoOp,outB=outros,trazido=custoHerdado(l)+(l.ent&&l.ent.unid==='transf'?+l.ent.preco||0:0)+(()=>{const sN=tcSaiNovo(l);return sN?tcLeva(sN):(+(l.ent&&l.ent.trz)||0);})()+entradasDe(l).filter(x=>x.de).reduce((a,x)=>{const t=x.tc&&x.transf&&G.it[x.transf];return a+(t&&!t.del&&t.cst?tcLeva(t):(+x.rs||0));},0);
@@ -765,7 +771,7 @@ function recalcSaidas(l){const sd=saidasDe(l).filter(s=>(s.cst||s.mot==='morte')
   dias.forEach(d=>{const g=sd.filter(s=>s.dia===d),K=custoAteDia(l,d),tem=cabPres(l,d,saidasDe(l).filter(x=>!g.includes(x))),pm=pesoEm(l,d);
     const kg=s=>(+s.cab||0)*((+s.peso)>0?+s.peso:pm),cabG=g.reduce((a,s)=>a+(+s.cab||0),0),todos=cabG>=tem,base=g.reduce((a,s)=>a+kg(s),0)+Math.max(0,tem-cabG)*pm;
     const ult=todos?(g.find(s=>ehVenda(s))||g[g.length-1]):null,soma={compra:0,alim:0,op:0,outros:0};
-    g.filter(s=>s!==ult).forEach(s=>{const sh=base>0?kg(s)/base:0,shC=tem>0?(+s.cab||0)/tem:0,c={};const cg=s.grp?compraDoGrupo(l,d,+s.cab||0,s.grp,s.uid):null;CAT.forEach(k=>{c[k]=k==='compra'&&cg!=null?cg:r2(K[k]*(k==='compra'?shC:sh));soma[k]+=c[k];});s.cst=c;});
+    g.filter(s=>s!==ult).forEach(s=>{const sh=base>0?kg(s)/base:0,shC=tem>0?(+s.cab||0)/tem:0,c={};const cg=s.grp?compraDoGrupo(l,d,+s.cab||0,s.grp,s.uid):null;const fR=s.pesoER&&+s.pesoE>0?(+s.pesoE)/(pesoEntMedTodos(l)||+s.pesoE):1;CAT.forEach(k=>{c[k]=k==='compra'&&cg!=null?cg:r2(K[k]*(k==='compra'?shC*fR:sh));soma[k]+=c[k];});s.cst=c;});
     if(ult){const c={};CAT.forEach(k=>c[k]=r2(K[k]-soma[k]));ult.cst=c;}});
   let n=0;sd.forEach(s=>{if(JSON.stringify(s.cst)===antes.get(s.uid))return;n++;const x=JSON.parse(JSON.stringify(s));const tot=CAT.reduce((a,k)=>a+(+x.cst[k]||0),0);
     if(x.mot==='venda')x.custo=custoSai(x);else x.custo=r2(tot);
@@ -998,12 +1004,16 @@ function tPesForm(t){const l=G.it[t.id];GT.pesLote=l.uid;
     <div class="gForm">${[{k:'cab',l:'Quantidade pesada (opcional)',t:'num',meia:1},{k:'obs',l:'Observação',meia:1}].map(campo).join('')}</div>
     <p class="note">Depois de salvar, a projeção do peso passa a partir desta pesagem.</p>
     <button class="primary" data-g="salvaPes" data-id="${l.uid}">Salvar pesagem</button></section>`;}
+/* GMD real de uma pesagem: o mesmo cálculo da projeção (dia seguinte à entrada, animais que entraram no meio contam só os dias deles).
+   A projeção é linear no GMD: peso = A + GMD × D  →  GMD = (pesado − A) ÷ D  (D = dias médios de ganho dos animais) */
+function gmdPesagem(l,dia,peso,pz){try{const A=pesoEm(Object.assign({},l,{gmd:0}),dia,pz),B=pesoEm(Object.assign({},l,{gmd:1}),dia,pz),D=B-A;
+  return {gmd:D>0?(+peso-A)/D:NaN,base:A,dm:D};}catch(e){return {gmd:NaN,base:NaN,dm:NaN};}}
 function calcPes(){const l=G.it[GT.pesLote];if(!l||!$('gPesProj'))return;const dia=fv('dia')||hojeKey();
   const pz=pesagensDe(l).filter(p=>p.dia<dia);const ant=pz.length?pz[pz.length-1]:{dia:l.ent.dia,peso:+l.ent.peso,ent:1};
   const proj=pesoEm(l,dia,pz);$('gPesProj').textContent=nf(proj)+' kg';
   $('gPesProjInfo').textContent=`${ant.ent?'entrada':'última pesagem'} ${dB(ant.dia)}: ${nf(ant.peso)} kg + ${nf(l.gmd,2)} kg/dia × ${nf(difDias(ant.dia,dia))} dias`+(entradasDe(l).some(x=>x.dia>ant.dia&&x.dia<=dia)?' · com a entrada de animais no meio (peso misturado)':'');
   const p=fn('peso'),box=$('gPesRes');if(!(p>0)){box.innerHTML='';return;}
-  const dif=p-proj,dd=difDias(ant.dia,dia),gmd=dd>0?(+l.gmd||0)+dif/dd:NaN,cls=dif>=0?'ok':'bad';
+  const dif=p-proj,gmd=gmdPesagem(l,dia,p,pz).gmd,cls=dif>=0?'ok':'bad';
   box.innerHTML=st('Diferença do projetado',`<span class="${cls}">${dif>0?'+':''}${nf(dif)} kg (${dif>0?'+':''}${nf(dif/proj*100,1)}%)</span>`)+st('GMD real no período',`<span class="${gmd>=(l.gmd||0)?'ok':'bad'}">${nf(gmd,3)} kg/dia</span>`);}
 function tCustoForm(t){const l=G.it[t.id];
   return `${voltar()}<section class="panel"><h2>Outros custos · ${esc(l.nome)}</h2><div class="gForm">${[
@@ -1100,21 +1110,26 @@ function tTransfForm(t){const l=G.it[t.id],hj=hojeKey(),O=t.old&&G.it[t.old]&&!G
   if(O&&!t.dest)t.dest=O.destino;if(O&&G.it[O.destino]&&!dest.includes(G.it[O.destino]))dest.unshift(G.it[O.destino]);
   const ov=(k,d)=>O&&O[k]!=null&&O[k]!==''?O[k]:d;
   return `${voltar()}<section class="panel"><h2>↔ ${O?'Alterar transferência':'Transferir animais'} · ${esc(l.nome)}</h2>${O?'<p class="aviso">Alterando: ao confirmar, a transferência antiga é trocada por esta (os animais e o custo são refeitos nos dois lotes).</p>':''}
-    ${true?`<div class="gForm">${campo({k:'tTipo',l:'Tipo de transferência',t:'sel',op:[['','— Selecione o tipo —'],['custo','Transferência (leva peso de entrada e custos · sem venda)'],['vi','Venda interna (compra e venda)']],v:O?(+O.vi>0?'vi':'custo'):''})}</div>
+    ${true?`<div class="gForm">${campo({k:'tTipo',l:'Tipo de transferência',t:'sel',op:[['','— Selecione o tipo —'],['custo','Transferência com peso de entrada MÉDIO do lote (leva custos · sem venda)'],['real','Transferência com peso de entrada REAL dos animais (leva custos · sem venda)'],['vi','Venda interna (compra e venda)']],v:O?(+O.vi>0?'vi':O.pesoER?'real':'custo'):''})}</div>
     <div id="gTrCorpo"${O?'':' hidden'}>
     <p class="note" id="gTrNotaC"><b>Transferência</b>: os animais levam <b>tudo</b> o que tiveram neste lote: peso de entrada original, peso atual, a <b>compra real</b>, o <b>consumo</b> (kg de MN e MS, dia a dia), os <b>custos</b> de alimentação, operacional e outros e as cabeças-dia. Não tem venda: no lote destino tudo entra na média, como se sempre estivessem juntos, e o resultado sai só na venda.</p>
     <p class="note" id="gTrNotaV" hidden>Passa animais deste lote para outro lote como uma <b>compra e venda</b>: aqui fica registrada a compra real desses animais, os custos que tiveram até o dia anterior e o valor da venda interna (o resultado deles entra no lucro deste lote). O outro lote recebe os animais como <b>compra</b> por esse valor.</p>
     <div class="gForm">${campo({k:'tDest',l:'Lote destino',t:'sel',op:[['','— Selecione —'],['__novo','＋ Criar lote novo']].concat(dest.map(o=>[o.uid,`${curralEm(o,hj)} · ${o.nome} · ${nf(cabAtual(o))} cab`])),v:t.dest||'',busca:1,meia:1})}
       <div class="gCampo meia" id="gTrCur"${t.dest==='__novo'?'':' hidden'}><label>Curral / pasto onde vai entrar</label>${selCurNovo('id="gf_tN_',{})}</div></div>
       <div id="gTrNovo"${t.dest==='__novo'?'':' hidden'}>${campoLoteNovo('id="gf_tN_',{},l,true)}</div>
-      <div class="gForm">${[{k:'tDia',l:'Data',t:'dia',v:ov('dia',hj),meia:1},{k:'tCab',l:'Quantidade',t:'num',v:ov('cab','')},...(()=>{const og=opGrupos(l,ov('dia',hj));return og?[{k:'tGrp',l:'Animais de qual compra',t:'sel',op:og,v:ov('grp','')||'media'}]:[];})(),{k:'tPeso',l:'Peso médio vivo',suf:'kg',t:'num',v:O&&O.pesado?O.peso:'',meia:1},{k:'tPesoT',l:'Peso total vivo',suf:'kg',t:'num',meia:1},{k:'tObs',l:'Observação',v:ov('obs',''),ph:'ex.: brinco 1234, refugo'}].map(campo).join('')}</div>
+      <div class="gForm">${[{k:'tDia',l:'Data',t:'dia',v:ov('dia',hj),meia:1},{k:'tCab',l:'Quantidade',t:'num',v:ov('cab','')},...(()=>{const og=opGrupos(l,ov('dia',hj));return og?[{k:'tGrp',l:'Animais de qual compra',t:'sel',op:og,v:ov('grp','')||'media'}]:[];})(),{k:'tPesoER',l:'Peso de entrada desses animais',suf:'kg, média por cabeça',t:'num',v:O&&O.pesoER?O.pesoE:'',ph:'peso com que eles entraram'},{k:'tPeso',l:'Peso médio vivo',suf:'kg',t:'num',v:O&&O.pesado?O.peso:'',meia:1},{k:'tPesoT',l:'Peso total vivo',suf:'kg',t:'num',meia:1},{k:'tObs',l:'Observação',v:ov('obs',''),ph:'ex.: brinco 1234, refugo'}].map(campo).join('')}</div>
     <p class="note">Peso em branco: usa o peso projetado do lote.</p>
     <div id="gTrVenda" hidden><h3 class="gSubT">💲 Venda para o outro lote</h3><div class="gForm">${[{k:'tCarcM',l:'Peso médio de carcaça',suf:'kg',t:'num',meia:1},{k:'tCarcT',l:'Peso total de carcaça',suf:'kg',t:'num',v:ov('carcT',''),meia:1},{k:'tArr',l:'Total de arrobas (carcaça)',suf:'@',t:'num',meia:1},{k:'tRc',l:'Rendimento de carcaça',suf:'%',t:'num',v:O&&+O.rcV>0&&+O.rcV!==50?O.rcV:(O&&+O.rcV===50?50:''),ph:'digite o rendimento',meia:1},
       {k:'tUnid',l:'Preço em',t:'sel',op:UNID_V,v:ov('vUnid','arroba')},{k:'tPr',l:'Preço da venda',t:'rs',v:ov('vPr',''),meia:1},{k:'tVi',l:'Valor total da venda',t:'rs',v:ov('vi',''),meia:1}].map(campo).join('')}</div></div><div id="gTrRes" class="gApRes"></div><button class="primary" data-g="salvaTransf" data-id="${l.uid}">↔ Confirmar transferência</button></div><button class="danger" data-g="trCanc">✕ Cancelar transferência</button>`:'<p class="aviso warn">Não há outro lote ativo para receber os animais.</p>'}</section>`;}
 function trPrevia(){const box=$('gTrRes'),l=G.it[GT.id];if(!box||!l)return;const d=fv('tDia')||hojeKey(),cab=fn('tCab'),peso=fn('tPeso'),nv=fv('tDest')==='__novo',B=nv?{nome:(fv('tN_nome')||'lote novo')}:G.it[fv('tDest')];if($('gTrNovo'))$('gTrNovo').hidden=!nv;if($('gTrCur'))$('gTrCur').hidden=!nv;
-  const tp=fv('tTipo')||'',tc=tp==='custo';if($('gTrCorpo'))$('gTrCorpo').hidden=!tp;if(!tp){box.innerHTML='';return;}[['gTrVenda',tc],['gTrNotaV',tc],['gTrNotaC',!tc]].forEach(([i,h])=>{const e=$(i);if(e)e.hidden=h;});
+  const tp=fv('tTipo')||'',tc=tp==='custo'||tp==='real',real=tp==='real';{const c=$('gf_tPesoER');const w=c&&c.closest('.gCampo');if(w)w.hidden=!real;}if($('gTrCorpo'))$('gTrCorpo').hidden=!tp;if(!tp){box.innerHTML='';return;}[['gTrVenda',tc],['gTrNotaV',tc],['gTrNotaC',!tc]].forEach(([i,h])=>{const e=$(i);if(e)e.hidden=h;});
   if(!(cab>0)){box.innerHTML='';return;}
-  if(tc){const T=transfCalc(l,d,cab,peso,fv('tGrp'),GT.old),tr=T.cst.alim+T.cst.op+T.cst.outros,pe=pesoEntMed(l);
+  if(tc){const T=transfCalc(l,d,cab,peso,fv('tGrp'),GT.old),tr=T.cst.alim+T.cst.op+T.cst.outros,pM=pesoEntMed(l),pR=fn('tPesoER'),pe=real&&pR>0?pR:pM;
+    if(real&&!(pR>0)){box.innerHTML='<p class="note">Coloque o <b>peso de entrada</b> desses animais.</p>';return;}
+    if(real){const pT=peso>0?peso:T.p-pM+pe,k=cabEntTot(l),fica=k-cab>0?(k*pesoEntMedTodos(l)-cab*pe)/(k-cab):NaN;
+      box.innerHTML=`<div class="stat gStat3">${st('Quantidade',`${nf(cab)} de ${nf(T.tem)}`,cab>T.tem?'bad':'')}${st('Peso de entrada',nf(pe,1)+` kg<small>média do lote ${nf(pM,1)} kg</small>`)}${st('Peso atual',nf(pT,1)+' kg')}</div>
+      <div class="gLinhas">${lin('· alimentação',rs(T.cst.alim))}${lin('· operacional',rs(T.cst.op))}${lin('· outros custos',rs(T.cst.outros))}${lin('Custo dos tratos que vai junto',rs(tr))}${lin('Compra que vai junto (pelo peso de entrada deles)',rs(T.cst.compra*pe/(pesoEntMedTodos(l)||pe)))}</div>
+      <p class="note">No <b>${esc(l.nome)}</b> a média de entrada dos que ficam passa de ${nf(pM,1)} kg para <b>${nf(fica,1)} kg</b>.${B?` No <b>${esc(B.nome)}</b> eles entram com ${nf(pe,1)} kg de entrada.`:''}</p>`;return;}
     box.innerHTML=`<div class="stat gStat3">${st('Quantidade',`${nf(cab)} de ${nf(T.tem)}`,cab>T.tem?'bad':'')}${st('Peso de entrada',nf(pe,1)+' kg')}${st('Peso atual',nf(T.p,1)+` kg<small>lote ${nf(T.pm)} kg</small>`)}</div>
     <div class="gLinhas">${lin('· alimentação',rs(T.cst.alim))}${lin('· operacional',rs(T.cst.op))}${lin('· outros custos',rs(T.cst.outros))}${lin('Custo dos tratos que vai junto',rs(tr))}${lin('Por cabeça',rs(tr/cab))}</div>
     ${B?`<p class="note">Entram no <b>${esc(B.nome)}</b> em ${dB(d)} sem venda: peso de entrada ${nf(pe,1)} kg e custo ${rs(tr)} somam na média do lote, junto com a compra real (${rs(T.cst.compra)}) e o consumo deles dia a dia.</p>`:''}`;return;}
@@ -1134,15 +1149,17 @@ function salvaTransf(id){const l=G.it[id],d=fv('tDia'),cab=fn('tCab'),peso=fn('t
   if(d<l.ent.dia)return toast('A data é antes da entrada deste lote');if(d<B.ent.dia)return toast(`O ${B.nome} só começa em ${dB(B.ent.dia)}`);if(d>hojeKey())return toast('A data não pode ser depois de hoje');
   const grp=fv('tGrp')&&fv('tGrp')!=='media'?fv('tGrp'):null,T=transfCalc(l,d,cab,peso,grp);if(cab>T.tem)return toast(`Nessa data o lote tem ${nf(T.tem)} animais`);
   if(!fv('tTipo'))return toast('Escolha o tipo de transferência');
-  if(fv('tTipo')==='custo'){const cst={};Object.keys(T.cst).forEach(k=>cst[k]=Math.round(T.cst[k]*100)/100);const tot=Object.values(cst).reduce((a,v)=>a+v,0),tr=Math.round((cst.alim+cst.op+cst.outros)*100)/100,pe=Math.round(pesoEntMed(l)*100)/100,pA=Math.round(T.p*100)/100,diaE=l.ent.diaE||l.ent.dia;
+  if(fv('tTipo')==='custo'||fv('tTipo')==='real'){const real=fv('tTipo')==='real',pR=fn('tPesoER');if(real&&!(pR>0))return toast('Coloque o peso de entrada desses animais');
+    const cst={};Object.keys(T.cst).forEach(k=>cst[k]=Math.round(T.cst[k]*100)/100);const pM=pesoEntMed(l);if(real)cst.compra=Math.round(T.cst.compra*pR/(pesoEntMedTodos(l)||pR)*100)/100;
+    const tot=Object.values(cst).reduce((a,v)=>a+v,0),tr=Math.round((cst.alim+cst.op+cst.outros)*100)/100,pe=Math.round((real?pR:pM)*100)/100,pA=Math.round((real&&!(peso>0)?T.p-pM+pe:T.p)*100)/100,diaE=l.ent.diaE||l.ent.dia,ER=real?{pesoER:true}:{};
     if(!confirm(`Transferir ${nf(cab)} animais de ${l.nome} para ${B.nome} em ${dB(d)}?\n\nLevam: peso de entrada ${nf(pe,1)} kg · peso atual ${nf(pA,1)} kg · custo dos tratos ${rs(tr)}.\nSem venda: levam também a compra real, o consumo e as cabeças-dia; no lote destino tudo entra na média e o resultado sai na venda.`))return;
     const sU=novoId('sai'),eU=novoId('entl'),obs=fv('tObs');
     if(nv){const P=precoSim(l),n={uid:novoId('lote'),tipo:'lote',nome:N.nome.trim(),curr:[{desde:d,c:N.c}],rac:N.r?[{desde:d,r:N.r}]:[],
         ent:{dia:d,cab,peso:pA,pesoE:pe,diaE,unid:P.unid,preco:Math.round(P.preco*100)/100,rcC:P.rc,outros:0,trz:tr,deLote:l.uid,tc:true,origem:'Transferência de '+l.nome,gta:''},
         sistema:l.sistema,sexo:l.sexo,cat:l.cat,raca:l.raca,idade:l.idade,gmd:l.gmd,diasPrev:null,alvo:l.alvo,rcPrev:l.rcPrev,simPreco:l.simPreco,obs:(N.obs||'').trim()};gPut(n);
-      gPut({uid:sU,tipo:'saida',mot:'transf',tc:true,lote:l.uid,destino:n.uid,novoLote:true,dia:d,cab,peso:pA,pesoE:pe,pesado:peso>0,cst,custo:tot,obs,grp});recalcCurral(N.c,d);toast(`Lote ${N.nome} criado com ${nf(cab)} cab`);return gVoltar();}
-    gPut({uid:sU,tipo:'saida',mot:'transf',tc:true,lote:l.uid,destino:B.uid,dia:d,cab,peso:pA,pesoE:pe,pesado:peso>0,cst,custo:tot,entl:eU,obs,grp});
-    gPut({uid:eU,tipo:'entlote',lote:B.uid,dia:d,cab,peso:pA,pesoE:pe,diaE,rs:tr,tc:true,de:l.uid,transf:sU,obs:`Transferido de ${l.nome} (peso de entrada ${nf(pe,1)} kg)${obs?' · '+obs:''}`});
+      gPut({uid:sU,tipo:'saida',mot:'transf',tc:true,lote:l.uid,destino:n.uid,novoLote:true,dia:d,cab,peso:pA,pesoE:pe,pesado:peso>0,cst,custo:tot,obs,grp,...ER});recalcCurral(N.c,d);toast(`Lote ${N.nome} criado com ${nf(cab)} cab`);return gVoltar();}
+    gPut({uid:sU,tipo:'saida',mot:'transf',tc:true,lote:l.uid,destino:B.uid,dia:d,cab,peso:pA,pesoE:pe,pesado:peso>0,cst,custo:tot,entl:eU,obs,grp,...ER});
+    gPut({uid:eU,tipo:'entlote',lote:B.uid,dia:d,cab,peso:pA,pesoE:pe,diaE,rs:tr,tc:true,de:l.uid,transf:sU,obs:`Transferido de ${l.nome} (peso de entrada ${real?'real ':''}${nf(pe,1)} kg)${obs?' · '+obs:''}`});
     recalcCurral(curralEm(B,d),d);toast(`${nf(cab)} cab transferidos para ${B.nome}`);return gVoltar();}
   if((fv('tUnid')||'arroba')==='arroba'&&!(fn('tRc')>0&&fn('tRc')<100)&&!(fn('tCarcT')>0)&&!(fn('tCarcM')>0))return toast('Preço em R$/@ morto: coloque o rendimento de carcaça (ou o peso de carcaça)');
   const cr=null,pr=fn('tPr')>0?fn('tPr'):null,rcV=fn('tRc')>0&&fn('tRc')<100?fn('tRc'):50,vUnid=fv('tUnid')||'arroba',vi=Math.round((fn('tVi')||viCalc(cab,T.p,pr,rcV,vUnid))*100)/100;if(!(vi>0))return toast('Coloque o preço da venda (ou o valor total)');
@@ -1429,11 +1446,13 @@ function pesagensFiltradas(t){const X=gCtx(),out=[];
     const pz=pesagensDe(l),ip=pz.findIndex(x=>x.uid===p.uid),ant=t.desde==='ant'&&ip>0?pz[ip-1]:null;
     const ref=ant?{dia:ant.dia,peso:+ant.peso,txt:'pesagem'}:{dia:l.ent.dia,peso:+pesoEntMed(l)||+l.ent.peso,txt:'entrada'};
     const dias=difDias(ref.dia,p.dia),cab=+p.cab||cabPres(l,p.dia)||cabEm(l,p.dia),g=+p.peso-ref.peso;
+    /* GMD igual ao da tela da pesagem: conta os dias de ganho de cada animal (quem entrou no meio só os dias dele) */
+    const GP=gmdPesagem(l,p.dia,+p.peso,ant?pz.slice(0,ip):pz.filter(x=>x.dia<p.dia&&!x.uid)),gmdR=ok(GP.gmd)?GP.gmd:(dias>0?g/dias:NaN),dm=ok(GP.dm)&&GP.dm>0?GP.dm:dias;
     /* consumo do período (do dia da referência até a véspera da pesagem): MS por cabeça por dia e % do peso vivo */
     let ms=0,mn=0,cd=0,pv=0,cu=0,cdT=0;for(let d=ref.dia;d<p.dia;d=somaDias(d,1)){const x=diaLote(l,d,X);if(!x)continue;cu+=(ok(x.custoR)?x.custoR:0)+(ok(x.custoOp)?x.custoOp:0);cdT+=x.cab;if(!x.tem)continue;if(ok(x.ms)){ms+=x.ms;pv+=x.ms/x.peso*100;}mn+=x.mn;cd+=x.cab;}
-    out.push({p,l,c,lc,ref,dias,cab,peso:+p.peso,g,gArr:g/30,gmd:dias>0?g/dias:NaN,gT:g*cab,gTArr:g*cab/30,msCab:cd?ms/cd:NaN,mnCab:cd?mn/cd:NaN,pvP:cd?pv/cd:NaN,conv:cd&&g>0&&dias>0?(ms/cd)/(g/dias):NaN,custo:cu,custoDia:cdT?cu/cdT:NaN,custoCab:cdT&&dias>0?cu/cdT*dias:NaN});});
+    out.push({p,l,c,lc,ref,dias,cab,peso:+p.peso,g,gArr:g/30,gmd:gmdR,dm,gT:g*cab,gTArr:g*cab/30,msCab:cd?ms/cd:NaN,mnCab:cd?mn/cd:NaN,pvP:cd?pv/cd:NaN,conv:cd&&g>0&&gmdR>0?(ms/cd)/gmdR:NaN,custo:cu,custoDia:cdT?cu/cdT:NaN,custoCab:cdT&&dias>0?cu/cdT*dias:NaN});});
   return out.sort((a,b)=>a.p.dia<b.p.dia?1:a.p.dia>b.p.dia?-1:alfa(a.c,b.c));}
-function pesTotais(R){const cab=R.reduce((a,x)=>a+x.cab,0),gT=R.reduce((a,x)=>a+(ok(x.gT)?x.gT:0),0),cd=R.reduce((a,x)=>a+(x.dias>0?x.cab*x.dias:0),0);
+function pesTotais(R){const cab=R.reduce((a,x)=>a+x.cab,0),gT=R.reduce((a,x)=>a+(ok(x.gT)?x.gT:0),0),cd=R.reduce((a,x)=>a+(x.dias>0?x.cab*(x.dm||x.dias):0),0);
   return {n:R.length,cab,gT,gTArr:gT/30,gmd:cd?R.reduce((a,x)=>a+(x.dias>0&&ok(x.gT)?x.gT:0),0)/cd:NaN,gCab:cab?gT/cab:NaN};}
 function tPesagens(t){const hj=hojeKey();const f=GT.pF=Object.assign({ini:(t&&t.ini)||somaDias(hj,-90),fim:(t&&t.fim)||hj,loc:'T',cur:'',desde:'ent'},GT.pF||{});
   const R=pesagensFiltradas(f),T=pesTotais(R);
