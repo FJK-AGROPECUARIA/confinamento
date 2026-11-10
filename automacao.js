@@ -335,33 +335,19 @@ async function conectarBt(soBalanca){
 }
 /* Bluetooth caiu: tenta reconectar sozinho, de novo e de novo, até voltar (ou até tocar em Desconectar) */
 function ligarQueda(dev){if(dev._queda)return;dev._queda=true;
-  dev.addEventListener('gattserverdisconnected',()=>{if(dev._manual||A.bt!==dev||A.btReconectando)return;
-    /* aviso atrasado da desconexão que o PRÓPRIO app fez ao reconectar (chegava depois de já ter reconectado e começava tudo de novo:
-       "parou de mandar → reconectou → Bluetooth caiu" em seguida). Confere de novo daqui a pouco em vez de derrubar na hora. */
-    if((dev.gatt&&dev.gatt.connected)||Date.now()-(dev._manualTs||0)<5000){setTimeout(()=>{if(A.bt===dev&&!A.btReconectando&&!(dev.gatt&&dev.gatt.connected)&&!dev._manual)reconectarBt('Bluetooth caiu');},4000);return;}
-    reconectarBt('Bluetooth caiu');});}
-async function reconectarBt(motivo){const dev=A.bt;if(!dev||A.btReconectando)return;A.btReconectando=true;A.btRecIni=Date.now();let n=0;const gen=A.btGen||0;
+  dev.addEventListener('gattserverdisconnected',()=>{if(dev._manual||A.bt!==dev||A.btReconectando)return;reconectarBt('Bluetooth caiu');});}
+async function reconectarBt(motivo){const dev=A.bt;if(!dev||A.btReconectando)return;A.btReconectando=true;let n=0;const gen=A.btGen||0;
   try{while(A.bt===dev&&A.fonte==='bt'&&(A.btGen||0)===gen){n++;setStatus(`${motivo} · reconectando${n>1?' (tentativa '+n+')':''}…`,'wait');bruto(motivo+': reconectando (tentativa '+n+')');if(n===1)semSinal('reconectando',{motivo});
-      try{dev._manual=true;dev._manualTs=Date.now();if(dev.gatt.connected)dev.gatt.disconnect();}catch(e){}dev._manual=false;
+      try{dev._manual=true;if(dev.gatt.connected)dev.gatt.disconnect();}catch(e){}dev._manual=false;
       await new Promise(r=>setTimeout(r,n===1?700:3000));if(A.bt!==dev||(A.btGen||0)!==gen)break;
-      try{const t0=Date.now();await btAbrir(dev,n<=2);A.ultDado=Date.now();A.btCutucou=0;toast('Balança reconectada');diagLog('reconectou',{tentativas:n,seg:Math.round((Date.now()-A.btRecIni)/1000),ultima:Math.round((Date.now()-t0)/100)/10});break;}catch(e){bruto('não reconectou: '+(e.message||e));}}}
+      try{await btAbrir(dev);A.ultDado=Date.now();A.btCutucou=0;toast('Balança reconectada');diagLog('reconectou',{tentativas:n});break;}catch(e){bruto('não reconectou: '+(e.message||e));}}}
   finally{if((A.btGen||0)===gen)A.btReconectando=false;}}
-/* vigia: a balança Digi-Star manda o peso o tempo todo (umas 2 vezes por segundo). Se parar 2,5 s, chama de novo (05);
-   chama outra vez aos 5 s; só aos 8 s sem peso reconecta sozinho — mesmo que pareça "conectado".
-   (antes reconectava aos 5 s: a própria reconexão derrubava o Bluetooth e uma pausa curta virava 10–30 s sem balança) */
+/* vigia: a balança Digi-Star manda o peso o tempo todo (umas 2 vezes por segundo). Se parar 2,5 s,
+   chama de novo (05); se chegar a 5 s sem peso, reconecta sozinho — mesmo que pareça "conectado". */
 setInterval(()=>{if(A.fonte!=='bt'||!A.bt||!A.digiStar||A.btReconectando)return;
   const parado=Date.now()-Math.max(A.ultDado||0,A.tCon||0);
-  if(parado>2500&&!A.btCutucou&&A.dsEsc){A.btCutucou=Date.now();A.btCut2=0;bruto('sem peso há 2,5 s: chamando a balança de novo');semSinal('sem_peso',{});A.dsEsc.writeValue(new Uint8Array([5])).catch(()=>{});}
-  if(parado>5000&&!A.btCut2&&A.dsEsc){A.btCut2=Date.now();bruto('sem peso há 5 s: chamando de novo');A.dsEsc.writeValue(new Uint8Array([5])).catch(()=>{});}
-  if(parado>8000){
-    /* ainda conectado: antes de derrubar e reconectar (que no Android pode levar 30 s ou mais), assina o peso de novo e chama a balança — volta em 1–2 s */
-    if(!A.btReassinou&&A.bt.gatt&&A.bt.gatt.connected&&A.btChars&&A.btChars.length){A.btReassinou=Date.now();A.btReconectando=true;const dev=A.bt,u0=A.ultDado||0;bruto('sem peso há 8 s: assinando o peso de novo (sem desconectar)');
-      (async()=>{try{for(const c of A.btChars){try{await btTmo(c.stopNotifications(),2000);}catch(e){}await btTmo(c.startNotifications(),3000);}if(A.dsEsc)await btTmo(A.dsEsc.writeValue(new Uint8Array([5])),2000);}catch(e){bruto('não deu para assinar de novo: '+(e.message||e));}
-        await new Promise(r=>setTimeout(r,2500));A.btReconectando=false;
-        if(A.bt===dev&&(A.ultDado||0)>u0){A.btCutucou=0;A.btCut2=0;diagLog('reassinou',{seg:Math.round((Date.now()-A.btReassinou)/1000)});A.btReassinou=0;}
-        else if(A.bt===dev){A.btReassinou=0;reconectarBt('Balança parou de mandar o peso');}})();
-      return;}
-    reconectarBt('Balança parou de mandar o peso');}},1000);
+  if(parado>2500&&!A.btCutucou&&A.dsEsc){A.btCutucou=Date.now();bruto('sem peso há 2,5 s: chamando a balança de novo');semSinal('sem_peso',{});A.dsEsc.writeValue(new Uint8Array([5])).catch(()=>{});}
+  if(parado>5000)reconectarBt('Balança parou de mandar o peso');},1000);
 /* ao abrir o app de novo (ou depois de atualizar), tenta voltar sozinho para a última balança, se o Chrome deixar */
 /* ao entrar na Automação (Carregar ou Fornecer): tenta conectar sozinho na balança já usada neste aparelho (NEW EZ),
    sem abrir a lista do Bluetooth. Se não der, fica como está: botão Conectar a balança. */
@@ -388,32 +374,27 @@ window.btAutoVoltar=async()=>{pintarBtAuto();if(A.fonte||A.autoTent||!navigator.
     /* igual era antes: se não conectar de primeira, fica tentando sozinho até a balança aparecer (ou até tocar em Desconectar) */
     try{await btAbrir(dev);try{localStorage.setItem('btUltimo',dev.id||'');}catch(e){}}catch(e){reconectarBt('Conectando na balança');}}
   catch(e){}finally{A.autoTent=false;aRender();}};
-/* espera com limite: no Android o Bluetooth às vezes fica preso numa etapa (serviços, leitura) por 30 s ou mais */
-const btTmo=(p,ms,msg)=>Promise.race([p,new Promise((_,rej)=>setTimeout(()=>rej(new Error(msg||'a balança não respondeu')),ms))]);
-async function btAbrir(dev,rapido){
+async function btAbrir(dev){
   setStatus('Conectando em '+(dev.name||'aparelho')+'…','wait');
-  const srv=await btTmo(dev.gatt.connect(),rapido?8000:12000);  // não fica preso para sempre
-  /* reconexão rápida: já sabe qual é o serviço do peso (Digi-Star) → pede só ele e não lê as informações do aparelho */
-  let servs=[];
-  if(rapido&&A.dsSvcUuid){try{servs=[await btTmo(srv.getPrimaryService(A.dsSvcUuid),6000,'serviço do peso não respondeu')];}catch(e){servs=[];}}
-  if(!servs.length){try{servs=await btTmo(srv.getPrimaryServices(),rapido?8000:15000,'a balança não mostrou os serviços');}catch(e){if(rapido)throw e;}}
+  const srv=await Promise.race([dev.gatt.connect(),new Promise((_,rej)=>setTimeout(()=>rej(new Error('a balança não respondeu')),12000))]);  // não fica preso para sempre
+  let servs=[];try{servs=await srv.getPrimaryServices();}catch(e){}
   const info=['Aparelho: '+(dev.name||'(sem nome)')];let n=0;A.btChars=[];A.btLer=[];A.btEsc=[];
   const PADRAO=/^0000(180a|1800|1801|180f)-/;  // informações do aparelho (modelo, fabricante): não é peso
   for(const s of servs){let cs=[];try{cs=await s.getCharacteristics();}catch(e){}
     info.push('Serviço '+s.uuid);const soInfo=PADRAO.test(s.uuid);
     for(const c of cs){const p=c.properties,tem=[p.notify&&'notify',p.indicate&&'indicate',p.read&&'read',p.write&&'write',p.writeWithoutResponse&&'writeNR'].filter(Boolean).join(',');
       info.push('  · '+c.uuid+' ['+tem+']');
-      if(soInfo){if(p.read&&!rapido){try{const v=await btTmo(c.readValue(),3000);info.push('    = '+JSON.stringify(txtDe(v)));}catch(e){}}continue;}
+      if(soInfo){if(p.read){try{const v=await c.readValue();info.push('    = '+JSON.stringify(txtDe(v)));}catch(e){}}continue;}
       if(p.write||p.writeWithoutResponse)A.btEsc.push(c);
-      if(p.notify||p.indicate){try{await btTmo(c.startNotifications(),6000,'não deixou assinar');c.addEventListener('characteristicvaluechanged',ev=>{A.btNotif=Date.now();receber(ev.target.value,'bt');});A.btChars.push(c);n++;}catch(e){info.push('    (não deixou assinar: '+(e.message||e)+')');}}
-      if(p.read){A.btLer.push(c);if(!rapido)try{const v=await btTmo(c.readValue(),3000);bruto('lido '+c.uuid.slice(0,8)+': '+JSON.stringify(txtDe(v))+'   ['+hexDe(v)+']');}catch(e){}}
+      if(p.notify||p.indicate){try{await c.startNotifications();c.addEventListener('characteristicvaluechanged',ev=>{A.btNotif=Date.now();receber(ev.target.value,'bt');});A.btChars.push(c);n++;}catch(e){info.push('    (não deixou assinar: '+(e.message||e)+')');}}
+      if(p.read){A.btLer.push(c);try{const v=await c.readValue();bruto('lido '+c.uuid.slice(0,8)+': '+JSON.stringify(txtDe(v))+'   ['+hexDe(v)+']');}catch(e){}}
     }}
   $('aBtInfo').textContent=info.join('\n');A.btInfo=info.join('\n');if(A.holdApp)A.holdForcar=true;   // conectou (ou reabriu o app) com a balança devendo estar travada: reenvia o HOLD
   /* Digi-Star EZ ("NEW EZ"): a balança só manda o peso enquanto o app manda o byte 05 (ENQ) de tempos em tempos,
      igual ao app TAP Feed (descoberto no registro HCI do tablet). Manda logo ao conectar e a cada 3 s. */
   clearInterval(A.dsPoll);A.digiStar=false;
   const dsEsc=A.btEsc.find(c=>c.service&&/^f0165585-/i.test(c.service.uuid));
-  if(dsEsc){A.digiStar=true;A.dsEsc=dsEsc;A.dsSeq=0;A.dsSvcUuid=dsEsc.service.uuid;const enq=new Uint8Array([5]);
+  if(dsEsc){A.digiStar=true;A.dsEsc=dsEsc;A.dsSeq=0;const enq=new Uint8Array([5]);
     const manda=async()=>{if(A.bt!==dev)return clearInterval(A.dsPoll);if(A.dsMandando)return;A.dsMandando=true;try{if(dsEsc.properties&&dsEsc.properties.writeWithoutResponse&&dsEsc.writeValueWithoutResponse)await dsEsc.writeValueWithoutResponse(enq);else await dsEsc.writeValue(enq);}catch(e){bruto('erro ao pedir peso: '+(e.message||e));}finally{A.dsMandando=false;}};
     await manda();const iv=Math.max(0.5,Math.min(5,+cfg().enq||1));A.dsPoll=setInterval(manda,iv*1000);info.push(`Digi-Star EZ: pedindo o peso (05) a cada ${String(iv).replace('.',',')} s`);$('aBtInfo').textContent=info.join('\n');A.btInfo=info.join('\n');marcarFonte();}
   /* balança que não manda sozinha: lê os canais de leitura de tempos em tempos */
@@ -421,7 +402,6 @@ async function btAbrir(dev,rapido){
   clearInterval(A.btPoll);if(!A.digiStar&&(A.btLer.length||A.btEsc.length)){n+=A.btLer.length;A.btPoll=setInterval(async()=>{if(A.bt!==dev||A.btLendo)return;if(A.btNotif&&Date.now()-A.btNotif<1500)return;A.btLendo=true;
     try{const cmd=cmdBle();if(cmd&&A.btEsc.length){const ch=A.btEsc[0];if(ch.properties.writeWithoutResponse&&ch.writeValueWithoutResponse)await ch.writeValueWithoutResponse(cmd);else await ch.writeValue(cmd);bruto('enviado: '+hexDe(cmd));}
       for(const c of A.btLer){const v=await c.readValue();if(v&&v.byteLength){bruto('lido '+c.uuid.slice(0,8)+': '+JSON.stringify(txtDe(v))+'   ['+hexDe(v)+']');receber(v,'bt');}}}catch(e){bruto('erro: '+(e.message||e));}A.btLendo=false;},1000);}
-  if(rapido&&(!servs.length||!n))throw new Error('não achou o canal de peso na reconexão rápida');
   if(!servs.length||!n){setStatus('Conectou, mas não achei o canal de peso desta balança. Descubra o UUID do serviço com o app nRF Connect e coloque em Gestão › Config. › Balança (UUID do Bluetooth). Ou tente o 🔵 Bluetooth.','err');return;}
   if(n)A.tCon=Date.now();setStatus(n?`Bluetooth conectado (${dev.name||'aparelho'}) · aguardando peso…`:'Conectou, mas nenhum canal envia dados. Veja "Dados recebidos".',n?'ok':'err');
   pedirTelaLigada();
