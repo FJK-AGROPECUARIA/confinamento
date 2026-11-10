@@ -546,6 +546,12 @@ table:has(#tbHist) td.c{text-align:left}
 .gRacLin{display:flex;gap:6px;align-items:center}.gRacLin select{flex:1;min-width:0}.gRacLin input{width:5.5em}
 .gTab td small,.gTab td.c small{display:block;font-size:.72rem;color:var(--muted);font-weight:500;font-family:var(--body)}
 .gTab td.c{font-size:1rem;cursor:default}
+/* histórico de entradas e saídas: tipo à esquerda, locais/qtd/peso/lotes no centro, valor à direita; colunas de local estreitas */
+.gTabES th,.gTabES td{text-align:center;padding-left:6px;padding-right:6px}.gTabES th{white-space:nowrap}
+.gTabES th:nth-child(1),.gTabES td:nth-child(1),.gTabES th:nth-child(2),.gTabES td:nth-child(2){text-align:left}
+.gTabES th:nth-child(7),.gTabES td:nth-child(7){text-align:right}
+.gTabES td:nth-child(3),.gTabES td:nth-child(4){max-width:150px;white-space:normal!important;word-break:keep-all;overflow-wrap:normal;hyphens:none}
+.gTabES .gTpI{font-size:1.05rem}.gTabES tr.grp td{text-align:center}.gTabES tr.grp td:nth-child(1){text-align:left}.gTabES tr.grp td:nth-child(5){text-align:right}
 .gNotaCfg{display:flex;gap:6px;align-items:center}.gNotaCfg b{width:1.2em;font-size:1.2rem}.gNotaCfg input[type=text]:not(.cell){flex:1;min-width:0}.gNotaCfg input.cell{width:4.5em}
 tr.gClic{cursor:pointer}
 .gLote{display:flex;align-items:stretch;gap:12px;width:100%;text-align:left;padding:10px;background:var(--surface);border-radius:14px}
@@ -1337,7 +1343,7 @@ body.naInicio .topoTxt h1{font-size:clamp(16px,5vw,28px)!important}
 <div class="toast" id="toast" hidden></div>
 <script>
 'use strict';
-const APP_VERSAO='351';
+const APP_VERSAO='352';
 const APP_DATA='19/10/2026';
 const KEY='confinamento-completo-v1';
 const $=id=>document.getElementById(id);
