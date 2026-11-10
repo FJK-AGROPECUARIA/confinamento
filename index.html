@@ -547,6 +547,10 @@ table:has(#tbHist) td.c{text-align:left}
 .gTab td small,.gTab td.c small{display:block;font-size:.72rem;color:var(--muted);font-weight:500;font-family:var(--body)}
 .gTab td.c{font-size:1rem;cursor:default}
 /* histórico de entradas e saídas: tipo à esquerda, locais/qtd/peso/lotes no centro, valor à direita; colunas de local estreitas */
+.gImpCk{width:16px!important;height:16px!important;margin:0;vertical-align:-3px;flex:none;accent-color:#2f6f35;cursor:pointer}
+.gImpBox{display:flex;align-items:center;gap:2px;border:2px solid var(--line);border-radius:10px;background:var(--bg);padding:0 0 0 4px}.gImpBox input.gRs{flex:1;min-width:0;border:0!important;background:transparent!important;padding-left:2px!important;padding-right:0!important;box-shadow:none!important;font-size:.88rem!important;letter-spacing:-.02em}
+.gImpP{display:flex;align-items:center;gap:1px;flex:none;font-size:.8rem;font-weight:700;color:#4a5a4a}.gImpP input{background:var(--surface)!important;width:2.5em!important;min-width:0;padding:3px 0!important;font-size:.8rem!important;text-align:center;border-radius:7px!important;border-width:1px!important;min-height:0!important;height:auto!important}
+.gImpBox.off .gImpP,.gImpBox.off input.gRs{opacity:.45;text-decoration:line-through}
 .gTabES th,.gTabES td{text-align:center;padding-left:6px;padding-right:6px}.gTabES th{white-space:nowrap}
 .gTabES th:nth-child(1),.gTabES td:nth-child(1),.gTabES th:nth-child(2),.gTabES td:nth-child(2){text-align:left}
 .gTabES th:nth-child(7),.gTabES td:nth-child(7){text-align:right}
@@ -1343,7 +1347,7 @@ body.naInicio .topoTxt h1{font-size:clamp(16px,5vw,28px)!important}
 <div class="toast" id="toast" hidden></div>
 <script>
 'use strict';
-const APP_VERSAO='352';
+const APP_VERSAO='353';
 const APP_DATA='19/10/2026';
 const KEY='confinamento-completo-v1';
 const $=id=>document.getElementById(id);
