@@ -1571,7 +1571,8 @@ document.addEventListener('change',e=>{if(e.target&&e.target.id==='gf_mcO'){cons
 function tMudCur(t){const A=window.curraisApi,hj=hojeKey();if(!A)return '';
   const com=A.lista().filter(n=>lotesNoCur(n,hj).length).sort(alfa);
   const opO=[['','Selecione']].concat(com.map(n=>{const ls=lotesNoCur(n,hj);return [n,`${n} · ${ls.map(l=>l.nome+' ('+nf(cabAtual(l))+' cab)').join(' + ')}`];}));
-  const opD=[['','Selecione']].concat(opCurrais('',false).map(([n])=>{const ls=lotesNoCur(n,hj);return [n,n+(ls.length?` (ocupado: ${ls.map(l=>l.nome).join(' + ')})`:' (vazio)')];}));
+  const tD=opCurrais('',true).map(([n])=>{const ls=lotesNoCur(n,hj);return [n,n+(ls.length?` (ocupado: ${ls.map(l=>l.nome).join(' + ')})`:' (vazio)'),ls.length];});
+  const opD=[['','Selecione']].concat(tD.filter(x=>!x[2]),tD.filter(x=>x[2])).map(x=>[x[0],x[1]]);   /* livres primeiro (inclusive os inativos), depois os ocupados */
   return `${voltar('Currais')}<section class="panel"><h2>↔ Mudar animais de curral</h2>
     <div class="gForm">${[{k:'mcO',l:'Curral de origem',t:'sel',busca:1,op:opO,v:t.ori||''}].map(campo).join('')}
       <div class="gCampo" id="mcLotes">${mcLotesHTML(t.ori||'')}</div>
@@ -1719,19 +1720,19 @@ function tCocho(t){
   const notas=cfg.notas.slice().sort((a,b)=>a.n-b.n);
   GT.dia=dia;GT.sel=GT.sel||{};
   const rows=Cs.map(c=>{const L=gTodos('lote').filter(l=>curralEm(l,dia)===c&&cabPres(l,dia)>0);
-    const ontem=ix.get(ont+'|'+c)||0,pt=prevTotal(c),cab=L.reduce((a,l)=>a+cabPres(l,dia),0);
+    const hC=d=>histCur(c,d,dia,ix),ontem=hC(ont).kg,pt=prevTotal(c),cab=L.reduce((a,l)=>a+cabPres(l,dia),0);
     let base=ontem,orig=dia===hojeKey()?'realizado ontem':ont===hojeKey()?'realizado de hoje':'realizado do dia anterior';
     /* base escolhida à mão (o dia anterior não serve de referência): outra data, previsto ou digitada */
     const lt0=G.it[idLeit(dia,c)],bs0=(GT.base||{})[c]||(lt0&&!lt0.del&&lt0.baseM&&lt0.baseM!=='ontem'?{m:lt0.baseM,d:lt0.baseDia,kg:lt0.base}:null),bs=bs0&&bs0.m!=='ontem'?bs0:null;
-    if(bs&&bs.m==='dia'&&bs.d){base=ix.get(bs.d+'|'+c)||0;orig='realizado de '+diaBR(bs.d).slice(0,5);}
+    if(bs&&bs.m==='dia'&&bs.d){base=hC(bs.d).kg;orig='realizado de '+diaBR(bs.d).slice(0,5);}
     else if(bs&&bs.m==='prev'){base=window.prevApi?(prevApi.totalDia||prevApi.totalCurral)(c,prevApi.prevDoDia(ont),ont):0;orig='previsto de '+(ont===hojeKey()?'hoje':diaBR(ont).slice(0,5));}
     else if(bs&&bs.m==='kg'&&ok(bs.kg)){base=+bs.kg;orig='base digitada';}
     /* sem trato no dia anterior: a base é o realizado do primeiro dia anterior que teve trato */
-    let dBase=ont;if(!bs&&!ontem){for(let i=2;i<=30;i++){const d=somaDias(dia,-i),v=ix.get(d+'|'+c)||0;if(v){base=v;dBase=d;orig=`realizado de ${diaBR(d).slice(0,5)}, último dia com trato`;break;}}}
+    let dBase=ont;if(!bs&&!ontem){for(let i=2;i<=30;i++){const d=somaDias(dia,-i),v=hC(d).kg;if(v){base=v;dBase=d;orig=`realizado de ${diaBR(d).slice(0,5)}, último dia com trato`;break;}}}
     const bm=bs?bs.m:'ontem';
     /* MS da ração mudou entre o dia da base e o dia da leitura: a base (kg de matéria natural) é convertida para dar a mesma matéria seca */
     let msFator=1;{const dB_=bm==='kg'?null:bm==='dia'&&bs?bs.d:dBase,fx=dB_?fatorMS(c,dB_,dia):1;if(base&&ok(fx)&&Math.abs(fx-1)>0.0005){const a=msRacCurral(c,dB_),b=msRacCurral(c,dia);base=Math.round(base*fx);msFator=fx;orig+=` · ajustado pela MS da ração ${pc(a,1)} → ${pc(b,1)}`;}}
-    const chips=[1,2,3].map(i=>{const d=somaDias(dia,-i),v=ix.get(d+'|'+c)||0;return `<button type="button" class="mini${bm==='dia'&&bs&&bs.d===d?' sel':''}" data-g="baseDia" data-c="${esc(c)}" data-d="${d}"${v?'':' disabled'}>${diaBR(d).slice(0,5)}<small>${v?nf(v)+' kg':'sem trato'}</small></button>`;}).join('');
+    const chips=[1,2,3].map(i=>{const d=somaDias(dia,-i),v=hC(d).kg;return `<button type="button" class="mini${bm==='dia'&&bs&&bs.d===d?' sel':''}" data-g="baseDia" data-c="${esc(c)}" data-d="${d}"${v?'':' disabled'}>${diaBR(d).slice(0,5)}<small>${v?nf(v)+' kg':'sem trato'}</small></button>`;}).join('');
     const opB=(m,txt)=>`<button type="button" class="gBaseBt${bm===m?' sel':''}" data-g="baseM" data-c="${esc(c)}" data-m="${m}">${txt}</button>`;
     if(!base&&!bs&&pt){base=pt;orig='previsto atual';}
     if(!base&&!bs){base=Math.round(sugLoteNovo(c,dia));orig=`sugestão ${nf(pvSug(c),1)}% PV`;}
@@ -1739,7 +1740,7 @@ function tCocho(t){
     const lt=G.it[idLeit(dia,c)],sel=GT.sel[c]||(lt&&!lt.del?{n:lt.nota,kg:lt.novo,ims:lt.ims}:null);
     const nota=sel&&sel.n!=null?sel.n:null,cn=notas.find(x=>x.n===nota);
     const sug=cn?arred(base*(1+cn.p/100),cfg.arred):null,kg=sel&&ok(sel.kg)?sel.kg:sug;
-    const ant=[3,2,1].map(i=>{const x=G.it[idLeit(somaDias(dia,-i),c)];return x&&!x.del?notaTxt(x.nota):'·';}).join('  ');
+    const ant=[3,2,1].map(i=>{const x=hC(somaDias(dia,-i)).lx;return x?notaTxt(x.nota):'·';}).join('  ');
     const pvT=L.reduce((a,l)=>a+cabPres(l,dia)*pesoEm(l,dia),0),msF=(()=>{let w=0,t=0;L.forEach(l=>{const r=racaoEm(l,dia),cp=r&&compRacao(r,dia);if(cp){w+=cabPres(l,dia);t+=cabPres(l,dia)*cp.ms/100;}});return w?t/w:NaN;})();
     /* IMS de ontem: com a MS e o peso do PRÓPRIO dia de ontem (MS alterada depois do trato só vale a partir do dia seguinte) */
     const pvO=L.reduce((a,l)=>a+cabPres(l,ont)*pesoEm(l,ont),0),msO=(()=>{let w=0,t=0;L.forEach(l=>{const r=racaoEm(l,ont),cp=r&&compRacao(r,ont);if(cp){w+=cabPres(l,ont);t+=cabPres(l,ont)*cp.ms/100;}});return w?t/w:NaN;})();
@@ -1750,7 +1751,7 @@ function tCocho(t){
     const trv=leitTravada(dia,c);if(trv&&GT.sel)delete GT.sel[c];
     /* últimos 3 dias: leitura, kg/dia e % IMS de cada dia · tocar repete a matéria seca daquele dia */
     const podeRep=pode.ok&&!trv,repD=sel&&sel.rep;
-    const ult3=`<div class="gUlt3">${[3,2,1].map(i=>{const d=somaDias(dia,-i),x=G.it[idLeit(d,c)],lx=x&&!x.del?x:null,kgd=ix.get(d+'|'+c)||0,bi=baseIms(c,d),im=kgd&&bi?kgd/bi:NaN;
+    const ult3=`<div class="gUlt3">${[3,2,1].map(i=>{const d=somaDias(dia,-i),h=hC(d),lx=h.lx,kgd=h.kg,bi=h.bi,im=kgd&&bi?kgd/bi:NaN;
       const cn_=lx&&lx.nota!=null?notas.find(o=>o.n===+lx.nota):null,[bg,fg]=['#eceff1','#11253d'];   /* histórico dos 3 dias: sempre cinza; o escolhido ganha a borda preta e a nota aproximada fica verde embaixo */
       return `<button type="button" class="gU3${repD===d?' sel':''}" style="background:${bg};color:${fg}"${podeRep&&kgd?` data-g="repDia" data-c="${esc(c)}" data-d="${d}"`:' disabled'}><small>${diaBR(d).slice(0,5)}</small><b>${lx&&lx.nota!=null?notaTxt(+lx.nota):'·'}</b><i>${kgd?nf(kgd)+' kg':'sem trato'}</i><em>${ok(im)?pc(im,2)+' IMS':'—'}</em></button>`;}).join('')}</div>`;
     /* ＋ ao lado dos 3 dias: abre na própria tela o gráfico dos últimos 7 dias (nota, kg e % IMS de cada dia) */
@@ -1759,9 +1760,9 @@ function tCocho(t){
     const graf7=grOn?(()=>{
       /* já tem a leitura do dia da tela: ele entra como último dia, com o PREVISTO (kg da leitura); depois que o dia acaba, passa a mostrar o realizado */
       const ltD=lt&&!lt.del?lt:null,comHj=!!ltD,ds=[];for(let i=comHj?6:7;i>=(comHj?0:1);i--)ds.push(somaDias(dia,-i));
-      const D=ds.map(d=>{const x=G.it[idLeit(d,c)],lx=x&&!x.del?x:null,bi=baseIms(c,d);
+      const D=ds.map(d=>{const h=hC(d),lx=h.lx,bi=h.bi;
         if(d===dia&&ltD&&dia>=hojeKey()){const kp=+ltD.novo||0;return {d,nota:ltD.nota!=null?+ltD.nota:null,kg:kp,ims:ltD.ims>0?+ltD.ims:(kp&&bi?kp/bi:NaN),prev:true};}
-        const kgd=ix.get(d+'|'+c)||0;return {d,nota:lx&&lx.nota!=null?+lx.nota:null,kg:kgd,ims:kgd&&bi?kgd/bi:NaN};});
+        const kgd=h.kg;return {d,nota:lx&&lx.nota!=null?+lx.nota:null,kg:kgd,ims:kgd&&bi?kgd/bi:NaN};});
       const mx=Math.max(1,...D.map(x=>x.kg));
       return `<div class="gCoG7"><div class="gCoG7Tit">Últimos 7 dias · nota, kg e % IMS</div><div class="gCoG7Bars">${D.map(x=>{const h=x.kg?Math.max(48,Math.round(x.kg/mx*100)):0,cl=x.nota==null?'':x.nota>0?' pos':x.nota<0?' neg':' zero';
         return `<div class="gCoG7Col"><div class="gCoG7Area">${x.prev?`<small class="gCoG7Pv" style="bottom:calc(${x.kg?h:100}% + 2px)">previsto</small>`:''}<div class="gCoG7Bar${x.kg?'':' vazio'}${x.prev?' gCoG7Prev':''}" style="height:${x.kg?h:100}%"><b class="gCoG7Nt${cl}">${x.nota!=null?notaTxt(x.nota):'·'}</b>${x.kg?`<span>${nf(x.kg)}</span><em>${ok(x.ims)?pc(x.ims,2):'—'}</em>`:'<span>sem<br>trato</span>'}</div></div><small>${diaBR(x.d).slice(0,5)}</small></div>`;}).join('')}</div>
@@ -1996,7 +1997,27 @@ const arred=(v,a)=>a>0?Math.round(v/a)*a:Math.round(v);
 /* % de MS da ração do curral num dia (média pelas cabeças, com a MS dos insumos que valia naquele dia) */
 function msRacCurral(c,dia){let w=0,t=0;gTodos('lote').forEach(l=>{if(curralEm(l,dia)!==c)return;const cb=cabPres(l,dia);if(!(cb>0))return;const r=racaoEm(l,dia),cp=r&&compRacao(r,dia);if(cp&&cp.ms>0){w+=cb;t+=cb*cp.ms;}});return w?t/w:NaN;}
 /* quanto a matéria natural muda para dar a mesma matéria seca: MS do dia da base ÷ MS do dia da leitura */
-function fatorMS(c,dBase,dia){const a=msRacCurral(c,dBase),b=msRacCurral(c,dia);return ok(a)&&ok(b)&&b>0?a/b:1;}
+/* histórico de um curral na leitura de cocho, seguindo os ANIMAIS que estão nele no dia da leitura (mudança de curral leva o histórico junto).
+   Para cada dia d antes da leitura: kg = o que esses lotes comeram (o trato de cada curral onde estavam, na parte do peso vivo deles),
+   bi = base do % IMS deles (peso projetado e MS da ração de cada lote), ms = MS média, lx = leitura do curral de onde veio a maior parte do peso.
+   Vários lotes vindos de currais diferentes: soma o consumo e o peso de todos. Sem lote no curral → o histórico do próprio curral. */
+let _hcM={k:'',m:new Map()};
+function histCur(c,d,dia,ix){ix=ix||gIndice();const lt=x=>{const r=G.it[idLeit(d,x)];return r&&!r.del?r:null;};
+  const pr=()=>({kg:ix.get(d+'|'+c)||0,bi:baseIms(c,d),ms:msRacCurral(c,d),lx:lt(c)});
+  if(!c||!d||!dia||d>=dia)return pr();
+  if(_hcM.k!==dia){_hcM={k:dia,m:new Map()};setTimeout(()=>{_hcM.k='';},0);}   /* cache só durante um desenho da tela */
+  const ck=c+'|'+d;if(_hcM.m.has(ck))return _hcM.m.get(ck);
+  let L=_hcM.m.get(c);if(!L){L=gTodos('lote').filter(l=>curralEm(l,dia)===c&&cabPres(l,dia)>0);_hcM.m.set(c,L);}
+  let R;if(!L.length)R=pr();else{
+    const pv=l=>cabPres(l,d)*(pesoEm(l,d)||0),G1=L.filter(l=>cabPres(l,d)>0),por=new Map();
+    G1.forEach(l=>{const o=curralEm(l,d);if(o)por.set(o,(por.get(o)||0)+pv(l));});
+    let kg=0,bi=0,tb=false,w=0,t=0,mx=-1,src=null;
+    por.forEach((pvG,o)=>{const pvT=gTodos('lote').filter(l=>curralEm(l,d)===o&&cabPres(l,d)>0).reduce((a,l)=>a+pv(l),0),kgo=ix.get(d+'|'+o)||0;
+      kg+=pvT>0?kgo*Math.min(1,pvG/pvT):0;if(pvG>mx){mx=pvG;src=o;}});
+    G1.forEach(l=>{const r=racaoEm(l,d),cp=r&&compRacao(r,d);if(!cp||!(cp.ms>0))return;bi+=pv(l)/100/(cp.ms/100);tb=true;w+=cabPres(l,d);t+=cabPres(l,d)*cp.ms;});
+    R={kg:Math.round(kg),bi:tb?bi:null,ms:w?t/w:NaN,lx:src?lt(src):null};}
+  _hcM.m.set(ck,R);return R;}
+function fatorMS(c,dBase,dia){const a=histCur(c,dBase,dia).ms,b=msRacCurral(c,dia);return ok(a)&&ok(b)&&b>0?a/b:1;}
 /* mudou a MS de um insumo: as leituras de hoje (se o curral ainda não foi tratado) e de amanhã são refeitas com a MS nova,
    e o previsto desses dias acompanha. Para trás não muda nada. */
 function ajustarLeiturasMS(){try{if(typeof modoVer!=='undefined'&&modoVer)return 0;if(!window.prevApi)return 0;const hj=hojeKey(),am=somaDias(hj,1),cfg=gCfg();let n=0,mudHoje=false;const objs={};
@@ -3129,7 +3150,8 @@ $('gBox').addEventListener('click',e=>{
     const mk=[...document.querySelectorAll('[data-mclote]')];const ls=mk.length?todos.filter(l=>mk.some(c=>c.checked&&c.dataset.mclote===l.uid)):todos;if(!ls.length)return toast('Marque pelo menos um lote');const ant=ls.find(l=>d<l.ent.dia);if(ant)return toast(`A data é antes da entrada do ${ant.nome}`);
     const oc=lotesNoCur(de,d).filter(l=>!ls.includes(l));if(oc.length&&!confirm(`O ${de} já tem ${oc.map(l=>l.nome).join(' + ')}. Os lotes vão dividir o trato desse curral pelo peso vivo de cada lote. Mudar mesmo assim?`))return;
     const obs=(($('gf_mcObs')||{}).value||'').trim();
-    ls.forEach(l0=>{const l=JSON.parse(JSON.stringify(l0));l.curr=l.curr||[];setHist(l.curr,d,Object.assign({c:de,de:o,ts:Date.now()},obs?{obs}:{}));gPut(l);});recalcCurral(de,d);recalcCurral(o,d);toast(`${ls.map(l=>l.nome).join(' + ')} → ${de}`);return gVoltar();}
+    ls.forEach(l0=>{const l=JSON.parse(JSON.stringify(l0));l.curr=l.curr||[];setHist(l.curr,d,Object.assign({c:de,de:o,ts:Date.now()},obs?{obs}:{}));gPut(l);});const CA=window.curraisApi;if(CA&&CA.info(de).inativo)CA.salvar(de,de,Object.assign({},CA.info(de),{inativo:false}));   /* curral livre estava inativo: volta a ficar ativo */
+    recalcCurral(de,d);recalcCurral(o,d);toast(`${ls.map(l=>l.nome).join(' + ')} → ${de}`);return gVoltar();}
   if(a==='salvaMud'){const l=JSON.parse(JSON.stringify(G.it[id])),c=b.dataset.o==='curr',d=fv('desde'),v=fv('val');if(!d||!v)return toast('Escolha a data e '+(c?'o curral':'a ração'));
     if(d<l.ent.dia)return toast('A data é antes da entrada do lote');
     if(c){l.curr=l.curr||[];setHist(l.curr,d,{c:v});}else{l.rac=l.rac||[];setHist(l.rac,d,{r:v});}gPut(l);toast('Salvo');return gVoltar();}
@@ -3163,7 +3185,7 @@ $('gBox').addEventListener('click',e=>{
   if(a==='compRel')return enviarTexto(textoRel());
   if(a==='compDia')return enviarTexto(textoDia());
   if(a==='baseDia'){GT.base=GT.base||{};GT.base[b.dataset.c]={m:'dia',d:b.dataset.d};if(GT.sel&&GT.sel[b.dataset.c])delete GT.sel[b.dataset.c].kg;const y=window.scrollY;gRender();window.scrollTo({top:y});return;}
-  if(a==='repDia'){const c=b.dataset.c,d=b.dataset.d,dia=GT.dia||hojeKey();if(leitTravada(dia,c))return;const ix=gIndice(),kgd=ix.get(d+'|'+c)||0;if(!kgd)return;
+  if(a==='repDia'){const c=b.dataset.c,d=b.dataset.d,dia=GT.dia||hojeKey();if(leitTravada(dia,c))return;const ix=gIndice(),kgd=histCur(c,d,dia,ix).kg;if(!kgd)return;
     /* mesma matéria seca daquele dia, convertida para a MS da ração de hoje */
     const fx=fatorMS(c,d,dia),kg=Math.round(kgd*(ok(fx)?fx:1)),card=b.closest('.gCocho'),base=card?+card.dataset.base:0,N=gCfg().notas;
     let best=null;if(base>0)N.forEach(o=>{const v=base*(1+o.p/100);if(!best||Math.abs(v-kg)<Math.abs(best.v-kg))best={n:o.n,v};});
