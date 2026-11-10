@@ -897,8 +897,11 @@ function histExp(f){const H=window.__hExp;if(!H||!H.linhas.length)return toast('
 const entTrNovo=l=>gTodos('saida').find(x=>x.mot==='transf'&&x.novoLote&&x.destino===l.uid);   /* lote criado por uma transferência / venda interna */
 const entTipoH=r=>{if(r.k==='lote'){const e=r.l.ent||{},tn=entTrNovo(r.l);if(tn)return +tn.vi>0?'↔ Venda interna':'↔ Transferência';return e.unid==='transf'?(e.vi?'↔ Venda interna':'↔ Transferência'):r.l.apDe?'✂ Apartação':'📥 Compra';}
   const x=r.x;return x.falta?'📋 Animais achados':x.transf?(x.vi?'↔ Venda interna':'↔ Transferência'):'📥 Compra';};
-const entOriH=r=>{if(r.k==='lote'){const e=r.l.ent||{},tn=entTrNovo(r.l),d=tn?G.it[tn.lote]:e.unid==='transf'&&G.it[e.deLote];if(d)return d.nome;const a=r.l.apDe&&G.it[r.l.apDe];if(a)return a.nome;return e.origem||'—';}
-  const x=r.x,tr=x.transf&&G.it[x.transf],d=tr&&G.it[tr.lote];if(d)return d.nome;if(x.falta)return 'Animais achados';return x.obs||'—';};
+/* lote de origem da entrada (transferência / venda interna / apartação) e o local de origem (curral do lote de origem; na compra, o fornecedor/observação) */
+const entDeL=r=>{if(r.k==='lote'){const e=r.l.ent||{},tn=entTrNovo(r.l);if(tn)return G.it[tn.lote]||null;if(e.unid==='transf')return G.it[e.deLote]||null;return r.l.apDe?G.it[r.l.apDe]||null:null;}
+  const tr=r.x.transf&&G.it[r.x.transf];return tr?G.it[tr.lote]||null:null;};
+const entLocOri=r=>{const d=entDeL(r);if(d)return curralEm(d,somaDias(r.dia,-1))||curralEm(d,r.dia)||'—';if(r.k==='lote')return (r.l.ent||{}).origem||'—';return r.x.falta?'Animais achados':(r.x.obs||'—');};
+const entOriH=r=>{const d=entDeL(r);return d?d.nome:entLocOri(r);};
 function tEntradas(t){const hj=hojeKey(),desde=t.dIni||somaDias(hj,-30),ate=t.dFim||hj;
   const op=[['','Selecione'],['__novo','＋ Criar lote novo (escolher o curral)']].concat(opLotesSel(true,hj));
   const R=[];
@@ -912,16 +915,16 @@ function tEntradas(t){const hj=hojeKey(),desde=t.dIni||somaDias(hj,-30),ate=t.dF
   const linhas=L.map(r=>`<tr><td>${dCurto(r.dia)}<div class="gAcHist"><button class="mini" data-g="imgEnt" data-id="${r.l.uid}" data-eid="${r.k==='ent'?r.x.uid:''}" title="Foto desta entrada">🖼</button>${r.k==='lote'?`<button class="mini" data-g="ir" data-t="loteForm" data-id="${r.l.uid}" title="Alterar (editar lote)">✎</button>${(()=>{const tr=gTodos('saida').find(x=>x.mot==='transf'&&x.novoLote&&x.destino===r.l.uid);
         return tr?`<button class="mini danger" data-g="apaga" data-id="${tr.uid}" data-o="transferência (o lote ${esc(r.l.nome)} criado nela também é apagado e os animais voltam)" title="Desfazer a transferência">✕</button>`
           :`<button class="mini danger" data-g="apagaLote" data-id="${r.l.uid}" title="Apagar o lote">✕</button>`;})()}`
-      :`${r.x.falta?'':r.x.transf?((()=>{const tr=G.it[r.x.transf];return tr&&!tr.del?`<button class="mini" data-g="ir" data-t="transfForm" data-id="${tr.lote}" data-old="${tr.uid}" title="Alterar a transferência">✎</button>`:'';})()):`<button class="mini" data-g="entEd" data-id="${r.l.uid}" data-eid="${r.x.uid}">✎</button>`}<button class="mini danger" data-g="apaga" data-id="${r.x.uid}" data-o="${r.x.transf?'entrada (apaga também a transferência)':'entrada de animais'}">✕</button>`}</div></td><td class="c"><b>${entTipoH(r)}</b></td><td class="c" style="white-space:nowrap">${esc(curralEm(r.l,r.dia)||'—')}</td><td class="c">${esc(entOriH(r))}</td><td>${r.k==='ent'?'+':''}${nf(r.cab)}</td><td>${nf(r.peso)}</td><td style="white-space:nowrap">${r.rs>0?rs(r.rs):'—'}</td><td class="c" style="font-size:.78rem"><a class="gLink" data-g="lote" data-id="${r.l.uid}">${esc(r.l.nome)}</a></td></tr>`).join('');
+      :`${r.x.falta?'':r.x.transf?((()=>{const tr=G.it[r.x.transf];return tr&&!tr.del?`<button class="mini" data-g="ir" data-t="transfForm" data-id="${tr.lote}" data-old="${tr.uid}" title="Alterar a transferência">✎</button>`:'';})()):`<button class="mini" data-g="entEd" data-id="${r.l.uid}" data-eid="${r.x.uid}">✎</button>`}<button class="mini danger" data-g="apaga" data-id="${r.x.uid}" data-o="${r.x.transf?'entrada (apaga também a transferência)':'entrada de animais'}">✕</button>`}</div></td><td class="c"><b>${entTipoH(r)}</b></td><td class="c" style="white-space:nowrap">${esc(curralEm(r.l,r.dia)||'—')}</td><td class="c">${esc(entLocOri(r))}</td><td>${r.k==='ent'?'+':''}${nf(r.cab)}</td><td>${nf(r.peso)}</td><td style="white-space:nowrap">${r.rs>0?rs(r.rs):'—'}</td><td class="c" style="font-size:.78rem"><a class="gLink" data-g="lote" data-id="${r.l.uid}">${esc(r.l.nome)}</a></td><td class="c" style="font-size:.78rem">${(()=>{const d=entDeL(r);return d?`<a class="gLink" data-g="lote" data-id="${d.uid}">${esc(d.nome)}</a>`:'—';})()}</td></tr>`).join('');
   window.__hExp={nome:'Entrada de animais',per:`${dB(desde)} a ${dB(ate)}`,
-    cols:[['Data',110,'l','dia'],['Tipo',170,'l'],['Local',150,'l'],['Origem',260,'l'],['Qtd.',90,'r','int'],['Peso (kg)',120,'r','int'],['Valor (R$)',160,'r','rs'],['Lote',240,'l']],
-    linhas:L.map(r=>[r.dia,entTipoH(r).replace(/^\S+\s/,''),curralEm(r.l,r.dia)||'—',entOriH(r),r.cab,r.peso||NaN,r.rs>0?r.rs:NaN,r.l.nome]),
-    total:['TOTAL',`${nf(L.length)} entrada(s)`,'','',tot,NaN,L.reduce((a,r)=>a+(r.rs>0?r.rs:0),0),'']};
+    cols:[['Data',110,'l','dia'],['Tipo',170,'l'],['Local entrada',150,'l'],['Local origem',200,'l'],['Qtd.',90,'r','int'],['Peso (kg)',120,'r','int'],['Valor (R$)',160,'r','rs'],['Lote entrada',220,'l'],['Lote origem',220,'l']],
+    linhas:L.map(r=>{const d=entDeL(r);return [r.dia,entTipoH(r).replace(/^\S+\s/,''),curralEm(r.l,r.dia)||'—',entLocOri(r),r.cab,r.peso||NaN,r.rs>0?r.rs:NaN,r.l.nome,d?d.nome:'—'];}),
+    total:['TOTAL',`${nf(L.length)} entrada(s)`,'','',tot,NaN,L.reduce((a,r)=>a+(r.rs>0?r.rs:0),0),'','']};
   return `${voltarAni()}<section class="panel"><h2>📥 Entrada de animais</h2>
     <button class="primary" data-g="ir" data-t="entNova">＋ Nova entrada</button></section>
   <section class="panel"><h2>Histórico de entradas</h2>${FH.html}${histExpBts(L.length)}
-    ${L.length?`<div class="tablebox"><table class="gTab"><thead><tr><th>Data</th><th>Tipo</th><th>Local</th><th>Origem</th><th>Qtd.</th><th>Peso</th><th>Valor</th><th>Lote</th></tr></thead><tbody>${linhas}
-    <tr class="grp"><td>Total</td><td>${nf(L.length)} entrada(s)</td><td>${nf(tot)}</td><td></td><td>${nf(L.reduce((a,r)=>a+(r.rs>0?r.rs:0),0))}</td></tr></tbody></table></div>
+    ${L.length?`<div class="tablebox"><table class="gTab"><thead><tr><th>Data</th><th>Tipo</th><th>Local entrada</th><th>Local origem</th><th>Qtd.</th><th>Peso</th><th>Valor</th><th>Lote entrada</th><th>Lote origem</th></tr></thead><tbody>${linhas}
+    <tr class="grp"><td>Total</td><td colspan="3">${nf(L.length)} entrada(s)</td><td>${nf(tot)}</td><td></td><td style="white-space:nowrap">${rs(L.reduce((a,r)=>a+(r.rs>0?r.rs:0),0))}</td><td colspan="2"></td></tr></tbody></table></div>
     <p class="note">✎ altera · ✕ exclui. A primeira entrada de cada lote se altera em "Editar lote". Entradas que vieram de transferência se apagam junto com a transferência; animais achados, no lote de origem.</p>`:'<p class="note">Nenhuma entrada nesse período.</p>'}</section>`;}
 /* Pesagem: escolhe o lote (com o curral) e vai para a pesagem dele */
 function tPesNova(t){const hj=hojeKey();return `${voltar('Animais')}<section class="panel"><h2>⚖️ Pesagem</h2><p class="note">Escolha o lote que foi pesado (aparece o curral em que ele está).</p>
@@ -962,14 +965,14 @@ function tSaidas(t){const hj=hojeKey(),desde=t.dIni||somaDias(hj,-30),ate=t.dFim
   const B=(t2,o,ic,txt,cls)=>`<button class="${cls||''}" data-g="saiNova" data-t="${t2}"${o?` data-o="${o}"`:''}>${ic} ${txt}</button>`;
   {const vS=s=>ehVenda(s)?valorVenda(s):s.mot==='transf'&&+s.vi>0?+s.vi:NaN;
   window.__hExp={nome:'Saída de animais',per:`${dB(desde)} a ${dB(ate)}`,
-    cols:[['Data',110,'l','dia'],['Tipo',190,'l'],['Local origem',150,'l'],['Local destino / comprador',230,'l'],['Qtd.',80,'r','int'],['Peso (kg)',120,'r','int'],['Valor (R$)',150,'r','rs'],['Lote origem',220,'l'],['Lote destino',220,'l']],
+    cols:[['Data',110,'l','dia'],['Tipo',190,'l'],['Local origem',150,'l'],['Local destino',200,'l'],['Qtd.',80,'r','int'],['Peso (kg)',120,'r','int'],['Valor (R$)',150,'r','rs'],['Lote origem',220,'l'],['Lote destino',220,'l']],
     linhas:L.map(s=>{const l=G.it[s.lote],d=lDest(s);return [s.dia,tipoSai(s).replace(/^\S+\s/,''),curralEm(l,s.dia)||curralEm(l,fimLote(l)||hj)||'—',d?(curralEm(d,s.dia)||'—'):(dest(s)||'—'),+s.cab||0,s.mot==='morte'?NaN:(+s.peso||NaN),vS(s)>0?vS(s):NaN,l.nome,d?d.nome:'—'];}),
     total:['TOTAL',`${nf(L.length)} saída(s)`,'','',soma(()=>true),NaN,L.reduce((a,s)=>a+(vS(s)>0?vS(s):0),0),'','']};}   /* total = soma das linhas (vendas e vendas internas) */
   return `${voltarAni()}<section class="panel"><h2>📤 Saída de animais</h2>
     <p class="note">Toque no tipo de saída; na próxima tela escolha o lote de saída.</p>
     <div class="gAcoes gSaiTipos">${B('saiForm','venda','💲','Venda / saída','lima')}${B('transfForm','','↔','Transferência')}${B('faltaNova','','📋','Animais faltantes')}${B('apartForm','','✂','Apartar / dividir')}${B('saiForm','morte','✝','Morte')}${B('saiForm','interno','🔒','Fechamento interno')}</div></section>
   <section class="panel"><h2>Histórico de saídas</h2>${FH.html}${histExpBts(L.length)}
-    ${L.length?`<div class="tablebox"><table class="gTab"><thead><tr><th>Data</th><th>Tipo</th><th>Local origem</th><th>Local destino / comprador</th><th>Qtd.</th><th>Peso</th><th>Valor</th><th>Lote origem</th><th>Lote destino</th></tr></thead><tbody>${linhas}
+    ${L.length?`<div class="tablebox"><table class="gTab"><thead><tr><th>Data</th><th>Tipo</th><th>Local origem</th><th>Local destino</th><th>Qtd.</th><th>Peso</th><th>Valor</th><th>Lote origem</th><th>Lote destino</th></tr></thead><tbody>${linhas}
     <tr class="grp"><td>Total</td><td colspan="3">${nf(L.length)} saída(s)</td><td>${nf(soma(()=>true))}</td><td></td><td style="white-space:nowrap">${rs(L.filter(ehVenda).reduce((a,s)=>a+valorVenda(s),0))}</td><td colspan="2"></td></tr></tbody></table></div>
     <p class="note">Vendidos ${nf(soma(ehVenda))} · transferidos ${nf(soma(s=>s.mot==='transf'))} · apartados ${nf(soma(s=>s.mot==='apart'))} · mortes ${nf(soma(s=>s.mot==='morte'))}${soma(s=>s.mot==='falta')?' · animais faltantes '+nf(soma(s=>s.mot==='falta')):''}. ✎ altera a venda · ✕ exclui (transferência volta os animais) · apartação se desfaz no lote (▸).</p>`:'<p class="note">Nenhuma saída nesse período.</p>'}</section>`;}
 /* ---------- ficha de cada lote ---------- */
