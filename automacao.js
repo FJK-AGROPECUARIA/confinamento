@@ -339,7 +339,7 @@ function ligarQueda(dev){if(dev._queda)return;dev._queda=true;
 async function reconectarBt(motivo){const dev=A.bt;if(!dev||A.btReconectando)return;A.btReconectando=true;let n=0;const gen=A.btGen||0;
   try{while(A.bt===dev&&A.fonte==='bt'&&(A.btGen||0)===gen){n++;setStatus(`${motivo} · reconectando${n>1?' (tentativa '+n+')':''}…`,'wait');bruto(motivo+': reconectando (tentativa '+n+')');if(n===1)semSinal('reconectando',{motivo});
       try{dev._manual=true;if(dev.gatt.connected)dev.gatt.disconnect();}catch(e){}dev._manual=false;
-      await new Promise(r=>setTimeout(r,n===1?700:3000));if(A.bt!==dev||(A.btGen||0)!==gen)break;
+      await new Promise(r=>setTimeout(r,n===1?300:n<=3?1000:2000));if(A.bt!==dev||(A.btGen||0)!==gen)break;
       try{await btAbrir(dev);A.ultDado=Date.now();A.btCutucou=0;toast('Balança reconectada');diagLog('reconectou',{tentativas:n});break;}catch(e){bruto('não reconectou: '+(e.message||e));}}}
   finally{if((A.btGen||0)===gen)A.btReconectando=false;}}
 /* vigia: a balança Digi-Star manda o peso o tempo todo (umas 2 vezes por segundo). Se parar 2,5 s,
@@ -384,18 +384,25 @@ async function btAbrir(dev){
     info.push('Serviço '+s.uuid);const soInfo=PADRAO.test(s.uuid);
     for(const c of cs){const p=c.properties,tem=[p.notify&&'notify',p.indicate&&'indicate',p.read&&'read',p.write&&'write',p.writeWithoutResponse&&'writeNR'].filter(Boolean).join(',');
       info.push('  · '+c.uuid+' ['+tem+']');
-      if(soInfo){if(p.read){try{const v=await c.readValue();info.push('    = '+JSON.stringify(txtDe(v)));}catch(e){}}continue;}
+      if(soInfo){if(p.read&&!dev._infoLida){try{const v=await c.readValue();info.push('    = '+JSON.stringify(txtDe(v)));}catch(e){}}continue;}
       if(p.write||p.writeWithoutResponse)A.btEsc.push(c);
       if(p.notify||p.indicate){try{await c.startNotifications();c.addEventListener('characteristicvaluechanged',ev=>{A.btNotif=Date.now();receber(ev.target.value,'bt');});A.btChars.push(c);n++;}catch(e){info.push('    (não deixou assinar: '+(e.message||e)+')');}}
       if(p.read){A.btLer.push(c);try{const v=await c.readValue();bruto('lido '+c.uuid.slice(0,8)+': '+JSON.stringify(txtDe(v))+'   ['+hexDe(v)+']');}catch(e){}}
     }}
-  $('aBtInfo').textContent=info.join('\n');A.btInfo=info.join('\n');if(A.holdApp)A.holdForcar=true;   // conectou (ou reabriu o app) com a balança devendo estar travada: reenvia o HOLD
+  dev._infoLida=true;$('aBtInfo').textContent=info.join('\n');A.btInfo=info.join('\n');if(A.holdApp)A.holdForcar=true;   // conectou (ou reabriu o app) com a balança devendo estar travada: reenvia o HOLD
   /* Digi-Star EZ ("NEW EZ"): a balança só manda o peso enquanto o app manda o byte 05 (ENQ) de tempos em tempos,
      igual ao app TAP Feed (descoberto no registro HCI do tablet). Manda logo ao conectar e a cada 3 s. */
   clearInterval(A.dsPoll);A.digiStar=false;
   const dsEsc=A.btEsc.find(c=>c.service&&/^f0165585-/i.test(c.service.uuid));
   if(dsEsc){A.digiStar=true;A.dsEsc=dsEsc;A.dsSeq=0;const enq=new Uint8Array([5]);
-    const manda=async()=>{if(A.bt!==dev)return clearInterval(A.dsPoll);if(A.dsMandando)return;A.dsMandando=true;try{if(dsEsc.properties&&dsEsc.properties.writeWithoutResponse&&dsEsc.writeValueWithoutResponse)await dsEsc.writeValueWithoutResponse(enq);else await dsEsc.writeValue(enq);}catch(e){bruto('erro ao pedir peso: '+(e.message||e));}finally{A.dsMandando=false;}};
+    /* v354: cada conexão tem a sua trava do pedido (antes era uma só: se um envio ficava pendurado, depois de reconectar o tablet
+       nunca mais pedia o peso e ficava reconectando a cada 7 s). O envio tem tempo limite de 1,5 s e não disputa com o comando de HOLD. */
+    A.dsMandando=false;let mand=0,travLog=false;
+    const manda=async()=>{if(A.bt!==dev||A.dsEsc!==dsEsc)return;if(holdMandando)return;if(mand&&Date.now()-mand<1500)return;mand=Date.now();const meu=mand;
+      try{const w=dsEsc.properties&&dsEsc.properties.writeWithoutResponse&&dsEsc.writeValueWithoutResponse?dsEsc.writeValueWithoutResponse(enq):dsEsc.writeValue(enq);
+        await Promise.race([w,new Promise((_,rej)=>setTimeout(()=>rej(new Error('tempo')),1500))]);}
+      catch(e){bruto('erro ao pedir peso: '+(e.message||e));if(String(e&&e.message)==='tempo'&&!travLog){travLog=true;try{diagLog('enq_travou',{});}catch(x){}}}
+      finally{if(mand===meu)mand=0;}};
     await manda();const iv=Math.max(0.5,Math.min(5,+cfg().enq||1));A.dsPoll=setInterval(manda,iv*1000);info.push(`Digi-Star EZ: pedindo o peso (05) a cada ${String(iv).replace('.',',')} s`);$('aBtInfo').textContent=info.join('\n');A.btInfo=info.join('\n');marcarFonte();}
   /* balança que não manda sozinha: lê os canais de leitura de tempos em tempos */
   /* balança que não manda sozinha: lê os canais de leitura e/ou manda o "comando para pedir o peso" (Config › Balança) */
@@ -475,7 +482,7 @@ async function holdSync(){if(holdMandando)return;
   holdMandando=true;
   try{let b;if(modo===2||(!modo&&A.holdAppTecla)){A.dsSeq=(A.dsSeq%99)+1;const txt='20'+String(A.dsSeq).padStart(2,'0');b=new Uint8Array([0x1a,...Array.from(txt).map(c=>c.charCodeAt(0))]);}
     else b=new Uint8Array([0x1b,0x47,0x68,quer?0x45:0x44,0x04]);   // ESC G h E|D EOT
-    await A.dsEsc.writeValue(b);if(forcar){A.holdForcar=false;A.holdRef=null;A.holdLigTs=Date.now();A.holdMov=0;try{diagLog('hold_reenviado',{peso:A.peso,visor:A.visor,anunc:A.anunc});}catch(e){}}const mudou=quer!==A.holdApp;if(mudou&&quer){A.holdLigTs=Date.now();A.holdRef=null;A.holdMov=0;}A.holdAppTecla=modo===2;holdGrava(quer);
+    await Promise.race([A.dsEsc.writeValue(b),new Promise((_,rej)=>setTimeout(()=>rej(new Error('tempo')),2000))]);if(forcar){A.holdForcar=false;A.holdRef=null;A.holdLigTs=Date.now();A.holdMov=0;try{diagLog('hold_reenviado',{peso:A.peso,visor:A.visor,anunc:A.anunc});}catch(e){}}const mudou=quer!==A.holdApp;if(mudou&&quer){A.holdLigTs=Date.now();A.holdRef=null;A.holdMov=0;}A.holdAppTecla=modo===2;holdGrava(quer);
     if(mudou){bruto('HOLD '+(quer?'ligado':'solto')+' pelo tablet: '+hexDe(b));try{diagLog(quer?'hold_liga':'hold_solta',{modo,peso:A.peso,visor:A.visor,anunc:A.anunc,por:[noForn&&A.pausa?'pausa_forn':'',fimPend?'fim_forn':'',carrAzul?(AC.pausa?'pausa_carr':'trava_carr'):'',carrFim?'fim_carr':'',A.holdFim&&!ativo?'terminou':'',A.holdManual?'manual':''].filter(Boolean).join(',')||'-'});}catch(e){}}}
   catch(e){bruto('HOLD não foi: '+(e.message||e));}   // não mudou o estado: tenta de novo na próxima volta
   finally{holdMandando=false;}}
@@ -994,7 +1001,7 @@ window.diagCurva=diagCurva;
 window.diagLog=function(tipo,d){try{if(typeof gPut!=='function'||typeof G==='undefined'||!S)return;
   const dia=typeof diaAtivo==='function'?diaAtivo():new Date().toISOString().slice(0,10),uid='diag-'+dia+'-'+S.aparelho;
   const it=G.it[uid]&&!G.it[uid].del?G.it[uid]:{uid,tipo:'diag',dia,aparelho:S.aparelho,ev:[]};
-  const h=new Date();it.ev=(it.ev||[]).concat([Object.assign({t:h.toTimeString().slice(0,8),tipo},d||{})]).slice(-400);
+  const h=new Date();it.ev=(it.ev||[]).concat([Object.assign({t:h.toTimeString().slice(0,8),tipo},d||{})]).slice(-1500);
   it.cfg=(()=>{const c=cfg(),o={};['tol','tempo','minDesc','amarelo','vermelho','continuo','antecipa','filtro'].forEach(k=>o[k]=c[k]);return o;})();
   G.it[uid]=it;clearTimeout(diagT);diagT=setTimeout(()=>{try{gPut(JSON.parse(JSON.stringify(G.it[uid])));}catch(e){}},4000);}catch(e){}};
 const resumoBal=()=>{const vs=(A.amostras||[]).map(a=>a.v);return {estavel:!!A.estavel,varia:vs.length?Math.max(...vs)-Math.min(...vs):null,leit_s:A.dtMed?+(1000/A.dtMed).toFixed(2):null};};
