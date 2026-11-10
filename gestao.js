@@ -17,6 +17,11 @@ const nf=(n,d=0)=>ok(n)?n.toLocaleString('pt-BR',{minimumFractionDigits:d,maximu
 const rs=(n,d=2)=>ok(n)?'R$ '+nf(n,Math.max(2,d)):'—';
 const rsIn=n=>ok(n)?'R$ '+nf(n,2):'';
 /* máscara de dinheiro: digita só números, vira R$ 1.234,56 */
+/* peso (kg), @ e %: sempre com 2 casas — a vírgula vai aparecendo enquanto digita (igual ao campo de dinheiro) */
+const D2SUF=/^(kg|kg\/cab|kg, média por cabeça|@|%|% do PV em MS)$/;
+function mascaraD2(el){const dg=el.value.replace(/\D/g,'').replace(/^0+(?=\d)/,'');el.value=dg?nf(+dg/100,2):'';}
+const f2=v=>{const n=gNum(v);return ok(n)?nf(n,2):'';};
+const vSet=(el,v)=>{if(!el)return;el.value=el.classList&&el.classList.contains('gD2')?(ok(+v)?nf(+v,2):''):vIn(v);};
 function mascaraRs(el){const dg=el.value.replace(/\D/g,'').replace(/^0+(?=\d)/,'');el.value=dg?'R$ '+nf(+dg/100,2):'';}
 const pc=(n,d=1)=>ok(n)?nf(n,d)+'%':'—';
 const vIn=n=>ok(n)?String(+(+n).toFixed(4)).replace('.',','):'';
@@ -263,6 +268,7 @@ function campo(f){const id='gf_'+f.k,v=f.v==null?'':f.v;let inp;
   if(f.t==='sel')inp=`<select id="${id}"${f.busca?' data-busca':''}>${f.op.map(([a,b])=>`<option value="${esc(a)}"${String(a)===String(v)?' selected':''}>${esc(b)}</option>`).join('')}</select>`;
   else if(f.t==='dia')inp=`<label class="gDataBox gDiaCampo"><span class="${v?'':'vazio'}">${v?dB(v):'Escolher'}</span><input type="date" id="${id}" value="${esc(v)}"></label>`;   /* data sempre dd/mm/aaaa (o celular mostrava 28 de out. de 2026) */
   else if(f.t==='rs')inp=`<input type="text" inputmode="numeric" class="gRs" id="${id}" value="${esc(rsIn(f.v===''||f.v==null?NaN:+f.v))}" placeholder="R$ 0,00" autocomplete="off">`;
+  else if(f.t==='num'&&f.d2!==false&&D2SUF.test(f.suf||''))inp=`<input type="text" inputmode="numeric" class="gD2" id="${id}" value="${esc(v===''||!ok(+gNum(v))?'':nf(+gNum(v),2))}" placeholder="${esc(f.ph||'0,00')}" autocomplete="off">`;
   else if(f.t==='num')inp=`<input type="text" inputmode="decimal" id="${id}" value="${esc(v===''?'':vIn(v))}" placeholder="${esc(f.ph||'')}" autocomplete="off">`;
   else inp=`<input type="text" id="${id}" value="${esc(v)}" placeholder="${esc(f.ph||(f.sug==='forn'?'Digite ou escolha um fornecedor':''))}" autocomplete="off"${f.lista?` list="${f.lista}"`:''}${f.sug?` data-sug="${f.sug}"`:''}>${f.sug?'<div class="gSug" hidden></div>':''}`;
   return `<div class="gCampo${f.meia&&f.t!=='dia'?' meia':''}"><label for="${id}">${esc(f.l)}${f.suf?` <span class="gSuf">(${esc(f.suf)})</span>`:''}</label>${inp}${f.ajuda?`<p class="note">${f.ajuda}</p>`:''}</div>`;}
@@ -745,8 +751,8 @@ function salvaFalta(uid){const s=G.it[uid],l=s&&G.it[s.lote];if(!s||!l)return;co
   gravarFalta(l,d,cab,peso,share,fv('fObs'),modo);toast('Falta alterada');return gVoltar();}
 const campoFaltas=(pre,F,attr)=>{const A=k=>attr?`data-fc="${k}"`:`id="${pre}${k}"`;return `<details class="gMais gFaltas"${gNum(F.falta)>0?' open':''}><summary><b>Animais faltantes</b> <small class="note">toque para abrir e lançar</small></summary><div class="gForm"><div class="gCampo meia"><label>Quantidade que faltou</label><input type="text" inputmode="decimal" ${A('falta')} value="${esc(F.falta||'')}" placeholder="0" autocomplete="off"></div>
   <div class="gCampo meia"><label>Calcular o custo pelo</label><select ${A('fmodo')}><option value="atual"${F.fmodo!=='entrada'?' selected':''}>Peso de agora / da venda</option><option value="entrada"${F.fmodo==='entrada'?' selected':''}>Peso de entrada</option></select></div>
-  <div class="gCampo meia"><label>Peso médio <span class="gSuf">(kg)</span></label><input type="text" inputmode="decimal" ${A('fpeso')} value="${esc(F.fpeso||'')}" placeholder="em branco = média do lote" autocomplete="off"></div>
-  <div class="gCampo meia"><label>Peso total <span class="gSuf">(kg)</span></label><input type="text" inputmode="decimal" ${A('fpesoT')} value="${esc(F.fpesoT||'')}" autocomplete="off"></div>
+  <div class="gCampo meia"><label>Peso médio <span class="gSuf">(kg)</span></label><input type="text" inputmode="numeric" class="gD2" ${A('fpeso')} value="${esc(f2(F.fpeso))}" placeholder="em branco = média do lote" autocomplete="off"></div>
+  <div class="gCampo meia"><label>Peso total <span class="gSuf">(kg)</span></label><input type="text" inputmode="numeric" class="gD2" ${A('fpesoT')} value="${esc(f2(F.fpesoT))}" autocomplete="off"></div>
   <div class="gCampo"><label>Observação</label><textarea ${A('fobs')} rows="2" style="min-height:0;height:auto" placeholder="ex.: brincos 1023, 1045">${esc(F.fobs||'')}</textarea></div></div>
   <p class="note">Saem do lote levando o custo deles. <b>Peso de entrada</b>: o custo é a parte que eles eram do peso de entrada do lote. <b>Peso de agora/venda</b>: entra na conta junto com o peso dos vendidos e dos outros. O custo fica separado em Lotes › “Animais faltantes” até serem achados.</p></details>`;};
 function faltaCalc(l,d,tem,F,pesoRef){const cab=Math.max(0,gNum(F.falta)||0),modo=F.fmodo==='entrada'?'entrada':'atual',pm=gNum(F.fpeso),pt=gNum(F.fpesoT);
@@ -1088,7 +1094,7 @@ function tApartForm(t){const l=G.it[t.id],hj=hojeKey();t.dia=t.dia||hj;
   const grupos=t.g.map((g,i)=>`<div class="gApGr"><div class="gApTop"><b>Lote novo ${i+1}</b>${t.g.length>2?`<button class="mini danger" data-g="apRm" data-i="${i}">✕</button>`:''}</div>
     <div class="gForm"><div class="gCampo"><label>Nome do lote</label><input type="text" data-ap="${i}|nome" value="${esc(g.nome)}" autocomplete="off"></div>
     <div class="gCampo meia"><label>Quantidade</label><input type="text" inputmode="decimal" data-ap="${i}|cab" value="${esc(g.cab)}" autocomplete="off"></div>
-    <div class="gCampo meia"><label>Peso médio na pesagem <span class="gSuf">(kg)</span></label><input type="text" inputmode="decimal" data-ap="${i}|peso" value="${esc(g.peso)}" autocomplete="off"></div>
+    <div class="gCampo meia"><label>Peso médio na pesagem <span class="gSuf">(kg)</span></label><input type="text" inputmode="numeric" class="gD2" data-ap="${i}|peso" value="${esc(f2(g.peso))}" autocomplete="off"></div>
     <div class="gCampo meia"><label>Curral / pasto</label><select data-ap="${i}|c">${opC.map(([a,b])=>`<option value="${esc(a)}"${a===g.c?' selected':''}>${esc(b)}</option>`).join('')}</select></div>
     <div class="gCampo meia"><label>Ração</label><select data-ap="${i}|r">${opR.map(([a,b])=>`<option value="${esc(a)}"${a===g.r?' selected':''}>${esc(b)}</option>`).join('')}</select></div>
     <div class="gCampo"><label>Observação do lote</label><input type="text" data-ap="${i}|obs" value="${esc(g.obs||'')}" autocomplete="off" placeholder="ex.: brincos 1023, 1045"></div></div></div>`).join('');
@@ -1257,14 +1263,14 @@ function tFechaForm(t){const l=G.it[t.id],hj=hojeKey(),cfg=gCfg();
   if(!t.f)t.f={dia:hj,cab:'',falta:'',fobs:'',peso:'',pesoT:'',pesoL:'',rc:'',unid:'arroba',preco:'',desc:'',comp:'',obs:'',tr:[{dest:'',cab:'',peso:'',pesoT:''}]};const F=t.f;
   const dest=lotesAtivos().filter(o=>o.uid!==l.uid).sort(porCurral),opD=[['','Selecione'],['__novo','＋ Criar lote novo']].concat(dest.map(o=>[o.uid,`${curralEm(o,hj)} · ${o.nome} · ${nf(cabAtual(o))} cab`]));
   const inp=(k,lab,v,num,suf,ph)=>{const din=/^R\$/.test(suf||'');  /* valor em dinheiro: máscara R$ 1.234,56 */
-    return `<div class="gCampo meia"><label>${lab}${suf&&!din?` <span class="gSuf">(${suf})</span>`:suf&&din&&suf!=='R$'?` <span class="gSuf">(${suf.replace(/^R\$\s*/,'')})</span>`:''}</label><input type="text"${din?' inputmode="numeric" class="gRs"':num?' inputmode="decimal"':''} data-fc="${k}" value="${esc(din?rsIn(gNum(v)):v)}" placeholder="${esc(din?'R$ 0,00':(ph||''))}" autocomplete="off"></div>`;};
+    return `<div class="gCampo meia"><label>${lab}${suf&&!din?` <span class="gSuf">(${suf})</span>`:suf&&din&&suf!=='R$'?` <span class="gSuf">(${suf.replace(/^R\$\s*/,'')})</span>`:''}</label><input type="text"${din?' inputmode="numeric" class="gRs"':num&&D2SUF.test(suf||'')?' inputmode="numeric" class="gD2"':num?' inputmode="decimal"':''} data-fc="${k}" value="${esc(din?rsIn(gNum(v)):num&&D2SUF.test(suf||'')?f2(v):v)}" placeholder="${esc(din?'R$ 0,00':(ph||''))}" autocomplete="off"></div>`;};
   const trs=F.tr.map((g,i)=>`<div class="gApGr"><div class="gApTop"><b>Vai para outro lote ${i+1}</b><button class="mini danger" data-g="fcRm" data-i="${i}">✕</button></div><div class="gForm">
     <div class="gCampo"><label>Lote que recebe</label><select data-ft="${i}|dest" data-busca>${opD.map(([a,b])=>`<option value="${esc(a)}"${a===g.dest?' selected':''}>${esc(b)}</option>`).join('')}</select></div>
     ${g.dest==='__novo'?campoLoteNovo(`data-ft="${i}|`,g,l):''}
     <div class="gCampo"><label>Quantidade</label><input type="text" inputmode="decimal" data-ft="${i}|cab" value="${esc(g.cab)}" autocomplete="off"></div>
-    <div class="gCampo meia"><label>Peso médio <span class="gSuf">(kg)</span></label><input type="text" inputmode="decimal" data-ft="${i}|peso" value="${esc(g.peso)}" autocomplete="off"></div>
-    <div class="gCampo meia"><label>Peso total <span class="gSuf">(kg)</span></label><input type="text" inputmode="decimal" data-ft="${i}|pesoT" value="${esc(g.pesoT)}" autocomplete="off"></div>
-    <div class="gCampo"><label>Rendimento de carcaça <span class="gSuf">(%)</span></label><input type="text" inputmode="decimal" data-ft="${i}|rc" value="${esc(g.rc||'')}" placeholder="em branco = igual aos vendidos" autocomplete="off"></div>
+    <div class="gCampo meia"><label>Peso médio <span class="gSuf">(kg)</span></label><input type="text" inputmode="numeric" class="gD2" data-ft="${i}|peso" value="${esc(f2(g.peso))}" autocomplete="off"></div>
+    <div class="gCampo meia"><label>Peso total <span class="gSuf">(kg)</span></label><input type="text" inputmode="numeric" class="gD2" data-ft="${i}|pesoT" value="${esc(f2(g.pesoT))}" autocomplete="off"></div>
+    <div class="gCampo"><label>Rendimento de carcaça <span class="gSuf">(%)</span></label><input type="text" inputmode="numeric" class="gD2" data-ft="${i}|rc" value="${esc(f2(g.rc))}" placeholder="em branco = igual aos vendidos" autocomplete="off"></div>
     <div class="gCampo meia"><label>Preço da venda <span class="gSuf">(mesma unidade dos vendidos)</span></label><input type="text" inputmode="numeric" class="gRs" data-ft="${i}|pr" value="${esc(rsIn(gNum(g.pr)))}" placeholder="R$ 0,00" autocomplete="off"></div>
     <div class="gCampo meia"><label>Valor total da venda</label><input type="text" inputmode="numeric" class="gRs" data-ft="${i}|vi" value="${esc(rsIn(gNum(g.vi)))}" placeholder="R$ 0,00" autocomplete="off"></div></div></div>`).join('');
   return `${voltar()}<section class="panel"><h2>💲 Venda + sobra · ${esc(l.nome)}</h2>
@@ -1275,7 +1281,7 @@ function tFechaForm(t){const l=G.it[t.id],hj=hojeKey(),cfg=gCfg();
       ${inp('peso','Peso médio vendido',F.peso,1,'kg')}${inp('pesoT','Peso total vendido',F.pesoT,1,'kg')}
       ${inp('carcM','Peso médio abatido',F.carcM||'',1,'kg')}${inp('carcT','Peso total abatido',F.carcT||'',1,'kg')}
       ${inp('arrT','Total de arrobas abatidas',F.arrT||'',1,'@')}
-      <div class="gCampo"><label>Rendimento de carcaça <span class="gSuf">(%)</span></label><input type="text" inputmode="decimal" data-fc="rc" value="${esc(F.rc)}" placeholder="digite o rendimento" autocomplete="off"></div>
+      <div class="gCampo"><label>Rendimento de carcaça <span class="gSuf">(%)</span></label><input type="text" inputmode="numeric" class="gD2" data-fc="rc" value="${esc(f2(F.rc))}" placeholder="digite o rendimento" autocomplete="off"></div>
       <div class="gCampo"><label>Preço de venda em</label><select data-fc="unid">${UNID_V.map(([a,b])=>`<option value="${a}"${a===F.unid?' selected':''}>${esc(b)}</option>`).join('')}</select></div>
       ${inp('preco','Preço de venda',F.preco,1,'R$')}${inp('vTot','Valor total da venda',F.vTot||'',1,'R$')}
       ${inp('desc','Descontos (frete, impostos)',F.desc,1,'R$ total')}${inp('vLiq','Valor total líquido',F.vLiq||'',1,'R$')}
@@ -1372,9 +1378,9 @@ function tEntForm(t){const l=G.it[t.id];GT.entLote=l.uid;const E=t.eid&&G.it[t.e
     <p class="note">Os animais entram no mesmo lote e no mesmo curral. O peso médio do lote passa a ser a média dos que já estavam com os que chegaram. O custo que o lote já teve continua; daqui pra frente ele é dividido por mais cabeças.</p>
     <button class="primary" data-g="salvaEnt" data-id="${l.uid}"${E?` data-eid="${E.uid}"`:''}>${E?'Salvar alteração':'Salvar entrada'}</button></section>`;}
 function calcEnt(qual){if(!$('gf_peso'))return;const c=gNum($('gf_cab')&&$('gf_cab').value),pi=gNum($('gf_peso').value),pt=gNum($('gf_pesoT').value),res=$('gEntRes');
-  if(c>0&&qual==='peso'&&pi>0)$('gf_pesoT').value=vIn(Math.round(c*pi*100)/100);
-  else if(c>0&&qual==='pesoT'&&pt>0)$('gf_peso').value=vIn(Math.round(pt/c*100)/100);
-  else if(c>0&&qual==='cab'){if(pi>0)$('gf_pesoT').value=vIn(Math.round(c*pi*100)/100);else if(pt>0)$('gf_peso').value=vIn(Math.round(pt/c*100)/100);}
+  if(c>0&&qual==='peso'&&pi>0)vSet($('gf_pesoT'),Math.round(c*pi*100)/100);
+  else if(c>0&&qual==='pesoT'&&pt>0)vSet($('gf_peso'),Math.round(pt/c*100)/100);
+  else if(c>0&&qual==='cab'){if(pi>0)vSet($('gf_pesoT'),Math.round(c*pi*100)/100);else if(pt>0)vSet($('gf_peso'),Math.round(pt/c*100)/100);}
   {const P2=gNum($('gf_peso').value),rc=gNum($('gf_rcE')&&$('gf_rcE').value),arr=c>0&&P2>0&&rc>0?c*P2*rc/100/15:NaN,pr=fn('prA'),vt=fn('rs');   /* preço da @ ↔ valor total da compra */
     if(arr>0){if(qual==='rs'){if(vt>0)$('gf_prA').value=rsIn(Math.round(vt/arr*100)/100);}else if(pr>0)$('gf_rs').value=rsIn(Math.round(arr*pr*100)/100);}}
   const l=G.it[GT.entLote],P=gNum($('gf_peso').value),d=fv('dia')||hojeKey();if(!res||!l)return;
@@ -1395,7 +1401,7 @@ function vendaAuto(q,g,p,ps){const c=g('cab');
   const vT=g('vTot');if(vT>0&&q!=='vLiq')ps('vLiq',vT-(g('desc')||0));}
 const VENDA_K={cab:'cab',vm:'peso',cm:'carcM',ct:'carcT',arr:'arrT',rc:'rc',unid:'unid',preco:'preco',vTot:'vTot',desc:'desc',vLiq:'vLiq'};
 function vendaLiga(el,campo,qDe){const g=k=>{const e=el(k);if(!e)return k==='unid'?'arroba':NaN;return k==='unid'?e.value:gNum(e.value);},
-  p=(k,v,d)=>{const e=el(k);if(e&&ok(v)&&v>0)e.value=vIn(Math.round(v*Math.pow(10,d||2))/Math.pow(10,d||2));},ps=(k,v)=>{const e=el(k);if(e&&ok(v))e.value=rsIn(Math.round(v*100)/100);};
+  p=(k,v,d)=>{const e=el(k);if(e&&ok(v)&&v>0)vSet(e,Math.round(v*Math.pow(10,d||2))/Math.pow(10,d||2));},ps=(k,v)=>{const e=el(k);if(e&&ok(v))e.value=rsIn(Math.round(v*100)/100);};
   try{vendaAuto(qDe,g,p,ps);}catch(x){}}
 function calcSai(q){const M=Object.assign({},VENDA_K,{vt:'pesoVT'}),R={};Object.keys(M).forEach(k=>R[M[k]]=k);vendaLiga(k=>$('gf_'+M[k]),null,R[q]);}
 function tSaiForm(t){const l=G.it[t.id],m=t.o==='morte',I=t.o==='interno',cfg=gCfg(),E=t.sid?G.it[t.sid]:null,V=(k,d)=>E&&E[k]!=null&&E[k]!==''?E[k]:d,SG=I&&!E?sugInterno():{};
@@ -3023,10 +3029,10 @@ $('gBox').addEventListener('click',e=>{
   if(a==='coLoc'){document.querySelectorAll('#gBox .gCocho').forEach(el=>{const i=el.querySelector('input[data-kg]'),c=el.dataset.c;if(i&&GT.sel&&GT.sel[c]&&i.value)GT.sel[c].kg=gNum(i.value);});GT.coLoc=b.dataset.l;return gRender();}
   if(a==='evLoc'){GT.evLoc=b.dataset.l;return gRender();}
   if(a==='ecTodos'){const rc=gNum(($('gEcRcT')||{}).value),pr=gNum(($('gEcPrT')||{}).value);if(!ok(rc)&&!ok(pr))return toast('Coloque o preço e/ou o rendimento da compra');
-    document.querySelectorAll('#gBox [data-ecpr]').forEach(i=>{if(ok(pr))i.value=rsIn(pr);});document.querySelectorAll('#gBox [data-ecrc]').forEach(i=>{if(ok(rc))i.value=vIn(rc);});
+    document.querySelectorAll('#gBox [data-ecpr]').forEach(i=>{if(ok(pr))i.value=rsIn(pr);});document.querySelectorAll('#gBox [data-ecrc]').forEach(i=>{if(ok(rc))vSet(i,rc);});
     return toast('Compra aplicada em todos da lista. Toque em Salvar estimativas.');}
   if(a==='evTodos'){const rc=gNum(($('gEvRcT')||{}).value),pr=gNum(($('gEvPrT')||{}).value);if(!ok(rc)&&!ok(pr))return toast('Coloque o rendimento e/ou o preço para aplicar');
-    document.querySelectorAll('#gBox [data-evrc]').forEach(i=>{if(ok(rc))i.value=vIn(rc);});document.querySelectorAll('#gBox [data-evpr]').forEach(i=>{if(ok(pr))i.value=rsIn(pr);});
+    document.querySelectorAll('#gBox [data-evrc]').forEach(i=>{if(ok(rc))vSet(i,rc);});document.querySelectorAll('#gBox [data-evpr]').forEach(i=>{if(ok(pr))i.value=rsIn(pr);});
     return toast('Aplicado em todos da lista. Toque em Salvar estimativas.');}
   if(a==='evSalvar'){const caro=[...document.querySelectorAll('#gBox [data-evpr],#gBox [data-ecpr]')].find(i=>gNum(i.value)>1000);if(caro){caro.focus();return toast(`Preço da @ muito alto (${caro.value}). Confira antes de salvar.`);}let n=0;document.querySelectorAll('#gBox [data-evrc]').forEach(i=>{const u=i.dataset.evrc,l=G.it[u];if(!l)return;
       const rc=gNum(i.value),pi=document.querySelector(`#gBox [data-evpr="${u}"]`),pr=pi?gNum(pi.value):NaN,nrc=ok(rc)&&rc>0?rc:null,npr=ok(pr)&&pr>0?pr:null;
@@ -3279,10 +3285,11 @@ $('gBox').addEventListener('change',e=>{const s_=e.target.closest('select[data-n
   const cu=s_.dataset.ntc,n=+s_.value;const t=window.mudarNTratos?mudarNTratos(cu,n,S.prev,hojeKey()):(prevApi.setNTratos(cu,n),prevApi.totalCurral(cu));if(t>0){if(!window.mudarNTratos)prevApi.distribuir(cu,t,n,S.prev);if(typeof marcarPrev==='function')marcarPrev();if(typeof render==='function')render();}toast(`${cu}: ${n} trato${n>1?'s':''}`);});
 /* venda + sobra: médio ↔ total pela quantidade (vendidos, abatidos, outro lote e faltas); rendimento ↔ peso abatido */
 /* campos de R$: ao tocar, seleciona o valor inteiro para o que for digitado substituir (digitar no fim de "R$ 370,00" virava milhões) */
-document.addEventListener('focusin',e=>{const t=e.target;if(t&&t.matches&&t.matches('#gBox input.gRs')&&t.value){try{t.setSelectionRange(0,t.value.length);}catch(_){}}});
-document.addEventListener('mouseup',e=>{const t=e.target;if(t&&t.matches&&t.matches('#gBox input.gRs')&&t.value&&t.selectionStart===t.selectionEnd&&t._selFeita!==true){t._selFeita=true;try{t.setSelectionRange(0,t.value.length);}catch(_){}}},true);
+document.addEventListener('focusin',e=>{const t=e.target;if(t&&t.matches&&t.matches('#gBox input.gRs,#gBox input.gD2')&&t.value){try{t.setSelectionRange(0,t.value.length);}catch(_){}}});
+document.addEventListener('mouseup',e=>{const t=e.target;if(t&&t.matches&&t.matches('#gBox input.gRs,#gBox input.gD2')&&t.value&&t.selectionStart===t.selectionEnd&&t._selFeita!==true){t._selFeita=true;try{t.setSelectionRange(0,t.value.length);}catch(_){}}},true);
 document.addEventListener('focusout',e=>{if(e.target)e.target._selFeita=false;});
-function fcAuto(t){try{if(t.classList&&t.classList.contains('gRs'))mascaraRs(t);const q=s=>document.querySelector('#gBox '+s),g=s=>{const e=q(s);return e?gNum(e.value):NaN;},put=(s,v)=>{const e=q(s);if(e&&ok(v)&&v>0)e.value=vIn(Math.round(v*100)/100);};
+document.addEventListener('input',e=>{const t=e.target;if(t&&t.classList&&t.classList.contains('gD2'))mascaraD2(t);},true);   /* antes dos cálculos automáticos */
+function fcAuto(t){try{if(t.classList&&t.classList.contains('gRs'))mascaraRs(t);const q=s=>document.querySelector('#gBox '+s),g=s=>{const e=q(s);return e?gNum(e.value):NaN;},put=(s,v)=>{const e=q(s);if(e&&ok(v)&&v>0)vSet(e,Math.round(v*100)/100);};
   const fc=t.dataset.fc,ft=t.dataset.ft;
   if(ft){const [i,k]=ft.split('|'),c=g(`[data-ft="${i}|cab"]`);if(!(c>0))return;
     {const p=g(`[data-ft="${i}|peso"]`)>0?g(`[data-ft="${i}|peso"]`):g(`[data-ft="${i}|pesoT"]`)/c,ps=(s,v)=>{const e=q(s);if(e&&ok(v)&&v>0)e.value=rsIn(Math.round(v*100)/100);};   /* venda interna: @ viva ↔ valor total */
@@ -3296,7 +3303,7 @@ function fcAuto(t){try{if(t.classList&&t.classList.contains('gRs'))mascaraRs(t);
   const M=Object.assign({},VENDA_K,{vt:'pesoT'}),R={};Object.keys(M).forEach(k=>R[M[k]]=k);if(!R[fc])return;
   vendaLiga(k=>q(`[data-fc="${M[k]}"]`),null,R[fc]);}catch(x){}}
 /* transferir: peso médio ↔ total pela quantidade */
-function trAuto(t){try{if(t.classList&&t.classList.contains('gRs'))mascaraRs(t);const id=t.id,c=fn('tCab'),put=(k,v)=>{const e=$('gf_'+k);if(e&&ok(v)&&v>0)e.value=vIn(Math.round(v*100)/100);};if(!(c>0))return;
+function trAuto(t){try{if(t.classList&&t.classList.contains('gRs'))mascaraRs(t);const id=t.id,c=fn('tCab'),put=(k,v)=>{const e=$('gf_'+k);if(e&&ok(v)&&v>0)vSet(e,Math.round(v*100)/100);};if(!(c>0))return;
   /* peso de entrada: médio ↔ total (pela quantidade) */
   if(id==='gf_tPesoER'){put('tPesoERT',fn('tPesoER')*c);return;}if(id==='gf_tPesoERT'){put('tPesoER',fn('tPesoERT')/c);return;}
   if(id==='gf_tCab'&&fn('tPesoER')>0)put('tPesoERT',fn('tPesoER')*c);
