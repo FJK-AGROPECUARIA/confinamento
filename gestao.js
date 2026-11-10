@@ -2523,11 +2523,11 @@ function canvasVenda(sv){const l=G.it[sv.lote]||{},W=900,M=36,F='-apple-system,"
     if(+sv.preco>0)L.push(['Preço',`${rs(+sv.preco)} · ${un}`]);
     L.push(['Valor bruto',rs(bruto)]);if(desc>0)L.push(['Descontos (frete, impostos)','− '+rs(desc)]);L.push(['Valor por cabeça',cab?rs(liq/cab):'—']);}
   else if(tr){BOX=['LOTE DE DESTINO',(de&&!de.del?de.nome:'—')+(curD?' · '+curD:'')];
-    L.push(['Tipo',vi?'Venda interna':sv.pesoAt?'Com peso atual':sv.pesoER?'Com peso de entrada':'Com peso médio de entrada']);
-    if(peso>0)L.push(['Peso atual médio',nf(peso,2)+' kg'],['Peso atual total',nf(cab*peso,2)+' kg']);
-    if(+sv.pesoE>0)L.push(['Peso de entrada médio',nf(+sv.pesoE,2)+' kg'],['Peso de entrada total',nf(cab*sv.pesoE,2)+' kg']);
-    if(curO)L.push(['Curral de origem',curO]);if(curD)L.push(['Curral de destino',curD]);
-    if(vi){liq=+sv.vi;L.push(['Valor por cabeça',cab?rs(liq/cab):'—']);}}
+    /* pares lado a lado: tipo | (valor por cabeça na venda interna) · peso de entrada | peso atual (o que não tiver fica em branco) · curral de origem | curral de destino */
+    if(vi)liq=+sv.vi;
+    L.push(['Tipo',vi?'Venda interna':sv.pesoAt?'Com peso atual':sv.pesoER?'Com peso de entrada':'Com peso médio de entrada'],vi?['Valor por cabeça',cab?rs(liq/cab):'—']:['','']);
+    L.push(['Peso de entrada médio',+sv.pesoE>0?nf(+sv.pesoE,2)+' kg':''],['Peso atual médio',peso>0?nf(peso,2)+' kg':'']);
+    L.push(['Curral de origem',curO||''],['Curral de destino',curD||'']);}
   else if(sv.mot==='morte'){BOX=['CAUSA',sv.causa||sv.obs||'—'];if(peso>0)L.push(['Peso',nf(peso,2)+' kg']);if(curO)L.push(['Curral',curO]);}
   else{BOX=[sv.mot==='falta'?'ANIMAIS FALTANTES':'SAÍDA',sv.mot==='falta'?(nf(cab)+(cab===1?' animal':' animais')):tipoSai(sv)];if(peso>0)L.push(['Peso médio',nf(peso,2)+' kg'],['Peso total',nf(cab*peso,2)+' kg']);if(curO)L.push(['Curral',curO]);}
   const obsT=sv.obs&&!(sv.mot==='morte'&&!sv.causa)&&!(vend&&!sv.comp)?sv.obs:'';
@@ -2543,7 +2543,7 @@ function fichaCanvas(o){const {l,TIT,BOX,L,liq,valTit,obsT,cur}=o,W=900,M=36,F='
   txt('Gestão de Tratos FJK - '+TIT,M,44,'800',28,'#fff','left',W-2*M-150);txt(dB(o.dia),W-M,44,'700',18,'#dfe6ee','right',150);
   txt([cur&&`${linhaDe(cur)==='P'?'Pasto':'Confinamento'} ${cur}`,[sexoTxt(l.sexo),l.raca].filter(x=>x&&x!=='—').join(' '),catNorm(l.cat),l.nome&&'Lote '+l.nome].filter(Boolean).join(' · '),M,82,'700',18,'#c8dd1e','left',W-2*M);
   let y=142;ret(M,y,W-2*M,84,14,'#c8dd1e');txt(BOX[0],M+24,y+24,'700',13,AZ);txt(BOX[1],M+24,y+56,'800',32,AZ,'left',W-2*M-48);y+=108;
-  const cw=(W-2*M-16)/2;L.forEach(([k,v],i)=>{const x=M+(i%2)*(cw+16),yy=y+Math.floor(i/2)*92;ret(x,yy,cw,78,12,'#f4f7fa','#d5dde5');txt(k.toUpperCase(),x+18,yy+24,'700',12,CI,'left',cw-36);txt(v,x+18,yy+54,'800',26,AZ,'left',cw-36);});
+  const cw=(W-2*M-16)/2;L.forEach(([k,v],i)=>{if(!k)return;const x=M+(i%2)*(cw+16),yy=y+Math.floor(i/2)*92;ret(x,yy,cw,78,12,'#f4f7fa','#d5dde5');txt(k.toUpperCase(),x+18,yy+24,'700',12,CI,'left',cw-36);txt(v,x+18,yy+54,'800',26,AZ,'left',cw-36);});
   y+=lin*92+12;if(temV){ret(M,y,W-2*M,96,14,'#3f7d20');txt(valTit,M+24,y+28,'700',14,'rgba(255,255,255,.85)');txt(rs(liq),M+24,y+64,'800',36,'#fff','left',W-2*M-48);y+=120;}
   if(obsT){txt('Observação: '+obsT,M,y+10,'500',16,CI,'left',W-2*M);y+=60;}
   txt('Gerado em '+dB(hojeKey())+' · Gestão de Tratos FJK',W/2,H-24,'500',12,'#9aa6b2','center');
