@@ -2188,12 +2188,15 @@ function histCur(c,d,dia,ix){ix=ix||gIndice();const lt=x=>{const r=G.it[idLeit(d
   const ck=c+'|'+d;if(_hcM.m.has(ck))return _hcM.m.get(ck);
   let L=_hcM.m.get(c);if(!L){L=gTodos('lote').filter(l=>curralEm(l,dia)===c&&cabPres(l,dia)>0);_hcM.m.set(c,L);}
   let R;if(!L.length)R=pr();else{
+    /* animais que chegaram por transferência entre d e dia (ex.: juntou dois currais em um): o trato deles no dia d estava no curral de origem → entra na base */
+    const XT=[];L.forEach(B=>entradasDe(B).forEach(x=>{if(x.dia>d&&x.dia<=dia&&x.de&&x.transf){const o=G.it[x.de];if(o&&!o.del)XT.push({l:o,cab:+x.cab||0});}}));
     const pv=l=>cabPres(l,d)*(pesoEm(l,d)||0),G1=L.filter(l=>cabPres(l,d)>0),por=new Map();
     G1.forEach(l=>{const o=curralEm(l,d);if(o)por.set(o,(por.get(o)||0)+pv(l));});
+    XT.forEach(x=>{const o=curralEm(x.l,d);if(o)por.set(o,(por.get(o)||0)+x.cab*(pesoEm(x.l,d)||0));});
     let kg=0,bi=0,tb=false,w=0,t=0,mx=-1,src=null;
     por.forEach((pvG,o)=>{const pvT=gTodos('lote').filter(l=>curralEm(l,d)===o&&cabPres(l,d)>0).reduce((a,l)=>a+pv(l),0),kgo=ix.get(d+'|'+o)||0;
       kg+=pvT>0?kgo*Math.min(1,pvG/pvT):0;if(pvG>mx){mx=pvG;src=o;}});
-    G1.forEach(l=>{const r=racaoEm(l,d),cp=r&&compRacao(r,d);if(!cp||!(cp.ms>0))return;bi+=pv(l)/100/(cp.ms/100);tb=true;w+=cabPres(l,d);t+=cabPres(l,d)*cp.ms;});
+    G1.map(l=>({l,cab:cabPres(l,d)})).concat(XT).forEach(({l,cab})=>{const r=racaoEm(l,d),cp=r&&compRacao(r,d);if(!cp||!(cp.ms>0))return;bi+=cab*(pesoEm(l,d)||0)/100/(cp.ms/100);tb=true;w+=cab;t+=cab*cp.ms;});
     R={kg:Math.round(kg),bi:tb?bi:null,ms:w?t/w:NaN,lx:src?lt(src):null};}
   _hcM.m.set(ck,R);return R;}
 function fatorMS(c,dBase,dia){const a=histCur(c,dBase,dia).ms,b=msRacCurral(c,dia);return ok(a)&&ok(b)&&b>0?a/b:1;}
