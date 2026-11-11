@@ -2893,11 +2893,11 @@ function tRacForm(t){
   const ops=opInsumos();
   if(!ops.length)return `${voltar()}<section class="panel"><h2>Nova ração</h2><p class="note">Cadastre os insumos primeiro (silagem, DDG, núcleo…).</p><button class="lima" data-g="ir" data-t="insForm">+ Novo insumo</button></section>`;
   const linhas=GT.itens.map((i,k)=>`<div class="gRacLin"><select data-ri="${k}"><option value="">Selecione</option>${ops.map(([a,b])=>`<option value="${a}"${a===i.ins?' selected':''}>${esc(b)}</option>`).join('')}</select>
-    <input class="cell num" inputmode="decimal" data-rp="${k}" value="${esc(vIn(gNum(i.pMS)))}" placeholder="% MS"><span class="gRacOrd"><button type="button" class="mini" data-g="racUp" data-i="${k}"${k?'':' disabled'} aria-label="Subir">▲</button><button type="button" class="mini" data-g="racDn" data-i="${k}"${k<GT.itens.length-1?'':' disabled'} aria-label="Descer">▼</button></span><button class="mini danger" data-g="racRm" data-i="${k}">✕</button></div>`).join('');
+    <input class="cell num" inputmode="decimal" data-rp="${k}" value="${esc(vIn(gNum(i.pMS)))}" placeholder="%MS"><input class="cell num" inputmode="decimal" data-rn="${k}" value="${esc(vIn(gNum(i.pMN)))}" placeholder="%MN"><span class="gRacOrd"><button type="button" class="mini" data-g="racUp" data-i="${k}"${k?'':' disabled'} aria-label="Subir">▲</button><button type="button" class="mini" data-g="racDn" data-i="${k}"${k<GT.itens.length-1?'':' disabled'} aria-label="Descer">▼</button></span><button class="mini danger" data-g="racRm" data-i="${k}">✕</button></div>`).join('');
   const vers=r?(r.versoes||[]).slice().sort((a,b)=>a.desde<b.desde?1:-1).map(x=>`<div class="gVers"><b>${x.desde<='2000-01-01'?'Fórmula inicial':'Desde '+dB(x.desde)}</b><span>${x.itens.map(i=>{const n=G.it[i.ins];return `${esc(n?n.nome:'?')} ${nf(+i.pMS,1)}%`;}).join(' · ')}</span></div>`).join(''):'';
   return `${voltar()}<section class="panel"><h2>${r?'Ração':'Nova ração'}</h2>
     <div class="gForm">${campo({k:'nome',l:'Nome da ração',v:GT.nome!=null?GT.nome:(r?r.nome:''),ph:'Ex.: Terminação'})}${campo({k:'desde',l:'Fórmula vale a partir de',t:'dia',v:GT.desde||(r?hj:'2000-01-01'),ajuda:r?'Mudou a fórmula? Os dias antes dessa data continuam com a fórmula antiga.':''})}</div>
-    <label>Insumos da fórmula · na ordem de carregamento</label><p class="note">Use ▲ ▼ para mudar a ordem: o vagão é carregado de cima para baixo.</p><div class="gRacLin gRacCab"><span>Insumo</span><span>% na MS</span><span>Ordem</span><span></span></div>${linhas}
+    <label>Insumos da fórmula · na ordem de carregamento</label><p class="note">Use ▲ ▼ para mudar a ordem: o vagão é carregado de cima para baixo. Preencha %MS ou %MN: o outro é calculado.</p><div class="gRacLin gRacCab"><span>%MS</span><span>%MN</span><span>Ordem</span></div>${linhas}
     <button data-g="racAdd">+ Adicionar insumo</button>
     <div id="gRacCalc"></div>
     <button class="primary" data-g="salvaRac" data-id="${t.id||''}">Salvar ração</button></section>
@@ -2907,17 +2907,25 @@ function tRacForm(t){
     <section class="panel"><h2>Histórico da fórmula</h2>${vers}<button class="dangerfill" data-g="apagaRac" data-id="${r.uid}">Apagar ração</button></section>`:''}`;
 }
 function lerItensRac(){if($('gf_nome'))GT.nome=$('gf_nome').value;if($('gf_desde'))GT.desde=$('gf_desde').value;document.querySelectorAll('#gBox [data-ri]').forEach(s=>{const k=+s.dataset.ri;if(GT.itens&&GT.itens[k])GT.itens[k].ins=s.value;});
-  document.querySelectorAll('#gBox [data-rp]').forEach(s=>{const k=+s.dataset.rp;if(GT.itens[k])GT.itens[k].pMS=s.value;});}
+  document.querySelectorAll('#gBox [data-rp]').forEach(s=>{const k=+s.dataset.rp;if(GT.itens[k])GT.itens[k].pMS=s.value;});
+  document.querySelectorAll('#gBox [data-rn]').forEach(s=>{const k=+s.dataset.rn;if(GT.itens[k])GT.itens[k].pMN=s.value;});}
+/* %MS ↔ %MN: a coluna que foi digitada por último (GT.racModo) calcula a outra */
+function racSync(){const hj=hojeKey(),it=GT.itens||[],msI=i=>{const n=i.ins&&G.it[i.ins];return n&&!n.del?msEm(n,hj):NaN;},r2=x=>Math.round(x*100)/100;
+  if(GT.racModo==='mn'){const w=it.map(i=>{const m=msI(i),p=gNum(i.pMN);return ok(m)&&m>0&&p>0?p*m:0;}),s=w.reduce((a,b)=>a+b,0);it.forEach((i,k)=>{i.pMS=s>0&&w[k]>0?String(r2(w[k]/s*100)):'';});}
+  else{const w=it.map(i=>{const m=msI(i),p=gNum(i.pMS);return ok(m)&&m>0&&p>0?p/m:0;}),s=w.reduce((a,b)=>a+b,0);it.forEach((i,k)=>{i.pMN=s>0&&w[k]>0?String(r2(w[k]/s*100)):'';});}
+  const at=document.activeElement,cl=GT.racModo==='mn'?'rp':'rn',f=GT.racModo==='mn'?'pMS':'pMN';
+  document.querySelectorAll(`#gBox [data-${cl}]`).forEach(s=>{const i=it[+s.dataset[cl]];if(i&&s!==at)s.value=vIn(gNum(i[f]));});}
 function calcRacao(){
-  const box=$('gRacCalc');if(!box)return;lerItensRac();const hj=hojeKey();
+  const box=$('gRacCalc');if(!box)return;lerItensRac();racSync();const hj=hojeKey();
+  const somaMN=GT.racModo==='mn'?GT.itens.filter(i=>i.ins).reduce((a,i)=>a+(gNum(i.pMN)||0),0):100,okN=Math.abs(somaMN-100)<0.05;
   const its=GT.itens.filter(i=>i.ins&&gNum(i.pMS)>0).map(i=>({ins:i.ins,pMS:gNum(i.pMS)}));
   const cp=its.length?compRacao({versoes:[{desde:'2000-01-01',itens:its}]},hj):null;
   if(!cp){box.innerHTML='<p class="note">Escolha os insumos e a % de cada um na matéria seca (soma 100%).</p>';$('gVagRes').innerHTML='';return;}
   const soma=cp.somaMS,okS=Math.abs(soma-100)<0.05;
   box.innerHTML=`<div class="tablebox"><table class="gTab gRacTab"><thead><tr><th>Insumo</th><th>% MS</th><th>% MN</th></tr></thead><tbody>
     ${cp.itens.map(i=>`<tr><td class="c">${esc(i.nome)}<small>MS ${pc(i.ms,1)} · ${rs(i.preco)}/t</small></td><td>${nf(i.pMS,1)}</td><td>${nf(i.pMN,1)}</td></tr>`).join('')}
-    <tr class="grp"><td>Total</td><td class="${okS?'ok':'bad'}">${nf(soma,1)}</td><td>100,0</td></tr></tbody></table></div>
-    ${okS?'':`<p class="aviso bad">A soma na matéria seca está em ${nf(soma,1)}%. Precisa dar 100%.</p>`}
+    <tr class="grp"><td>Total</td><td class="${okS?'ok':'bad'}">${nf(soma,1)}</td><td class="${okN?'':'bad'}">${nf(somaMN,1)}</td></tr></tbody></table></div>
+    ${!okN?`<p class="aviso bad">A soma na matéria natural está em ${nf(somaMN,1)}%. Precisa dar 100%.</p>`:okS?'':`<p class="aviso bad">A soma na matéria seca está em ${nf(soma,1)}%. Precisa dar 100%.</p>`}
     <div class="stat gStat2">${st('MS da ração',pc(cp.ms))}${st('Custo por kg MN',rs(cp.custoMN,3))}${st('Custo por kg MS',rs(cp.custoMS,3))}${st('Custo por tonelada MN',rs(cp.custoMN*1000))}</div>`;
   const tot=gNum(($('gVag')||{}).value);GT.vag=($('gVag')||{}).value;
   $('gVagRes').innerHTML=tot>0?`<div class="tablebox"><table class="gTab"><thead><tr><th>Insumo</th><th>% MN</th><th>kg no vagão</th></tr></thead><tbody>${cp.itens.map(i=>`<tr><td class="c">${esc(i.nome)}</td><td>${nf(i.pMN,1)}</td><td><b>${nf(tot*i.pMN/100)}</b></td></tr>`).join('')}
@@ -2927,11 +2935,12 @@ function salvaRac(id){
   lerItensRac();const nome=fv('nome'),desde=fv('desde')||hojeKey();if(!nome)return toast('Coloque o nome da ração');
   const its=GT.itens.filter(i=>i.ins&&gNum(i.pMS)>0).map(i=>({ins:i.ins,pMS:gNum(i.pMS)}));
   if(!its.length)return toast('Coloque os insumos');
+  if(GT.racModo==='mn'){const sN=GT.itens.filter(i=>i.ins).reduce((a,i)=>a+(gNum(i.pMN)||0),0);if(Math.abs(sN-100)>=0.05)return toast(`A soma na MN está em ${nf(sN,1)}%. Precisa dar 100%`);}
   const soma=its.reduce((a,i)=>a+i.pMS,0);if(Math.abs(soma-100)>=0.05)return toast(`A soma na MS está em ${nf(soma,1)}%. Precisa dar 100%`);
   const r=id?JSON.parse(JSON.stringify(G.it[id])):{uid:novoId('rac'),tipo:'racao',versoes:[]};
   r.nome=nome;const srt=L=>JSON.stringify(L.slice().sort((a,b)=>String(a.ins).localeCompare(String(b.ins)))),v=vig(r.versoes,desde),igual=v&&srt(v.itens)===srt(its);r.ordem=its.map(i=>i.ins);  // só mudou a ordem: não cria fórmula nova
   if(!igual)setHist(r.versoes,desde,{itens:its});
-  gPut(r);toast('Ração salva');GT.itens=null;GT.nome=null;GT.desde=null;gVoltar();
+  gPut(r);toast('Ração salva');GT.itens=null;GT.nome=null;GT.desde=null;GT.racModo=null;gVoltar();
 }
 
 /* ---------- insumos ---------- */
@@ -3555,7 +3564,7 @@ $('gBox').addEventListener('input',e=>{
   if(e.target.matches('[data-div]')){const n=e.target.dataset.div,v=[...document.querySelectorAll(`#gBox [data-div="${n}"]`)].map(i=>gNum(i.value)||0),t=v.reduce((a,b)=>a+b,0),el=document.querySelector(`#gBox [data-divsoma="${n}"]`);if(el){el.textContent=nf(t,1)+'%';el.classList.toggle('bad',Math.abs(t-100)>0.5);}}
   const t=e.target;
   if(t.classList.contains('gRs'))mascaraRs(t);
-  if(GT.t==='racForm'&&(t.matches('[data-rp]')||t.id==='gVag'))calcRacao();
+  if(GT.t==='racForm'&&(t.matches('[data-rp]')||t.matches('[data-rn]')||t.id==='gVag')){if(t.matches('[data-rp]'))GT.racModo='ms';else if(t.matches('[data-rn]'))GT.racModo='mn';calcRacao();}
   if((GT.t==='rel'||GT.t==='lote')&&/^gf_s(Peso|Rc|Preco)$/.test(t.id))calcSimul();
   if(GT.t==='simul'&&/^gf_(sim(CPr|CRc|VPeso|VPr|VRc|Cab|PE|Dias|Diaria|Out|Nome|Gmd)|imp|impP|impOn)$/.test(t.id)){GT.simQ=t.id.slice(3);simLer();GT.simQ='';}
   if(GT.t==='pesForm'&&(t.id==='gf_peso'||t.id==='gf_dia'))calcPes();
