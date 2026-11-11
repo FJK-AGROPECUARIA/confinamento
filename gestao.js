@@ -304,7 +304,7 @@ const opCurrais=(atual,inat)=>(S.cadastro||[]).filter(n=>inat||n===atual||!windo
 const racAtivas=()=>gTodos('racao').filter(r=>!r.inativa);
 const opRacoes=atual=>[['','Selecione']].concat(gTodos('racao').filter(r=>!r.inativa||r.uid===atual).sort(porNome).map(r=>[r.uid,r.nome+(r.inativa?' (inativa)':'')]));
 const opInsumos=()=>gTodos('insumo').sort(porNome).map(r=>[r.uid,r.nome+(r.inativo?' (inativo)':'')]);
-const UNID_C=[['arroba','R$/@ morto'],['arrV','R$/@ vivo'],['cab','R$/cabeça'],['kg','R$/kg vivo']];
+const UNID_C=[['','Selecione'],['arrV','R$/@ vivo'],['cab','R$/cabeça'],['kg','R$/kg vivo']];   // compra é sempre pelo peso vivo (lotes antigos em R$/@ morto continuam aparecendo ao editar)
 const UNID_V=[['arroba','R$/@ morto'],['arrV','R$/@ vivo'],['cab','R$/cabeça'],['kg','R$/kg vivo']];
 
 const RAIZ={home:'home',animais:'animais',simul:'animais',entradas:'animais',saidas:'animais',estoque:'estoque',estIns:'estoque',estForm:'estoque',estNF:'estoque',fornec:'estoque',fornForm:'estoque',entRel:'estoque',currais:'currais',curNt:'currais',curOrd:'currais',curForm:'currais',lotes:'animais',pesNova:'animais',entNova:'animais',saiSel:'animais',lote:'animais',loteForm:'animais',pesForm:'animais',entForm:'animais',apartForm:'animais',transfForm:'animais',fechaForm:'animais',achouForm:'animais',saiForm:'animais',faltaForm:'animais',faltaNova:'animais',mudForm:'animais',rel:'animais',custoForm:'animais',
@@ -804,7 +804,7 @@ function tLoteForm(t){
     {k:'raca',l:'Raça',t:'sel',op:[['','Selecione']].concat(gCfg().racas.concat(l&&l.raca&&!gCfg().racas.includes(l.raca)?[l.raca]:[]).sort(alfa).map(r=>[r,r])),v:v('raca'),meia:1},{k:'idade',l:'Idade',suf:'meses',t:'num',v:v('idade'),meia:1},
     {k:'dia',l:'Data de entrada',t:'dia',v:e.dia||hj,meia:1},{k:'cab',l:'Quantidade',t:'num',v:e.cab,meia:1},
     {k:'peso',l:'Peso médio de entrada/compra',suf:'kg',t:'num',v:e.peso,meia:1},
-    {k:'unid',l:'Preço de compra em',t:'sel',op:UNID_C,v:e.unid||'arroba'},{k:'preco',l:'Preço de compra',t:'rs',v:e.preco,meia:1},{k:'rcC',l:'Rendimento de carcaça na compra',suf:'%',t:'num',v:e.rcC||50,meia:1,ajuda:'Compra por @: peso × rendimento ÷ 15. 50% é o mesmo que peso vivo ÷ 30.'},{k:'cGrupo',l:'Compra na alteração em grupo',t:'sel',op:[['0','🔒 Bloqueada (não muda pela lista)'],['1','✓ Liberada (pode mudar pela lista)']],v:l&&l.compraGrupo===false?'0':'1'},
+    {k:'unid',l:'Preço de compra em',t:'sel',op:e.unid==='arroba'?UNID_C.concat([['arroba','R$/@ morto']]):UNID_C,v:e.unid||(l?'arroba':'')},{k:'preco',l:'Preço de compra',t:'rs',v:e.preco,meia:1},{k:'rcC',l:'Rendimento de carcaça na compra',suf:'%',t:'num',v:e.rcC||50,meia:1,ajuda:'Compra por @: peso × rendimento ÷ 15. 50% é o mesmo que peso vivo ÷ 30.'},{k:'cGrupo',l:'Compra na alteração em grupo',t:'sel',op:[['0','🔒 Bloqueada (não muda pela lista)'],['1','✓ Liberada (pode mudar pela lista)']],v:l&&l.compraGrupo===false?'0':'1'},
     {k:'outros',l:'Frete, comissão e outros da compra',suf:'total',t:'rs',v:e.outros,meia:1},{k:'vTotC',l:'Valor total da compra (entrada)',t:'rs',v:'',meia:1,ajuda:'Calculado pelo preço; digitando o valor total, o preço é calculado.'},
     );
   if(novo)fs.push({k:'racao',l:'Ração',t:'sel',op:opRacoes(),v:''});
@@ -842,6 +842,7 @@ function salvaLote(id){
   const nome=fv('nome'),dia=fv('dia'),cab=fn('cab'),peso=fn('peso');
   if(!nome)return toast('Coloque o nome do lote');if(!dia)return toast('Coloque a data de entrada');
   if(!(cab>0))return toast('Coloque as cabeças');if(!(peso>0))return toast('Coloque o peso médio de entrada');
+  if($('gf_unid')&&!fv('unid'))return toast('Escolha em que é o preço de compra');
   const l=id?JSON.parse(JSON.stringify(G.it[id])):{uid:novoId('lote'),tipo:'lote',curr:[],rac:[]};
   if(!id){const c=fv('curral');if(!c)return toast('Escolha o curral');l.curr=[{desde:dia,c}];const r=fv('racao');l.rac=r?[{desde:dia,r}]:[];}
   else{if(l.curr.length&&l.curr[0].desde>dia)l.curr[0].desde=dia;if(l.rac.length&&l.rac[0].desde>dia)l.rac[0].desde=dia;}
@@ -1760,7 +1761,7 @@ function tSimul(t){const hj=hojeKey(),cfg=gCfg();
   const ops=[['','— escolha o lote —']].concat(L.map(x=>[x.uid,(curralEm(x,hj)||'—')+' · '+x.nome+' · '+nf(cabAtual(x))+' cab']));
   let corpo='<p class="note">Escolha o lote para simular a venda dos animais que estão nele hoje.</p>';
   if(l){const e=l.ent||{},C0=calcLote0(l),tr=e.unid==='transf'||!!l.apDe;
-    if(!t.pre||t.preL!==l.uid){t.pre=1;t.preL=l.uid;const f=cmpFixDe(l);t.cPr=f.m==='dig'?f.pr:(e.unid==='arroba'||!e.unid)&&+e.preco>0?+e.preco:'';t.cRc=f.rc||+e.rcC||50;t.vPeso=Math.round(pesoEm(l,hj));t.vPr=+l.simPreco||'';t.vRc=+l.rcPrev||+l.simRc||+cfg.rc||52;}
+    if(!t.pre||t.preL!==l.uid){t.pre=1;t.preL=l.uid;const f=cmpFixDe(l);t.cPr=f.m==='dig'?f.pr:(e.unid==='arroba'||e.unid==='arrV'||!e.unid)&&+e.preco>0?+e.preco:'';t.cRc=f.rc||(e.unid==='arrV'?50:+e.rcC||50);t.vPeso=Math.round(pesoEm(l,hj));t.vPr=+l.simPreco||'';t.vRc=+l.rcPrev||+l.simRc||+cfg.rc||52;}
     corpo=`<div class="gForm">
       ${tr?`<p class="note gLarga">Lote formado por transferência/apartação: a compra é o custo trazido (não muda pelo preço de compra).</p>`:campo({k:'simCPr',l:'Preço de compra',suf:'R$/@',t:'rs',v:t.cPr,meia:1})+campo({k:'simCRc',l:'Rendimento da compra',suf:'%',t:'num',v:t.cRc,meia:1})}
       <div class="gCampo meia"><label for="gf_simPEL">Peso de entrada <span class="gSuf">(kg · média)</span></label><input type="text" id="gf_simPEL" value="${nf(C0.pesoE,2)}" disabled></div>${campo({k:'simVPeso',l:'Peso vivo de venda',suf:'kg',t:'num',v:t.vPeso,meia:1})}
