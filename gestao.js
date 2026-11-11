@@ -1299,7 +1299,8 @@ function salvaTransf(id){const l=G.it[id],d=fv('tDia'),cab=fn('tCab'),peso=fn('t
   gPut({uid:eU,tipo:'entlote',lote:B.uid,dia:d,cab,peso:Math.round(T.p*100)/100,rs:vi,vi:true,de:l.uid,transf:sU,obs:`Comprado de ${l.nome} (venda interna)${obs?' · '+obs:''}`});
   recalcCurral(curralEm(B,d),d);toast(`${nf(cab)} cab transferidos para ${B.nome}`);return gVoltar();}
 /* mudar de curral juntando com o lote do destino: transferência com peso de ENTRADA de todos os animais (levam compra, consumo e custos), sem passar pela tela de transferência */
-function transfJunta(l,B,d,obs){if(d>hojeKey())return toast('A data não pode ser depois de hoje');const T=transfCalc(l,d,1,NaN,null),cab=Math.round(T.tem);if(!(cab>0))return toast(`Nessa data o ${l.nome} não tem animais`);
+function transfJunta(l,B,d,obs){if(d>somaDias(hojeKey(),1))return toast('A data pode ser no máximo amanhã');   /* amanhã: o dia de hoje fica completo no curral antigo e o lote junto começa amanhã */
+  const T=transfCalc(l,d,1,NaN,null),cab=Math.round(T.tem);if(!(cab>0))return toast(`Nessa data o ${l.nome} não tem animais`);
   const T2=transfCalc(l,d,cab,NaN,null),pR=pesoEntMed(l),cst={};Object.keys(T2.cst).forEach(k=>cst[k]=Math.round(T2.cst[k]*100)/100);cst.compra=Math.round(T2.cst.compra*pR/(pesoEntMedTodos(l)||pR)*100)/100;
   const tot=Object.values(cst).reduce((a,v)=>a+v,0),tr=Math.round((cst.alim+cst.op+cst.outros)*100)/100,pe=Math.round(pR*100)/100,pA=Math.round(T2.p*100)/100,diaE=l.ent.diaE||l.ent.dia;
   if(!confirm(`Juntar os ${nf(cab)} animais de ${l.nome} no lote ${B.nome} em ${dB(d)}?\n\nLevam: peso de entrada ${nf(pe,1)} kg · peso atual ${nf(pA,1)} kg · custo dos tratos ${rs(tr)}, a compra e o consumo. Daí para frente é um resultado só.`))return;
