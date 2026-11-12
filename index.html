@@ -2159,7 +2159,7 @@ function pvSplHTML(c,o){const {s,I}=pvSplAjusta(c,o);if(!(s.alvo>0))return '<p c
     ?`<div class="pvSplLin feito"><b>${k}º trato</b><span class="num">${nf(s.kg[i]/s.alvo*100,1)}</span><span class="num">${fmt(s.kg[i])} ✓</span></div>`
     :`<div class="pvSplLin"><b>${k}º trato</b><input class="cell num" inputmode="decimal" data-psp="${esc(c)}|${i}" value="${nf(s.kg[i]/s.alvo*100,1)}"><input class="cell num" inputmode="numeric" data-psk="${esc(c)}|${i}" value="${s.kg[i]}"></div>`).join('')}
     <div class="pvSplTot" data-pvspltot="${esc(c)}">${pvSplTot(c)}</div>${I.feito.some(Boolean)?'<p class="note">✓ trato já feito: fica com o realizado.</p>':''}
-    <div class="row"><button type="button" class="mini" data-pvsplpad="${esc(c)}">↺ Padrão</button><button type="button" class="mini" data-pvsplit="${esc(c)}">✕ Fechar</button><button type="button" class="pvSplSalva" data-pvims="ok" aria-label="Salvar">💾</button></div></div>`;}
+    <div class="row"><button type="button" class="mini" data-pvsplpad="${esc(c)}">↺ Padrão</button><button type="button" class="mini dangerfill" data-pvsplit="${esc(c)}">✕ Cancelar</button><button type="button" class="pvSplSalva" data-pvims="ok" aria-label="Salvar">💾</button></div></div>`;}
 function pvSplTot(c){const s=PV.split&&PV.split[c];if(!s||!s.kg)return '';const tot=s.kg.reduce((a,v)=>a+(+v||0),0),d=tot-s.alvo;
   return d===0?`<span class="ok">✓ Total ${fmt(tot)} kg = previsto do curral ${fmt(s.alvo)} kg</span>`:`<span class="bad">Total ${fmt(tot)} kg · previsto ${fmt(s.alvo)} kg · ${d>0?'sobram':'faltam'} <b>${fmt(Math.abs(d))} kg</b></span>`;}
 document.addEventListener('click',e=>{const b=e.target.closest('[data-pvsplit],[data-pvsplpad]');if(!b||!PV.ims)return;e.preventDefault();e.stopPropagation();
