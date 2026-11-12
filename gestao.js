@@ -323,7 +323,10 @@ const RAIZ={home:'home',animais:'animais',simul:'animais',entradas:'animais',sai
 /* Leitura de cocho fica no menu Tratos (aba 'leit'); o resto da Gestão na aba 'gest' — as duas usam a mesma tela */
 function gRaiz(t){GT={t};gPilha.length=0;const alvo=RAIZ[t]==='cocho'&&!document.body.classList.contains('modoGest')?'leit':'gest';if(window.abaAtual!==alvo)aba(alvo);else gRender();window.scrollTo({top:0});}
 window.gAbrir=modo=>{const leit=RAIZ[GT.t]==='cocho';if(modo==='leit'&&!leit)GT={t:'cocho'};if(modo==='leit'&&leit)GT.coAberto={};/* ao entrar de novo: as já salvas voltam recolhidas */if(modo==='gest'&&leit&&!document.body.classList.contains('modoGest'))GT={t:'home'};gRender();if(navigator.onLine)gSync(true).catch(()=>{});};
-function gRender(){if(GT&&GT.t!=='rel'&&GT.t!=='simul')RELCMP=null;if(GT&&GT.t!=='simul')SIMV=null;if(GT&&GT.t!=='lotes')gLotAb.clear();   // saiu da lista de lotes: ao voltar, todos os cards abrem minimizados
+/* uma vez: observações de relatório já lançadas passam para MAIÚSCULA */
+function obsMaiusc(){if(obsMaiusc.ok)return;if(typeof bloqueado==='function'&&bloqueado())return;const L=gTodos('lote');if(!L.length)return;obsMaiusc.ok=1;
+  L.forEach(l=>{const o=l.resObs||'';if(o&&o!==o.toUpperCase()){const c=JSON.parse(JSON.stringify(l));c.resObs=o.toUpperCase();gPut(c);}});}
+function gRender(){try{obsMaiusc();}catch(_){}if(GT&&GT.t!=='rel'&&GT.t!=='simul')RELCMP=null;if(GT&&GT.t!=='simul')SIMV=null;if(GT&&GT.t!=='lotes')gLotAb.clear();   // saiu da lista de lotes: ao voltar, todos os cards abrem minimizados
   else if(GT&&GT.t==='lotes'&&gRender.ultEnc!==undefined&&gRender.ultEnc!==!!GT.enc)gLotAb.clear();if(GT&&GT.t==='lotes')gRender.ultEnc=!!GT.enc;
   if(GT&&GT.t==='lotes'&&!['lotes','lote','rel','loteForm','saiForm','custoForm','entNova'].includes(gRender.ultTela)){const hj=hojeKey();gArqIni=somaDias(hj,-30);gArqFim=hj;gArqSel=false;gArqDesm.clear();gResFil='S';}   // arquivados: ao chegar de outro menu, filtro volta para os últimos 30 dias
   gRender.ultTela=GT&&GT.t;
@@ -662,8 +665,12 @@ const resDesc=l=>!!(l&&l.resDesc);
 const resBts=(l,mini)=>{const d=resDesc(l);if(mini)return `<span class="gResTag ${d?'no':'ok'}">${d?'⛔ Relatório NÃO':'✅ Relatório OK'}</span>`;
   return `<label class="gResLin ${d?'no':'ok'}"><span>Considerar resultado deste relatório</span><select data-rescons="${l.uid}"><option value="1"${d?'':' selected'}>Sim</option><option value="0"${d?' selected':''}>Não</option></select></label>
   <div class="gResObs ${d?'no':'ok'}"><label for="gResObs">Observação deste relatório</label><textarea id="gResObs" data-resobs="${l.uid}" rows="2" placeholder="Escreva aqui alguma observação sobre este relatório">${esc(l.resObs||'')}</textarea></div>`;};
+/* nome do lote e observação do relatório: sempre em letra MAIÚSCULA (já enquanto digita; teclado já abre em maiúscula) */
+const ehMaiusc=x=>x&&x.matches&&(x.matches('#gBox textarea[data-resobs]')||(x.id==='gf_nome'&&GT&&(GT.t==='loteForm'||GT.t==='entNova')));
+document.addEventListener('focusin',e=>{const x=e.target;if(!ehMaiusc(x))return;x.setAttribute('autocapitalize','characters');x.style.textTransform='uppercase';});
+document.addEventListener('input',e=>{const x=e.target;if(!x.matches||!(x.matches('#gBox textarea[data-resobs]')||(x.id==='gf_nome'&&GT&&(GT.t==='loteForm'||GT.t==='entNova'))))return;const v=x.value,u=v.toUpperCase();if(v===u)return;const a=x.selectionStart,b=x.selectionEnd;x.value=u;try{x.setSelectionRange(a,b);}catch(_){}});
 document.addEventListener('change',e=>{const x=e.target;if(!x.matches||!x.matches('#gBox textarea[data-resobs]'))return;if(typeof bloqueado==='function'&&bloqueado()){gRender();return;}
-  const l=G.it[x.dataset.resobs];if(!l)return;const v=x.value.trim();if((l.resObs||'')===v)return;const c=JSON.parse(JSON.stringify(l));c.resObs=v;gPut(c);toast('Observação salva');});
+  const l=G.it[x.dataset.resobs];if(!l)return;const v=x.value.trim().toUpperCase();if((l.resObs||'')===v)return;const c=JSON.parse(JSON.stringify(l));c.resObs=v;gPut(c);toast('Observação salva');});
 document.addEventListener('change',e=>{const s_=e.target;if(!s_.matches||!s_.matches('#gBox select[data-rescons]'))return;if(typeof bloqueado==='function'&&bloqueado()){gRender();return;}
   const l=G.it[s_.dataset.rescons];if(!l)return;const c=JSON.parse(JSON.stringify(l)),d=s_.value==='0';if(!!c.resDesc===d)return;c.resDesc=d;gPut(c);toast(d?'Não considerar este relatório (fica em vermelho)':'Considerar este relatório');const y=window.scrollY;gRender();window.scrollTo({top:y});});
 function tLotes(t){
@@ -859,7 +866,7 @@ function salvaLote(id){
   const l=id?JSON.parse(JSON.stringify(G.it[id])):{uid:novoId('lote'),tipo:'lote',curr:[],rac:[]};
   if(!id){const c=fv('curral');if(!c)return toast('Escolha o curral');l.curr=[{desde:dia,c}];const r=fv('racao');l.rac=r?[{desde:dia,r}]:[];}
   else{if(l.curr.length&&l.curr[0].desde>dia)l.curr[0].desde=dia;if(l.rac.length&&l.rac[0].desde>dia)l.rac[0].desde=dia;}
-  const e0=l.ent||{};l.nome=nome;l.ent={dia,cab,peso,pesoC:null,unid:fv('unid'),preco:fn('preco'),rcC:fn('rcC')||50,outros:fn('outros')||0,origem:e0.origem||'',gta:e0.gta||''};
+  const e0=l.ent||{};l.nome=nome.toUpperCase();l.ent={dia,cab,peso,pesoC:null,unid:fv('unid'),preco:fn('preco'),rcC:fn('rcC')||50,outros:fn('outros')||0,origem:e0.origem||'',gta:e0.gta||''};
   if($('gf_sexo')&&!fv('sexo'))return toast('Escolha o sexo do lote');if($('gf_sistema'))l.sistema=fv('sistema');l.sexo=fv('sexo');l.cat=fv('cat');l.raca=fv('raca');l.idade=fn('idade')||null;
   l.gmd=fn('gmd')||0;l.diasPrev=fn('diasPrev')||null;l.alvo=fn('alvo')||null;l.rcPrev=fn('rcPrev')||null;l.simPreco=fn('simPreco')||null;l.compraGrupo=fv('cGrupo')!=='0';l.obs=fv('obs');
   gPut(l);if(GT.t==='entNova'){recalcCurral(fv('curral'),dia);toast(`Lote ${l.nome} criado com ${nf(cab)} cab`);return gVoltar();}{const n=recalcSaidas(l);toast(n?`Lote salvo · custos de ${n} saída(s) refeitos`:'Lote salvo');}gPilha.pop();GT={t:'lote',id:l.uid};window.scrollTo({top:0});gRender();setTimeout(()=>{window.scrollTo({top:0});try{gRender();}catch(e){}},60);
