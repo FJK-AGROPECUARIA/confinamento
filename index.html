@@ -1034,8 +1034,8 @@ body.naInicio .topoTxt h1{font-size:clamp(16px,5vw,28px)!important}
 @keyframes balPisca{0%,100%{background:#c62828}50%{background:#8e0000}}
 #regFalha{position:fixed;left:50%;transform:translateX(-50%);top:calc(env(safe-area-inset-top,0px) + 4px);z-index:99980;max-width:calc(100% - 16px);background:#c62828;color:#fff;border:0;border-radius:99px;padding:3px 10px;font-size:.7rem;font-weight:700;line-height:1.2;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;box-shadow:0 2px 8px rgba(0,0,0,.3);text-align:center}
 #regFalha[hidden]{display:none}
-.pvSplC{cursor:pointer!important;text-decoration:underline dotted;text-underline-offset:3px}.pvSplC.on{background:#e8f5e9}.pvSplI{font-size:.95em}
-.pvSplRow td{padding:4px 0 10px!important}.pvSpl{padding:10px 12px;border-radius:12px;background:#f1f8e9;border:1px solid #c5e1a5}.pvSplCab,.pvSplLin{display:grid;grid-template-columns:auto 1fr 1fr;gap:8px;align-items:center}.pvSplCab{font-size:.75rem;font-weight:700;color:#5b6b7a;text-transform:uppercase;letter-spacing:.06em}.pvSplCab span:not(:first-child),.pvSplLin span{text-align:right;padding-right:8px}.pvSplLin{margin:4px 0}.pvSplLin b{white-space:nowrap}#tbPrev .pvSplLin input.cell{height:40px;width:100%!important;caret-color:auto;cursor:text}.pvSplLin.feito{color:#5b6b7a}.pvSplTot{margin:8px 0 4px}.pvSplTot .ok{color:#2e7d32;font-weight:700}.pvSplTot .bad{color:#c62828}.pvSpl .row{gap:8px}
+.pvSplC{cursor:pointer!important;text-decoration:underline dotted;text-underline-offset:3px}.pvSplC.on{background:#e8f5e9}.pvSplI{display:inline-flex;align-items:center;justify-content:center;margin-left:8px;padding:1px 2px;border:1.5px solid #2e6b2f;border-radius:7px;background:#fff;vertical-align:middle}.pvSplSalva{flex:0 0 auto;width:52px!important;min-height:0!important;height:44px;padding:0!important;border-radius:12px;background:#2e6b2f;color:#fff;font-size:1.3rem;border:0}
+.pvSplRow td{padding:4px 0 10px!important}.pvSpl{padding:10px 12px;border-radius:12px;background:#f1f8e9;border:1px solid #c5e1a5}.pvSplCab,.pvSplLin{display:grid;grid-template-columns:auto 1fr 1fr;gap:8px;align-items:center}.pvSplCab{font-size:.75rem;font-weight:700;color:#5b6b7a;text-transform:uppercase;letter-spacing:.06em}.pvSplCab span:not(:first-child),.pvSplLin span{text-align:right;padding-right:8px}.pvSplLin{margin:4px 0}.pvSplLin b{white-space:nowrap}#tbPrev .pvSplLin input.cell{height:40px;width:100%!important;caret-color:auto;cursor:text}.pvSplLin.feito{color:#5b6b7a}.pvSplTot{margin:8px 0 4px}.pvSplTot .ok{color:#2e7d32;font-weight:700}.pvSplTot .bad{color:#c62828}.pvSpl .row{gap:8px;flex-wrap:nowrap!important}.pvSpl .row .mini{flex:1 1 0;min-width:0;white-space:nowrap;padding-left:6px;padding-right:6px}#tbPrev td.pvSplC{white-space:nowrap!important}
 </style>
 </head>
 <body>
@@ -1355,7 +1355,7 @@ body.naInicio .topoTxt h1{font-size:clamp(16px,5vw,28px)!important}
 <div class="toast" id="toast" hidden></div>
 <script>
 'use strict';
-const APP_VERSAO='376';
+const APP_VERSAO='377';
 const APP_DATA='19/10/2026';
 const KEY='confinamento-completo-v1';
 const $=id=>document.getElementById(id);
@@ -2159,7 +2159,7 @@ function pvSplHTML(c,o){const {s,I}=pvSplAjusta(c,o);if(!(s.alvo>0))return '<p c
     ?`<div class="pvSplLin feito"><b>${k}º trato</b><span class="num">${nf(s.kg[i]/s.alvo*100,1)}</span><span class="num">${fmt(s.kg[i])} ✓</span></div>`
     :`<div class="pvSplLin"><b>${k}º trato</b><input class="cell num" inputmode="decimal" data-psp="${esc(c)}|${i}" value="${nf(s.kg[i]/s.alvo*100,1)}"><input class="cell num" inputmode="numeric" data-psk="${esc(c)}|${i}" value="${s.kg[i]}"></div>`).join('')}
     <div class="pvSplTot" data-pvspltot="${esc(c)}">${pvSplTot(c)}</div>${I.feito.some(Boolean)?'<p class="note">✓ trato já feito: fica com o realizado.</p>':''}
-    <div class="row"><button type="button" class="mini" data-pvsplpad="${esc(c)}">↺ Divisão padrão</button><button type="button" class="mini" data-pvsplit="${esc(c)}">✕ Fechar</button></div></div>`;}
+    <div class="row"><button type="button" class="mini" data-pvsplpad="${esc(c)}">↺ Padrão</button><button type="button" class="mini" data-pvsplit="${esc(c)}">✕ Fechar</button><button type="button" class="pvSplSalva" data-pvims="ok" aria-label="Salvar">💾</button></div></div>`;}
 function pvSplTot(c){const s=PV.split&&PV.split[c];if(!s||!s.kg)return '';const tot=s.kg.reduce((a,v)=>a+(+v||0),0),d=tot-s.alvo;
   return d===0?`<span class="ok">✓ Total ${fmt(tot)} kg = previsto do curral ${fmt(s.alvo)} kg</span>`:`<span class="bad">Total ${fmt(tot)} kg · previsto ${fmt(s.alvo)} kg · ${d>0?'sobram':'faltam'} <b>${fmt(Math.abs(d))} kg</b></span>`;}
 document.addEventListener('click',e=>{const b=e.target.closest('[data-pvsplit],[data-pvsplpad]');if(!b||!PV.ims)return;e.preventDefault();e.stopPropagation();
