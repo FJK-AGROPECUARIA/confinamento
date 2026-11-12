@@ -1355,7 +1355,7 @@ body.naInicio .topoTxt h1{font-size:clamp(16px,5vw,28px)!important}
 <div class="toast" id="toast" hidden></div>
 <script>
 'use strict';
-const APP_VERSAO='375';
+const APP_VERSAO='376';
 const APP_DATA='19/10/2026';
 const KEY='confinamento-completo-v1';
 const $=id=>document.getElementById(id);
@@ -2100,7 +2100,7 @@ function renderPrev(){
       const imsC=ims?(()=>{const p0=window.gImsDe?gImsDe(c,PV.dia,v||0):null,o0=p0?nf(p0,2):'';
         const pE=eI?(eI.tipo==='ims'?eI.val:(window.gImsDe?gImsDe(c,PV.dia,eI.val):null)):null,txt=eI?(pE?nf(pE,2):''):o0;
         return `<td><input class="cell imsIn${eI?(eI.tipo==='ims'?' mudou':' calc'):''}${tr?' feito':''}" type="text" readonly tabindex="-1" inputmode="none" data-ims="${esc_}" data-orig="${o0}" placeholder="%" value="${txt}"${tr?' disabled':''}>${eI&&eI.tipo==='ims'&&kgEd==null?'<small class="imsKg">sem lote</small>':''}</td>`;})():'';
-      const spl=ims&&!tr&&n>1,nomeT=spl?`<td class="c pvSplC${PV.split&&PV.split[c]?' on':''}" data-pvsplit="${esc_}" title="Dividir entre os tratos">${esc_} <span class="pvSplI">🐂</span></td>`:nome;
+      const spl=ims&&!tr&&n>1,nomeT=spl?`<td class="c pvSplC${PV.split&&PV.split[c]?' on':''}" data-pvsplit="${esc_}" title="Dividir entre os tratos">${esc_} <span class="pvSplI"><svg width="20" height="20" viewBox="0 0 30 30" fill="none" stroke="#2e6b2f" stroke-width="2.6" stroke-linecap="round" aria-hidden="true" style="vertical-align:middle"><g fill="#2e6b2f" stroke="none" font-size="8" font-weight="800" font-family="system-ui,sans-serif"><text x="3" y="10.5">1</text><text x="3" y="18.5">2</text><text x="3" y="26.5">3</text></g><line x1="11" y1="8" x2="27" y2="8"/><line x1="11" y1="16" x2="22" y2="16"/><line x1="11" y1="24" x2="18" y2="24"/></svg></span></td>`:nome;
       const nCol=4+(ims?1:0)+(comReal?2:0)+(comAm?1:0);
       return `<tr${ocultar?' hidden':''}><td class="alca" title="Arraste para mudar a ordem" aria-label="Arrastar ${esc_}">☰</td>${nomeT}${ims?imsC:''}${cel}${colR}${comAm?`<td class="num pvAm">${amDe(c)>0?fmt(amDe(c)):'—'}</td>`:''}${ac}</tr>${spl&&!ocultar&&PV.split&&PV.split[c]?`<tr class="pvSplRow"><td colspan="${nCol}">${pvSplHTML(c,o)}</td></tr>`:''}`;}
     return `<tr${ocultar?' hidden':''}><td class="alca" title="Arraste para mudar a ordem" aria-label="Arrastar ${esc_}">☰</td>${comReal?`<td class="hora">${esc(horaDe(c))}</td>`:''}${nome}${cel}${colR}${ac}</tr>`;}).join('');
