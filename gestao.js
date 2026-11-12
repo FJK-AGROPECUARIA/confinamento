@@ -1646,14 +1646,17 @@ function tRacCur(t){const A=window.curraisApi,hj=hojeKey(),loc=t.loc||'T';if(!A)
     <p class="note">A ração muda para o lote que está em cada curral marcado, a partir da data escolhida. O que já foi tratado antes dessa data continua com a ração antiga.</p></section>`;}
 /* ---------- Mudar animais de curral: o lote inteiro vai para outro curral e leva tudo (custos, pesagens, histórico) ---------- */
 /* lotes do curral de origem: todos já marcados (move tudo); desmarque para mover só um */
-function mcLotesHTML(o){if(!o)return '';const ls=lotesNoCur(o,hojeKey());if(!ls.length)return '<p class="note">Nenhum lote nesse curral.</p>';
+/* data da mudança: a escolhida na tela; ao abrir, amanhã se os tratos de hoje já foram todos finalizados */
+const mcDia=()=>(($('gf_mcDia')||{}).value)||GT.mcD0||hojeKey();
+function mcLotesHTML(o){if(!o)return '';const ls=lotesNoCur(o,mcDia());if(!ls.length)return '<p class="note">Nenhum lote nesse curral.</p>';
   return `<label>Lotes que vão mudar</label>${ls.map(l=>`<label style="display:flex;align-items:center;gap:8px;padding:6px 0;font-weight:600"><input type="checkbox" data-mclote="${l.uid}" checked style="width:20px;height:20px"> ${esc(l.nome)} · ${nf(cabAtual(l))} cab${sexoTxt(l.sexo)?' · '+esc(sexoTxt(l.sexo)):''}</label>`).join('')}${ls.length>1?'<p class="note">Todos marcados: o curral inteiro muda. Desmarque o lote que deve ficar.</p>':''}`;}
-document.addEventListener('change',e=>{if(e.target&&e.target.id==='gf_mcO'){const w=$('mcLotes');if(w)w.innerHTML=mcLotesHTML(e.target.value);}if(e.target&&e.target.id==='gf_mcD'){const w=$('mcJunta');if(w)w.innerHTML=mcJuntaHTML(e.target.value);}});
+document.addEventListener('change',e=>{if(e.target&&e.target.id==='gf_mcO'){const w=$('mcLotes');if(w)w.innerHTML=mcLotesHTML(e.target.value);}if(e.target&&e.target.id==='gf_mcD'){const w=$('mcJunta');if(w)w.innerHTML=mcJuntaHTML(e.target.value);}if(e.target&&e.target.id==='gf_mcDia'){const w=$('mcJunta'),w2=$('mcLotes');if(w)w.innerHTML=mcJuntaHTML(fv('mcD'));if(w2)w2.innerHTML=mcLotesHTML(fv('mcO'));}});
 /* destino ocupado: pergunta se junta com o lote que já está lá (vira transferência) ou se os lotes ficam separados no mesmo curral */
-function mcJuntaHTML(de){if(!de)return '';const ls=lotesNoCur(de,hojeKey());if(!ls.length)return '';
+function mcJuntaHTML(de){if(!de)return '';const ls=lotesNoCur(de,mcDia());if(!ls.length)return '';
   return campo({k:'mcJ',l:'Juntar com o lote que já está no curral?',t:'sel',op:[['nao','Não: os lotes ficam separados no mesmo curral']].concat(ls.map(l=>[l.uid,`Sim: juntar no lote ${l.nome} (${nf(cabAtual(l))} cab)`])),v:'nao',
     ajuda:'Sim: os animais entram no lote do destino por transferência, levando compra e custos, e daí para frente é um resultado só. Não: cada lote continua com o seu resultado e o trato do curral é dividido pelo peso vivo.'});}
-function tMudCur(t){const A=window.curraisApi,hj=hojeKey();if(!A)return '';
+function tMudCur(t){const A=window.curraisApi,hj0=hojeKey();if(!A)return '';
+  const ms=typeof msStatus==='function'?(()=>{try{return msStatus();}catch(e){return null;}})():null,am=!!(ms&&!ms.bloq&&ms.amanha);if(!GT.mcD0)GT.mcD0=am?somaDias(hj0,1):hj0;const hj=GT.mcD0;
   const com=A.lista().filter(n=>lotesNoCur(n,hj).length).sort(alfa);
   const opO=[['','Selecione']].concat(com.map(n=>{const ls=lotesNoCur(n,hj);return [n,`${n} · ${ls.map(l=>l.nome+' ('+nf(cabAtual(l))+' cab)').join(' + ')}`];}));
   const tD=opCurrais('',true).map(([n])=>{const ls=lotesNoCur(n,hj);return [n,n+(ls.length?` (ocupado: ${ls.map(l=>l.nome).join(' + ')})`:' (vazio)'),ls.length];});
@@ -1661,7 +1664,7 @@ function tMudCur(t){const A=window.curraisApi,hj=hojeKey();if(!A)return '';
   return `${voltar('Currais')}<section class="panel"><h2>↔ Mudar animais de curral</h2>
     <div class="gForm">${[{k:'mcO',l:'Curral de origem',t:'sel',busca:1,op:opO,v:t.ori||''}].map(campo).join('')}
       <div class="gCampo" id="mcLotes">${mcLotesHTML(t.ori||'')}</div>
-      ${campo({k:'mcD',l:'Curral de destino',t:'sel',busca:1,op:opD,v:''})}<div class="gCampo" id="mcJunta"></div>${campo({k:'mcDia',l:'A partir de',t:'dia',v:hj})}
+      ${campo({k:'mcD',l:'Curral de destino',t:'sel',busca:1,op:opD,v:''})}<div class="gCampo" id="mcJunta"></div>${campo({k:'mcDia',l:'A partir de',t:'dia',v:hj,ajuda:am&&hj!==hj0?'✓ Tratos de hoje finalizados: a mudança vale a partir de amanhã. Hoje fica como foi tratado.':''})}
       <div class="gCampo"><label for="gf_mcObs">Observação</label><textarea id="gf_mcObs" rows="2" placeholder="Ex.: motivo da mudança" style="width:100%;box-sizing:border-box;resize:vertical;font:inherit"></textarea></div></div>
     <button class="primary" data-g="salvaMudCur">Mudar de curral</button>
     <p class="note">O lote vai inteiro para o curral de destino com tudo o que já tem (entrada, custos, pesagens, ração). Os tratos de cada dia contam para o lote que estava no curral naquele dia: o que foi tratado antes da data continua no curral antigo, e um lote que já saiu (arquivado) não recebe nada novo.</p></section>`;}
@@ -3403,8 +3406,8 @@ $('gBox').addEventListener('click',e=>{
     if(!cs.length)return toast('Marque os currais');if(!d||!r)return toast('Escolha a data e a nova ração');
     let n=0;cs.forEach(c=>lotesNoCur(c,hojeKey()).forEach(l0=>{const l=JSON.parse(JSON.stringify(l0));if(d<l.ent.dia)return;l.rac=l.rac||[];setHist(l.rac,d,{r});gPut(l);n++;}));
     toast(`Ração mudada em ${cs.length} curral(is) · ${n} lote(s)`);return gVoltar();}
-  if(a==='salvaMudCur'){const o=fv('mcO'),de=fv('mcD'),d=fv('mcDia');if(!o||!de||!d)return toast('Escolha a origem, o destino e a data');if(o===de)return toast('O destino é o mesmo curral');
-    const todos=lotesNoCur(o,hojeKey());if(!todos.length)return toast('Nenhum lote nesse curral');
+  if(a==='salvaMudCur'){const o=fv('mcO'),de=fv('mcD'),d=fv('mcDia');if(!o||!de||!d)return toast('Escolha a origem, o destino e a data');if(o===de)return toast('O destino é o mesmo curral');if(d>somaDias(hojeKey(),1))return toast('A data pode ser no máximo amanhã');
+    const todos=lotesNoCur(o,d);if(!todos.length)return toast('Nenhum lote nesse curral nessa data');
     const mk=[...document.querySelectorAll('[data-mclote]')];const ls=mk.length?todos.filter(l=>mk.some(c=>c.checked&&c.dataset.mclote===l.uid)):todos;if(!ls.length)return toast('Marque pelo menos um lote');const ant=ls.find(l=>d<l.ent.dia);if(ant)return toast(`A data é antes da entrada do ${ant.nome}`);
     const jn=fv('mcJ');if(jn&&jn!=='nao'){if(ls.length!==1)return toast('Para juntar, marque só um lote de origem');const B=G.it[jn];if(!B)return toast('Lote do destino não encontrado');
       if(d<B.ent.dia)return toast(`O ${B.nome} só começa em ${dB(B.ent.dia)}`);return transfJunta(ls[0],B,d,(($('gf_mcObs')||{}).value||'').trim());}
