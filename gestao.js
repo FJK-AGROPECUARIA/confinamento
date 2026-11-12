@@ -2283,7 +2283,7 @@ function coTrHTML(c,kg){const alvo=ok(kg)&&kg>0?Math.round(kg):coTrAlvo(c);if(!(
   return `<div class="gCoTr" data-cotr="${esc(c)}"><div class="gCoTrCab"><span>Trato</span><span>%</span><span>kg</span></div>
     ${ks.map((k,i)=>`<div class="gCoTrLin"><b>${k}º trato</b><input class="cell num" inputmode="decimal" data-trp="${esc(c)}|${i}" value="${alvo>0?nf(s.kg[i]/alvo*100,1):''}"><input class="cell num" inputmode="numeric" data-trk="${esc(c)}|${i}" value="${s.kg[i]}"></div>`).join('')}
     <div class="gCoTrTot" data-cotrtot="${esc(c)}">${coTrTotTxt(c)}</div>
-    <div class="row gCoTrBts"><button type="button" class="mini" data-g="coTrPad" data-c="${esc(c)}">↺ Divisão padrão</button><button type="button" class="mini" data-g="coTratos" data-c="${esc(c)}">✕ Fechar</button></div></div>`;}
+    <div class="row gCoTrBts"><button type="button" class="mini" data-g="coTrPad" data-c="${esc(c)}">↺ Divisão padrão</button><button type="button" class="mini dangerfill" data-g="coTratos" data-c="${esc(c)}">✕ Cancelar</button></div></div>`;}
 function coTrTotTxt(c){const s=GT.coTr&&GT.coTr[c];if(!s||!s.kg)return '';const tot=s.kg.reduce((a,v)=>a+(+v||0),0),d=tot-s.alvo;
   return d===0?`<span class="ok">✓ Total ${nf(tot)} kg = leitura ${nf(s.alvo)} kg</span>`:`<span class="bad">Total ${nf(tot)} kg · leitura ${nf(s.alvo)} kg · ${d>0?'sobram':'faltam'} <b>${nf(Math.abs(d))} kg</b></span>`;}
 /* digitou % ou kg de um trato: atualiza o outro campo e o total (sem redesenhar a tela) */
