@@ -1966,7 +1966,7 @@ function tCocho(t){
       <div class="gCoTopo">${seloCurral(c)}<div><span><b>${esc([...new Set(L.map(l=>catNorm(l.cat)||l.nome))].join(', '))}</b> · ${(()=>{const pm=cab?L.reduce((a,l)=>a+cabPres(l,dia)*pesoEm(l,dia),0)/cab:NaN;return ok(pm)&&pm>0?nf(pm)+' kg projetado':nf(cab)+' cab';})()}</span>${ult3L}</div>${lt&&!lt.del&&(GT.coAberto||{})[c]?`<button type="button" class="mini gCoFecha" data-g="coFecha" data-c="${esc(c)}" aria-label="Recolher">▲</button>`:''}</div>${graf7}
       ${trv?'<p class="gCoROtxt">🔒 Trato feito neste dia: não pode alterar.</p>':''}
       ${gradeNotas(notas,nota,c)}
-      <div class="gCoNovo"><b class="gCoPct">% IMS</b><input class="cell num gCoImsIn" inputmode="none" readonly data-tecg="ims" data-ims="${esc(c)}"${trv?' data-trava="1"':''} value="${sel&&sel.ims>0?nf(+sel.ims,2):''}" placeholder="${(()=>{const q=ok(kg)&&window.gImsDe?gImsDe(c,dia,kg):null;return q?nf(q,2):'%';})()}"><input class="cell num" inputmode="none" readonly data-tecg="kg" data-kg="${esc(c)}" value="${kg!=null?kg:''}" placeholder="kg/dia"${trv?' data-trava="1"':''}>${pode.ok&&!trv?`<button type="button" class="gCoSalva" data-g="salvaCocho1" data-c="${esc(c)}" aria-label="Salvar este curral">💾</button>`:''}</div></div>`;}).join('');
+      <div class="gCoNovo"><b class="gCoPct">% IMS</b><input class="cell num gCoImsIn" inputmode="none" readonly data-tecg="ims" data-ims="${esc(c)}"${trv?' data-trava="1"':''} value="${sel&&sel.ims>0?nf(+sel.ims,2):''}" placeholder="${(()=>{const q=ok(kg)&&window.gImsDe?gImsDe(c,dia,kg):null;return q?nf(q,2):'%';})()}"><input class="cell num" inputmode="none" readonly data-tecg="kg" data-kg="${esc(c)}" value="${kg!=null?kg:''}" placeholder="kg/dia"${trv?' data-trava="1"':''}>${pode.ok&&!trv&&coTrN(c)>1?`<button type="button" class="gCoTrBt${GT.coTr&&GT.coTr[c]?' on':''}" data-g="coTratos" data-c="${esc(c)}" aria-label="Dividir entre os tratos">🐂</button>`:''}${pode.ok&&!trv?`<button type="button" class="gCoSalva" data-g="salvaCocho1" data-c="${esc(c)}" aria-label="Salvar este curral">💾</button>`:''}</div>${pode.ok&&!trv&&GT.coTr&&GT.coTr[c]?coTrHTML(c,kg):''}</div>`;}).join('');
   return `<section class="panel"><h2 class="gH2Bt"><span>Leitura de cocho</span>${rows&&pode.ok?'<button type="button" class="gSalvaTop" data-g="salvaCocho">💾 Salvar leitura de cocho</button>':''}</h2>
     ${navData('gCoDia',dia,'')}
     ${typeof selSetas==='function'&&window.LOC_OPS?`<div class="gCoLocNav">${selSetas('Local',LOC_OPS,Math.max(0,LOC_OPS.findIndex(o=>o[0]===lc)),'data-g="coLocP" data-n','data-colsel')}</div>`:locBotoes('coLoc',lc)}
@@ -2269,6 +2269,39 @@ function regraLeitura(){try{if(typeof modoVer!=='undefined'&&modoVer)return;if(!
   }catch(e){console.error(e);}}
 window.regraLeitura=regraLeitura;setTimeout(regraLeitura,15000);setInterval(regraLeitura,3*60000);
 setTimeout(ajustarLeiturasMS,9000);setInterval(ajustarLeiturasMS,5*60000);
+/* ---------- 🍽️ dividir o kg da leitura entre os tratos do curral (em % ou kg) ----------
+   GT.coTr[c] = {alvo, kg:[...]} (um valor por trato). Só salva se a soma dos tratos for igual ao total da leitura. */
+const coTrKs=c=>{try{return tratosAtivos().map(Number).slice(0,coTrN(c));}catch(e){return [1];}};
+function coTrN(c){try{return prevApi.nTratos(c);}catch(e){return 1;}}
+function coTrPadrao(c,alvo){const ks=coTrKs(c),pc=prevApi.divisao(ks.length);let resto=Math.max(0,Math.round(alvo||0));
+  return ks.map((k,i)=>{const v=i===ks.length-1?resto:Math.min(resto,Math.max(0,prevApi.arredPrev(alvo*pc[i]/100)));resto-=v;return v;});}
+const coTrAlvo=c=>{const i=document.querySelector(`#gBox input[data-kg="${CSS.escape(c)}"]`);const v=i?gNum(i.value):NaN;return ok(v)&&v>0?Math.round(v):0;};
+function coTrAjusta(c,alvo){const s=GT.coTr[c];if(!s)return null;if(!s.kg||s.alvo!==alvo){   /* total da leitura mudou: mantém a proporção de cada trato */
+    if(!s.kg||!(s.alvo>0))s.kg=coTrPadrao(c,alvo);else{const f=alvo/s.alvo;let resto=alvo;s.kg=s.kg.map((v,i,a)=>{const x=i===a.length-1?resto:Math.round(v*f);resto-=x;return Math.max(0,x);});}s.alvo=alvo;}return s;}
+function coTrHTML(c,kg){const alvo=ok(kg)&&kg>0?Math.round(kg):coTrAlvo(c);if(!(alvo>0))return `<div class="gCoTr"><p class="note">Marque a nota ou digite o kg do dia para dividir entre os tratos.</p></div>`;
+  const s=coTrAjusta(c,alvo),ks=coTrKs(c);
+  return `<div class="gCoTr" data-cotr="${esc(c)}"><div class="gCoTrCab"><span>Trato</span><span>%</span><span>kg</span></div>
+    ${ks.map((k,i)=>`<div class="gCoTrLin"><b>${k}º trato</b><input class="cell num" inputmode="decimal" data-trp="${esc(c)}|${i}" value="${alvo>0?nf(s.kg[i]/alvo*100,1):''}"><input class="cell num" inputmode="numeric" data-trk="${esc(c)}|${i}" value="${s.kg[i]}"></div>`).join('')}
+    <div class="gCoTrTot" data-cotrtot="${esc(c)}">${coTrTotTxt(c)}</div>
+    <div class="row gCoTrBts"><button type="button" class="mini" data-g="coTrPad" data-c="${esc(c)}">↺ Divisão padrão</button><button type="button" class="mini" data-g="coTratos" data-c="${esc(c)}">✕ Fechar</button></div></div>`;}
+function coTrTotTxt(c){const s=GT.coTr&&GT.coTr[c];if(!s||!s.kg)return '';const tot=s.kg.reduce((a,v)=>a+(+v||0),0),d=tot-s.alvo;
+  return d===0?`<span class="ok">✓ Total ${nf(tot)} kg = leitura ${nf(s.alvo)} kg</span>`:`<span class="bad">Total ${nf(tot)} kg · leitura ${nf(s.alvo)} kg · ${d>0?'sobram':'faltam'} <b>${nf(Math.abs(d))} kg</b></span>`;}
+/* digitou % ou kg de um trato: atualiza o outro campo e o total (sem redesenhar a tela) */
+/* fecha a conta sozinho: a diferença do trato mudado vai para os próximos tratos (pelo % de cada um); no último, vai para os anteriores */
+document.addEventListener('focusin',e=>{const x=e.target;if(!x.matches||!x.matches('#gBox [data-trp],#gBox [data-trk]'))return;const c=(x.dataset.trp||x.dataset.trk).split('|')[0],s=GT.coTr&&GT.coTr[c];if(s&&s.kg)s.snap=s.kg.slice();});
+document.addEventListener('input',e=>{const x=e.target;if(!x.matches||!x.matches('#gBox [data-trp],#gBox [data-trk]'))return;const ehP=x.matches('[data-trp]'),[c,i0]=(ehP?x.dataset.trp:x.dataset.trk).split('|'),i=+i0,s=GT.coTr&&GT.coTr[c];if(!s)return;
+  const base=s.snap||s.kg.slice(),v=gNum(x.value);let nv=ehP?(ok(v)&&v>=0?Math.round(s.alvo*v/100):0):(ok(v)&&v>=0?Math.round(v):0);nv=Math.min(nv,s.alvo);
+  const kg=base.slice();kg[i]=nv;let dif=base[i]-nv;
+  const alvos=(i<kg.length-1?kg.map((_,j)=>j).filter(j=>j>i):kg.map((_,j)=>j).filter(j=>j<i));
+  const sb=alvos.reduce((a,j)=>a+base[j],0);let resto=dif;
+  alvos.forEach((j,n)=>{const parte=n===alvos.length-1?resto:Math.round(dif*(sb>0?base[j]/sb:1/alvos.length));const x2=Math.max(0,base[j]+parte);resto-=(x2-base[j]);kg[j]=x2;});
+  s.kg=kg;
+  kg.forEach((q,j)=>{const ek=document.querySelector(`#gBox [data-trk="${CSS.escape(c)}|${j}"]`),ep=document.querySelector(`#gBox [data-trp="${CSS.escape(c)}|${j}"]`);
+    if(ek&&ek!==x)ek.value=q;if(ep&&ep!==x)ep.value=s.alvo>0?nf(q/s.alvo*100,1):'';});
+  const tt=document.querySelector(`#gBox [data-cotrtot="${CSS.escape(c)}"]`);if(tt)tt.innerHTML=coTrTotTxt(c);});
+/* divisão escolhida nos tratos (só os que ainda não foram feitos) */
+function coTrAplica(c,obj,kgs,dia){const ks=coTrKs(c),feitos=new Set((typeof HIST!=='undefined'?HIST:[]).filter(r=>r.dia===dia&&r.curral===c).map(r=>+r.trato));
+  ks.forEach((k,i)=>{if(feitos.has(k))return;const m=(obj[String(k)]=obj[String(k)]||{});const v=Math.max(0,Math.round(+kgs[i]||0));if(v>0)m[c]=v;else delete m[c];});}
 function salvaCocho(so){
   const dia=GT.dia,hoje=dia===hojeKey(),cfg=gCfg();let n=0,ap=0,rm=0;
   const pode=leitPode(dia);if(!pode.ok)return toast(pode.msg);
@@ -2276,6 +2309,9 @@ function salvaCocho(so){
   {const els=[...document.querySelectorAll('#gBox .gCocho[data-c],#gBox .gCochoMin[data-c]')].filter(el=>!so||el.dataset.c===so);
     if(els.length&&els.every(el=>leitTravada(dia,el.dataset.c)))return toast(so?`🔒 Não é possível salvar nova leitura: o ${so} já teve trato neste dia`:'🔒 Não é possível salvar nova leitura: todos os currais já tiveram trato neste dia');}
   const amanha=dia===somaDias(hojeKey(),1),obj=hoje?S.prev:JSON.parse(JSON.stringify(prevApi.prevGuardado(dia)||{}));  /* dia seguinte: começa vazio — só entra no previsto o curral que tiver leitura */
+  /* curral com a divisão por trato aberta: o total dos tratos tem que ser igual ao da leitura */
+  for(const c of Object.keys(GT.coTr||{})){if(so&&c!==so)continue;const alvo=coTrAlvo(c),s=coTrAjusta(c,alvo);if(!s||!(alvo>0))continue;const tot=s.kg.reduce((a,v)=>a+(+v||0),0);
+    if(tot!==alvo)return toast(`${c}: o total dos tratos (${nf(tot)} kg) tem que ser igual à leitura (${nf(alvo)} kg)`);}
   const feitosC=new Set();document.querySelectorAll('#gBox .gCocho').forEach(el=>{const c=el.dataset.c,s=GT.sel[c];if(so&&c!==so)return;if(leitTravada(dia,c))return;feitosC.add(c);const inp=el.querySelector('input[data-kg]');const kg=gNum(inp.value);
     const lt=G.it[idLeit(dia,c)];if(s&&s.n==null&&!(s.ims>0)){if(lt&&!lt.del){gDel(lt.uid);rm++;
       /* apaga também o previsto que a leitura gerou (só dos tratos que ainda não foram fornecidos) */
@@ -2283,20 +2319,21 @@ function salvaCocho(so){
       for(let k=1;k<=(prevApi.MAXT||8);k++){if(feitos.has(k))continue;const m=obj[String(k)];if(m&&c in m){delete m[c];ap++;}}}return;}const nota=s?s.n:(lt&&!lt.del?lt.nota:null),ims=s?(s.ims>0?+s.ims:null):(lt&&!lt.del&&lt.ims>0?+lt.ims:null);if(nota==null&&!ims)return;
     const cn=cfg.notas.find(x=>x.n===nota);
     const bs=(GT.base||{})[c]||(lt&&!lt.del&&lt.baseM?{m:lt.baseM,d:lt.baseDia}:null)||{m:'ontem'};
-    gPut({uid:idLeit(dia,c),tipo:'leitura',dia,curral:c,nota,ims,hora:new Date().toTimeString().slice(0,5),pct:cn?cn.p:0,base:+el.dataset.base||0,baseM:bs.m,baseDia:bs.m==='dia'?bs.d:null,novo:ok(kg)?kg:null,msF:+el.dataset.msf||1});n++;
-    if(ok(kg)&&kg>0&&aplicaPrev(c,kg,obj))ap++;});
+    const sp=GT.coTr&&GT.coTr[c]&&GT.coTr[c].kg&&ok(kg)&&kg>0?GT.coTr[c].kg.slice():(lt&&!lt.del&&Array.isArray(lt.split)&&ok(kg)&&Math.round(lt.split.reduce((a,v)=>a+v,0))===Math.round(kg)?lt.split:null);
+    gPut({uid:idLeit(dia,c),tipo:'leitura',dia,curral:c,nota,ims,hora:new Date().toTimeString().slice(0,5),pct:cn?cn.p:0,base:+el.dataset.base||0,baseM:bs.m,baseDia:bs.m==='dia'?bs.d:null,novo:ok(kg)?kg:null,msF:+el.dataset.msf||1,split:sp||null});n++;
+    if(ok(kg)&&kg>0){const antes=JSON.stringify(Object.keys(obj).map(k=>(obj[k]||{})[c]));aplicaPrev(c,kg,obj);if(sp)coTrAplica(c,obj,sp,dia);if(JSON.stringify(Object.keys(obj).map(k=>(obj[k]||{})[c]))!==antes)ap++;}});
   /* botão geral: salva tudo — também reaplica no previsto as leituras já salvas (currais recolhidos) */
   let nSalvas=0;if(!so){gTodos('leitura').forEach(lt=>{if(lt.dia!==dia||lt.del)return;const c=nAt(lt.curral);if(feitosC.has(c)||leitTravada(dia,c))return;if(typeof curralAtivo==='function'&&!curralAtivo(c))return;
-    nSalvas++;if(ok(+lt.novo)&&+lt.novo>0&&aplicaPrev(c,+lt.novo,obj))ap++;});}
+    nSalvas++;if(ok(+lt.novo)&&+lt.novo>0){const antes=JSON.stringify(Object.keys(obj).map(k=>(obj[k]||{})[c]));aplicaPrev(c,+lt.novo,obj);if(Array.isArray(lt.split))coTrAplica(c,obj,lt.split,dia);if(JSON.stringify(Object.keys(obj).map(k=>(obj[k]||{})[c]))!==antes)ap++;}});}
   if(!so&&(n||nSalvas)){if(ap){if(hoje){marcarPrev();if(typeof render==='function')render();}else prevApi.guardarPrevDia(dia,obj);}
-    GT.sel={};GT.base={};GT.coAberto={};window.scrollTo({top:0,behavior:'smooth'});
+    GT.sel={};GT.base={};GT.coAberto={};GT.coTr={};window.scrollTo({top:0,behavior:'smooth'});
     toast(`✓ Leitura salva · previsto ${hoje?'de hoje':'de amanhã'} ${ap?`atualizado em ${ap} curral(is)`:'já estava atualizado'}${rm?` · ${rm} apagada(s)`:''}`);return gRender();}
   if(!n&&!rm)return toast(so?'Marque a nota ou o % de IMS do '+so:'Marque a nota ou o % de IMS de pelo menos um curral');
   if(so){if(ap){if(hoje){marcarPrev();if(typeof render==='function')render();}else prevApi.guardarPrevDia(dia,obj);}
-    [GT.sel,GT.base,GT.coAberto].forEach(o=>{if(o)delete o[so];});const y=window.scrollY;gRender();window.scrollTo({top:y});
-    return toast(n?`${so}: leitura salva · previsto ${hoje?'de hoje':'de amanhã'} ${ap?'ajustado':'já estava assim'}`:`${so}: leitura apagada`);}if(!n){if(ap){if(hoje){marcarPrev();if(typeof render==='function')render();}else prevApi.guardarPrevDia(dia,obj);}GT.sel={};GT.base={};GT.coAberto={};window.scrollTo({top:0,behavior:'smooth'});toast(`${rm} leitura(s) apagada(s) junto com o previsto que tinham gerado`);return gRender();}
+    [GT.sel,GT.base,GT.coAberto,GT.coTr].forEach(o=>{if(o)delete o[so];});const y=window.scrollY;gRender();window.scrollTo({top:y});
+    return toast(n?`${so}: leitura salva · previsto ${hoje?'de hoje':'de amanhã'} ${ap?'ajustado':'já estava assim'}`:`${so}: leitura apagada`);}if(!n){if(ap){if(hoje){marcarPrev();if(typeof render==='function')render();}else prevApi.guardarPrevDia(dia,obj);}GT.sel={};GT.base={};GT.coAberto={};GT.coTr={};window.scrollTo({top:0,behavior:'smooth'});toast(`${rm} leitura(s) apagada(s) junto com o previsto que tinham gerado`);return gRender();}
   if(ap){if(hoje){marcarPrev();if(typeof render==='function')render();}else prevApi.guardarPrevDia(dia,obj);}
-  GT.sel={};GT.base={};GT.coAberto={};window.scrollTo({top:0,behavior:'smooth'});toast(`${n} leitura(s) salva(s) · previsto ${hoje?'de hoje':'de amanhã'} ${ap?`mudou em ${ap} curral(is)`:'já estava com esses valores'}${rm?` · ${rm} apagada(s)`:''}`);gRender();
+  GT.sel={};GT.base={};GT.coAberto={};GT.coTr={};window.scrollTo({top:0,behavior:'smooth'});toast(`${n} leitura(s) salva(s) · previsto ${hoje?'de hoje':'de amanhã'} ${ap?`mudou em ${ap} curral(is)`:'já estava com esses valores'}${rm?` · ${rm} apagada(s)`:''}`);gRender();
 }
 function aplicaPrev(c,total,obj){obj=obj||S.prev;const antes=JSON.stringify([1,2,3,4,5,6].map(k=>(obj[k]||{})[c]));
   prevApi.distribuir(c,total,prevApi.nTratos(c,obj),obj);return JSON.stringify([1,2,3,4,5,6].map(k=>(obj[k]||{})[c]))!==antes;}
@@ -3466,6 +3503,8 @@ $('gBox').addEventListener('click',e=>{
     GT.sel=GT.sel||{};if(GT.sel[c]&&GT.sel[c].rep===d){delete GT.sel[c];}else GT.sel[c]={n:best?best.n:null,kg,ims:null,rep:d};
     const y=window.scrollY;gRender();window.scrollTo({top:y});return;}
   if(a==='nota'){const c=b.dataset.c,n=+b.dataset.n;if(leitTravada(GT.dia||hojeKey(),c))return;GT.sel=GT.sel||{};GT.sel[c]=b.classList.contains('sel')?{n:null}:{n};const y=window.scrollY;gRender();window.scrollTo({top:y});return;}  // tocou de novo na mesma nota: desmarca
+  if(a==='coTratos'){const c=b.dataset.c;GT.coTr=GT.coTr||{};if(GT.coTr[c])delete GT.coTr[c];else{const lt=G.it[idLeit(GT.dia,c)],al=coTrAlvo(c);GT.coTr[c]=lt&&!lt.del&&Array.isArray(lt.split)&&Math.round(lt.split.reduce((x,v)=>x+v,0))===al?{alvo:al,kg:lt.split.slice()}:{};}const y=window.scrollY;gRender();window.scrollTo({top:y});return;}
+  if(a==='coTrPad'){const c=b.dataset.c;if(GT.coTr&&GT.coTr[c]){GT.coTr[c]={};const y=window.scrollY;gRender();window.scrollTo({top:y});}return;}
   if(a==='salvaCocho')return salvaCocho();
   if(a==='salvaCocho1')return salvaCocho(b.dataset.c);
   if(a==='cbExp')return confBatExp(b.dataset.o);
