@@ -565,7 +565,7 @@ table:has(#tbHist) td.c{text-align:left}
 tr.gClic{cursor:pointer}
 .gLote{display:flex;align-items:stretch;gap:12px;width:100%;text-align:left;padding:10px;background:var(--surface);border-radius:14px}
 .gSelo{flex:0 0 auto;min-width:88px;max-width:42%;background:var(--accent);color:#fff;border-radius:12px;padding:8px 10px;display:flex;flex-direction:column;justify-content:center;align-items:center;text-align:center}
-.gSelo small{font-size:.66rem;letter-spacing:.12em;text-transform:uppercase;color:var(--led);font-weight:700}
+.gSelo small{font-size:.66rem;letter-spacing:.12em;text-transform:uppercase;color:var(--led);font-weight:700}.gSelo small.lg{letter-spacing:.06em;white-space:nowrap}.gCochoMin .gSelo small.lg,.gCoTopo .gSelo small.lg,.gRelTopo .gSelo small.lg{font-size:.5rem;letter-spacing:.02em}
 .gSelo b{font-family:var(--display);font-stretch:condensed;font-weight:700;font-size:2.3rem;line-height:1;word-break:break-word}
 .gSelo b.longo{font-size:1.35rem}
 .gSelo.pasto{background:#2f6b3a}.gSelo.pasto small{color:#d9ef7a}
@@ -1352,7 +1352,7 @@ body.naInicio .topoTxt h1{font-size:clamp(16px,5vw,28px)!important}
 <div class="toast" id="toast" hidden></div>
 <script>
 'use strict';
-const APP_VERSAO='368';
+const APP_VERSAO='369';
 const APP_DATA='19/10/2026';
 const KEY='confinamento-completo-v1';
 const $=id=>document.getElementById(id);
