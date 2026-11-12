@@ -1034,6 +1034,8 @@ body.naInicio .topoTxt h1{font-size:clamp(16px,5vw,28px)!important}
 @keyframes balPisca{0%,100%{background:#c62828}50%{background:#8e0000}}
 #regFalha{position:fixed;left:50%;transform:translateX(-50%);top:calc(env(safe-area-inset-top,0px) + 4px);z-index:99980;max-width:calc(100% - 16px);background:#c62828;color:#fff;border:0;border-radius:99px;padding:3px 10px;font-size:.7rem;font-weight:700;line-height:1.2;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;box-shadow:0 2px 8px rgba(0,0,0,.3);text-align:center}
 #regFalha[hidden]{display:none}
+.pvSplC{cursor:pointer!important;text-decoration:underline dotted;text-underline-offset:3px}.pvSplC.on{background:#e8f5e9}.pvSplI{font-size:.95em}
+.pvSplRow td{padding:4px 0 10px!important}.pvSpl{padding:10px 12px;border-radius:12px;background:#f1f8e9;border:1px solid #c5e1a5}.pvSplCab,.pvSplLin{display:grid;grid-template-columns:auto 1fr 1fr;gap:8px;align-items:center}.pvSplCab{font-size:.75rem;font-weight:700;color:#5b6b7a;text-transform:uppercase;letter-spacing:.06em}.pvSplCab span:not(:first-child),.pvSplLin span{text-align:right;padding-right:8px}.pvSplLin{margin:4px 0}.pvSplLin b{white-space:nowrap}#tbPrev .pvSplLin input.cell{height:40px;width:100%!important;caret-color:auto;cursor:text}.pvSplLin.feito{color:#5b6b7a}.pvSplTot{margin:8px 0 4px}.pvSplTot .ok{color:#2e7d32;font-weight:700}.pvSplTot .bad{color:#c62828}.pvSpl .row{gap:8px}
 </style>
 </head>
 <body>
@@ -1353,7 +1355,7 @@ body.naInicio .topoTxt h1{font-size:clamp(16px,5vw,28px)!important}
 <div class="toast" id="toast" hidden></div>
 <script>
 'use strict';
-const APP_VERSAO='374';
+const APP_VERSAO='375';
 const APP_DATA='19/10/2026';
 const KEY='confinamento-completo-v1';
 const $=id=>document.getElementById(id);
@@ -2098,7 +2100,9 @@ function renderPrev(){
       const imsC=ims?(()=>{const p0=window.gImsDe?gImsDe(c,PV.dia,v||0):null,o0=p0?nf(p0,2):'';
         const pE=eI?(eI.tipo==='ims'?eI.val:(window.gImsDe?gImsDe(c,PV.dia,eI.val):null)):null,txt=eI?(pE?nf(pE,2):''):o0;
         return `<td><input class="cell imsIn${eI?(eI.tipo==='ims'?' mudou':' calc'):''}${tr?' feito':''}" type="text" readonly tabindex="-1" inputmode="none" data-ims="${esc_}" data-orig="${o0}" placeholder="%" value="${txt}"${tr?' disabled':''}>${eI&&eI.tipo==='ims'&&kgEd==null?'<small class="imsKg">sem lote</small>':''}</td>`;})():'';
-      return `<tr${ocultar?' hidden':''}><td class="alca" title="Arraste para mudar a ordem" aria-label="Arrastar ${esc_}">☰</td>${nome}${ims?imsC:''}${cel}${colR}${comAm?`<td class="num pvAm">${amDe(c)>0?fmt(amDe(c)):'—'}</td>`:''}${ac}</tr>`;}
+      const spl=ims&&!tr&&n>1,nomeT=spl?`<td class="c pvSplC${PV.split&&PV.split[c]?' on':''}" data-pvsplit="${esc_}" title="Dividir entre os tratos">${esc_} <span class="pvSplI">🐂</span></td>`:nome;
+      const nCol=4+(ims?1:0)+(comReal?2:0)+(comAm?1:0);
+      return `<tr${ocultar?' hidden':''}><td class="alca" title="Arraste para mudar a ordem" aria-label="Arrastar ${esc_}">☰</td>${nomeT}${ims?imsC:''}${cel}${colR}${comAm?`<td class="num pvAm">${amDe(c)>0?fmt(amDe(c)):'—'}</td>`:''}${ac}</tr>${spl&&!ocultar&&PV.split&&PV.split[c]?`<tr class="pvSplRow"><td colspan="${nCol}">${pvSplHTML(c,o)}</td></tr>`:''}`;}
     return `<tr${ocultar?' hidden':''}><td class="alca" title="Arraste para mudar a ordem" aria-label="Arrastar ${esc_}">☰</td>${comReal?`<td class="hora">${esc(horaDe(c))}</td>`:''}${nome}${cel}${colR}${ac}</tr>`;}).join('');
   $('pvTot').title=`${S.cadastro.length} currais cadastrados`;
   resumoPrev();
@@ -2139,15 +2143,53 @@ function aplicarKgEd(i,t){const c=S.cadastro[i];if(c==null)return true;PV.ed=PV.
   if(t===''||t===tecOrig){}else if(isNaN(v)||v<0){toast('Digite uma quantidade válida');return false;}
   else if(Math.round(v)===Math.round(cn)&&!(PV.ed[c]&&PV.ed[c].tipo==='ims'))delete PV.ed[c];else PV.ed[c]={tipo:'kg',val:Math.round(v)};
   pvEdPinta(c);return true;}
+/* ---------- 🐂 Previsto · Dia todo · Editar: dividir o total do curral entre os tratos (em % ou kg) ----------
+   PV.split[c]={alvo,kg:[...]} um valor por trato; trato já feito fica travado com o realizado. A diferença de um trato vai para os próximos
+   que faltam; no último que falta, muda o total do curral. Só aplica se a soma dos tratos for igual ao total do curral. */
+function pvSplAlvo(c){const e=PV.ed&&PV.ed[c];if(e){if(e.tipo==='kg')return Math.round(e.val);const m=window.gMnIms?gMnIms(c,e.val,PV.dia):null;return m==null?0:arredPrev(m);}const v=pvMapa()[c];return typeof v==='number'?Math.round(v):0;}
+function pvSplInfo(c,o){const ks=tratosDoCurral(c,o),H=HIST.filter(r=>r.dia===PV.dia&&r.curral===c),feito=ks.map(k=>H.some(r=>+r.trato===k)),real=ks.map(k=>H.filter(r=>+r.trato===k).reduce((a,r)=>a+(+r.forn||0),0));return {ks,feito,real};}
+function pvSplAjusta(c,o){const s=PV.split[c],alvo=pvSplAlvo(c),I=pvSplInfo(c,o);
+  if(!s.kg||s.alvo!==alvo||s.kg.length!==I.ks.length){const atual=I.ks.map((k,i)=>I.feito[i]?I.real[i]:(+((o[k]||{})[c])||0));
+    const fixo=atual.reduce((a,v,i)=>a+(I.feito[i]?v:0),0),pend=I.ks.map((_,i)=>i).filter(i=>!I.feito[i]),sp=pend.reduce((a,i)=>a+atual[i],0),alvoP=Math.max(0,alvo-fixo);let resto=alvoP;
+    const pc=divisao(I.ks.length),w=pend.map(i=>sp>0?atual[i]:(+pc[i]||1)),sw=w.reduce((a,x)=>a+x,0);
+    s.kg=atual.slice();pend.forEach((i,j)=>{const v=j===pend.length-1?resto:Math.round(alvoP*w[j]/sw);s.kg[i]=Math.max(0,v);resto-=s.kg[i];});s.alvo=alvo;}
+  return {s,I};}
+function pvSplHTML(c,o){const {s,I}=pvSplAjusta(c,o);if(!(s.alvo>0))return '<p class="note">Digite o total do curral para dividir entre os tratos.</p>';
+  return `<div class="pvSpl" data-pvspl="${esc(c)}"><div class="pvSplCab"><span>Trato</span><span>%</span><span>kg</span></div>${I.ks.map((k,i)=>I.feito[i]
+    ?`<div class="pvSplLin feito"><b>${k}º trato</b><span class="num">${nf(s.kg[i]/s.alvo*100,1)}</span><span class="num">${fmt(s.kg[i])} ✓</span></div>`
+    :`<div class="pvSplLin"><b>${k}º trato</b><input class="cell num" inputmode="decimal" data-psp="${esc(c)}|${i}" value="${nf(s.kg[i]/s.alvo*100,1)}"><input class="cell num" inputmode="numeric" data-psk="${esc(c)}|${i}" value="${s.kg[i]}"></div>`).join('')}
+    <div class="pvSplTot" data-pvspltot="${esc(c)}">${pvSplTot(c)}</div>${I.feito.some(Boolean)?'<p class="note">✓ trato já feito: fica com o realizado.</p>':''}
+    <div class="row"><button type="button" class="mini" data-pvsplpad="${esc(c)}">↺ Divisão padrão</button><button type="button" class="mini" data-pvsplit="${esc(c)}">✕ Fechar</button></div></div>`;}
+function pvSplTot(c){const s=PV.split&&PV.split[c];if(!s||!s.kg)return '';const tot=s.kg.reduce((a,v)=>a+(+v||0),0),d=tot-s.alvo;
+  return d===0?`<span class="ok">✓ Total ${fmt(tot)} kg = previsto do curral ${fmt(s.alvo)} kg</span>`:`<span class="bad">Total ${fmt(tot)} kg · previsto ${fmt(s.alvo)} kg · ${d>0?'sobram':'faltam'} <b>${fmt(Math.abs(d))} kg</b></span>`;}
+document.addEventListener('click',e=>{const b=e.target.closest('[data-pvsplit],[data-pvsplpad]');if(!b||!PV.ims)return;e.preventDefault();e.stopPropagation();
+  PV.split=PV.split||{};if(b.dataset.pvsplpad){const c=b.dataset.pvsplpad,o=pvObj(),I=pvSplInfo(c,o);PV.split[c]={};const alvo=pvSplAlvo(c),fixo=I.ks.reduce((a,k,i)=>a+(I.feito[i]?I.real[i]:0),0),pc=divisao(I.ks.length);
+    const pend=I.ks.map((_,i)=>i).filter(i=>!I.feito[i]),sw=pend.reduce((a,i)=>a+(+pc[i]||0),0);let resto=Math.max(0,alvo-fixo);const kg=I.ks.map((k,i)=>I.feito[i]?I.real[i]:0);
+    pend.forEach((i,j)=>{const v=j===pend.length-1?resto:Math.min(resto,arredPrev((alvo-fixo)*(+pc[i]||0)/sw));kg[i]=Math.max(0,v);resto-=kg[i];});PV.split[c]={alvo,kg};}
+  else{const c=b.dataset.pvsplit;if(PV.split[c])delete PV.split[c];else PV.split[c]={};}
+  const y=window.scrollY;renderPrev();window.scrollTo({top:y});},true);
+document.addEventListener('focusin',e=>{const x=e.target;if(!x.matches||!x.matches('#tbPrev [data-psp],#tbPrev [data-psk]'))return;const c=(x.dataset.psp||x.dataset.psk).split('|')[0],s=PV.split&&PV.split[c];if(s&&s.kg)s.snap=s.kg.slice();});
+document.addEventListener('input',e=>{const x=e.target;if(!x.matches||!x.matches('#tbPrev [data-psp],#tbPrev [data-psk]'))return;const ehP=x.matches('[data-psp]'),[c,i0]=(ehP?x.dataset.psp:x.dataset.psk).split('|'),i=+i0,s=PV.split&&PV.split[c];if(!s)return;
+  const I=pvSplInfo(c,pvObj()),base=s.snap||s.kg.slice(),v=parseNum(x.value);let nv=ehP?(isFinite(v)&&v>=0?Math.round(s.alvo*v/100):0):(isFinite(v)&&v>=0?Math.round(v):0);
+  const kg=base.slice();kg[i]=nv;const dif=base[i]-nv,pend=kg.map((_,j)=>j).filter(j=>!I.feito[j]&&j!==i),alvos=pend.filter(j=>j>i);   // último que falta: não repassa, muda o total do curral
+  const sb=alvos.reduce((a,j)=>a+base[j],0);let resto=dif;alvos.forEach((j,n)=>{const parte=n===alvos.length-1?resto:Math.round(dif*(sb>0?base[j]/sb:1/alvos.length));const x2=Math.max(0,base[j]+parte);resto-=(x2-base[j]);kg[j]=x2;});
+  s.kg=kg;if(!alvos.length){const tot=kg.reduce((a,v)=>a+(+v||0),0);s.alvo=tot;PV.ed=PV.ed||{};PV.ed[c]={tipo:'kg',val:tot};try{pvEdPinta(c);}catch(_){}}
+  kg.forEach((q,j)=>{const ek=document.querySelector(`#tbPrev [data-psk="${CSS.escape(c)}|${j}"]`),ep=document.querySelector(`#tbPrev [data-psp="${CSS.escape(c)}|${j}"]`);if(ek&&ek!==x)ek.value=q;if(ep&&ep!==x)ep.value=s.alvo>0?nf(q/s.alvo*100,1):'';});
+  const tt=document.querySelector(`#tbPrev [data-pvspltot="${CSS.escape(c)}"]`);if(tt)tt.innerHTML=pvSplTot(c);});
 function aplicarTec(i,buf){return tecTipo==='ims'?aplicarIms(i,buf):aplicarPrev(i,buf);}
-function pvEdSair(){if(window.HPV==='ims')setTimeout(()=>{if(window.HPV==='ims')hpvFechar();},0);tecIdx=null;$('teclado').hidden=true;document.body.classList.remove('comteclado');document.querySelectorAll('#tbPrev input.sel').forEach(x=>x.classList.remove('sel'));PV.ims=false;PV.ed={};tecTipo='kg';renderPrev();}
+function pvEdSair(){if(window.HPV==='ims')setTimeout(()=>{if(window.HPV==='ims')hpvFechar();},0);tecIdx=null;$('teclado').hidden=true;document.body.classList.remove('comteclado');document.querySelectorAll('#tbPrev input.sel').forEach(x=>x.classList.remove('sel'));PV.ims=false;PV.ed={};PV.split={};tecTipo='kg';renderPrev();}
 $('btnIms').onclick=()=>{if(!pvEditavel())return;if(PV.ims){pvEdSair();return;}fecharTeclado();PV.ims=true;PV.ed={};renderPrev();};
 document.addEventListener('click',e=>{const b=e.target.closest('[data-pvims]');if(!b)return;$(b.dataset.pvims==='ok'?'pvImsAplicar':'pvImsCanc').click();});
 $('pvImsCanc').onclick=()=>{const n=Object.keys(PV.ed||{}).length;pvEdSair();toast(n?'Alteração cancelada: ficou como estava':'Cancelado');};
 $('pvImsAplicar').onclick=()=>{if(!pvEditavel())return;if(tecIdx!=null)fecharTeclado();const o=pvObj();let n=0,sem=[],feitosTodos=[];
   if(PV.t>0){const k=String(PV.t),m=mapaPv(k);Object.entries(PV.ed||{}).forEach(([c,e])=>{if(HIST.some(r=>r.dia===PV.dia&&r.curral===c&&+r.trato===PV.t)){feitosTodos.push(c);return;}const antes=m[c];if(antes===e.val)return;m[c]=e.val;desfPrev.push({d:PV.dia,k,nome:c,antes});n++;});}
-  else Object.entries(PV.ed||{}).forEach(([c,e])=>{let kg;if(e.tipo==='kg')kg=e.val;else{const m=window.gMnIms?gMnIms(c,e.val,PV.dia):null;if(m==null){sem.push(c);return;}kg=arredPrev(m);}
+  else{/* divisão por trato aberta: o total dos tratos tem que bater com o previsto do curral */
+    for(const c of Object.keys(PV.split||{})){const {s}=pvSplAjusta(c,o);const tot=(s.kg||[]).reduce((a,v)=>a+(+v||0),0);if(s.alvo>0&&tot!==s.alvo){toast(`${c}: a soma dos tratos (${fmt(tot)} kg) tem que ser igual ao previsto (${fmt(s.alvo)} kg)`);return;}}
+    Object.entries(PV.ed||{}).forEach(([c,e])=>{let kg;if(e.tipo==='kg')kg=e.val;else{const m=window.gMnIms?gMnIms(c,e.val,PV.dia):null;if(m==null){sem.push(c);return;}kg=arredPrev(m);}
     const antes=snapTratos(c,o);if(!ajustarTotalCurral(c,kg,o)){feitosTodos.push(c);return;}desfPrev.push({d:PV.dia,k:'T',nome:c,antes});n++;});
+    Object.keys(PV.split||{}).forEach(c=>{const {s,I}=pvSplAjusta(c,o);if(!(s.alvo>0))return;const antes=snapTratos(c,o);let mud=false;
+      I.ks.forEach((k,i)=>{if(I.feito[i])return;const m=(o[String(k)]=o[String(k)]||{}),v=Math.max(0,Math.round(+s.kg[i]||0));if((+m[c]||0)!==v){mud=true;if(v>0)m[c]=v;else delete m[c];}});
+      if(mud){if(!(PV.ed&&PV.ed[c]))desfPrev.push({d:PV.dia,k:'T',nome:c,antes});if(!(PV.ed&&PV.ed[c]))n++;}});}
   if(!n){if(sem.length||feitosTodos.length){toast(sem.length?'Sem lote/ração cadastrado para: '+sem.join(', '):'Todos os tratos de hoje já foram feitos: '+feitosTodos.join(', '));return;}pvEdSair();toast('Nada foi alterado');return;}
   marcarPv();if(PV.dia===hojeKey()){editandoPrev=true;render();editandoPrev=false;}pvEdSair();
   toast(`Previsto alterado em ${n} curral(is)`+(sem.length?` · sem lote: ${sem.join(', ')}`:'')+(feitosTodos.length?` · já tratados (não muda): ${feitosTodos.join(', ')}`:''));};
