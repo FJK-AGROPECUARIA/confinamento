@@ -94,7 +94,7 @@ const NOTAS_PADRAO=[-4,-3,-2,-1,0,1,2,3,4].map(n=>({n,t:n>0?'Aumentar':n<0?'Dimi
 const NOTAS_VER=3;
 function gCfg(){const c=G.it.config&&!G.it.config.del?G.it.config:{uid:'config',tipo:'config'};
   if(!Array.isArray(c.taxa))c.taxa=[];if(!Array.isArray(c.notas)||!c.notas.length||c.notasV!==NOTAS_VER)c.notas=NOTAS_PADRAO.map(x=>Object.assign({},x));
-  if(!Array.isArray(c.racas)||!c.racas.length)c.racas=RACAS_PADRAO.slice();if(!Array.isArray(c.sexos)||!c.sexos.length)c.sexos=SEXOS_PADRAO.map(x=>Object.assign({},x));if(!Array.isArray(c.cats)||!c.cats.length)c.cats=CATS_PADRAO.slice();else c.cats=[...new Set(c.cats.map(x=>CAT_PLURAL[x]||x))];if(!ok(c.arred))c.arred=10;if(!ok(c.pvIni))c.pvIni=2.2;if(!ok(c.pvIniC))c.pvIniC=2;if(!ok(c.pvIniP))c.pvIniP=1.2;if(!ok(c.rc))c.rc=52;if(!ok(c.funrural))c.funrural=1.63;return c;}
+  if(!Array.isArray(c.racas)||!c.racas.length)c.racas=RACAS_PADRAO.slice();else if(!c.racas.includes('Variados'))c.racas=c.racas.concat('Variados');if(!Array.isArray(c.sexos)||!c.sexos.length)c.sexos=SEXOS_PADRAO.map(x=>Object.assign({},x));if(!Array.isArray(c.cats)||!c.cats.length)c.cats=CATS_PADRAO.slice();else c.cats=[...new Set(c.cats.map(x=>CAT_PLURAL[x]||x))];if(!ok(c.arred))c.arred=10;if(!ok(c.pvIni))c.pvIni=2.2;if(!ok(c.pvIniC))c.pvIniC=2;if(!ok(c.pvIniP))c.pvIniP=1.2;if(!ok(c.rc))c.rc=52;if(!ok(c.funrural))c.funrural=1.63;return c;}
 /* taxa operacional por cabeça/dia: uma para o confinamento e outra para o pasto (podem ser iguais ou diferentes).
    Pasto sem taxa própria naquela data usa a do confinamento (assim os dias antigos não mudam) */
 const taxaEm=(dia,c)=>{const g=gCfg(),p=c&&linhaDe(c)==='P'&&Array.isArray(g.taxaP)?vig(g.taxaP,dia):null,v=p||vig(g.taxa,dia);return v?+v.rs||0:0;};
@@ -325,7 +325,7 @@ function gRaiz(t){GT={t};gPilha.length=0;const alvo=RAIZ[t]==='cocho'&&!document
 window.gAbrir=modo=>{const leit=RAIZ[GT.t]==='cocho';if(modo==='leit'&&!leit)GT={t:'cocho'};if(modo==='leit'&&leit)GT.coAberto={};/* ao entrar de novo: as já salvas voltam recolhidas */if(modo==='gest'&&leit&&!document.body.classList.contains('modoGest'))GT={t:'home'};gRender();if(navigator.onLine)gSync(true).catch(()=>{});};
 /* uma vez: observações de relatório já lançadas passam para MAIÚSCULA */
 function obsMaiusc(){if(obsMaiusc.ok)return;if(typeof bloqueado==='function'&&bloqueado())return;const L=gTodos('lote');if(!L.length)return;obsMaiusc.ok=1;
-  L.forEach(l=>{const o=l.resObs||'';if(o&&o!==o.toUpperCase()){const c=JSON.parse(JSON.stringify(l));c.resObs=o.toUpperCase();gPut(c);}});}
+  L.forEach(l=>{const o=l.resObs||'',up=o&&o!==o.toUpperCase(),bg=l.cat==='Bois'||l.cat==='Boi';if(up||bg){const c=JSON.parse(JSON.stringify(l));if(up)c.resObs=o.toUpperCase();if(bg)c.cat='Boi gordo';gPut(c);}});}   // e categoria "Bois" vira "Boi gordo"
 function gRender(){try{obsMaiusc();}catch(_){}if(GT&&GT.t!=='rel'&&GT.t!=='simul')RELCMP=null;if(GT&&GT.t!=='simul')SIMV=null;if(GT&&GT.t!=='lotes')gLotAb.clear();   // saiu da lista de lotes: ao voltar, todos os cards abrem minimizados
   else if(GT&&GT.t==='lotes'&&gRender.ultEnc!==undefined&&gRender.ultEnc!==!!GT.enc)gLotAb.clear();if(GT&&GT.t==='lotes')gRender.ultEnc=!!GT.enc;
   if(GT&&GT.t==='lotes'&&!['lotes','lote','rel','loteForm','saiForm','custoForm','entNova'].includes(gRender.ultTela)){const hj=hojeKey();gArqIni=somaDias(hj,-30);gArqFim=hj;gArqSel=false;gArqDesm.clear();gResFil='S';}   // arquivados: ao chegar de outro menu, filtro volta para os últimos 30 dias
@@ -394,14 +394,14 @@ function navData(id,dia,rot){const hj=hojeKey(),[y,m,d]=dia.split('-').map(Numbe
 const custosDe=l=>gTodos('custo').filter(c=>c.lote===l.uid).sort(porDia);
 const TIPOS_CUSTO=['Sanidade / vacina','Medicamento','Mão de obra','Frete','Outros'];
 const SEXOS=[['','Selecione'],['M','Macho'],['F','Fêmea']];
-const CATS_PADRAO=['Bezerros machos','Garrotes','Bois','Bezerras fêmeas','Novilhas','Vacas'];
-const CAT_PLURAL={'Bezerro':'Bezerros machos','Bezerro macho':'Bezerros machos','Bezerros macho':'Bezerros machos','Garrote':'Garrotes','Boi':'Bois','Bezerra':'Bezerras fêmeas','Bezerra fêmea':'Bezerras fêmeas','Bezerras fêmea':'Bezerras fêmeas','Novilha':'Novilhas','Vaca':'Vacas','Touro':'Touros'};
+const CATS_PADRAO=['Bezerros machos','Garrotes','Boi gordo','Bezerras fêmeas','Novilhas','Vacas'];
+const CAT_PLURAL={'Bezerro':'Bezerros machos','Bezerro macho':'Bezerros machos','Bezerros macho':'Bezerros machos','Garrote':'Garrotes','Boi':'Boi gordo','Bois':'Boi gordo','Bezerra':'Bezerras fêmeas','Bezerra fêmea':'Bezerras fêmeas','Bezerras fêmea':'Bezerras fêmeas','Novilha':'Novilhas','Vaca':'Vacas','Touro':'Touros'};
 const catNorm=c=>CAT_PLURAL[c]||(c||'');
 const opCats=atual=>[['','Selecione']].concat(gCfg().cats.map(c=>[c,c])).concat(atual&&!gCfg().cats.includes(atual)?[[atual,atual]]:[]);
 const SISTEMAS=[['Confinamento','🏠 Confinamento'],['Pasto com suplementação','🌿 Pasto']];
 const tipoDoSistema=v=>v==='Pasto com suplementação'?'P':'C';
 const opCurraisTipo=(tipo,atual)=>[['','Selecione']].concat(opCurrais(atual).filter(([n])=>n===atual||!window.curraisApi||curraisApi.info(n).tipo===tipo));
-const RACAS_PADRAO=['Angus','Cruzado','Nelore'];
+const RACAS_PADRAO=['Angus','Cruzado','Nelore','Variados'];
 /* sexo: só Macho e Fêmea (lotes antigos com macho inteiro/castrado aparecem como Macho) */
 /* sexos: cadastro em Configurações › Animais (Macho e Fêmea já vêm). Código fica no lote (M, F ou o nome de um sexo novo); mudar o nome não mexe nos lotes */
 const SEXOS_PADRAO=[{c:'M',n:'Macho'},{c:'F',n:'Fêmea'}];
@@ -666,9 +666,9 @@ const resBts=(l,mini)=>{const d=resDesc(l);if(mini)return `<span class="gResTag 
   return `<label class="gResLin ${d?'no':'ok'}"><span>Considerar resultado deste relatório</span><select data-rescons="${l.uid}"><option value="1"${d?'':' selected'}>Sim</option><option value="0"${d?' selected':''}>Não</option></select></label>
   <div class="gResObs ${d?'no':'ok'}"><label for="gResObs">Observação deste relatório</label><textarea id="gResObs" data-resobs="${l.uid}" rows="2" placeholder="Escreva aqui alguma observação sobre este relatório">${esc(l.resObs||'')}</textarea></div>`;};
 /* nome do lote e observação do relatório: sempre em letra MAIÚSCULA (já enquanto digita; teclado já abre em maiúscula) */
-const ehMaiusc=x=>x&&x.matches&&(x.matches('#gBox textarea[data-resobs]')||(x.id==='gf_nome'&&GT&&(GT.t==='loteForm'||GT.t==='entNova')));
+const ehMaiusc=x=>x&&x.matches&&(x.matches('textarea[data-resobs]')||/^(gf_\w*[Oo]bs\w*|fzObs|gResObs|gf_cnome)$/.test(x.id||'')||(x.id==='gf_nome'&&GT&&(GT.t==='loteForm'||GT.t==='entNova')));   // todo campo de observação + nome do lote
 document.addEventListener('focusin',e=>{const x=e.target;if(!ehMaiusc(x))return;x.setAttribute('autocapitalize','characters');x.style.textTransform='uppercase';});
-document.addEventListener('input',e=>{const x=e.target;if(!x.matches||!(x.matches('#gBox textarea[data-resobs]')||(x.id==='gf_nome'&&GT&&(GT.t==='loteForm'||GT.t==='entNova'))))return;const v=x.value,u=v.toUpperCase();if(v===u)return;const a=x.selectionStart,b=x.selectionEnd;x.value=u;try{x.setSelectionRange(a,b);}catch(_){}});
+document.addEventListener('input',e=>{const x=e.target;if(!ehMaiusc(x))return;const v=x.value,u=v.toUpperCase();if(v===u)return;const a=x.selectionStart,b=x.selectionEnd;x.value=u;try{x.setSelectionRange(a,b);}catch(_){}});
 document.addEventListener('change',e=>{const x=e.target;if(!x.matches||!x.matches('#gBox textarea[data-resobs]'))return;if(typeof bloqueado==='function'&&bloqueado()){gRender();return;}
   const l=G.it[x.dataset.resobs];if(!l)return;const v=x.value.trim().toUpperCase();if((l.resObs||'')===v)return;const c=JSON.parse(JSON.stringify(l));c.resObs=v;gPut(c);toast('Observação salva');});
 document.addEventListener('change',e=>{const s_=e.target;if(!s_.matches||!s_.matches('#gBox select[data-rescons]'))return;if(typeof bloqueado==='function'&&bloqueado()){gRender();return;}
@@ -684,7 +684,7 @@ function tLotes(t){
     const sub=[sexoTxt(l.sexo),l.raca,catNorm(l.cat)].filter(Boolean).join(' · ');
     const ab=gLotAb.has(l.uid);
     if(t.enc)return `<div class="gLote gLoteV gLoteMin gLoteArq${gArqSel&&gArqDesm.has(l.uid)?' gArqFora':''}${resDesc(l)?' gResDescL':''}"><div class="gLoteTopo">${gArqSel?`<label class="gArqChk"><input type="checkbox" data-arqchk="${l.uid}"${gArqDesm.has(l.uid)?'':' checked'}></label>`:''}<div class="gLoteSeloAb">${seloCurral(c)}<div class="gFechDt">🔒 Finalizado em <b>${fim?dB(fim):'—'}</b></div>${resBts(l,true)}<button type="button" class="lima gLoteAbrir" data-g="lote" data-id="${l.uid}">Abrir lote ›</button></div>
-      <div class="gLoteInfo">${(()=>{const C=calcLoteFix(l),lu=C.lucro,sub2=[catNorm(l.cat),l.raca].filter(Boolean).join(' · ');return `<span class="gArqLin1"><b class="gArqNome">${esc(l.nome)}</b>${sub2?' · '+esc(sub2):''}</span><span class="gArqLin1"><span class="gRacLote">🌾 ${esc(r?r.nome:'sem ração')}</span></span><span class="gArqLin1 gLucLin">Ent ${dCurto(l.ent.dia)} · <b>${nf(Math.max(0,difDias(l.ent.dia,ref)))}</b> dias</span>
+      <div class="gLoteInfo">${(()=>{const C=calcLoteFix(l),lu=C.lucro,sub2=[l.raca,catNorm(l.cat)].filter(Boolean).join(' · ');return `<span class="gArqLin1"><b class="gArqNome">${esc(l.nome)}</b></span>${sub2?`<span class="gArqLin1">${esc(sub2)}</span>`:''}<span class="gArqLin1"><span class="gRacLote">🌾 ${esc(r?r.nome:'sem ração')}</span></span><span class="gArqLin1 gLucLin">Ent ${dCurto(l.ent.dia)} · <b>${nf(Math.max(0,difDias(l.ent.dia,ref)))}</b> dias</span>
         <span class="gLoteResumo"><b>${nf(C.cabE)}</b> entradas${ok(C.pesoE)?` · <b style="white-space:nowrap">${nf(C.pesoE,0)} kg</b>`:''}</span><span class="gLoteResumo gLucLin" style="font-size:.93em">${vendTxt(l,C.cabV,'</span><span class="gLoteResumo gLucLin" style="font-size:.93em">')}${ok(C.pesoV)?` · <b style="white-space:nowrap">${nf(C.pesoV,0)} kg</b>`:''}</span>${C.mortes?`<span class="gLoteResumo"><b>${nf(C.mortes)}</b> mortes</span>`:''}${C.cabT?`<span class="gLoteResumo"><b>${nf(C.cabT)}</b> transferidos</span>`:''}${C.faltas?`<span class="gLoteResumo"><b>${nf(C.faltas)}</b> animais faltantes</span>`:''}
         ${ok(lu)?(()=>{const cor=`style="color:${lu>=0?'#2e7d32':'#c62828'}"`,P=lu>=0?'Lucro':'Prejuízo';return `<span class="gLoteResumo gLucLin" ${cor}>${P} <b>${nf(lu,2)}</b>/tot</span>${ok(C.lucroCab)?`<span class="gLoteResumo gLucLin" ${cor}>${P} <b>${nf(C.lucroCab,2)}</b>/cab</span>`:''}${ok(C.rentabM)?`<span class="gLoteResumo gLucLin" ${cor}>${P} <b>${pc(C.rentabM,2)}</b> a.m.</span>`:''}`;})():''}
         `;})()}</div></div>${(l.resObs||'').trim()?`<div class="gArqObs"><b>OBS:</b> ${esc(l.resObs.trim())}</div>`:''}</div>`;
