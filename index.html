@@ -1034,8 +1034,10 @@ body.naInicio .topoTxt h1{font-size:clamp(16px,5vw,28px)!important}
 @keyframes balPisca{0%,100%{background:#c62828}50%{background:#8e0000}}
 #regFalha{position:fixed;left:50%;transform:translateX(-50%);top:calc(env(safe-area-inset-top,0px) + 4px);z-index:99980;max-width:calc(100% - 16px);background:#c62828;color:#fff;border:0;border-radius:99px;padding:3px 10px;font-size:.7rem;font-weight:700;line-height:1.2;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;box-shadow:0 2px 8px rgba(0,0,0,.3);text-align:center}
 #regFalha[hidden]{display:none}
-.pvSplC{cursor:pointer!important;text-decoration:underline dotted;text-underline-offset:3px}.pvSplC.on{background:#e8f5e9}.pvSplI{display:inline-flex;align-items:center;justify-content:center;margin-left:8px;padding:1px 2px;border:1.5px solid #2e6b2f;border-radius:7px;background:#fff;vertical-align:middle}.pvSplSalva{flex:0 0 auto;width:52px!important;min-height:0!important;height:44px;padding:0!important;border-radius:12px;background:#2e6b2f;color:#fff;font-size:1.3rem;border:0}
-.pvSplRow td{padding:4px 0 10px!important}.pvSpl{padding:10px 12px;border-radius:12px;background:#f1f8e9;border:1px solid #c5e1a5}.pvSplCab,.pvSplLin{display:grid;grid-template-columns:auto 1fr 1fr;gap:8px;align-items:center}.pvSplCab{font-size:.75rem;font-weight:700;color:#5b6b7a;text-transform:uppercase;letter-spacing:.06em}.pvSplCab span:not(:first-child),.pvSplLin span{text-align:right;padding-right:8px}.pvSplLin{margin:4px 0}.pvSplLin b{white-space:nowrap}#tbPrev .pvSplLin input.cell{height:40px;width:100%!important;caret-color:auto;cursor:text}.pvSplLin.feito{color:#5b6b7a}.pvSplTot{margin:8px 0 4px}.pvSplTot .ok{color:#2e7d32;font-weight:700}.pvSplTot .bad{color:#c62828}.pvSpl .row{gap:8px;flex-wrap:nowrap!important}.pvSpl .row .mini{flex:1 1 0;min-width:0;white-space:nowrap;padding-left:6px;padding-right:6px}#tbPrev td.pvSplC{white-space:nowrap!important}
+.pvSplC{cursor:pointer!important;text-decoration:underline dotted;text-underline-offset:3px}.pvSplC.on{background:#e8f5e9}.pvSplI{display:inline-flex;align-items:center;justify-content:center;margin-right:8px;padding:1px 2px;border:1.5px solid #2e6b2f;border-radius:7px;background:#fff;vertical-align:middle}.pvSplSalva{flex:0 0 auto;width:52px!important;min-height:0!important;height:44px;padding:0!important;border-radius:12px;background:#2e6b2f;color:#fff;font-size:1.3rem;border:0}
+.pvSplRow td{padding:4px 0 10px!important}.pvSpl{padding:10px 12px;border-radius:12px;background:#f1f8e9;border:1px solid #c5e1a5}.pvSplCab,.pvSplLin{display:grid;grid-template-columns:auto 1fr 1fr;gap:8px;align-items:center}.pvSplCab{font-size:.75rem;font-weight:700;color:#5b6b7a;text-transform:uppercase;letter-spacing:.06em}.pvSplCab span:not(:first-child),.pvSplLin span{text-align:right;padding-right:8px}.pvSplLin{margin:4px 0}.pvSplLin b{white-space:nowrap}#tbPrev .pvSplLin input.cell{height:40px;width:100%!important;caret-color:auto;cursor:text}.pvSplLin.feito{color:#5b6b7a}.pvSplTot{margin:8px 0 4px}.pvSplTot .ok{color:#2e7d32;font-weight:700}.pvSplTot .bad{color:#c62828}.pvSpl .row{gap:8px;flex-wrap:nowrap!important}.pvSpl .row .mini{flex:1 1 0;min-width:0;white-space:nowrap;padding-left:6px;padding-right:6px}#tbPrev td.pvSplC,#tbPrev td.pvSplN{white-space:nowrap!important}.pvSplI.vazio{visibility:hidden;width:26px;height:24px}.pvSplC{text-decoration:none!important}
+#tecSalvaRow{margin-top:8px;display:grid;grid-template-columns:1fr 1fr;gap:8px}#tecSalvaRow[hidden]{display:none}#tecSalvaRow .tecVerde{background:#2e6b2f;color:#fff;border-color:#2e6b2f;font-weight:800}#tecSalvaRow .tecVerm{background:#c62828;color:#fff;border-color:#c62828;font-weight:800}
+.pvSplC.guard .pvSplI{background:#2e6b2f}.pvSplC.guard .pvSplI svg *{stroke:#fff;fill:#fff}.pvSplC.guard .pvSplI svg line{fill:none}
 </style>
 </head>
 <body>
@@ -1293,6 +1295,7 @@ body.naInicio .topoTxt h1{font-size:clamp(16px,5vw,28px)!important}
     <button data-k="limpar" class="tecSec">Limpar</button><button data-k="0">0</button><button data-k="del" class="tecSec">⌫</button>
   </div>
   <div class="tecAcoes tecAcoes4"><button data-k="fechar" class="tecSec">Fechar</button><button data-k="voltar" class="tecSec" id="tecVoltar">↶ Voltar</button><button data-k="up" class="tecAzul">▲ Anterior</button><button data-k="ok" class="tecAzul">Próximo ▼</button></div>
+  <div class="tecAcoes" id="tecSalvaRow" hidden><button data-k="cancelar" class="tecVerm">✕ Cancelar</button><button data-k="salvar" class="tecVerde">💾 Salvar</button></div>
 </div>
 <div class="teclado" id="tecBal" hidden>
   <div class="tecTopo"><span id="balNome"></span><b id="balValor">—</b></div>
@@ -1355,7 +1358,7 @@ body.naInicio .topoTxt h1{font-size:clamp(16px,5vw,28px)!important}
 <div class="toast" id="toast" hidden></div>
 <script>
 'use strict';
-const APP_VERSAO='377';
+const APP_VERSAO='378';
 const APP_DATA='19/10/2026';
 const KEY='confinamento-completo-v1';
 const $=id=>document.getElementById(id);
@@ -2100,9 +2103,9 @@ function renderPrev(){
       const imsC=ims?(()=>{const p0=window.gImsDe?gImsDe(c,PV.dia,v||0):null,o0=p0?nf(p0,2):'';
         const pE=eI?(eI.tipo==='ims'?eI.val:(window.gImsDe?gImsDe(c,PV.dia,eI.val):null)):null,txt=eI?(pE?nf(pE,2):''):o0;
         return `<td><input class="cell imsIn${eI?(eI.tipo==='ims'?' mudou':' calc'):''}${tr?' feito':''}" type="text" readonly tabindex="-1" inputmode="none" data-ims="${esc_}" data-orig="${o0}" placeholder="%" value="${txt}"${tr?' disabled':''}>${eI&&eI.tipo==='ims'&&kgEd==null?'<small class="imsKg">sem lote</small>':''}</td>`;})():'';
-      const spl=ims&&!tr&&n>1,nomeT=spl?`<td class="c pvSplC${PV.split&&PV.split[c]?' on':''}" data-pvsplit="${esc_}" title="Dividir entre os tratos">${esc_} <span class="pvSplI"><svg width="20" height="20" viewBox="0 0 30 30" fill="none" stroke="#2e6b2f" stroke-width="2.6" stroke-linecap="round" aria-hidden="true" style="vertical-align:middle"><g fill="#2e6b2f" stroke="none" font-size="8" font-weight="800" font-family="system-ui,sans-serif"><text x="3" y="10.5">1</text><text x="3" y="18.5">2</text><text x="3" y="26.5">3</text></g><line x1="11" y1="8" x2="27" y2="8"/><line x1="11" y1="16" x2="22" y2="16"/><line x1="11" y1="24" x2="18" y2="24"/></svg></span></td>`:nome;
+      const spl=ims&&!tr&&n>1,nomeT=spl?`<td class="c pvSplC${PV.split&&PV.split[c]?' on':''}${PV.split&&PV.split[c]&&PV.split[c].fechado?' guard':''}" data-pvsplit="${esc_}" title="Dividir entre os tratos"><span class="pvSplI"><svg width="20" height="20" viewBox="0 0 30 30" fill="none" stroke="#2e6b2f" stroke-width="2.6" stroke-linecap="round" aria-hidden="true" style="vertical-align:middle"><g fill="#2e6b2f" stroke="none" font-size="8" font-weight="800" font-family="system-ui,sans-serif"><text x="3" y="10.5">1</text><text x="3" y="18.5">2</text><text x="3" y="26.5">3</text></g><line x1="11" y1="8" x2="27" y2="8"/><line x1="11" y1="16" x2="22" y2="16"/><line x1="11" y1="24" x2="18" y2="24"/></svg></span>${esc_}</td>`:(ims?`<td class="c pvSplN"><span class="pvSplI vazio"></span>${esc_}</td>`:nome);
       const nCol=4+(ims?1:0)+(comReal?2:0)+(comAm?1:0);
-      return `<tr${ocultar?' hidden':''}><td class="alca" title="Arraste para mudar a ordem" aria-label="Arrastar ${esc_}">☰</td>${nomeT}${ims?imsC:''}${cel}${colR}${comAm?`<td class="num pvAm">${amDe(c)>0?fmt(amDe(c)):'—'}</td>`:''}${ac}</tr>${spl&&!ocultar&&PV.split&&PV.split[c]?`<tr class="pvSplRow"><td colspan="${nCol}">${pvSplHTML(c,o)}</td></tr>`:''}`;}
+      return `<tr${ocultar?' hidden':''}><td class="alca" title="Arraste para mudar a ordem" aria-label="Arrastar ${esc_}">☰</td>${nomeT}${ims?imsC:''}${cel}${colR}${comAm?`<td class="num pvAm">${amDe(c)>0?fmt(amDe(c)):'—'}</td>`:''}${ac}</tr>${spl&&!ocultar&&PV.split&&PV.split[c]&&!PV.split[c].fechado?`<tr class="pvSplRow"><td colspan="${nCol}">${pvSplHTML(c,o)}</td></tr>`:''}`;}
     return `<tr${ocultar?' hidden':''}><td class="alca" title="Arraste para mudar a ordem" aria-label="Arrastar ${esc_}">☰</td>${comReal?`<td class="hora">${esc(horaDe(c))}</td>`:''}${nome}${cel}${colR}${ac}</tr>`;}).join('');
   $('pvTot').title=`${S.cadastro.length} currais cadastrados`;
   resumoPrev();
@@ -2159,14 +2162,18 @@ function pvSplHTML(c,o){const {s,I}=pvSplAjusta(c,o);if(!(s.alvo>0))return '<p c
     ?`<div class="pvSplLin feito"><b>${k}º trato</b><span class="num">${nf(s.kg[i]/s.alvo*100,1)}</span><span class="num">${fmt(s.kg[i])} ✓</span></div>`
     :`<div class="pvSplLin"><b>${k}º trato</b><input class="cell num" inputmode="decimal" data-psp="${esc(c)}|${i}" value="${nf(s.kg[i]/s.alvo*100,1)}"><input class="cell num" inputmode="numeric" data-psk="${esc(c)}|${i}" value="${s.kg[i]}"></div>`).join('')}
     <div class="pvSplTot" data-pvspltot="${esc(c)}">${pvSplTot(c)}</div>${I.feito.some(Boolean)?'<p class="note">✓ trato já feito: fica com o realizado.</p>':''}
-    <div class="row"><button type="button" class="mini" data-pvsplpad="${esc(c)}">↺ Padrão</button><button type="button" class="mini dangerfill" data-pvsplit="${esc(c)}">✕ Cancelar</button><button type="button" class="pvSplSalva" data-pvims="ok" aria-label="Salvar">💾</button></div></div>`;}
+    <div class="row"><button type="button" class="mini" data-pvsplpad="${esc(c)}">↺ Padrão</button><button type="button" class="mini dangerfill" data-pvsplit="${esc(c)}">✕ Cancelar</button><button type="button" class="pvSplSalva" data-pvsplok="${esc(c)}" aria-label="Guardar divisão">💾</button></div></div>`;}
 function pvSplTot(c){const s=PV.split&&PV.split[c];if(!s||!s.kg)return '';const tot=s.kg.reduce((a,v)=>a+(+v||0),0),d=tot-s.alvo;
   return d===0?`<span class="ok">✓ Total ${fmt(tot)} kg = previsto do curral ${fmt(s.alvo)} kg</span>`:`<span class="bad">Total ${fmt(tot)} kg · previsto ${fmt(s.alvo)} kg · ${d>0?'sobram':'faltam'} <b>${fmt(Math.abs(d))} kg</b></span>`;}
+/* 💾 da divisão: confere o total, guarda e recolhe (só grava de verdade no ✓ Aplicar lá embaixo) */
+document.addEventListener('click',e=>{const b=e.target.closest('[data-pvsplok]');if(!b||!PV.ims)return;e.preventDefault();e.stopPropagation();const c=b.dataset.pvsplok,s=PV.split&&PV.split[c];if(!s)return;
+  const tot=(s.kg||[]).reduce((a,v)=>a+(+v||0),0);if(s.alvo>0&&tot!==s.alvo){toast(`A soma dos tratos (${fmt(tot)} kg) tem que ser igual ao previsto (${fmt(s.alvo)} kg)`);return;}
+  s.fechado=true;const y=window.scrollY;renderPrev();window.scrollTo({top:y});toast('Divisão guardada · toque em ✓ Aplicar para salvar tudo');},true);
 document.addEventListener('click',e=>{const b=e.target.closest('[data-pvsplit],[data-pvsplpad]');if(!b||!PV.ims)return;e.preventDefault();e.stopPropagation();
   PV.split=PV.split||{};if(b.dataset.pvsplpad){const c=b.dataset.pvsplpad,o=pvObj(),I=pvSplInfo(c,o);PV.split[c]={};const alvo=pvSplAlvo(c),fixo=I.ks.reduce((a,k,i)=>a+(I.feito[i]?I.real[i]:0),0),pc=divisao(I.ks.length);
     const pend=I.ks.map((_,i)=>i).filter(i=>!I.feito[i]),sw=pend.reduce((a,i)=>a+(+pc[i]||0),0);let resto=Math.max(0,alvo-fixo);const kg=I.ks.map((k,i)=>I.feito[i]?I.real[i]:0);
     pend.forEach((i,j)=>{const v=j===pend.length-1?resto:Math.min(resto,arredPrev((alvo-fixo)*(+pc[i]||0)/sw));kg[i]=Math.max(0,v);resto-=kg[i];});PV.split[c]={alvo,kg};}
-  else{const c=b.dataset.pvsplit;if(PV.split[c])delete PV.split[c];else PV.split[c]={};}
+  else{const c=b.dataset.pvsplit,ehCanc=!!b.closest('.pvSpl');if(PV.split[c]&&PV.split[c].fechado&&!ehCanc)PV.split[c].fechado=false;else if(PV.split[c])delete PV.split[c];else PV.split[c]={};}
   const y=window.scrollY;renderPrev();window.scrollTo({top:y});},true);
 document.addEventListener('focusin',e=>{const x=e.target;if(!x.matches||!x.matches('#tbPrev [data-psp],#tbPrev [data-psk]'))return;const c=(x.dataset.psp||x.dataset.psk).split('|')[0],s=PV.split&&PV.split[c];if(s&&s.kg)s.snap=s.kg.slice();});
 document.addEventListener('input',e=>{const x=e.target;if(!x.matches||!x.matches('#tbPrev [data-psp],#tbPrev [data-psk]'))return;const ehP=x.matches('[data-psp]'),[c,i0]=(ehP?x.dataset.psp:x.dataset.psk).split('|'),i=+i0,s=PV.split&&PV.split[c];if(!s)return;
@@ -2277,7 +2284,7 @@ function aplicarPrev(i,t){
   resumoPrev();return true;
 }
 function abrirTeclado(i,tipo){tipo=tipo==='ims'?'ims':'kg';
-  if(bloqueado())return;
+  if(bloqueado())return;{const sr=$('tecSalvaRow');if(sr)sr.hidden=!PV.ims;}
   if(!pvEditavel()){toast(PV.per?'Período: só consulta':PV.dia<hojeKey()?'Dia que já passou: só consulta':'Previsto de amanhã: faça antes a leitura de cocho de amanhã');return;}
   if(tecIdx!=null&&(tecIdx!==i||tecTipo!==tipo)&&!aplicarTec(tecIdx,tecBuf))return;
   document.querySelectorAll('#tbPrev input.sel').forEach(x=>x.classList.remove('sel'));
@@ -2325,6 +2332,9 @@ function teclar(k){
   const pula=d=>{let q=tecIdx+d;while(campoTec(q)&&(campoTec(q).closest('tr').hidden||campoTec(q).disabled))q+=d;return q;};
   if(k==='ok'){if(!aplicarTec(tecIdx,tecBuf))return;const prox=pula(1),tp=tecTipo;tecIdx=null;if(campoTec(prox))abrirTeclado(prox,tp);else fecharTeclado();return;}
   if(k==='fechar'){fecharTeclado();return;}
+  /* Editar previsto (% IMS ou kg/dia): salvar ou cancelar direto pelo teclado */
+  if(k==='salvar'){if(!aplicarTec(tecIdx,tecBuf))return;fecharTeclado();toast('Alteração guardada · toque em ✓ Aplicar para salvar tudo');return;}
+  if(k==='cancelar'){const c=S.cadastro[tecIdx];tecBuf=tecOrig;aplicarTec(tecIdx,tecOrig);if(c!=null&&PV.ed&&PV.ed[c]&&tecTipo==='kg'&&PV.ed[c].tipo==='kg'&&String(PV.ed[c].val)===String(tecOrig))delete PV.ed[c];fecharTeclado();if(c!=null)try{pvEdPinta(c);}catch(_){}toast('Alteração desfeita');return;}
   if(k==='voltar'){
     if(tecBuf!==tecOrig){tecBuf=tecOrig;tecNovo=true;mostra();marcarVoltar();toast('Voltou para o valor anterior');return;}
     if(PV.ims){toast('Nada para voltar: use Cancelar para desfazer tudo');return;}
@@ -2356,7 +2366,7 @@ const tgTxt=()=>tecGen.tipo==='ims'?imsTxt(tecGen.buf):tecGen.buf;
 const tgUnid=t=>tecGen.tipo==='ims'?t+' %':tecGen.tipo==='brinco'?t:t+' kg';
 function tgMostra(dispara){const el=tgCampo(),t=tgTxt();if(el){el.value=t;el.classList.add('sel');if(dispara)el.dispatchEvent(new Event('input',{bubbles:true}));}
   $('tecValor').textContent=t?tgUnid(t):'—';const v=$('tecVoltar');if(v)v.disabled=tecGen.buf===tecGen.orig;}
-function abrirTecGen(el){if(!el||el.dataset.trava==='1')return;if(tecIdx!=null)fecharTeclado();if(tecGen)fecharTecGen();
+function abrirTecGen(el){if(!el||el.dataset.trava==='1')return;{const sr=$('tecSalvaRow');if(sr)sr.hidden=true;}if(tecIdx!=null)fecharTeclado();if(tecGen)fecharTecGen();
   const tipo=el.dataset.tecg,chave=tipo==='ims'?'ims':'kg',c=el.dataset[chave];
   tecGen={tipo,q:`#gBox input[data-tecg="${tipo}"][data-${chave}="${CSS.escape(c)}"]`,c,buf:'',orig:'',novo:true};
   tecGen.buf=tipo==='ims'?imsDig(el.value):tipo==='brinco'?String(el.value||''):String(el.value||'').replace(/\D/g,'');tecGen.orig=tecGen.buf;
