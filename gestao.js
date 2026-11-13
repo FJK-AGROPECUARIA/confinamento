@@ -3865,9 +3865,8 @@ function cTelaNova0(){if(!CG.passo){CG.passo=1;CG.local=null;}if(!CG.local)CG.pa
   const botAj=`<div class="cBotoes c4">${cBotAjuste()}</div>`;   /* Manual / Sobra / Ordem: abaixo do total a carregar */
   if(CG.mrAberto){const rl=gTodos('racao').filter(r=>!r.inativa||r.uid===CG.mrRac).sort(porNome);
     return passoTrato+botAj+`<div class="cSobra cMrPan"><div class="linhas"><b>＋ Ração pronta no vagão</b></div>
-      <p class="note">Ração que já está pronta (no chão, de outra batida). Não tem total: o que a balança pesar entrando no vagão fica registrado como ração adicionada. Não fica ligada a nenhum trato.</p>
+      <p class="note">Ração que já está pronta (no chão, de outra batida). Não tem total: o que a balança pesar entrando no vagão fica registrado como ração adicionada. Não fica ligada a nenhum trato e não baixa do estoque (já foi baixada quando foi feita).</p>
       <div class="cSobLin cMrLin"><select id="cMrRac"><option value="">Selecione a ração</option>${rl.map(r=>`<option value="${r.uid}"${r.uid===CG.mrRac?' selected':''}>${esc(r.nome)}</option>`).join('')}</select></div>
-      <label class="cVgBaixa" data-cmrbaixa="1"><span class="cxb${CG.mrBaixa?' on':''}">${CG.mrBaixa?'✓':''}</span> Baixar do estoque <small>${CG.mrBaixa?'(baixa cada insumo pela fórmula da ração)':'(desmarcado: essa ração já foi feita e baixada antes)'}</small></label>
       <button type="button" class="primary" data-cmrini="1"${CG.mrRac?'':' disabled'}>▶ Iniciar carregamento da ração pronta</button></div></section>`;}
   if(!CG.avulso&&!CG.trato)return passoTrato+botAj+'</section>';  // escolhe o trato antes de mostrar o total
   return passoTrato+`
@@ -3969,13 +3968,13 @@ function cClique(e){
   if(e.target.closest('[data-cmrtog]')){CG.mrAberto=!CG.mrAberto;if(CG.mrAberto){CG.jaAberto=false;CG.ja={};CG.sobRac=null;CG.sobKg=0;CG.sobModo='rac';CG.vgBaixa=false;CG.manAberto=false;CG.man={};CG.mrRac=CG.mrRac||CG.rac||null;CG.mrBaixa=false;}cSave();return cRender();}
   if(e.target.closest('[data-cmrbaixa]')){CG.mrBaixa=!CG.mrBaixa;cSave();return cRender();}
   if(e.target.closest('[data-cmrini]')){const r=G.it[CG.mrRac];if(!r)return toast('Escolha a ração pronta');
-    CG.ativa={dia:hojeKey(),local:CG.local||'',avulso:true,trato:0,tratos:[],rac:r.uid,racNome:r.nome,total:0,totalMistura:0,maisRac:true,mrBaixa:!!CG.mrBaixa,
+    CG.ativa={dia:hojeKey(),local:CG.local||'',avulso:true,trato:0,tratos:[],rac:r.uid,racNome:r.nome,total:0,totalMistura:0,maisRac:true,mrBaixa:false,
       itens:[{ins:'',nome:r.nome+' (pronta)',pMN:100,prev:0,ini:null,fim:null,real:null,hora:'',pronta:1}],atual:0,ts0:Date.now(),origem:cAuto()?'balanca':'manual'};
     CG.mrAberto=false;cSave();cRender();window.scrollTo({top:0});if(cAuto()){if(window.acIniciou)acIniciou();return;}return cTeclado('ini');}
   if(e.target.closest('[data-cvgbaixa]')){CG.vgBaixa=!CG.vgBaixa;cSave();return cRender();}
   if(e.target.closest('[data-cjatog]')){CG.mrAberto=false;if(CG.jaAberto){CG.jaAberto=false;CG.ja={};CG.sobRac=null;CG.sobKg=0;CG.sobModo='rac';CG.vgBaixa=false;}else{CG.manAberto=false;CG.man={};
     if(CG.avulso){CG.avulso=false;CG.totalDe='x|'+CG.rac;CG.abrirDepois='ja';}else CG.jaAberto=true;}cSave();return cRender();}  // abrir a Sobra fecha e zera o Manual e o Avulso  // fechar = zera a sobra
-  {const sm=e.target.closest('[data-csmodo]');if(sm){CG.sobModo=sm.dataset.csmodo;cSave();return cRender();}}
+  {const sm=e.target.closest('[data-csmodo]');if(sm){CG.sobModo=sm.dataset.csmodo;if(CG.sobModo==='rac')CG.vgBaixa=false;cSave();return cRender();}}
   {const m=e.target.closest('[data-cmov]');if(m){const its=itensAjust(itensCarga(CG.rac,CG.total||0)).map(i=>i.ins),i=its.indexOf(m.dataset.ins),j=i+(+m.dataset.cmov);
     if(i>=0&&j>=0&&j<its.length){[its[i],its[j]]=[its[j],its[i]];const pad=itensCarga(CG.rac,CG.total||0).map(i=>i.ins);CG.ordem=its.join('|')===pad.join('|')?null:its;cSave();cRender();}return;}}  // voltou à ordem original = sem mudança
   if(e.target.closest('[data-cordreset]')){CG.ordem=null;cSave();return cRender();}
@@ -5162,7 +5161,7 @@ function cTabelaCarga(its){const temJa=CG.jaAberto||its.some(i=>i.ja>0)||(CG.vgB
       demais=its.filter(i=>i.ja>i.prevOrig).map(i=>`${esc(i.nome)} (sobra ${nf(i.ja)} kg, a mistura usa ${nf(i.prevOrig)} kg)`);
     const rac=gTodos('racao').filter(r=>!r.inativa||r.uid===CG.sobRac).sort(porNome);
     const vg=vagaoPorIns(),nomeCol=CG.vgBaixa?'manual':'sobra';
-    jaNota=`<div class="cSobra"><div class="linhas"><b>No vagão:</b><button type="button" data-csmodo="rac" class="${md==='rac'?'sel':''}">Ração</button><button type="button" data-csmodo="ins" class="${md==='ins'?'sel':''}">Insumo</button></div><label class="cVgBaixa" data-cvgbaixa="1"><span class="cxb${CG.vgBaixa?' on':''}">${CG.vgBaixa?'✓':''}</span> Baixar do estoque <small>${CG.vgBaixa?'(sai do estoque, como colocado à mão agora)':'(desmarcado: já estava no vagão, não baixa de novo)'}</small></label>
+    jaNota=`<div class="cSobra"><div class="linhas"><b>No vagão:</b><button type="button" data-csmodo="rac" class="${md==='rac'?'sel':''}">Ração</button><button type="button" data-csmodo="ins" class="${md==='ins'?'sel':''}">Insumo</button></div>${md==='ins'?'':'<!--'}<label class="cVgBaixa" data-cvgbaixa="1"><span class="cxb${CG.vgBaixa?' on':''}">${CG.vgBaixa?'✓':''}</span> Baixar do estoque <small>${CG.vgBaixa?'(sai do estoque, como colocado à mão agora)':'(desmarcado: já estava no vagão, não baixa de novo)'}</small></label>${md==='ins'?'':'-->'}
       ${md==='rac'?`<div class="cSobLin"><select id="cSobRac"><option value="">Selecione</option>${rac.map(r=>`<option value="${r.uid}"${r.uid===CG.sobRac?' selected':''}>${esc(r.nome)}</option>`).join('')}</select>
         <input type="text" readonly inputmode="none" data-tecin="1" data-tecnome="No vagão (kg)" id="cSobKg" placeholder="kg" value="${CG.sobKg?String(CG.sobKg).replace('.',','):''}"></div>
         ${Object.keys(vg).length?`<p class="note">No vagão tem: ${Object.keys(vg).map(k=>`<b>${esc((G.it[k]||{}).nome||'?')}</b> ${nf(vg[k])} kg`).join(' · ')}. Já foi descontado abaixo.</p>`:'<p class="note">Escolha a ração que está no vagão e quantos kg. O app calcula quanto tem de cada produto e desconta do carregamento.</p>'}`
