@@ -674,7 +674,7 @@ input[type=date]::-webkit-calendar-picker-indicator{margin-left:2px;padding:0}
 .gSaiTp{display:inline-block;white-space:nowrap;font-weight:800;font-size:.76rem;padding:3px 9px;border-radius:999px}.gSaiTp.ve{color:#2e7d32;background:#e8f5e9}.gSaiTp.vi{color:#6a3fb5;background:#f1ebfb}.gSaiTp.tr{color:#1f5f99;background:#e8f1fa}.gSaiTp.ap{color:#8a5a00;background:#fff4e0}.gSaiTp.mo{color:#b3261e;background:#fdecea}
 .gSaiAc{display:flex;gap:6px;justify-content:flex-end}@media (max-width:760px){.gSaiAc{gap:4px}.gSaiAc .mini{padding-left:7px!important;padding-right:7px!important;min-width:0!important}}.gSaiDet{padding:4px 10px 10px;font-size:.84rem;color:var(--muted)}.gSaiDet .ok{color:#2e7d32}.gSaiDet .bad{color:#b3261e}
 .gFichaQ{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:6px}.gFichaQ>div{background:#f3f6f9;border-radius:10px;padding:8px 12px}.gFichaQ small{display:block;font-size:.68rem;color:var(--muted);font-weight:700;text-transform:uppercase}.gFichaQ b{color:#11253d}
-@media (max-width:760px){.gSaiRes5{grid-template-columns:repeat(2,1fr)}.gSaiRes5>div:last-child{grid-column:span 2}.gSaiCab{display:none}.gSaiLin>summary{grid-template-columns:auto minmax(0,1fr) auto;grid-template-areas:'d t ac' 'ds ds ds' 'cb ps ps' 'n1 n1 n3';row-gap:4px}.gSaiLin>summary>span{min-width:0}.gSaiLin .gSaiTp{display:inline-block;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;vertical-align:middle}.gSaiLin>summary>.d{grid-area:d}.gSaiLin>summary>span:nth-child(2){grid-area:t}.gSaiLin>summary>.ds{grid-area:ds}.gSaiLin>summary>.gSaiAc{grid-area:ac}.gSaiLin>summary>span:nth-child(4){grid-area:cb;text-align:left;color:var(--muted)}.gSaiLin>summary>span:nth-child(5){grid-area:ps;text-align:left;color:var(--muted)}.gSaiLin .n i{display:inline}.gSaiLin>summary>span:nth-child(6){grid-area:n1;text-align:left}.gSaiLin>summary>span:nth-child(7){grid-area:n3}.gFichaQ{grid-template-columns:repeat(2,1fr)}}
+@media (max-width:760px){.gSaiRes5{grid-template-columns:repeat(2,1fr)}.gSaiRes5>div:last-child{grid-column:span 2}.gSaiCab{display:none}.gSaiLin>summary{grid-template-columns:auto minmax(0,1fr) auto;grid-template-areas:'d d ac' 't ds ds' 'cb ps ps' 'n1 n1 n3';align-items:center;row-gap:4px}.gSaiLin>summary>span{min-width:0}.gSaiLin .gSaiTp{display:inline-block;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;vertical-align:middle}.gSaiLin>summary>.d{grid-area:d}.gSaiLin>summary>span:nth-child(2){grid-area:t}.gSaiLin>summary>.ds{grid-area:ds}.gSaiLin>summary>.gSaiAc{grid-area:ac}.gSaiLin>summary>span:nth-child(4){grid-area:cb;text-align:left;color:var(--muted)}.gSaiLin>summary>span:nth-child(5){grid-area:ps;text-align:left;color:var(--muted)}.gSaiLin .n i{display:inline}.gSaiLin>summary>span:nth-child(6){grid-area:n1;text-align:left}.gSaiLin>summary>span:nth-child(7){grid-area:n3}.gFichaQ{grid-template-columns:repeat(2,1fr)}}
 .gLoteNomeRel{display:flex;gap:12px;align-items:flex-start;justify-content:space-between;flex:1;flex-wrap:wrap}.gLoteNomeL{min-width:0}.gRelTit{display:flex;flex-direction:column;align-items:center;gap:8px;padding:10px 14px;border:2px solid #2e6b30;border-radius:12px;background:#f3f8ee}.gRelTit>b{font-size:1.15rem;color:#2e6b30;text-align:center;white-space:nowrap}.gRelTitBts{display:flex;gap:6px}
 @media (max-width:760px){.gLoteTopo:has(.gLoteNomeRel){flex-wrap:wrap}.gLoteNomeRel{display:contents}.gLoteNomeL{flex:1;min-width:0}.gLoteNomeRel .gRelTit{flex:1 1 100%;box-sizing:border-box;padding:8px}.gRelTitBts{justify-content:center;width:100%}.gRelTitBts .mini{flex:1 1 0;min-width:0;padding:8px 6px;font-size:.9rem}.gLoteTopo:has(.gLoteNomeRel){align-items:flex-start}.gLoteTopo:has(.gLoteNomeRel) .gSelo{align-self:flex-start}.gCmpDig{display:flex;width:100%}.gCmpDig input{flex:1;min-width:0}}.gRelTitBts .mini{margin:0;padding:6px 12px;min-height:0;font-size:.85rem;white-space:nowrap}
 .gRelBt{width:auto!important;margin:0!important;padding:10px 16px!important;white-space:nowrap}
@@ -1136,15 +1136,15 @@ body.naInicio .topoTxt h1{font-size:clamp(16px,5vw,28px)!important}
     <div class="pvLocBox" id="linhas"></div>
     <div id="pvTN"></div>
     <div class="somaLinha" id="somaLinha"></div>
-    <div class="pvImsBar" id="pvImsBar" hidden><p class="note" id="pvImsTxt">Altere o <b>% IMS</b> ou o <b>kg/dia</b> de cada curral (na mesma linha vale o último que alterar). Nada muda até tocar em <b>Aplicar</b>; <b>Cancelar</b> volta tudo como estava.</p>
-      <div class="row"><button class="primary" id="pvImsAplicar">✓ Aplicar</button><button id="pvImsCanc">Cancelar</button></div></div>
+    <div class="pvImsBar" id="pvImsBar" hidden><p class="note" id="pvImsTxt">Altere o <b>% IMS</b> ou o <b>kg/dia</b> de cada curral (na mesma linha vale o último que alterar). Cada <b>💾 Salvar</b> (ou Próximo/Anterior) já grava; <b>Concluir</b> fecha a edição.</p>
+      <div class="row"><button class="primary" id="pvImsAplicar">✓ Concluir</button><button id="pvImsCanc">Cancelar</button></div></div>
     <div class="tablebox"><table>
       <thead id="pvHead"><tr><th></th><th>Curral</th><th>Previsto (kg)</th><th></th></tr></thead>
       <tbody id="tbPrev"></tbody>
     </table></div>
     <button class="danger" id="btnLimparPrev">Limpar previsto deste trato</button>
     <button class="lima" id="btnIms">Alterar previsto <small style="font-size:.82em;font-weight:600;white-space:nowrap">(% IMS ou kg/dia)</small></button>
-    <div class="row pvImsBtns" id="pvImsBtns" hidden><button class="primary" type="button" data-pvims="ok">✓ Aplicar</button><button class="dangerfill" type="button" data-pvims="canc">✕ Cancelar</button></div>
+    <div class="row pvImsBtns" id="pvImsBtns" hidden><button class="primary" type="button" data-pvims="ok">✓ Concluir</button><button class="dangerfill" type="button" data-pvims="canc">✕ Cancelar</button></div>
     <button id="btnOrdem">↕ Alterar ordem</button>
     <div class="row pvImsBtns" id="pvOrdBtns" hidden><button class="primary" type="button" data-pvord="ok">✓ Aplicar</button><button class="dangerfill" type="button" data-pvord="canc">✕ Cancelar</button></div>
     <div class="inclPrevLinha" id="inclPrevLinha"><button id="btnInclPrev" type="button">＋ Incluir previsto</button></div>
@@ -1358,7 +1358,7 @@ body.naInicio .topoTxt h1{font-size:clamp(16px,5vw,28px)!important}
 <div class="toast" id="toast" hidden></div>
 <script>
 'use strict';
-const APP_VERSAO='380';
+const APP_VERSAO='382';
 const APP_DATA='19/10/2026';
 const KEY='confinamento-completo-v1';
 const $=id=>document.getElementById(id);
@@ -2082,7 +2082,7 @@ function renderPrev(){
   /* editando o previsto: o próprio botão vira Aplicar (verde) e Cancelar (vermelho), no mesmo lugar; some o resto */
   $('pvImsBar').hidden=true;$('pvImsBtns').hidden=!edM;if(edM){$('btnIms').hidden=true;$('btnOrdem').hidden=true;$('inclPrevLinha').hidden=true;}
   $('inclPrevLinha').hidden=true;$('listaBtns').hidden=true;  /* Incluir previsto saiu */
-  pvBotoesOrdem();$('viewPrev').classList.toggle('pvTrava',!PV.per&&!edM);$('pvImsTxt').innerHTML=PV.t===0?'Altere o <b>% IMS</b> ou o <b>kg/dia</b> de cada curral (na mesma linha vale o último que alterar). Nada muda até tocar em <b>Aplicar</b>; <b>Cancelar</b> volta tudo como estava.':`Altere o kg do <b>Trato ${PV.t}</b> de cada curral. Nada muda até tocar em <b>Aplicar</b>; <b>Cancelar</b> volta tudo como estava.`;$('viewPrev').classList.toggle('pvImsOn',ims);$('viewPrev').classList.toggle('pvTodos',PV.t===0&&!PV.per);$('btnIms').classList.toggle('on',ims);
+  pvBotoesOrdem();$('viewPrev').classList.toggle('pvTrava',!PV.per&&!edM);$('pvImsTxt').innerHTML=PV.t===0?'Altere o <b>% IMS</b> ou o <b>kg/dia</b> de cada curral (na mesma linha vale o último que alterar). Cada <b>💾 Salvar</b> (ou Próximo/Anterior) já grava; <b>Concluir</b> fecha a edição.':`Altere o kg do <b>Trato ${PV.t}</b> de cada curral. Cada <b>💾 Salvar</b> (ou Próximo/Anterior) já grava; <b>Concluir</b> fecha a edição.`;$('viewPrev').classList.toggle('pvImsOn',ims);$('viewPrev').classList.toggle('pvTodos',PV.t===0&&!PV.per);$('btnIms').classList.toggle('on',ims);
   $('pvHead').innerHTML=PV.per?'<tr><th></th><th>Curral</th><th>Total do período (kg)</th><th></th></tr>':
     PV.t===0?`<tr><th></th><th>Curral</th>${ims?'<th>% IMS</th>':''}<th>Previsto dia</th>${comReal?'<th>Realiz.</th><th>Dif.</th>':''}${comAm?'<th class="pvAmTh">Amanhã</th>':''}<th></th></tr>`:`<tr><th></th>${comReal?'<th class="hora">Hora</th>':''}<th class="pvCurTh">Curral</th><th class="pvPrevTh">Previsto T${PV.t}</th>${comReal?'<th>Realiz.</th><th>Dif.</th>':''}<th></th></tr>`;
   /* Alterar ordem: só os currais com lote no dia (curral vazio não aparece para arrastar) */
@@ -2168,7 +2168,7 @@ function pvSplTot(c){const s=PV.split&&PV.split[c];if(!s||!s.kg)return '';const 
 /* 💾 da divisão: confere o total, guarda e recolhe (só grava de verdade no ✓ Aplicar lá embaixo) */
 document.addEventListener('click',e=>{const b=e.target.closest('[data-pvsplok]');if(!b||!PV.ims)return;e.preventDefault();e.stopPropagation();const c=b.dataset.pvsplok,s=PV.split&&PV.split[c];if(!s)return;
   const tot=(s.kg||[]).reduce((a,v)=>a+(+v||0),0);if(s.alvo>0&&tot!==s.alvo){toast(`A soma dos tratos (${fmt(tot)} kg) tem que ser igual ao previsto (${fmt(s.alvo)} kg)`);return;}
-  s.fechado=true;const y=window.scrollY;renderPrev();window.scrollTo({top:y});toast('Divisão guardada · toque em ✓ Aplicar para salvar tudo');},true);
+  if(!pvGravar(new Set([c]))){s.fechado=true;const y=window.scrollY;renderPrev();window.scrollTo({top:y});}},true);
 document.addEventListener('click',e=>{const b=e.target.closest('[data-pvsplit],[data-pvsplpad]');if(!b||!PV.ims)return;e.preventDefault();e.stopPropagation();
   PV.split=PV.split||{};if(b.dataset.pvsplpad){const c=b.dataset.pvsplpad,o=pvObj(),I=pvSplInfo(c,o);PV.split[c]={};const alvo=pvSplAlvo(c),fixo=I.ks.reduce((a,k,i)=>a+(I.feito[i]?I.real[i]:0),0),pc=divisao(I.ks.length);
     const pend=I.ks.map((_,i)=>i).filter(i=>!I.feito[i]),sw=pend.reduce((a,i)=>a+(+pc[i]||0),0);let resto=Math.max(0,alvo-fixo);const kg=I.ks.map((k,i)=>I.feito[i]?I.real[i]:0);
@@ -2187,19 +2187,26 @@ function aplicarTec(i,buf){return tecTipo==='ims'?aplicarIms(i,buf):aplicarPrev(
 function pvEdSair(){if(window.HPV==='ims')setTimeout(()=>{if(window.HPV==='ims')hpvFechar();},0);tecIdx=null;$('teclado').hidden=true;document.body.classList.remove('comteclado');document.querySelectorAll('#tbPrev input.sel').forEach(x=>x.classList.remove('sel'));PV.ims=false;PV.ed={};PV.split={};tecTipo='kg';renderPrev();}
 $('btnIms').onclick=()=>{if(!pvEditavel())return;if(PV.ims){pvEdSair();return;}fecharTeclado();PV.ims=true;PV.ed={};renderPrev();};
 document.addEventListener('click',e=>{const b=e.target.closest('[data-pvims]');if(!b)return;$(b.dataset.pvims==='ok'?'pvImsAplicar':'pvImsCanc').click();});
-$('pvImsCanc').onclick=()=>{const n=Object.keys(PV.ed||{}).length;pvEdSair();toast(n?'Alteração cancelada: ficou como estava':'Cancelado');};
-$('pvImsAplicar').onclick=()=>{if(!pvEditavel())return;if(tecIdx!=null)fecharTeclado();const o=pvObj();let n=0,sem=[],feitosTodos=[];
-  if(PV.t>0){const k=String(PV.t),m=mapaPv(k);Object.entries(PV.ed||{}).forEach(([c,e])=>{if(HIST.some(r=>r.dia===PV.dia&&r.curral===c&&+r.trato===PV.t)){feitosTodos.push(c);return;}const antes=m[c];if(antes===e.val)return;m[c]=e.val;desfPrev.push({d:PV.dia,k,nome:c,antes});n++;});}
+$('pvImsCanc').onclick=()=>{const n=Object.keys(PV.ed||{}).length,sv=PV.salvos||0;PV.salvos=0;pvEdSair();toast(n?`Alteração não salva desfeita${sv?` · as ${sv} já salvas ficam`:''}`:sv?`Edição fechada · ${sv} alteração(ões) já salva(s)`:'Cancelado');};
+/* grava no previsto: so = currais (Set) para gravar só eles e continuar editando; sem so = Concluir (grava o resto e sai) */
+function pvGravar(so){if(!pvEditavel())return false;const fica=!!so,dentro=c=>!so||so.has(c);if(!fica&&tecIdx!=null)fecharTeclado();const o=pvObj();let n=0,sem=[],feitosTodos=[];
+  if(PV.t>0){const k=String(PV.t),m=mapaPv(k);Object.entries(PV.ed||{}).filter(([c])=>dentro(c)).forEach(([c,e])=>{if(HIST.some(r=>r.dia===PV.dia&&r.curral===c&&+r.trato===PV.t)){feitosTodos.push(c);return;}const antes=m[c];if(antes===e.val)return;m[c]=e.val;desfPrev.push({d:PV.dia,k,nome:c,antes});n++;});}
   else{/* divisão por trato aberta: o total dos tratos tem que bater com o previsto do curral */
-    for(const c of Object.keys(PV.split||{})){const {s}=pvSplAjusta(c,o);const tot=(s.kg||[]).reduce((a,v)=>a+(+v||0),0);if(s.alvo>0&&tot!==s.alvo){toast(`${c}: a soma dos tratos (${fmt(tot)} kg) tem que ser igual ao previsto (${fmt(s.alvo)} kg)`);return;}}
-    Object.entries(PV.ed||{}).forEach(([c,e])=>{let kg;if(e.tipo==='kg')kg=e.val;else{const m=window.gMnIms?gMnIms(c,e.val,PV.dia):null;if(m==null){sem.push(c);return;}kg=arredPrev(m);}
+    for(const c of Object.keys(PV.split||{}).filter(dentro)){const {s}=pvSplAjusta(c,o);const tot=(s.kg||[]).reduce((a,v)=>a+(+v||0),0);if(s.alvo>0&&tot!==s.alvo){toast(`${c}: a soma dos tratos (${fmt(tot)} kg) tem que ser igual ao previsto (${fmt(s.alvo)} kg)`);return;}}
+    Object.entries(PV.ed||{}).filter(([c])=>dentro(c)).forEach(([c,e])=>{let kg;if(e.tipo==='kg')kg=e.val;else{const m=window.gMnIms?gMnIms(c,e.val,PV.dia):null;if(m==null){sem.push(c);return;}kg=arredPrev(m);}
     const antes=snapTratos(c,o);if(!ajustarTotalCurral(c,kg,o)){feitosTodos.push(c);return;}desfPrev.push({d:PV.dia,k:'T',nome:c,antes});n++;});
-    Object.keys(PV.split||{}).forEach(c=>{const {s,I}=pvSplAjusta(c,o);if(!(s.alvo>0))return;const antes=snapTratos(c,o);let mud=false;
+    Object.keys(PV.split||{}).filter(dentro).forEach(c=>{const {s,I}=pvSplAjusta(c,o);if(!(s.alvo>0))return;const antes=snapTratos(c,o);let mud=false;
       I.ks.forEach((k,i)=>{if(I.feito[i])return;const m=(o[String(k)]=o[String(k)]||{}),v=Math.max(0,Math.round(+s.kg[i]||0));if((+m[c]||0)!==v){mud=true;if(v>0)m[c]=v;else delete m[c];}});
       if(mud){if(!(PV.ed&&PV.ed[c]))desfPrev.push({d:PV.dia,k:'T',nome:c,antes});if(!(PV.ed&&PV.ed[c]))n++;}});}
-  if(!n){if(sem.length||feitosTodos.length){toast(sem.length?'Sem lote/ração cadastrado para: '+sem.join(', '):'Todos os tratos de hoje já foram feitos: '+feitosTodos.join(', '));return;}pvEdSair();toast('Nada foi alterado');return;}
-  marcarPv();if(PV.dia===hojeKey()){editandoPrev=true;render();editandoPrev=false;}pvEdSair();
-  toast(`Previsto alterado em ${n} curral(is)`+(sem.length?` · sem lote: ${sem.join(', ')}`:'')+(feitosTodos.length?` · já tratados (não muda): ${feitosTodos.join(', ')}`:''));};
+    const limpa=()=>{Object.keys(PV.ed||{}).filter(dentro).forEach(c=>delete PV.ed[c]);Object.keys(PV.split||{}).filter(dentro).forEach(c=>delete PV.split[c]);const y=window.scrollY;renderPrev();window.scrollTo({top:y});};
+  if(!n){if(sem.length||feitosTodos.length){toast(sem.length?'Sem lote/ração cadastrado para: '+sem.join(', '):'Todos os tratos de hoje já foram feitos: '+feitosTodos.join(', '));if(fica)limpa();return false;}if(fica){limpa();return true;}pvEdSair();toast(PV.salvos?`Edição concluída · ${PV.salvos} alteração(ões) salva(s)`:'Nada foi alterado');PV.salvos=0;return true;}
+  marcarPv();if(PV.dia===hojeKey()){editandoPrev=true;render();editandoPrev=false;}
+  if(fica){PV.salvos=(PV.salvos||0)+n;limpa();toast('💾 Salvo: '+[...so].join(', '));return true;}
+  pvEdSair();PV.salvos=0;
+  toast(`Previsto alterado em ${n} curral(is)`+(sem.length?` · sem lote: ${sem.join(', ')}`:'')+(feitosTodos.length?` · já tratados (não muda): ${feitosTodos.join(', ')}`:''));return true;}
+$('pvImsAplicar').onclick=()=>pvGravar(null);
+/* salva já o curral do teclado (Editar previsto): cada 💾 / Próximo / Anterior grava na hora */
+function pvSalvaJa(c){if(PV.ims&&c!=null&&PV.ed&&PV.ed[c])pvGravar(new Set([c]));}
 function snapTratos(c,o){const r={};for(let k=1;k<=MAXT;k++){const v=(o[k]||{})[c];if(v!==undefined)r[k]=v;}return r;}
 /* Soma do previsto por linha: C = confinamento, P = pasto TIP */
 function infoCurral(n){try{const it=gOk()&&G.it.currais;return (it&&!it.del&&it.v&&it.v[n])||{};}catch(e){return {};}}
@@ -2330,10 +2337,10 @@ function teclar(k){
   if(tecIdx==null)return;
   const mostra=()=>{const x=campoTec(tecIdx);const t=tecTipo==='ims'?imsTxt(tecBuf):tecBuf;if(x)x.value=t;$('tecValor').textContent=tecTipo==='ims'?(t?t+' %':'—'):(t||'—');};
   const pula=d=>{let q=tecIdx+d;while(campoTec(q)&&(campoTec(q).closest('tr').hidden||campoTec(q).disabled))q+=d;return q;};
-  if(k==='ok'){if(!aplicarTec(tecIdx,tecBuf))return;const prox=pula(1),tp=tecTipo;tecIdx=null;if(campoTec(prox))abrirTeclado(prox,tp);else fecharTeclado();return;}
+  if(k==='ok'){if(!aplicarTec(tecIdx,tecBuf))return;const prox=pula(1),tp=tecTipo,c0=S.cadastro[tecIdx];tecIdx=null;pvSalvaJa(c0);if(campoTec(prox))abrirTeclado(prox,tp);else fecharTeclado();return;}
   if(k==='fechar'){fecharTeclado();return;}
   /* Editar previsto (% IMS ou kg/dia): salvar ou cancelar direto pelo teclado */
-  if(k==='salvar'){if(!aplicarTec(tecIdx,tecBuf))return;fecharTeclado();toast('Alteração guardada · toque em ✓ Aplicar para salvar tudo');return;}
+  if(k==='salvar'){const c0=S.cadastro[tecIdx];if(!aplicarTec(tecIdx,tecBuf))return;fecharTeclado();if(PV.ims&&c0!=null&&PV.ed&&PV.ed[c0])pvGravar(new Set([c0]));else toast('Sem alteração');return;}
   if(k==='cancelar'){const c=S.cadastro[tecIdx];tecBuf=tecOrig;aplicarTec(tecIdx,tecOrig);if(c!=null&&PV.ed&&PV.ed[c]&&tecTipo==='kg'&&PV.ed[c].tipo==='kg'&&String(PV.ed[c].val)===String(tecOrig))delete PV.ed[c];fecharTeclado();if(c!=null)try{pvEdPinta(c);}catch(_){}toast('Alteração desfeita');return;}
   if(k==='voltar'){
     if(tecBuf!==tecOrig){tecBuf=tecOrig;tecNovo=true;mostra();marcarVoltar();toast('Voltou para o valor anterior');return;}
@@ -2348,7 +2355,7 @@ function teclar(k){
     resumoPrev();
     if(cx&&!cx.closest('tr').hidden){tecIdx=null;abrirTeclado(i);}else marcarVoltar();
     toast(`${d.nome} voltou para ${d.antes===undefined||d.antes===''?'vazio':valPrev(d.antes)}`);return;}
-  if(k==='up'){if(!aplicarTec(tecIdx,tecBuf))return;const p=pula(-1),at=tecIdx,tp=tecTipo;tecIdx=null;if(campoTec(p))abrirTeclado(p,tp);else abrirTeclado(at,tp);return;}
+  if(k==='up'){if(!aplicarTec(tecIdx,tecBuf))return;const p=pula(-1),at=tecIdx,tp=tecTipo;tecIdx=null;pvSalvaJa(S.cadastro[at]);if(campoTec(p))abrirTeclado(p,tp);else abrirTeclado(at,tp);return;}
   if(tecNovo&&k!=='del'){tecBuf='';}tecNovo=false; // começar a digitar substitui o número antigo
   if(k==='del')tecBuf=tecBuf.slice(0,-1);
   else if(k==='?')tecBuf='?';
@@ -2357,7 +2364,9 @@ function teclar(k){
   mostra();marcarVoltar();
 }
 $('tbPrev').addEventListener('click',e=>{const td=e.target.closest('td'),f=td&&td.querySelector('input.feito[data-n]');if(f&&!e.target.closest('input:not(.feito)')){toast(PV.t?`${S.cadastro[+f.dataset.n]}: Trato ${PV.t} já tratado, o previsto não muda mais`:`${S.cadastro[+f.dataset.n]}: todos os tratos do dia já foram feitos, o total não muda mais`);return;}const y=e.target.closest('input.imsIn[data-ims]');if(y){e.preventDefault();y.blur();if(y.disabled)return;abrirTeclado(S.cadastro.indexOf(y.dataset.ims),'ims');return;}const x=e.target.closest('input[data-n]');if(x){e.preventDefault();x.blur();if(!PV.ims&&!PV.per){if(pvEditavel())toast(PV.t?`Para mudar, toque em "Alterar previsto do Trato ${PV.t}" lá embaixo`:'Para mudar, toque em "Alterar previsto" lá embaixo');return;}abrirTeclado(+x.dataset.n);}});
-$('teclado').addEventListener('pointerdown',e=>{const b=e.target.closest('button[data-k]');if(!b)return;e.preventDefault();teclar(b.dataset.k);});
+$('teclado').addEventListener('pointerdown',e=>{const b=e.target.closest('button[data-k]');if(!b)return;e.preventDefault();window.__tecTs=Date.now();teclar(b.dataset.k);});
+/* toque no teclado que fecha ele: o "click" que vem depois não pode cair no botão que estava embaixo (ex.: Cancelar da edição) */
+document.addEventListener('click',e=>{if(window.__tecTs&&Date.now()-window.__tecTs<600&&!(e.target.closest&&e.target.closest('#teclado'))){e.preventDefault();e.stopPropagation();e.stopImmediatePropagation();}},true);
 /* ---- o mesmo teclado do app em outros campos (Leitura de cocho: % IMS com vírgula automática e kg/dia) ----
    % IMS: digita só os números e a vírgula entra sozinha com 2 casas (280 → 2,80 · 84 → 0,84) */
 let tecGen=null;
