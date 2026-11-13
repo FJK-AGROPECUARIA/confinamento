@@ -1358,7 +1358,7 @@ body.naInicio .topoTxt h1{font-size:clamp(16px,5vw,28px)!important}
 <div class="toast" id="toast" hidden></div>
 <script>
 'use strict';
-const APP_VERSAO='378';
+const APP_VERSAO='379';
 const APP_DATA='19/10/2026';
 const KEY='confinamento-completo-v1';
 const $=id=>document.getElementById(id);
@@ -1977,7 +1977,7 @@ $('btnReg').onclick=async()=>{
   $('btnReg').disabled=true;
   const now=new Date();
   const r={ts:now.getTime(),dia:diaAtivo(),trato:S.tratoSel,hora:now.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'}),
-    curral:c.nome,prev:c.prev,ini,fim,forn:ini-fim,uid:`${S.aparelho}-${now.getTime()}`,enviado:false};
+    curral:c.nome,prev:c.prev,ini,fim,forn:ini-fim,uid:`${S.aparelho}-${now.getTime()}`,enviado:false,origem:'manual'};
   try{r.id=await dbAdd(r);}catch(e){toast('Erro ao salvar no banco. Tente de novo.');calc();return;}
   HIST.push(r);
   toast(`${c.nome}: ${fmt(r.forn)} kg salvo`);
@@ -2759,7 +2759,7 @@ function compDados(){const [pa,pb]=intervaloHist(),t=HD.per||HD.t<0?0:HD.t,regs=
     ev.forEach(e=>{if(e.b){const c=e.b,tr=(c.tratos&&c.tratos.length?c.tratos:[c.trato]).filter(x=>+x).join('+');run=null;
         out.push({tipo:'Carregamento',dia:d,trato:+c.trato||0,cab:`${diaBR(d)} · ${c.hora||''} · Carregamento${tr?' · Trato '+tr:' · avulsa'} · ${c.racNome||''}`,
           linhas:(c.itens||[]).map(x=>Array.isArray(x)?{hora:'',nome:x[0],prev:n_(x[1]),real:n_(x[2]),ini:null,fim:null}:{hora:hr(null,x.hora),nome:x.nome+(x.man?' (manual)':''),prev:n_(x.prev),real:n_(x.real),ini:n_(x.ini),fim:n_(x.fim)})});return;}
-      const r=e.r,lc=linhaDe(r.curral),L={hora:hr(r.ts,r.hora),nome:r.curral,prev:n_(r.prev),real:n_(r.forn),ini:n_(r.ini),fim:n_(r.fim)};
+      const r=e.r,lc=linhaDe(r.curral),L={hora:hr(r.ts,r.hora),nome:r.curral+(r.origem==='manual'?' (manual)':''),prev:n_(r.prev),real:n_(r.forn),ini:n_(r.ini),fim:n_(r.fim)};
       if(run&&run.trato===+r.trato&&run.lc===lc){run.linhas.push(L);return;}
       run={tipo:'Fornecimento',dia:d,trato:+r.trato,lc,cab:`${diaBR(d)} · ${L.hora} · Fornecimento · Trato ${r.trato}${lc==='P'?' · Pasto':lc==='C'?' · Confinamento':''}`,linhas:[L]};out.push(run);});});
   return out;}
