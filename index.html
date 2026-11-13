@@ -1144,7 +1144,7 @@ body.naInicio .topoTxt h1{font-size:clamp(16px,5vw,28px)!important}
     </table></div>
     <button class="danger" id="btnLimparPrev">Limpar previsto deste trato</button>
     <button class="lima" id="btnIms">Alterar previsto <small style="font-size:.82em;font-weight:600;white-space:nowrap">(% IMS ou kg/dia)</small></button>
-    <div class="row pvImsBtns" id="pvImsBtns" hidden><button class="primary" type="button" data-pvims="ok">✓ Concluir</button><button class="dangerfill" type="button" data-pvims="canc">✕ Cancelar</button><button class="pvVoltaLeit" type="button" data-pvleit="1">↺ Voltar para a leitura de cocho</button></div>
+    <div class="row pvImsBtns" id="pvImsBtns" hidden><button class="primary" type="button" data-pvims="ok">✓ Concluir</button><button class="dangerfill" type="button" data-pvims="canc">✕ Cancelar</button><button class="pvVoltaLeit" type="button" data-pvleit="1">↺ Restaurar (leitura de hoje)</button></div>
     <button id="btnOrdem">↕ Alterar ordem</button>
     <div class="row pvImsBtns" id="pvOrdBtns" hidden><button class="primary" type="button" data-pvord="ok">✓ Aplicar</button><button class="dangerfill" type="button" data-pvord="canc">✕ Cancelar</button></div>
     <div class="inclPrevLinha" id="inclPrevLinha"><button id="btnInclPrev" type="button">＋ Incluir previsto</button></div>
@@ -1358,7 +1358,7 @@ body.naInicio .topoTxt h1{font-size:clamp(16px,5vw,28px)!important}
 <div class="toast" id="toast" hidden></div>
 <script>
 'use strict';
-const APP_VERSAO='383';
+const APP_VERSAO='384';
 const APP_DATA='19/10/2026';
 const KEY='confinamento-completo-v1';
 const $=id=>document.getElementById(id);
@@ -2080,7 +2080,7 @@ function renderPrev(){
   const podeIncl=ed&&hoje;$('inclPrevLinha').hidden=!podeIncl;$('btnInclPrev').classList.toggle('on',!!PV.incl&&PV.t>0);$('listaBtns').hidden=!(podeIncl&&PV.incl&&PV.t>0);$('btnLimparPrev').hidden=true;$('btnIms').hidden=!(ed&&!PV.per);$('btnIms').innerHTML=PV.t===0?'Alterar previsto <small style="font-size:.82em;font-weight:600;white-space:nowrap">(% IMS ou kg/dia)</small>':`Alterar previsto do Trato ${PV.t}`;
   $('btnOrdem').hidden=!hoje;$('btnCadastrar').hidden=true;$('btnRemoverCurral').hidden=true;
   /* editando o previsto: o próprio botão vira Aplicar (verde) e Cancelar (vermelho), no mesmo lugar; some o resto */
-  $('pvImsBar').hidden=true;$('pvImsBtns').hidden=!edM;if(edM){$('btnIms').hidden=true;$('btnOrdem').hidden=true;$('inclPrevLinha').hidden=true;}
+  $('pvImsBar').hidden=true;$('pvImsBtns').hidden=!edM;{const bl=document.querySelector('[data-pvleit]');if(bl)bl.textContent=PV.dia===hojeKey()?'↺ Restaurar (leitura de hoje)':`↺ Restaurar (leitura de ${PV.dia.split('-').reverse().slice(0,2).join('/')})`;}if(edM){$('btnIms').hidden=true;$('btnOrdem').hidden=true;$('inclPrevLinha').hidden=true;}
   $('inclPrevLinha').hidden=true;$('listaBtns').hidden=true;  /* Incluir previsto saiu */
   pvBotoesOrdem();$('viewPrev').classList.toggle('pvTrava',!PV.per&&!edM);$('pvImsTxt').innerHTML=PV.t===0?'Altere o <b>% IMS</b> ou o <b>kg/dia</b> de cada curral (na mesma linha vale o último que alterar). Cada <b>💾 Salvar</b> (ou Próximo/Anterior) já grava; <b>Concluir</b> fecha a edição.':`Altere o kg do <b>Trato ${PV.t}</b> de cada curral. Cada <b>💾 Salvar</b> (ou Próximo/Anterior) já grava; <b>Concluir</b> fecha a edição.`;$('viewPrev').classList.toggle('pvImsOn',ims);$('viewPrev').classList.toggle('pvTodos',PV.t===0&&!PV.per);$('btnIms').classList.toggle('on',ims);
   $('pvHead').innerHTML=PV.per?'<tr><th></th><th>Curral</th><th>Total do período (kg)</th><th></th></tr>':
@@ -2207,15 +2207,15 @@ function pvGravar(so){if(!pvEditavel())return false;const fica=!!so,dentro=c=>!s
 $('pvImsAplicar').onclick=()=>pvGravar(null);
 /* ↺ Voltar para a leitura de cocho: todo curral com leitura neste dia volta para o kg da leitura (e a divisão por trato dela, se tiver); grava na hora */
 document.addEventListener('click',async e=>{const b=e.target.closest('[data-pvleit]');if(!b||!PV.ims)return;e.preventDefault();e.stopPropagation();if(!pvEditavel())return;
-  if(PV.t!==0){toast('Escolha "Todos os tratos" para voltar para a leitura de cocho');return;}
+  if(PV.t!==0){toast('Escolha "Todos os tratos" para restaurar pela leitura de cocho');return;}
   const L=(typeof gTodos==='function'?gTodos('leitura'):[]).filter(x=>x.dia===PV.dia&&!x.del&&+x.novo>0&&S.cadastro.includes(x.curral));
   if(!L.length){toast('Nenhuma leitura de cocho com kg neste dia');return;}
   const o=pvObj(),m=pvMapa(),mud=L.filter(x=>Math.round(+m[x.curral]||0)!==Math.round(+x.novo)||Array.isArray(x.split));
-  if(!await perg('Voltar para a leitura de cocho?',`Os ${L.length} curral(is) com leitura de ${PV.dia.split('-').reverse().join('/')} voltam para o kg da leitura (tratos já feitos não mudam). O que você alterou neles depois da leitura é desfeito.`,'Sim, voltar','Não'))return;
+  if(!await perg('Restaurar pela leitura de cocho?',`Os ${L.length} curral(is) com leitura de ${PV.dia.split('-').reverse().join('/')} voltam para o kg da leitura (tratos já feitos não mudam). O que você alterou neles depois da leitura é desfeito.`,'Sim, voltar','Não'))return;
   if(tecIdx!=null)fecharTeclado();PV.ed=PV.ed||{};PV.split=PV.split||{};const so=new Set();
   L.forEach(x=>{const c=x.curral,v=Math.round(+x.novo);PV.ed[c]={tipo:'kg',val:v};delete PV.split[c];so.add(c);
     const I=pvSplInfo(c,o);if(Array.isArray(x.split)&&x.split.length===I.ks.length&&!I.feito.some(Boolean)&&Math.round(x.split.reduce((a,q)=>a+(+q||0),0))===v)PV.split[c]={alvo:v,kg:x.split.map(q=>Math.round(+q||0)),fechado:true};});
-  pvGravar(so);toast(`↺ ${so.size} curral(is) voltaram para a leitura de cocho`);},true);
+  pvGravar(so);toast(`↺ ${so.size} curral(is) restaurados pela leitura de cocho`);},true);
 /* salva já o curral do teclado (Editar previsto): cada 💾 / Próximo / Anterior grava na hora */
 function pvSalvaJa(c){if(PV.ims&&c!=null&&PV.ed&&PV.ed[c])pvGravar(new Set([c]));}
 function snapTratos(c,o){const r={};for(let k=1;k<=MAXT;k++){const v=(o[k]||{})[c];if(v!==undefined)r[k]=v;}return r;}
