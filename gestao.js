@@ -2066,7 +2066,7 @@ function confBatHTML(){const dia=GT.cbDia||hojeKey(),D=confBatDados(dia);
     <p class="note">Também ficam em Gestão › Relatórios (por dia e por período).</p></section>`;}
 function confResumoTela(RS){if(!RS.length)return '';const n=v=>v==null||!ok(v)?'—':nf(v);
   return `<h3 class="gSubT">Balanço do vagão · neste dia</h3><div class="tablebox"><table class="gTab gCbTab"><thead><tr><th>Início</th><th>Fim</th><th>Carregamento</th><th>Já tinha</th><th>Carreg.</th><th>No vagão</th><th>Na balança</th><th>Forn.</th><th>Devia sobrar</th><th>Sobrou</th><th>A mais</th></tr></thead><tbody>${RS.map(x=>`<tr><td>${esc(x.hora)}</td><td>${esc(x.hFim||'—')}</td><td class="c">${esc(x.loc)}<small> ${esc(x.rac)}</small></td><td class="${x.ini0>100?'gCbMais':''}">${n(x.ini0)}</td><td>${n(x.car)}</td><td>${n(x.noVag)}</td><td>${n(x.naBal)}</td><td>${n(x.forn)}</td><td>${n(x.dev)}</td><td>${n(x.fim)}</td><td class="${x.dif>=100?'gCbMais':x.dif<=-100?'gCbMenos':''}"><b>${x.dif==null?'—':sg_(x.dif)||'0'}</b></td></tr>`).join('')}</tbody></table></div>
-  <p class="note"><b>Já tinha</b> = ração que estava no vagão antes de carregar (se não usar ⚖ Sobra no Carregar, ela vai a mais). <b>A mais</b> = sobrou de verdade − devia sobrar: vem da balança subindo entre os currais, da carga até o 1º curral ou de produto que entrou sem registrar. Detalhes no PDF/Foto.</p>`;}
+  <p class="note"><b>Já tinha</b> = ração que estava no vagão antes de carregar (se não usar ⚖ No vagão no Carregar, ela vai a mais). <b>A mais</b> = sobrou de verdade − devia sobrar: vem da balança subindo entre os currais, da carga até o 1º curral ou de produto que entrou sem registrar. Detalhes no PDF/Foto.</p>`;}
 /* balança sem sinal (registro do tablet): quando caiu, quando voltou, o peso antes de cair e o primeiro peso quando voltou */
 function sinaisDia(dia){const out=[],[Y,M,D]=dia.split('-').map(Number),tms=t=>{const [h,m,x]=String(t||'0:0:0').split(':').map(Number);return new Date(Y,M-1,D,h||0,m||0,x||0).getTime();};
   gTodos('diag').filter(x=>x.dia===dia).forEach(it=>{const ap=it.aparelho||String(it.uid).split('-').pop();let ab=null;const fecha=()=>{if(ab)out.push(ab);ab=null;};
@@ -3847,7 +3847,7 @@ function cTelaNova0(){if(!CG.passo){CG.passo=1;CG.local=null;}if(!CG.local)CG.pa
   CG.juntos=CG.avulso?[]:(CG.juntos||[]).filter(k=>k!==+CG.trato);const trs=[+CG.trato].concat(CG.juntos).sort((a,b)=>a-b);
   const partes=trs.map(k=>({k,sg:sugestaoCarga(k,CG.rac,CG.local)})),sg={tot:partes.reduce((a,p)=>a+p.sg.tot,0),cs:[...new Set(partes.flatMap(p=>p.sg.cs))]};
   const chave=CG.avulso?'avulso|'+CG.rac:CG.local+'|'+trs.join('+')+'|'+CG.rac;if(CG.totalDe!==chave){const mesmaRac=CG.totalDe!=null&&String(CG.totalDe).split('|').pop()===String(CG.rac);CG.total=CG.avulso?0:(sg.tot||0);CG.totalAuto=CG.total;CG.totalDe=chave;if(!mesmaRac)CG.ordem=null;  /* a Ordem é independente: continua valendo se a ração é a mesma */
-    CG.ja={};CG.sobModo='rac';CG.sobRac=null;CG.sobKg=0;CG.ordAberto=false;CG.jaAberto=false;CG.man={};CG.manAberto=false;CG.desm=[];
+    CG.ja={};CG.sobModo='rac';CG.sobRac=null;CG.sobKg=0;CG.vgBaixa=false;CG.mrAberto=false;CG.mrBaixa=false;CG.ordAberto=false;CG.jaAberto=false;CG.man={};CG.manAberto=false;CG.desm=[];
     /* currais deste trato que já foram carregados hoje em outra batida: já vêm desmarcados (fica só o que falta) */
     if(!CG.avulso&&CG.trato){const ja=cJaCarr(trs),L=cCurrCarga(trs);CG.desm=L.filter(x=>ja.has(x.c)).map(x=>x.c);if(CG.desm.length)cExpAplicar();}
     CG.expAberto=false;  /* a lista de currais começa recolhida; abre no Expandir tratos */
@@ -3856,15 +3856,24 @@ function cTelaNova0(){if(!CG.passo){CG.passo=1;CG.local=null;}if(!CG.local)CG.pa
   const its=itensAjust(itensCarga(CG.rac,CG.total||0));
   const passoTrato=passoRac+(CG.avulso?`
     <label>3. Trato</label><div class="cAvInfo">✳ Trato avulso · sem previsto, você digita a quantidade</div>
-    <div class="cBotoes c4"><button type="button" class="mini cAvulso sel" data-cavulso="1">✳ Avulso</button>${cBotAjuste()}</div>`:`
-    <label for="cTrato">3. Trato</label><div class="cTrLin">${window.tratoSeta?tratoSeta('cTrato',CG.trato,'',trC):''}<button type="button" class="mini cJtTog${CG.juntoAberto?' sel':''}" data-cjtog="1">＋ Trato</button></div>${CG.avulso?'':cJaTratadoHTML(trs)}${CG.trato?cExpHTML(trs):''}
+    <div class="cBotoes c4"><button type="button" class="mini cAvulso sel" data-cavulso="1">✳ Avulso</button></div>`:`
+    <label for="cTrato">3. Trato</label><div class="cTrGrid">${window.tratoSeta?tratoSeta('cTrato',CG.trato,'',trC):''}<button type="button" class="mini cJtTog${CG.juntoAberto?' sel':''}" data-cjtog="1">＋ Trato</button>
+      <div class="cTrExp">${CG.trato?cExpHTML(trs,'tog'):''}</div><button type="button" class="mini cAvulso cAvFino" data-cavulso="1">✳️ Avulso</button></div>${CG.avulso?'':cJaTratadoHTML(trs)}${CG.trato?cExpHTML(trs,'corpo'):''}
     <div class="cJuntoLista">${CG.juntoAberto?tratosAtivos().filter(k=>k!==+CG.trato&&(CG.juntos.includes(k)||cTratoPendente(k))).map(k=>{const t=sugestaoCarga(k,CG.rac,CG.local).tot;return `<button type="button" data-cjunto="${k}" class="${CG.juntos.includes(k)?'sel':''}"${t||CG.juntos.includes(k)?'':' disabled'}><span>${CG.juntos.includes(k)?'✓ ':''}Trato ${k}</span>${t?`<small>${nf(t)} kg</small>`:''}</button>`;}).join('')||'<p class="note">Nenhum outro trato pendente para juntar.</p>':''}</div>
-    <div class="cBotoes c4"><button type="button" class="mini cAvulso" data-cavulso="1">✳ Avulso</button>${cBotAjuste()}</div>`)+
+    `)+
     '';
-  if(!CG.avulso&&!CG.trato)return passoTrato+'</section>';  // escolhe o trato antes de mostrar o total
+  const botAj=`<div class="cBotoes c4">${cBotAjuste()}</div>`;   /* Manual / Sobra / Ordem: abaixo do total a carregar */
+  if(CG.mrAberto){const rl=gTodos('racao').filter(r=>!r.inativa||r.uid===CG.mrRac).sort(porNome);
+    return passoTrato+botAj+`<div class="cSobra cMrPan"><div class="linhas"><b>＋ Ração pronta no vagão</b></div>
+      <p class="note">Ração que já está pronta (no chão, de outra batida). Não tem total: o que a balança pesar entrando no vagão fica registrado como ração adicionada. Não fica ligada a nenhum trato.</p>
+      <div class="cSobLin cMrLin"><select id="cMrRac"><option value="">Selecione a ração</option>${rl.map(r=>`<option value="${r.uid}"${r.uid===CG.mrRac?' selected':''}>${esc(r.nome)}</option>`).join('')}</select></div>
+      <label class="cVgBaixa" data-cmrbaixa="1"><span class="cxb${CG.mrBaixa?' on':''}">${CG.mrBaixa?'✓':''}</span> Baixar do estoque <small>${CG.mrBaixa?'(baixa cada insumo pela fórmula da ração)':'(desmarcado: essa ração já foi feita e baixada antes)'}</small></label>
+      <button type="button" class="primary" data-cmrini="1"${CG.mrRac?'':' disabled'}>▶ Iniciar carregamento da ração pronta</button></div></section>`;}
+  if(!CG.avulso&&!CG.trato)return passoTrato+botAj+'</section>';  // escolhe o trato antes de mostrar o total
   return passoTrato+`
     <div><label>4. Total a carregar (kg)${CG.avulso?' · digite':' · pode mudar'}</label><div class="campoX cTotWrap"><input class="big num" id="cTotal" type="text" readonly inputmode="none" value="${CG.total?nf(CG.total):''}" placeholder="${CG.avulso?'digite':''}" data-ct="total"><div class="cSetas"><button type="button" data-ctot="-50" aria-label="Menos 50 kg">▼</button><button type="button" data-ctot="50" aria-label="Mais 50 kg">▲</button></div></div>
 </div>
+    ${botAj}
     ${its.length&&CG.total>0?cTabelaCarga(its):''}
     ${(()=>{const P=cPrevTr(),ks=Object.keys(P);if(!ks.length)return '';const em=S.prevChecadoEm;return `<p class="note cPrevTr">📋 Previsto: ${ks.map(k=>`Trato ${k} <b>${nf(P[k])}</b>`).join(' · ')}${ks.length>1?` · total <b>${nf(ks.reduce((a,k)=>a+P[k],0))}</b>`:''} kg${em?` · conferido na nuvem às ${hhmm(em)}`:' · ainda não conferido na nuvem'}</p>`;})()}
     <button class="primary" data-c="iniciar"${CG.total>0&&its.length?'':' disabled'}>▶ Iniciar carregamento</button></section>`;}
@@ -3875,9 +3884,9 @@ window.barraBatida=barraBatida;
 function cTelaBatida(){const A=cAtiva(),i=A.atual,it=A.itens[i],alvo=it&&ok(it.ini)?it.ini+it.prev:NaN,real=it&&ok(it.ini)&&ok(it.fim)?it.fim-it.ini:NaN,dif=real-(it?it.prev:0);
   const feitos=A.itens.filter(x=>ok(x.real)).length,tp=A.itens.reduce((a,x)=>a+x.prev,0),tr=A.itens.reduce((a,x)=>a+(ok(x.real)?x.real:0),0),tpf=A.itens.reduce((a,x)=>a+(ok(x.real)?x.prev:0),0);
   const cls=(d,p)=>typeof classeDesv==='function'?classeDesv(d,p):'';
-  return `${barraBatida(A)}<section class="panel"><div class="curhead"><h2>Carregamento · ${A.avulso?'Avulso':'Trato '+A.trato}</h2><span class="note">${esc(A.racNome)} · ${nf(A.total)} kg</span></div>
-    <div class="curBox2"><div class="cbCur" data-c="escolher" role="button"><span>Produto ${i+1} de ${A.itens.length} <i class="seta">▼</i></span><b>${esc(it?it.nome:'—')}</b></div>
-      <div class="cbPrev"><span>Carregar</span><b class="num">${it?nf(it.prev):'—'}</b></div></div>
+  return `${barraBatida(A)}<section class="panel"><div class="curhead"><h2>${A.maisRac?'＋ Ração pronta':`Carregamento · ${A.avulso?'Avulso':'Trato '+A.trato}`}</h2><span class="note">${esc(A.racNome)} · ${A.maisRac?'sem total':nf(A.total)+' kg'}</span></div>
+    <div class="curBox2"><div class="cbCur" data-c="escolher" role="button"><span>${A.maisRac?'Ração pronta':`Produto ${i+1} de ${A.itens.length} <i class="seta">▼</i>`}</span><b>${esc(it?it.nome:'—')}</b></div>
+      <div class="cbPrev"><span>Carregar</span><b class="num">${A.maisRac?'livre':it?nf(it.prev):'—'}</b></div></div>
     ${A.escolha?`<div class="escolha">${A.itens.map((x,k)=>`<button data-c="ir" data-i="${k}" class="${k===i?'sel':''}">${ok(x.real)?'✓ ':''}${esc(x.nome)} · ${nf(x.prev)} kg</button>`).join('')}</div>`:''}
     ${it&&ok(it.real)?`<p class="avisoJa">Este produto já foi carregado (${nf(it.real)} kg). Se registrar de novo, substitui.</p>`:''}
     <div><label>Balança no início (kg)</label><div class="campoX"><input class="big num" type="text" readonly inputmode="none" value="${it&&ok(it.ini)?it.ini:''}" data-ct="ini"></div></div>
@@ -3956,13 +3965,21 @@ function cClique(e){
   if(e.target.closest('[data-cordtog]')){CG.ordAberto=!CG.ordAberto;cSave();return cRender();}
   if(e.target.closest('[data-cmantog]')){if(CG.manAberto){CG.manAberto=false;CG.man={};}else{CG.jaAberto=false;CG.ja={};CG.sobRac=null;CG.sobKg=0;CG.sobModo='rac';
     if(CG.avulso){CG.avulso=false;CG.totalDe='x|'+CG.rac;CG.abrirDepois='man';}else CG.manAberto=true;}cSave();return cRender();}  // abrir o Manual fecha e zera a Sobra e o Avulso  // fechar = zera o manual
-  if(e.target.closest('[data-cjatog]')){if(CG.jaAberto){CG.jaAberto=false;CG.ja={};CG.sobRac=null;CG.sobKg=0;CG.sobModo='rac';}else{CG.manAberto=false;CG.man={};
+  /* ＋ Ração: carregamento só de ração já pronta (sem total: vale o que a balança pesar entrando) */
+  if(e.target.closest('[data-cmrtog]')){CG.mrAberto=!CG.mrAberto;if(CG.mrAberto){CG.jaAberto=false;CG.ja={};CG.sobRac=null;CG.sobKg=0;CG.sobModo='rac';CG.vgBaixa=false;CG.manAberto=false;CG.man={};CG.mrRac=CG.mrRac||CG.rac||null;CG.mrBaixa=false;}cSave();return cRender();}
+  if(e.target.closest('[data-cmrbaixa]')){CG.mrBaixa=!CG.mrBaixa;cSave();return cRender();}
+  if(e.target.closest('[data-cmrini]')){const r=G.it[CG.mrRac];if(!r)return toast('Escolha a ração pronta');
+    CG.ativa={dia:hojeKey(),local:CG.local||'',avulso:true,trato:0,tratos:[],rac:r.uid,racNome:r.nome,total:0,totalMistura:0,maisRac:true,mrBaixa:!!CG.mrBaixa,
+      itens:[{ins:'',nome:r.nome+' (pronta)',pMN:100,prev:0,ini:null,fim:null,real:null,hora:'',pronta:1}],atual:0,ts0:Date.now(),origem:cAuto()?'balanca':'manual'};
+    CG.mrAberto=false;cSave();cRender();window.scrollTo({top:0});if(cAuto()){if(window.acIniciou)acIniciou();return;}return cTeclado('ini');}
+  if(e.target.closest('[data-cvgbaixa]')){CG.vgBaixa=!CG.vgBaixa;cSave();return cRender();}
+  if(e.target.closest('[data-cjatog]')){CG.mrAberto=false;if(CG.jaAberto){CG.jaAberto=false;CG.ja={};CG.sobRac=null;CG.sobKg=0;CG.sobModo='rac';CG.vgBaixa=false;}else{CG.manAberto=false;CG.man={};
     if(CG.avulso){CG.avulso=false;CG.totalDe='x|'+CG.rac;CG.abrirDepois='ja';}else CG.jaAberto=true;}cSave();return cRender();}  // abrir a Sobra fecha e zera o Manual e o Avulso  // fechar = zera a sobra
   {const sm=e.target.closest('[data-csmodo]');if(sm){CG.sobModo=sm.dataset.csmodo;cSave();return cRender();}}
   {const m=e.target.closest('[data-cmov]');if(m){const its=itensAjust(itensCarga(CG.rac,CG.total||0)).map(i=>i.ins),i=its.indexOf(m.dataset.ins),j=i+(+m.dataset.cmov);
     if(i>=0&&j>=0&&j<its.length){[its[i],its[j]]=[its[j],its[i]];const pad=itensCarga(CG.rac,CG.total||0).map(i=>i.ins);CG.ordem=its.join('|')===pad.join('|')?null:its;cSave();cRender();}return;}}  // voltou à ordem original = sem mudança
   if(e.target.closest('[data-cordreset]')){CG.ordem=null;cSave();return cRender();}
-  if(e.target.closest('[data-cavulso]')){CG.avulso=!CG.avulso;if(CG.avulso){CG.manAberto=false;CG.man={};CG.jaAberto=false;CG.ja={};CG.sobRac=null;CG.sobKg=0;CG.sobModo='rac';}CG.juntos=[];CG.juntoAberto=false;CG.totalDe='x|'+CG.rac;cSave();return cRender();}
+  if(e.target.closest('[data-cavulso]')){CG.avulso=!CG.avulso;if(CG.avulso){CG.manAberto=false;CG.man={};CG.jaAberto=false;CG.ja={};CG.sobRac=null;CG.sobKg=0;CG.sobModo='rac';CG.vgBaixa=false;}CG.juntos=[];CG.juntoAberto=false;CG.totalDe='x|'+CG.rac;cSave();return cRender();}
   const ct=e.target.closest('[data-ctot]');if(ct){CG.total=Math.max(0,(+CG.total||0)+(+ct.dataset.ctot));cSave();return cRender();}
   const jb=e.target.closest('[data-cjunto]');if(jb){const k=+jb.dataset.cjunto;CG.juntos=CG.juntos||[];CG.juntos=CG.juntos.includes(k)?CG.juntos.filter(x=>x!==k):CG.juntos.concat(k);cSave();return cRender();}
   const inp=e.target.closest('[data-ct]');if(inp)return cTeclado(inp.dataset.ct);
@@ -4024,12 +4041,13 @@ function cClique(e){
         'Sim, finalizar','Não, continuar carregando',!F.length);}finally{CG.conclAberto=false;}
     if(!sim||CG.ativa!==A)return;
     gPut({uid:novoId('carga'),tipo:'carga',dia:A.dia,local:A.local||'',avulso:!!A.avulso,trato:A.trato,tratos:A.tratos||[A.trato],racao:A.rac,racNome:A.racNome,total:A.total,ts0:A.ts0,hora:new Date(A.ts0).toTimeString().slice(0,5),tsF:Date.now(),horaF:new Date().toTimeString().slice(0,5),
-      itens:juntaManual(A),origem:A.origem||'',...(A.prevTr?{prevTr:A.prevTr,prevEm:A.prevEm||null}:{}),...(Array.isArray(A.cur)?{cur:A.cur}:{})});
+      itens:juntaManual(A),origem:A.origem||'',...(A.maisRac?{maisRac:true,mrBaixa:!!A.mrBaixa,...(A.mrBaixa?{mrIns:itensCarga(A.rac,A.itens.reduce((a,x)=>a+(ok(+x.real)?+x.real:0),0)).filter(i=>i.ins&&i.prev>0).map(i=>({ins:i.ins,nome:i.nome,kg:i.prev}))}:{})}:{}),...(A.prevTr?{prevTr:A.prevTr,prevEm:A.prevEm||null}:{}),...(Array.isArray(A.cur)?{cur:A.cur}:{})});
     CG.ativa=null;CG.verDia=A.dia;cLimparSetup();toast('Carregamento salvo');cRender();window.scrollTo({top:0});if(window.atualizarAoFinalizar)atualizarAoFinalizar();})();return;}
   if(a==='apagaCarga'){if(!confirm('Apagar este carregamento?'))return;gDel(b.dataset.id);return cRender();}
 }
 $('cBox').addEventListener('click',cClique);$('acBox').addEventListener('click',cClique);
 function cMuda(e){const t=e.target;
+  if(t.id==='cMrRac'){CG.mrRac=t.value||null;cSave();cRender();return;}
   if(t.id==='cSobRac'){CG.sobRac=t.value||null;cSave();cRender();return;}
   if(t.id==='cSobKg'){const v=gNum(t.value);CG.sobKg=v>0?v:0;cSave();cRender();return;}
   if(t.dataset&&t.dataset.cman){CG.man=CG.man||{};const v=gNum(t.value);if(v>0)CG.man[t.dataset.cman]=v;else delete CG.man[t.dataset.cman];cSave();cRender();return;}
@@ -4369,7 +4387,9 @@ function movsEstoque(insId){const M=gTodos('estmov').filter(m=>m.ins===insId).ma
     /* carregamento pesado: produto sem realizado = não foi carregado (só a parte manual, se tiver). Sem nenhum realizado (retroativo): vale o previsto */
     const pesado=(c.itens||[]).some(x=>x.real!==null&&x.real!==undefined&&ok(+x.real));
     (c.itens||[]).forEach(x=>{if(x.ins===insId)kg+=x.real!==null&&x.real!==undefined&&ok(+x.real)?+x.real:pesado?(+x.man||0):(+x.prev||0);});
-    if(kg>0)M.push({uid:c.uid,dia:c.dia,mov:'bat',kg,obs:`${c.avulso?'Carregamento avulso':'Trato '+((c.tratos||[c.trato]).join('+'))} · ${c.racNome||''}${c.hora?' · '+c.hora:''}`,ts:c.ts0||0});});
+    /* ＋ Ração pronta com "Baixar do estoque": cada insumo sai pela fórmula da ração */
+    if(c.maisRac&&c.mrBaixa&&Array.isArray(c.mrIns))c.mrIns.forEach(i=>{if(i.ins===insId)kg+=+i.kg||0;});
+    if(kg>0)M.push({uid:c.uid,dia:c.dia,mov:'bat',kg,obs:`${c.maisRac?'＋ Ração pronta':c.avulso?'Carregamento avulso':'Trato '+((c.tratos||[c.trato]).join('+'))} · ${c.racNome||''}${c.hora?' · '+c.hora:''}`,ts:c.ts0||0});});
   M.sort((a,b)=>a.dia<b.dia?-1:a.dia>b.dia?1:(a.ts-b.ts));  // no mesmo dia: na ordem em que foi lançado
   let sd=0;M.forEach(m=>{if(m.mov==='inv'){m.dif=m.kg-sd;sd=m.kg;}else sd+=m.mov==='ent'?m.kg:-m.kg;m.saldo=sd;});return M;}
 function estoqueIns(i){const M=movsEstoque(i.uid),hj=hojeKey(),d7=somaDias(hj,-6);
@@ -5120,38 +5140,43 @@ async function zootExport(tipo,dia,loc){const D=zootDados(dia,loc);if(!D.rows.le
 window.zootExport=zootExport;window.zootDados=zootDados;
 /* Carregar: ajustes só desta batida — ordem de fabricação e o que já está no vagão (sobra de outra batida) */
 /* sobra no vagão: por ração (kg da ração que sobrou → quanto de cada produto) ou por insumo (digitado produto a produto) */
-function sobraPorIns(){if((CG.sobModo||'rac')==='rac'){const kg=+CG.sobKg||0;if(!CG.sobRac||!(kg>0))return {};const m={};itensCarga(CG.sobRac,kg).forEach(i=>{if(i.ins)m[i.ins]=(m[i.ins]||0)+i.prev;});return m;}return CG.ja||{};}
-function itensAjust(its){const o=CG.ordem,ja=sobraPorIns(),mn=CG.man||{};let L=its.map(i=>{const j=Math.max(0,+ja[i.ins]||0),m=Math.max(0,+mn[i.ins]||0);return Object.assign({},i,{prevOrig:i.prev,ja:j,man:m,prev:Math.max(0,i.prev-j-m)});});
+/* ⚖ No vagão: o que está no vagão (ração → kg de cada produto; insumo → digitado). Baixar do estoque desmarcado (padrão) = sobra; marcado = conta como manual (sai do estoque) */
+function vagaoPorIns(){if((CG.sobModo||'rac')==='rac'){const kg=+CG.sobKg||0;if(!CG.sobRac||!(kg>0))return {};const m={};itensCarga(CG.sobRac,kg).forEach(i=>{if(i.ins)m[i.ins]=(m[i.ins]||0)+i.prev;});return m;}return CG.ja||{};}
+function sobraPorIns(){return CG.vgBaixa?{}:vagaoPorIns();}
+function itensAjust(its){const o=CG.ordem,ja=sobraPorIns(),mn=CG.vgBaixa?vagaoPorIns():(CG.man||{});let L=its.map(i=>{const j=Math.max(0,+ja[i.ins]||0),m=Math.max(0,+mn[i.ins]||0);return Object.assign({},i,{prevOrig:i.prev,ja:j,man:m,prev:Math.max(0,i.prev-j-m)});});
   if(Array.isArray(o)&&o.length)L.sort((a,b)=>{const ia=o.indexOf(a.ins),ib=o.indexOf(b.ins);return (ia<0?999:ia)-(ib<0?999:ib);});return L;}
 function cBotAjuste(){const nJa=Object.values(sobraPorIns()).filter(v=>v>0).length,mud=Array.isArray(CG.ordem)&&CG.ordem.length;
   /* aberto = verde cheio; fechado com ordem mudada = contorno verde com ✓ (a ordem continua valendo) */
   const nMan=Object.values(CG.man||{}).filter(v=>v>0).length;
-  return `<button type="button" class="mini${CG.manAberto?' sel':''}" data-cmantog="1">✋ Manual${nMan?' ('+nMan+')':''}</button><button type="button" class="mini${CG.jaAberto?' sel':''}" data-cjatog="1">⚖ Sobra${nJa?' ('+nJa+')':''}</button><button type="button" class="mini${CG.ordAberto?' sel':mud?' mud':''}" data-cordtog="1">⇅ Ordem${mud&&!CG.ordAberto?' ✓':''}</button>`;}
-function cTabelaCarga(its){const temJa=CG.jaAberto||its.some(i=>i.ja>0),tot=its.reduce((a,i)=>a+i.prev,0),totJa=its.reduce((a,i)=>a+i.ja,0);
-  const temMan=CG.manAberto||its.some(i=>i.man>0),totMan=its.reduce((a,i)=>a+(i.man||0),0);
+  const nVg=Object.values(vagaoPorIns()).filter(v=>v>0).length;
+  return `${nMan&&!CG.vgBaixa?`<button type="button" class="mini${CG.manAberto?' sel':''}" data-cmantog="1">✋ Manual (${nMan})</button>`:''}<button type="button" class="mini${CG.jaAberto?' sel':''}" data-cjatog="1">⚖ No vagão${nVg?' ('+nVg+')':''}</button><button type="button" class="mini cMrBt${CG.mrAberto?' sel':''}" data-cmrtog="1">＋ Ração</button><button type="button" class="mini${CG.ordAberto?' sel':mud?' mud':''}" data-cordtog="1">⇅ Ordem${mud&&!CG.ordAberto?' ✓':''}</button>`;}
+function cTabelaCarga(its){const temJa=CG.jaAberto||its.some(i=>i.ja>0)||(CG.vgBaixa&&its.some(i=>i.man>0)),tot=its.reduce((a,i)=>a+i.prev,0),totJa=its.reduce((a,i)=>a+i.ja,0);
+  const temMan=!CG.vgBaixa&&(CG.manAberto||its.some(i=>i.man>0)),totMan=its.reduce((a,i)=>a+(i.man||0),0);
   const manNota=CG.manAberto?`<div class="cSobra"><b>✋ Carregamento manual</b><p class="note">Digite na coluna <b>Manual</b> quanto de cada produto foi colocado à mão (fora da balança). A balança carrega só o resto. O manual <b>sai do estoque</b> junto com o carregamento.</p>
     ${its.filter(i=>i.man>i.prevOrig-i.ja).length?`<p class="cAviso">⚠ Manual maior que o necessário: ${its.filter(i=>i.man>i.prevOrig-i.ja).map(i=>`${esc(i.nome)} (manual ${nf(i.man)} kg, precisa ${nf(Math.max(0,i.prevOrig-i.ja))} kg)`).join('; ')}.</p>`:''}</div>`:'';
   const ord=CG.ordAberto?`<div class="cOrdem"><p class="note">Toque nas setas para mudar a ordem de fabricação <b>só deste carregamento</b>.</p>
     ${its.map((i,k)=>`<div class="cOrdLin"><b>${k+1}.</b><span>${esc(i.nome)}</span><button type="button" data-cmov="-1" data-ins="${esc(i.ins)}"${k?'':' disabled'} aria-label="Subir">▲</button><button type="button" data-cmov="1" data-ins="${esc(i.ins)}"${k<its.length-1?'':' disabled'} aria-label="Descer">▼</button></div>`).join('')}
     ${Array.isArray(CG.ordem)?'<button type="button" class="mini" data-cordreset="1">↩ Voltar para a ordem da ração</button>':''}</div>`:'';
   let jaNota='';if(CG.jaAberto){const md=(CG.sobModo||'rac')==='rac'?'rac':'ins',sob=sobraPorIns(),noIts=new Set(its.map(i=>i.ins));
-    const fora=Object.keys(sob).filter(k=>sob[k]>0&&!noIts.has(k)).map(k=>`${esc((G.it[k]||{}).nome||'?')} ${nf(sob[k])} kg`),
+    const fora=Object.keys(vagaoPorIns()).filter(k=>vagaoPorIns()[k]>0&&!noIts.has(k)).map(k=>`${esc((G.it[k]||{}).nome||'?')} ${nf(vagaoPorIns()[k])} kg`),
       demais=its.filter(i=>i.ja>i.prevOrig).map(i=>`${esc(i.nome)} (sobra ${nf(i.ja)} kg, a mistura usa ${nf(i.prevOrig)} kg)`);
     const rac=gTodos('racao').filter(r=>!r.inativa||r.uid===CG.sobRac).sort(porNome);
-    jaNota=`<div class="cSobra"><div class="linhas"><b>Sobra no vagão:</b><button type="button" data-csmodo="rac" class="${md==='rac'?'sel':''}">Ração</button><button type="button" data-csmodo="ins" class="${md==='ins'?'sel':''}">Insumo</button></div>
+    const vg=vagaoPorIns(),nomeCol=CG.vgBaixa?'manual':'sobra';
+    jaNota=`<div class="cSobra"><div class="linhas"><b>No vagão:</b><button type="button" data-csmodo="rac" class="${md==='rac'?'sel':''}">Ração</button><button type="button" data-csmodo="ins" class="${md==='ins'?'sel':''}">Insumo</button></div><label class="cVgBaixa" data-cvgbaixa="1"><span class="cxb${CG.vgBaixa?' on':''}">${CG.vgBaixa?'✓':''}</span> Baixar do estoque <small>${CG.vgBaixa?'(sai do estoque, como colocado à mão agora)':'(desmarcado: já estava no vagão, não baixa de novo)'}</small></label>
       ${md==='rac'?`<div class="cSobLin"><select id="cSobRac"><option value="">Selecione</option>${rac.map(r=>`<option value="${r.uid}"${r.uid===CG.sobRac?' selected':''}>${esc(r.nome)}</option>`).join('')}</select>
-        <input type="text" readonly inputmode="none" data-tecin="1" data-tecnome="Sobra no vagão (kg)" id="cSobKg" placeholder="kg" value="${CG.sobKg?String(CG.sobKg).replace('.',','):''}"></div>
-        ${Object.keys(sob).length?`<p class="note">Nessa sobra tem: ${Object.keys(sob).map(k=>`<b>${esc((G.it[k]||{}).nome||'?')}</b> ${nf(sob[k])} kg`).join(' · ')}. Já foi descontado abaixo.</p>`:'<p class="note">Escolha a ração que sobrou e quantos kg. O app calcula quanto tem de cada produto e desconta do carregamento.</p>'}`
-      :'<p class="note">Digite na coluna <b>Sobra</b> quanto de cada produto já está no vagão.</p>'}
-      ${fora.length?`<p class="cAviso">⚠ Na sobra tem produto que esta ração não usa: ${fora.join(', ')}. Ele vai junto na mistura.</p>`:''}
-      ${demais.length?`<p class="cAviso">⚠ Sobra maior que o necessário: ${demais.join('; ')}.</p>`:''}
-      <p class="note">A fórmula da ração não muda; o estoque baixa só o que for carregado agora.</p></div>`;}
+        <input type="text" readonly inputmode="none" data-tecin="1" data-tecnome="No vagão (kg)" id="cSobKg" placeholder="kg" value="${CG.sobKg?String(CG.sobKg).replace('.',','):''}"></div>
+        ${Object.keys(vg).length?`<p class="note">No vagão tem: ${Object.keys(vg).map(k=>`<b>${esc((G.it[k]||{}).nome||'?')}</b> ${nf(vg[k])} kg`).join(' · ')}. Já foi descontado abaixo.</p>`:'<p class="note">Escolha a ração que está no vagão e quantos kg. O app calcula quanto tem de cada produto e desconta do carregamento.</p>'}`
+      :'<p class="note">Digite na coluna <b>No vagão</b> quanto de cada produto já está no vagão.</p>'}
+      ${fora.length?`<p class="cAviso">⚠ No vagão tem produto que esta ração não usa: ${fora.join(', ')}. Ele vai junto na mistura.</p>`:''}
+      ${demais.length?`<p class="cAviso">⚠ No vagão mais que o necessário: ${demais.join('; ')}.</p>`:''}
+      ${CG.vgBaixa&&its.filter(i=>i.man>i.prevOrig).length?`<p class="cAviso">⚠ No vagão mais que o necessário: ${its.filter(i=>i.man>i.prevOrig).map(i=>`${esc(i.nome)} (${nf(i.man)} kg, a mistura usa ${nf(i.prevOrig)} kg)`).join('; ')}.</p>`:''}
+      <p class="note">A fórmula da ração não muda.${CG.vgBaixa?' O que está no vagão sai do estoque junto com o carregamento.':' O estoque baixa só o que for carregado agora.'}</p></div>`;}
   /* vagão não está vazio (balança da Automação mostra peso) e a sobra não foi descontada: avisa */
   let vazNota='';try{const pv=window.AUTO&&AUTO.fonte&&AUTO.peso!=null&&$('viewAutoC')&&!$('viewAutoC').hidden?Math.round(AUTO.peso):null;
-    if(pv!=null&&pv>100&&!Object.values(sobraPorIns()).some(v=>v>0))vazNota=`<p class="cAviso">⚠ A balança mostra <b>${nf(pv)} kg</b> no vagão antes de carregar. Se for ração que sobrou, toque em <b>⚖ Sobra</b> e informe, para não carregar a mais.</p>`;}catch(e){}
-  return vazNota+ord+jaNota+manNota+`<div class="tablebox"><table class="gTab"><thead><tr><th>Produto</th><th>% MN</th>${temJa?'<th>Sobra</th>':''}${temMan?'<th>Manual</th>':''}<th>Carregar (kg)</th></tr></thead><tbody>${its.map(i=>`<tr><td class="c">${esc(i.nome)}${i.ja>0?`<small>mistura: ${nf(i.prevOrig)} kg</small>`:''}</td><td>${nf(i.pMN,1)}</td>${temJa?`<td>${CG.jaAberto&&(CG.sobModo||'rac')!=='rac'?`<input type="text" readonly inputmode="none" data-tecin="1" data-tecnome="Sobra · ${esc(i.nome)} (kg)" class="cJaIn" data-cja="${esc(i.ins)}" value="${i.ja?String(i.ja).replace('.',','):''}" placeholder="0">`:nf(i.ja)}</td>`:''}${temMan?`<td>${CG.manAberto?`<input type="text" readonly inputmode="none" data-tecin="1" data-tecnome="Manual · ${esc(i.nome)} (kg)" class="cJaIn" data-cman="${esc(i.ins)}" value="${i.man?String(i.man).replace('.',','):''}" placeholder="0">`:nf(i.man||0)}</td>`:''}<td><b>${nf(i.prev)}</b>${i.ja>0&&i.prev===0?'<small>já tem tudo</small>':i.man>0&&i.prev===0?'<small>tudo manual</small>':''}</td></tr>`).join('')}
-      <tr class="grp"><td>Total</td><td>100,0</td>${temJa?`<td>${nf(totJa)}</td>`:''}${temMan?`<td>${nf(totMan)}</td>`:''}<td>${nf(tot)}</td></tr></tbody></table></div>
-    ${totMan>0?`<p class="note">✋ Manual: <b>${nf(totMan)} kg</b> já colocado à mão · a balança carrega <b>${nf(tot)} kg</b>.</p>`:''}${totJa>0?(()=>{const sobT=Object.values(sobraPorIns()).reduce((a,v)=>a+(+v||0),0),fin=sobT+tot;return `<p class="note">Mistura final no vagão: <b>${nf(fin)} kg</b> = ${nf(sobT)} kg de sobra + ${nf(tot)} kg a carregar${Math.abs(fin-CG.total)>1?` (o previsto era ${nf(CG.total)} kg)`:''}.</p>`;})():''}`;}
+    if(pv!=null&&pv>100&&!Object.values(vagaoPorIns()).some(v=>v>0))vazNota=`<p class="cAviso">⚠ A balança mostra <b>${nf(pv)} kg</b> no vagão antes de carregar. Se for ração que sobrou, toque em <b>⚖ No vagão</b> e informe, para não carregar a mais.</p>`;}catch(e){}
+  return vazNota+ord+jaNota+manNota+`<div class="tablebox"><table class="gTab"><thead><tr><th>Produto</th><th>% MN</th>${temJa?'<th>No vagão</th>':''}${temMan?'<th>Manual</th>':''}<th>Carregar (kg)</th></tr></thead><tbody>${its.map(i=>`<tr><td class="c">${esc(i.nome)}${i.ja>0?`<small>mistura: ${nf(i.prevOrig)} kg</small>`:''}</td><td>${nf(i.pMN,1)}</td>${temJa?(()=>{const v=CG.vgBaixa?i.man:i.ja;return `<td>${CG.jaAberto&&(CG.sobModo||'rac')!=='rac'?`<input type="text" readonly inputmode="none" data-tecin="1" data-tecnome="No vagão · ${esc(i.nome)} (kg)" class="cJaIn" data-cja="${esc(i.ins)}" value="${v?String(v).replace('.',','):''}" placeholder="0">`:nf(v)}</td>`;})():''}${temMan?`<td>${CG.manAberto?`<input type="text" readonly inputmode="none" data-tecin="1" data-tecnome="Manual · ${esc(i.nome)} (kg)" class="cJaIn" data-cman="${esc(i.ins)}" value="${i.man?String(i.man).replace('.',','):''}" placeholder="0">`:nf(i.man||0)}</td>`:''}<td><b>${nf(i.prev)}</b>${i.ja>0&&i.prev===0?'<small>já tem tudo</small>':i.man>0&&i.prev===0?'<small>tudo manual</small>':''}</td></tr>`).join('')}
+      <tr class="grp"><td>Total</td><td>100,0</td>${temJa?`<td>${nf(CG.vgBaixa?totMan:totJa)}</td>`:''}${temMan?`<td>${nf(totMan)}</td>`:''}<td>${nf(tot)}</td></tr></tbody></table></div>
+    ${totMan>0&&CG.vgBaixa?`<p class="note">⚖ No vagão (baixa do estoque): <b>${nf(totMan)} kg</b> · a balança carrega <b>${nf(tot)} kg</b>.</p>`:''}${totMan>0&&!CG.vgBaixa?`<p class="note">✋ Manual: <b>${nf(totMan)} kg</b> já colocado à mão · a balança carrega <b>${nf(tot)} kg</b>.</p>`:''}${totJa>0?(()=>{const sobT=Object.values(sobraPorIns()).reduce((a,v)=>a+(+v||0),0),fin=sobT+tot;return `<p class="note">Mistura final no vagão: <b>${nf(fin)} kg</b> = ${nf(sobT)} kg já no vagão + ${nf(tot)} kg a carregar${Math.abs(fin-CG.total)>1?` (o previsto era ${nf(CG.total)} kg)`:''}.</p>`;})():''}`;}
 /* Carregar: avisa (sem bloquear) quando todos os currais do trato escolhido já foram tratados hoje */
 /* trato que ainda pode entrar junto na batida: tem curral pendente e ainda não foi carregado hoje (mesmo local e ração) */
 function cTratoPendente(k){const hj=hojeKey();if(typeof fornPendentes==='function'&&!fornPendentes(CG.local,CG.rac,k).length)return false;
@@ -5165,8 +5190,10 @@ function cJaCarr(trs){const m=new Map(),hj=hojeKey();try{gTodos('carga').filter(
   /* curral que já foi tratado (fornecido) hoje num destes tratos também conta como já carregado (ex.: batidas de antes, que não guardavam os currais) */
   try{(typeof HIST!=='undefined'?HIST:[]).filter(r=>r.dia===hj&&trs.includes(+r.trato)&&+r.forn>0).sort((a,b)=>(a.ts||0)-(b.ts||0)).forEach(r=>{if(!m.has(r.curral))m.set(r.curral,'tratado'+(r.hora?' '+r.hora:''));});}catch(e){}
   return m;}
-function cExpHTML(trs){const L=cCurrCarga(trs);if(!L.length)return '';const ds=CG.desm||[],nM=L.filter(x=>!ds.includes(x.c)).length,ja=cJaCarr(trs);
-  const tog=`<button type="button" class="mini cExpTog${CG.expAberto?' sel':''}" data-cexp="1">${CG.expAberto?'▲ Recolher tratos':'▼ Expandir tratos'}${ds.length?` · ${nM} de ${L.length} currais`:''}</button>`;
+function cExpHTML(trs,parte){const L=cCurrCarga(trs);if(!L.length)return '';const ds=CG.desm||[],nM=L.filter(x=>!ds.includes(x.c)).length,ja=cJaCarr(trs);
+  const tog=`<button type="button" class="mini cExpTog${CG.expAberto?' sel':''}" data-cexp="1">${CG.expAberto?'▲ Recolher tratos':'▼ Expandir tratos'} · ${nM} de ${L.length} currais</button>`;
+  if(parte==='tog')return tog;   /* botão fica na grade do trato (abaixo do ◀ Trato ▶) */
+  if(parte==='corpo')return CG.expAberto?`<div class="cExpTodos">${nM<L.length?'<button type="button" class="mini" data-cexpall="1">✓ Marcar todos</button>':'<button type="button" class="mini" data-cexpall="0">✕ Desmarcar todos</button>'}</div><div class="cJuntoLista cExpLista">${L.map(x=>{const on=!ds.includes(x.c);const jh=ja.get(x.c);return `<button type="button" data-cexpc="${esc(x.c)}" class="${on?'sel':''}${jh!=null&&!on?' cJaCarr':''}"><span>${on?'✓ ':''}${esc(x.c)}</span><small><i class="kg">${nf(x.kg)} kg</i>${jh!=null?` · <em>já ${esc(jh)}</em>`:''}</small></button>`;}).join('')}</div><p class="note">Toque no curral para colocar ou tirar a quantidade dele no carregamento.</p>`:'';
   return (CG.expAberto?'':tog)+   /* aberto: Recolher e Marcar/Desmarcar lado a lado */
     (CG.expAberto?`<div class="cExpTodos cExpLado">${tog}${nM<L.length?'<button type="button" class="mini" data-cexpall="1">✓ Marcar todos</button>':'<button type="button" class="mini" data-cexpall="0">✕ Desmarcar todos</button>'}</div><div class="cJuntoLista cExpLista">${L.map(x=>{const on=!ds.includes(x.c);const jh=ja.get(x.c);return `<button type="button" data-cexpc="${esc(x.c)}" class="${on?'sel':''}${jh!=null&&!on?' cJaCarr':''}"><span>${on?'✓ ':''}${esc(x.c)}</span><small><i class="kg">${nf(x.kg)} kg</i>${jh!=null?` · <em>já ${esc(jh)}</em>`:''}</small></button>`;}).join('')}</div><p class="note">Toque no curral para colocar ou tirar a quantidade dele no carregamento.</p>`:'');}
 function cExpAplicar(){const trs=[+CG.trato].concat(CG.juntos||[]),L=cCurrCarga(trs),ds=CG.desm||[];CG.total=L.filter(x=>!ds.includes(x.c)).reduce((a,x)=>a+x.kg,0);CG.totalAuto=CG.total;}
