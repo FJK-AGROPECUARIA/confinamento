@@ -53,7 +53,7 @@ const css=`
   :is(#aBox,#acBox) .fCols{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.1fr);gap:0 16px;align-items:start}
   :is(#aBox,#acBox) :is(.fColE,.fColD){display:block;min-width:0}
   :is(#aBox,#acBox) :is(.fColE,.fColD)>*+*{margin-top:8px}
-  :is(#aBox,#acBox) .fColD .aFalta b{font-size:7.5rem}
+  :is(#aBox,#acBox) .fColD .aFalta b{font-size:min(7.5rem,11.5vw)}
   #aBox .fColD button.fFinal{margin-top:14px!important}
 }
 :is(#aBox,#acBox,#aoVivo) .aConn.comTag{grid-template-columns:3fr 2fr 1.3fr}
@@ -92,6 +92,8 @@ const css=`
 #aBox .aPausaBt{position:absolute;top:8px;right:8px;padding:6px 10px;font-size:.9rem;width:auto!important;margin:0!important;display:block;background:#fff;color:#11253d;border:2px solid rgba(0,0,0,.15);border-radius:10px;font-weight:700;z-index:2}
 #aBox .aPausaBt[hidden]{display:none}
 #acBox .aPausaBt{position:absolute;top:8px;right:8px;padding:6px 10px;font-size:.9rem;width:auto!important;margin:0!important;display:block;background:#fff;color:#11253d;border:2px solid rgba(0,0,0,.15);border-radius:10px;font-weight:700;z-index:2}#acBox .aPausaBt[hidden]{display:none}
+@media (max-width:600px){:is(#aBox,#acBox) .aFalta b{font-size:min(6.2rem,21vw)!important}}
+:is(#aBox,#acBox) .aPesoMeio{margin:10px 0 12px}
 @media (max-width:600px){:is(#aBox,#acBox) .aPausaBt{position:static!important;display:inline-block!important;margin:0 auto 6px!important}:is(#aBox,#acBox) .aPausaBt[hidden]{display:none!important}}
 #acBox #acPausaBox span{white-space:normal;font-size:1.05rem;font-weight:600;opacity:.95}
 #acBox .aPausaBox{box-sizing:border-box;width:100%;border-radius:18px;padding:30px 16px;text-align:center;background:#1565c0;color:#fff;display:grid;gap:8px;cursor:pointer;min-height:260px;align-content:center;border:4px solid #0d47a1}#acBox .aPausaBox[hidden]{display:none}#acBox .aPausaBox b{font-family:var(--display);font-stretch:condensed;font-size:clamp(2.4rem,11vw,4rem);line-height:1;letter-spacing:.04em}#acBox .aPausaBox .pzCur{font-family:var(--display);font-stretch:condensed;font-size:clamp(2.2rem,10vw,4.2rem);line-height:1.05;font-weight:800}#acBox .aPausaBox em{display:block;font-style:normal;font-weight:800;font-size:1.3rem;background:#fff;color:#0d47a1;border-radius:12px;padding:12px;margin-top:8px}
@@ -165,7 +167,6 @@ function montar(){
       <button id="aSimDesc">▼ Fornecer</button>
       <button id="aSimPara">■ Parar</button>
     </div>
-    <div class="aPeso"><div><small>Balança (kg)</small><em id="aEstTxt">sem leitura</em></div><b class="num" id="aPeso">—</b></div>
   </section>
 
   <section class="panel fornSetup" id="fSetupA" hidden></section>
@@ -175,6 +176,7 @@ function montar(){
     <div class="tSeta tSetaFixa"><button type="button" data-tsd="-1" aria-label="Trato anterior">◀</button><select class="trato" id="aTrato">
         ${window.opcoesTrato?opcoesTrato(S.tratoSel):'<option value="1">Trato 1</option>'}
       </select><button type="button" data-tsd="1" aria-label="Próximo trato">▶</button></div>
+    <div class="aPeso aPesoMeio"><div><small>Balança (kg)</small><em id="aEstTxt">sem leitura</em></div><b class="num" id="aPeso">—</b></div>
     <div class="curBox2">
       <div class="cbCur" id="aTrocar" role="button" aria-label="Trocar curral"><span>Curral atual <i class="seta">▼</i></span><b id="aCur">—</b></div>
       <div class="cbPrev"><span>Previsto</span><b class="num" id="aPrev">—</b></div>
@@ -1044,7 +1046,12 @@ setInterval(()=>{try{if(A.restChk||A.peso==null)return;A.restChk=true;
   if(A.peso>v.base+cfg().minDesc)return;   // peso maior que o inicial guardado: recarregou, não continua
   diagLog('curral_restaurado',{curral:v.curral,ini:v.base,peso:A.peso,seg:Math.round((Date.now()-v.ts)/1000)});
   window.aContinuar(v.base);toast(`↩ Voltou para o ${v.curral}: continuando com o peso inicial ${fmt(v.base)} kg (o que já caiu não se perdeu)`);}catch(e){}},500);
-window.aAoAbrir=()=>{montar();try{if(!A.pausa&&A.est!=='descarregando')travarCurral();}catch(e){}aRender();try{pularParaFalta(true);}catch(e){}if(!modoVer&&window.btAutoVoltar)btAutoVoltar();try{pintarTag();}catch(e){}try{if(typeof gSync==='function')gSync(true).catch(()=>{});}catch(e){}};
+/* peso da balança no Fornecer: antes de abrir o fornecimento (escolha de local/ração/trato) fica lá em cima, no quadro Balança; aberto, desce para baixo do ◀ Trato ▶ */
+function posPesoA(){const box=$('aBox'),pe=box&&box.querySelector('.aPeso');if(!pe)return;const setup=box.classList.contains('emSetup');
+  if(setup){const top=box.querySelector(':scope>section');if(top&&pe.parentElement!==top){top.appendChild(pe);pe.classList.remove('aPesoMeio');}}
+  else{const ts=box.querySelector('.tSetaFixa');if(ts&&pe.previousElementSibling!==ts){ts.after(pe);pe.classList.add('aPesoMeio');}}}
+let posPesoObs=null;
+window.aAoAbrir=()=>{montar();posPesoA();if(!posPesoObs&&$('aBox')){posPesoObs=new MutationObserver(posPesoA);posPesoObs.observe($('aBox'),{attributes:true,attributeFilter:['class']});}try{if(!A.pausa&&A.est!=='descarregando')travarCurral();}catch(e){}aRender();try{pularParaFalta(true);}catch(e){}if(!modoVer&&window.btAutoVoltar)btAutoVoltar();try{pintarTag();}catch(e){}try{if(typeof gSync==='function')gSync(true).catch(()=>{});}catch(e){}};
 /* quando a aba Tratar ou a nuvem mudam algo, a tela da Automação acompanha */
 const renderOriginal=window.render;
 if(typeof renderOriginal==='function'){window.render=function(){const r=renderOriginal.apply(this,arguments);try{if(!$('viewAuto').hidden)aRender();}catch(e){}return r;};}
@@ -1099,6 +1106,7 @@ function maquinaCarga(){
 function subindoAgora(){return AC.est==='carregando'&&AC.ancT>0&&Date.now()-AC.ancT<jCaindo()&&Date.now()-A.ultDado<jVivo();}
 function zonaC(){const it=acItem();if(AC.trava||AC.pausa||!naCargaAuto()||!it||!ok(it.ini)||A.peso==null||ok(it.real))return null;
   const c=cfg(),carregado=Math.max(0,A.peso-it.ini),falta=it.prev-carregado,sub=subindoAgora(),taxa=sub?taxaQueda(-1):0;
+  {const B=acB();if(B&&B.maisRac)return {falta:1e9,fp:1e9,taxa,carregado,caindo:sub,z:'verde',livre:true};}   // ＋ Ração pronta: sem meta, sem bip
   let fp=falta;
   if(sub){fp=falta-taxa*(+c.antecipa||0);if(AC.fpMin!=null&&AC.fpMin<fp)fp=AC.fpMin;AC.fpMin=fp;}else AC.fpMin=null;
   return {falta,fp,taxa,carregado,caindo:sub,z:falta<0?'passou':fp<=c.continuo?'continuo':fp<=c.vermelho?'vermelho':fp<=c.amarelo?'amarelo':'verde'};}
@@ -1110,16 +1118,17 @@ window.acTela=(nova,dia)=>{
     <div class="aSinal" id="acSinal">⚪ Balança desconectada</div>
     <div class="aTeclas" id="acTeclas" hidden><button data-tecla="43">▸0◂<br>Zero</button><button data-tecla="40">▸T◂<br>Tara</button><button data-tecla="10">Líquido/<br>Bruto</button><button data-tecla="23">🖨<br>Imprimir</button></div>
     <div class="aSim" id="acSimBox" hidden><button class="lima" data-ac="simSobe">▲ Carregar</button><button data-ac="simPara">■ Parar</button><button data-ac="simZera">Esvaziar</button></div>
-    <div class="aPeso"><div><small>Balança (kg)</small><em id="acEstTxt">sem leitura</em></div><b class="num" id="acPeso">—</b></div>
   </section>`;
-  if(nova)return topo+nova+dia;
+  const pesoC=`<div class="aPeso aPesoMeio"><div><small>Balança (kg)</small><em id="acEstTxt">sem leitura</em></div><b class="num" id="acPeso">—</b></div>`;
+  if(nova)return topo.replace('</section>',pesoC+'</section>')+nova+dia;
   const B=acB(),i=B.atual,it=B.itens[i];
   const pend=B.itens.filter(x=>!ok(x.real)).length,todosC=!pend,ultimoC=pend===1&&it&&!ok(it.real);
   const h=cTelaBatida(),k=h.indexOf('<section',h.indexOf('<section')+8),tabela=k>0?h.slice(k):'';
-  return topo+(window.barraBatida?barraBatida(B):'')+`<section class="panel"><div class="curhead"><h2>Carregamento · ${B.avulso?'Avulso':'Trato '+B.trato}</h2><span class="note">${esc(B.racNome)} · ${nf(B.total)} kg</span></div>
+  return topo+(window.barraBatida?barraBatida(B):'')+`<section class="panel"><div class="curhead"><h2>${B.maisRac?'＋ Ração pronta':`Carregamento · ${B.avulso?'Avulso':'Trato '+B.trato}`}</h2><span class="note">${esc(B.racNome)} · ${B.maisRac?'sem total':nf(B.total)+' kg'}</span></div>
     <div class="fCols"><div class="fColE">
-    <div class="curBox2"><div class="cbCur" data-c="escolher" role="button"><span>Produto ${i+1} de ${B.itens.length} <i class="seta">▼</i></span><b>${esc(it?it.nome:'—')}</b></div>
-      <div class="cbPrev"><span>Carregar</span><b class="num">${it?nf(it.prev):'—'}</b></div></div>
+    ${pesoC}
+    <div class="curBox2"><div class="cbCur" data-c="escolher" role="button"><span>${B.maisRac?'Ração pronta':`Produto ${i+1} de ${B.itens.length} <i class="seta">▼</i>`}</span><b>${esc(it?it.nome:'—')}</b></div>
+      <div class="cbPrev"><span>Carregar</span><b class="num">${B.maisRac?'livre':it?nf(it.prev):'—'}</b></div></div>
     ${B.escolha?`<div class="escolha">${B.itens.map((x,j)=>`<button data-c="ir" data-i="${j}" class="${j===i?'sel':''}">${ok(x.real)?'✓ ':''}${esc(x.nome)} · ${nf(x.prev)} kg</button>`).join('')}</div>`:''}
     ${it&&ok(it.real)?`<p class="avisoJa">Este produto já foi carregado (${nf(it.real)} kg). Para refazer, toque em Desfazer último, lá embaixo.</p>`:''}
     ${window.fixoNota?fixoNota(it):''}<div class="aEtapa" id="acEtapa"></div>
@@ -1196,10 +1205,12 @@ function pintarCarga0(){
     fb.style.display=tv?'none':'';const mi=document.querySelector('#acBox .aMini');if(mi)mi.style.display=tv?'none':'';if($('acReg'))$('acReg').style.display=tv?'none':'';
     if(tv){$('acEtapa').textContent='⏸ Balança pausada · toque no azul quando chegar no produto';$('acEtapa').className='aEtapa pausa';$('acEtapa').hidden=false;return;}}
   $('acIni').textContent=it&&ok(it.ini)?fmt(it.ini):'—';
-  $('acAlvo').textContent=it&&ok(it.ini)?fmt(it.ini+it.prev):'—';
+  const livre=!!(acB()&&acB().maisRac);
+  $('acAlvo').textContent=livre?'—':it&&ok(it.ini)?fmt(it.ini+it.prev):'—';
   $('acCarr').textContent=it&&ok(it.real)?fmt(it.real):z?fmt(z.carregado):'—';
-  $('acFaltaTit').textContent=(z&&z.falta<0)?'PASSOU':'Carregar';
-  if(z){$('acFalta').textContent=z.falta<0?'-'+fmt(-z.falta):fmt(z.falta);fb.className='aFalta '+z.z;
+  $('acFaltaTit').textContent=livre?'Adicionado no vagão':(z&&z.falta<0)?'PASSOU':'Carregar';
+  if(livre){const v=it&&ok(it.real)?it.real:z?z.carregado:0;$('acFalta').textContent=fmt(v);fb.className='aFalta verde';$('acFaltaTxt').textContent=it&&ok(it.real)?'registrado':it&&ok(it.ini)?`peso inicial ${fmt(it.ini)} kg`:'\u00a0';}
+  else if(z){$('acFalta').textContent=z.falta<0?'-'+fmt(-z.falta):fmt(z.falta);fb.className='aFalta '+z.z;
     $('acFaltaTxt').textContent=z.falta<0?'DO PREVISTO':z.falta===0?'NO PONTO!':'\u00a0';}
   else{$('acFalta').textContent=it?fmt(ok(it.real)?it.real:it.prev):'—';fb.className='aFalta cinza';
     $('acFaltaTxt').textContent=it&&ok(it.real)?'já carregado':A.fonte?'esperando peso inicial':'conecte a balança';}
