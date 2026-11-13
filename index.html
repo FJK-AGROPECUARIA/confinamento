@@ -1358,7 +1358,7 @@ body.naInicio .topoTxt h1{font-size:clamp(16px,5vw,28px)!important}
 <div class="toast" id="toast" hidden></div>
 <script>
 'use strict';
-const APP_VERSAO='384';
+const APP_VERSAO='385';
 const APP_DATA='19/10/2026';
 const KEY='confinamento-completo-v1';
 const $=id=>document.getElementById(id);
@@ -2340,7 +2340,7 @@ function teclarBal(k){
   $(balCampo).value=balBuf;S[balCampo]=balBuf;save();$('balValor').textContent=balBuf||'—';calc();mostrarX();
 }
 ['ini','fim'].forEach(id=>$(id).addEventListener('click',e=>{e.preventDefault();$(id).blur();abrirBal(id);}));
-$('tecBal').addEventListener('pointerdown',e=>{const b=e.target.closest('button[data-b]');if(!b)return;e.preventDefault();teclarBal(b.dataset.b);});
+$('tecBal').addEventListener('pointerdown',e=>{const b=e.target.closest('button[data-b]');if(!b)return;e.preventDefault();window.__tecTs=Date.now();teclarBal(b.dataset.b);});
 document.addEventListener('pointerdown',e=>{if(balCampo&&!e.target.closest('#tecBal,#ini,#fim,.limparX'))fecharBal();},true);
 document.addEventListener('keydown',e=>{if(!balCampo)return;if(/^[0-9]$/.test(e.key))teclarBal(e.key);else if(e.key==='Backspace')teclarBal('del');else if(e.key==='Enter'||e.key==='Escape'){e.preventDefault();teclarBal('ok');}});
 function teclar(k){
@@ -2377,7 +2377,7 @@ function teclar(k){
 $('tbPrev').addEventListener('click',e=>{const td=e.target.closest('td'),f=td&&td.querySelector('input.feito[data-n]');if(f&&!e.target.closest('input:not(.feito)')){toast(PV.t?`${S.cadastro[+f.dataset.n]}: Trato ${PV.t} já tratado, o previsto não muda mais`:`${S.cadastro[+f.dataset.n]}: todos os tratos do dia já foram feitos, o total não muda mais`);return;}const y=e.target.closest('input.imsIn[data-ims]');if(y){e.preventDefault();y.blur();if(y.disabled)return;abrirTeclado(S.cadastro.indexOf(y.dataset.ims),'ims');return;}const x=e.target.closest('input[data-n]');if(x){e.preventDefault();x.blur();if(!PV.ims&&!PV.per){if(pvEditavel())toast(PV.t?`Para mudar, toque em "Alterar previsto do Trato ${PV.t}" lá embaixo`:'Para mudar, toque em "Alterar previsto" lá embaixo');return;}abrirTeclado(+x.dataset.n);}});
 $('teclado').addEventListener('pointerdown',e=>{const b=e.target.closest('button[data-k]');if(!b)return;e.preventDefault();window.__tecTs=Date.now();teclar(b.dataset.k);});
 /* toque no teclado que fecha ele: o "click" que vem depois não pode cair no botão que estava embaixo (ex.: Cancelar da edição) */
-document.addEventListener('click',e=>{if(window.__tecTs&&Date.now()-window.__tecTs<600&&!(e.target.closest&&e.target.closest('#teclado'))){e.preventDefault();e.stopPropagation();e.stopImmediatePropagation();}},true);
+document.addEventListener('click',e=>{if(window.__tecTs&&Date.now()-window.__tecTs<600&&!(e.target.closest&&e.target.closest('#teclado,#tecBal'))){e.preventDefault();e.stopPropagation();e.stopImmediatePropagation();}},true);
 /* ---- o mesmo teclado do app em outros campos (Leitura de cocho: % IMS com vírgula automática e kg/dia) ----
    % IMS: digita só os números e a vírgula entra sozinha com 2 casas (280 → 2,80 · 84 → 0,84) */
 let tecGen=null;
