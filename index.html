@@ -1036,6 +1036,9 @@ body.naInicio .topoTxt h1{font-size:clamp(16px,5vw,28px)!important}
 #regFalha[hidden]{display:none}
 .pvSplC{cursor:pointer!important;text-decoration:underline dotted;text-underline-offset:3px}.pvSplC.on{background:#e8f5e9}.pvSplI{display:inline-flex;align-items:center;justify-content:center;margin-right:8px;padding:1px 2px;border:1.5px solid #2e6b2f;border-radius:7px;background:#fff;vertical-align:middle}.pvSplSalva{flex:0 0 auto;width:52px!important;min-height:0!important;height:44px;padding:0!important;border-radius:12px;background:#2e6b2f;color:#fff;font-size:1.3rem;border:0}
 .pvSplRow td{padding:4px 0 10px!important}.pvSpl{padding:10px 12px;border-radius:12px;background:#f1f8e9;border:1px solid #c5e1a5}.pvSplCab,.pvSplLin{display:grid;grid-template-columns:auto 1fr 1fr;gap:8px;align-items:center}.pvSplCab{font-size:.75rem;font-weight:700;color:#5b6b7a;text-transform:uppercase;letter-spacing:.06em}.pvSplCab span:not(:first-child),.pvSplLin span{text-align:right;padding-right:8px}.pvSplLin{margin:4px 0}.pvSplLin b{white-space:nowrap}#tbPrev .pvSplLin input.cell{height:40px;width:100%!important;caret-color:auto;cursor:text}.pvSplLin.feito{color:#5b6b7a}.pvSplTot{margin:8px 0 4px}.pvSplTot .ok{color:#2e7d32;font-weight:700}.pvSplTot .bad{color:#c62828}.pvSpl .row{gap:8px;flex-wrap:nowrap!important}.pvSpl .row .mini{flex:1 1 0;min-width:0;white-space:nowrap;padding-left:6px;padding-right:6px}#tbPrev td.pvSplC,#tbPrev td.pvSplN{white-space:nowrap!important}.pvSplI.vazio{visibility:hidden;width:26px;height:24px}.pvSplC{text-decoration:none!important}
+/* Leitura de cocho (% IMS / kg): Fechar · Voltar · 💾 Salvar, sem Anterior/Próximo */
+.gCoG7Col.rep{cursor:pointer}.gCoG7Col.sel .gCoG7Bar{outline:3px solid #11253d;outline-offset:1px}
+#teclado .tecGSalvar{display:none;background:#2e6b2f;color:#fff;border-color:#2e6b2f;font-weight:800}#teclado.modoCo .tecAcoes4{grid-template-columns:repeat(3,minmax(0,1fr))!important}#teclado.modoCo [data-k="up"],#teclado.modoCo [data-k="ok"]{display:none}#teclado.modoCo .tecGSalvar{display:block}#teclado .tecGCancel{display:none;background:#c62828;color:#fff;border-color:#c62828;font-weight:800}#teclado.modoCo .tecGCancel{display:block}#teclado.modoCo [data-k="fechar"]{display:none}
 #tecSalvaRow{margin-top:8px;display:grid;grid-template-columns:1fr 1fr;gap:8px}#tecSalvaRow[hidden]{display:none}#tecSalvaRow .tecVerde{background:#2e6b2f;color:#fff;border-color:#2e6b2f;font-weight:800}#tecSalvaRow .tecVerm{background:#c62828;color:#fff;border-color:#c62828;font-weight:800}
 .pvSplC.guard .pvSplI{background:#2e6b2f}.pvSplC.guard .pvSplI svg *{stroke:#fff;fill:#fff}.pvSplC.guard .pvSplI svg line{fill:none}
 </style>
@@ -1294,7 +1297,7 @@ body.naInicio .topoTxt h1{font-size:clamp(16px,5vw,28px)!important}
     <button data-k="7">7</button><button data-k="8">8</button><button data-k="9">9</button>
     <button data-k="limpar" class="tecSec">Limpar</button><button data-k="0">0</button><button data-k="del" class="tecSec">⌫</button>
   </div>
-  <div class="tecAcoes tecAcoes4"><button data-k="fechar" class="tecSec">Fechar</button><button data-k="voltar" class="tecSec" id="tecVoltar">↶ Voltar</button><button data-k="up" class="tecAzul">▲ Anterior</button><button data-k="ok" class="tecAzul">Próximo ▼</button></div>
+  <div class="tecAcoes tecAcoes4"><button data-k="gcancel" class="tecGCancel">✕ Cancelar</button><button data-k="fechar" class="tecSec">Fechar</button><button data-k="voltar" class="tecSec" id="tecVoltar">↶ Voltar</button><button data-k="up" class="tecAzul">▲ Anterior</button><button data-k="ok" class="tecAzul">Próximo ▼</button><button data-k="gsalvar" class="tecGSalvar">💾 Salvar</button></div>
   <div class="tecAcoes" id="tecSalvaRow" hidden><button data-k="cancelar" class="tecVerm">✕ Cancelar</button><button data-k="salvar" class="tecVerde">💾 Salvar</button></div>
 </div>
 <div class="teclado" id="tecBal" hidden>
@@ -1358,7 +1361,7 @@ body.naInicio .topoTxt h1{font-size:clamp(16px,5vw,28px)!important}
 <div class="toast" id="toast" hidden></div>
 <script>
 'use strict';
-const APP_VERSAO='398';
+const APP_VERSAO='400';
 const APP_DATA='19/10/2026';
 const KEY='confinamento-completo-v1';
 const $=id=>document.getElementById(id);
@@ -2395,11 +2398,17 @@ function abrirTecGen(el){if(!el||el.dataset.trava==='1')return;{const sr=$('tecS
   tecGen.buf=tipo==='ims'?imsDig(el.value):tipo==='brinco'?String(el.value||''):String(el.value||'').replace(/\D/g,'');tecGen.orig=tecGen.buf;
   {const up=document.querySelector('#teclado [data-k="up"],#teclado [data-k="abc"]');if(up){if(tipo==='brinco'){up.dataset.k='abc';up.textContent='ABC letras';}else{up.dataset.k='up';up.textContent='▲ Anterior';}}}
   document.querySelectorAll('#gBox input.sel').forEach(x=>x.classList.remove('sel'));
+  $('teclado').classList.toggle('modoCo',!!el.closest('.gCoNovo'));
   $('teclado').hidden=false;document.body.classList.add('comteclado');$('tecNome').textContent=tipo==='brinco'?'Brinco do animal':c+(tipo==='ims'?' · % IMS':' · kg/dia');tgMostra(false);
   requestAnimationFrame(()=>{try{const r=el.getBoundingClientRect(),vis=innerHeight-$('teclado').offsetHeight,mb=topoLivre();window.scrollBy({top:r.top-Math.max(mb,mb+(vis-mb)/2-r.height/2),behavior:'smooth'});}catch(x){}});}
-function fecharTecGen(){if(!tecGen)return;const el=tgCampo();if(el){el.classList.remove('sel');el.dispatchEvent(new Event('change',{bubbles:true}));}tecGen=null;$('teclado').hidden=true;document.body.classList.remove('comteclado');{const ab=document.querySelector('#teclado [data-k="abc"]');if(ab){ab.dataset.k='up';ab.textContent='▲ Anterior';}}}
+function fecharTecGen(){if(!tecGen)return;const el=tgCampo();if(el){el.classList.remove('sel');el.dispatchEvent(new Event('change',{bubbles:true}));}tecGen=null;$('teclado').hidden=true;$('teclado').classList.remove('modoCo');document.body.classList.remove('comteclado');{const ab=document.querySelector('#teclado [data-k="abc"]');if(ab){ab.dataset.k='up';ab.textContent='▲ Anterior';}}}
 function teclarGen(k){if(!tecGen)return;
   if(k==='fechar'){fecharTecGen();return;}
+  /* ✕ Cancelar (leitura): volta o valor de antes e fecha */
+  if(k==='gcancel'){tecGen.buf=tecGen.orig;tgMostra(true);fecharTecGen();return;}
+  /* 💾 Salvar: aplica o valor, fecha e salva a leitura deste curral */
+  if(k==='gsalvar'){const el=tgCampo(),bx=el&&el.closest('.gCoNovo'),c=el&&(el.dataset.ims||el.dataset.kg);fecharTecGen();
+    setTimeout(()=>{const sb=bx&&bx.isConnected?bx.querySelector('[data-g="salvaCocho1"]'):c?document.querySelector(`#gBox [data-g="salvaCocho1"][data-c="${CSS.escape(c)}"]`):null;if(sb){window.__tecTs=0;sb.click();}},60);return;}
   if(k==='voltar'){tecGen.buf=tecGen.orig;tecGen.novo=true;tgMostra(true);return;}
   /* brinco com letra: fecha o teclado de números e abre o teclado do celular nesse campo (até sair da tela) */
   if(k==='abc'){const el=tgCampo();fecharTecGen();if(el){el.removeAttribute('data-tecg');el.setAttribute('inputmode','text');setTimeout(()=>{try{el.focus();const n=el.value.length;el.setSelectionRange(n,n);}catch(e){}},50);}return;}
