@@ -1,6 +1,6 @@
 {
-  "name": "FJK - Tratos",
-  "short_name": "FJK - Tratos",
+  "name": "Tratos",
+  "short_name": "Tratos",
   "start_url": "./index.html",
   "scope": "./",
   "display": "standalone",
