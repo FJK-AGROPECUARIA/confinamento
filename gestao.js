@@ -3864,8 +3864,8 @@ function cTelaNova0(){if(!CG.passo){CG.passo=1;CG.local=null;}if(!CG.local)CG.pa
     '';
   const botAj=`<div class="cBotoes c4">${cBotAjuste()}</div>`;   /* Manual / Sobra / Ordem: abaixo do total a carregar */
   if(CG.mrAberto){const rl=gTodos('racao').filter(r=>!r.inativa||r.uid===CG.mrRac).sort(porNome);
-    return passoTrato+botAj+`<div class="cSobra cMrPan"><div class="linhas"><b>＋ Ração pronta no vagão</b></div>
-      <p class="note">Ração que já está pronta (no chão, de outra batida). Não tem total: o que a balança pesar entrando no vagão fica registrado como ração adicionada. Não fica ligada a nenhum trato e não baixa do estoque (já foi baixada quando foi feita).</p>
+    return passoTrato+botAj+`<div class="cSobra cMrPan"><div class="linhas"><b>＋ Adicionar ração pronta no vagão</b></div>
+      <p class="note">Conta o que a balança pesar entrando no vagão. Não fica ligada a trato e não baixa do estoque (já baixou quando foi produzida).</p>
       <div class="cSobLin cMrLin"><select id="cMrRac"><option value="">Selecione a ração</option>${rl.map(r=>`<option value="${r.uid}"${r.uid===CG.mrRac?' selected':''}>${esc(r.nome)}</option>`).join('')}</select></div>
       <button type="button" class="primary" data-cmrini="1"${CG.mrRac?'':' disabled'}>▶ Iniciar carregamento da ração pronta</button></div></section>`;}
   if(!CG.avulso&&!CG.trato)return passoTrato+botAj+'</section>';  // escolhe o trato antes de mostrar o total
@@ -3974,7 +3974,7 @@ function cClique(e){
   if(e.target.closest('[data-cvgbaixa]')){CG.vgBaixa=!CG.vgBaixa;cSave();return cRender();}
   if(e.target.closest('[data-cjatog]')){CG.mrAberto=false;if(CG.jaAberto){CG.jaAberto=false;CG.ja={};CG.sobRac=null;CG.sobKg=0;CG.sobModo='rac';CG.vgBaixa=false;}else{CG.manAberto=false;CG.man={};
     if(CG.avulso){CG.avulso=false;CG.totalDe='x|'+CG.rac;CG.abrirDepois='ja';}else CG.jaAberto=true;}cSave();return cRender();}  // abrir a Sobra fecha e zera o Manual e o Avulso  // fechar = zera a sobra
-  {const sm=e.target.closest('[data-csmodo]');if(sm){CG.sobModo=sm.dataset.csmodo;if(CG.sobModo==='rac')CG.vgBaixa=false;cSave();return cRender();}}
+  {const sm=e.target.closest('[data-csmodo]');if(sm){CG.sobModo=sm.dataset.csmodo;CG.vgBaixa=CG.sobModo==='ins';cSave();return cRender();}}
   {const m=e.target.closest('[data-cmov]');if(m){const its=itensAjust(itensCarga(CG.rac,CG.total||0)).map(i=>i.ins),i=its.indexOf(m.dataset.ins),j=i+(+m.dataset.cmov);
     if(i>=0&&j>=0&&j<its.length){[its[i],its[j]]=[its[j],its[i]];const pad=itensCarga(CG.rac,CG.total||0).map(i=>i.ins);CG.ordem=its.join('|')===pad.join('|')?null:its;cSave();cRender();}return;}}  // voltou à ordem original = sem mudança
   if(e.target.closest('[data-cordreset]')){CG.ordem=null;cSave();return cRender();}
@@ -5148,7 +5148,7 @@ function cBotAjuste(){const nJa=Object.values(sobraPorIns()).filter(v=>v>0).leng
   /* aberto = verde cheio; fechado com ordem mudada = contorno verde com ✓ (a ordem continua valendo) */
   const nMan=Object.values(CG.man||{}).filter(v=>v>0).length;
   const nVg=Object.values(vagaoPorIns()).filter(v=>v>0).length;
-  return `${nMan&&!CG.vgBaixa?`<button type="button" class="mini${CG.manAberto?' sel':''}" data-cmantog="1">✋ Manual (${nMan})</button>`:''}<button type="button" class="mini${CG.jaAberto?' sel':''}" data-cjatog="1">⚖ No vagão${nVg?' ('+nVg+')':''}</button><button type="button" class="mini cMrBt${CG.mrAberto?' sel':''}" data-cmrtog="1">＋ Ração</button><button type="button" class="mini${CG.ordAberto?' sel':mud?' mud':''}" data-cordtog="1">⇅ Ordem${mud&&!CG.ordAberto?' ✓':''}</button>`;}
+  return `${nMan&&!CG.vgBaixa?`<button type="button" class="mini${CG.manAberto?' sel':''}" data-cmantog="1">✋ Manual (${nMan})</button>`:''}<button type="button" class="mini${CG.jaAberto?' sel':''}" data-cjatog="1">⚖ No vagão${nVg?' ('+nVg+')':''}</button><button type="button" class="mini cMrBt${CG.mrAberto?' sel':''}" data-cmrtog="1">＋ Ração</button><button type="button" class="mini${CG.ordAberto?' sel':mud?' mud':''}" data-cordtog="1"><span class="setOrd">↑↓</span> Ordem${mud&&!CG.ordAberto?' ✓':''}</button>`;}
 function cTabelaCarga(its){const temJa=CG.jaAberto||its.some(i=>i.ja>0)||(CG.vgBaixa&&its.some(i=>i.man>0)),tot=its.reduce((a,i)=>a+i.prev,0),totJa=its.reduce((a,i)=>a+i.ja,0);
   const temMan=!CG.vgBaixa&&(CG.manAberto||its.some(i=>i.man>0)),totMan=its.reduce((a,i)=>a+(i.man||0),0);
   const manNota=CG.manAberto?`<div class="cSobra"><b>✋ Carregamento manual</b><p class="note">Digite na coluna <b>Manual</b> quanto de cada produto foi colocado à mão (fora da balança). A balança carrega só o resto. O manual <b>sai do estoque</b> junto com o carregamento.</p>
