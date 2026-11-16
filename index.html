@@ -1362,7 +1362,7 @@ body.naInicio .topoTxt h1{font-size:clamp(16px,5vw,28px)!important}
 <div class="toast" id="toast" hidden></div>
 <script>
 'use strict';
-const APP_VERSAO='410';
+const APP_VERSAO='411';
 const APP_DATA='19/10/2026';
 const KEY='confinamento-completo-v1';
 const $=id=>document.getElementById(id);
@@ -1635,6 +1635,9 @@ function compensarCurral(c){try{
   let mao=false;if(orig&&setv){for(const k in setv){const atual=((S.prev[k]||{})[c]);if(atual===setv[k])continue;
       if(atual===orig[k]||hist.some(h=>h&&h[k]===atual))continue;orig=null;mao=true;break;}}
   const regs=HIST.filter(r=>r.dia===hj&&r.curral===c);const feitos=new Set(regs.map(r=>+r.trato));
+  /* só o aparelho que fez o último registro deste curral hoje compensa. Os outros (celular, escritório) podem estar com os
+     registros atrasados e fariam a conta errada, brigando com o tablet do trator (16/11/2026: C-6 e C-9 caíram sozinhos) */
+  if(regs.length){const ur=regs.reduce((a,r)=>(+r.ts||0)>(+a.ts||0)?r:a);if(!regDesteAparelho(ur))return null;}
   if(!orig){orig={};for(let k=1;k<=MAXT;k++){const v=(S.prev[k]||{})[c];if(typeof v==='number'&&v>0)orig[k]=v;
       if(mao&&feitos.has(k))orig[k]=regs.filter(r=>+r.trato===k).reduce((a,r)=>a+(+r.forn||0),0);}}
   const ks=Object.keys(orig).map(Number).sort((a,b)=>a-b);if(ks.length<2)return null;
