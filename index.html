@@ -1362,7 +1362,7 @@ body.naInicio .topoTxt h1{font-size:clamp(16px,5vw,28px)!important}
 <div class="toast" id="toast" hidden></div>
 <script>
 'use strict';
-const APP_VERSAO='408';
+const APP_VERSAO='409';
 const APP_DATA='19/10/2026';
 const KEY='confinamento-completo-v1';
 const $=id=>document.getElementById(id);
@@ -1389,9 +1389,10 @@ const HORA_BACKUP=21;
 let S, HIST=[], modoVer=false;
 function bloqueado(){if(modoVer){toast('Modo visualização · não seleciona');return true;}return false;}
 /* ====== CONFIGURAÇÃO: link do Apps Script (termina em /exec). Também pode ser colado no app, aba Histórico ====== */
-const API_PADRAO='https://script.google.com/macros/s/AKfycbxzoudu6HbNDTjRiW2zjQ_dsgxnH_skW_WPiHXwaNZPDkP5UNySlkNeuNfxoo-yFnW-/exec';
+const API_PADRAO='https://script.google.com/macros/s/AKfycbzadjLtLUDMORm0g5HMELj7xyk1mzuwjp0YCEQLMP_dd5e-M29NPdqPR6CFmXMBuUxj/exec';
+const API_ANTIGO='https://script.google.com/macros/s/AKfycbxzoudu6HbNDTjRiW2zjQ_dsgxnH_skW_WPiHXwaNZPDkP5UNySlkNeuNfxoo-yFnW-/exec';   // link antigo (projeto preso à planilha): quem tinha salvo passa a usar o novo
 /* ================================================================================================================ */
-const apiUrl=()=>(S&&S.api)||API_PADRAO;
+const apiUrl=()=>(S&&S.api&&S.api!==API_ANTIGO&&S.api)||API_PADRAO;
 
 /* ---------- Banco de dados (IndexedDB, fica no celular) ---------- */
 let DB;
