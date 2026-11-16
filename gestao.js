@@ -371,8 +371,9 @@ try{const gb=document.getElementById('gBox');if(gb&&window.ResizeObserver)new Re
 
 /* Config. (todas as abas): cada quadro aparece só com o título (minimizado); tocar no título abre e fecha */
 const gMinAb=new Set();
-function cfgMinimizar(){document.querySelectorAll('#gBox section.panel').forEach(sec=>{const cab=sec.querySelector(':scope>.curhead')||sec.querySelector(':scope>h2');if(!cab)return;
-  const k=(cab.querySelector('h2')||cab).textContent.trim();sec.classList.add('gMinz');sec.dataset.minK=k;cab.classList.add('gMinzCab');sec.classList.toggle('aberto',gMinAb.has(k));});}
+function cfgMinimizar(){const PS=document.querySelectorAll('#gBox section.panel'),so1=PS.length===1;PS.forEach(sec=>{const cab=sec.querySelector(':scope>.curhead')||sec.querySelector(':scope>h2');if(!cab)return;
+  const hh=cab.matches('h2')?cab:cab.querySelector('h2');if(hh)hh.classList.remove('gTitDup','gTitDupN');   /* título que vira botão de abrir/fechar nunca some (senão o quadro fica vazio) */
+  const k=(cab.querySelector('h2')||cab).textContent.trim();sec.classList.add('gMinz');sec.dataset.minK=k;cab.classList.add('gMinzCab');sec.classList.toggle('aberto',so1||gMinAb.has(k));});}   // um quadro só: já abre
 document.addEventListener('click',e=>{const c=e.target.closest('#gBox .gMinz>.gMinzCab');if(!c)return;const sec=c.parentNode,k=sec.dataset.minK;
   gMinAb.has(k)?gMinAb.delete(k):gMinAb.add(k);sec.classList.toggle('aberto',gMinAb.has(k));const d=c.querySelector('.gGrpDica');if(d)d.textContent=gMinAb.has(k)?'clique para fechar':'clique para abrir';});
 const SEN_TIPOS=[['trato','🚜 Senha do Operacional','entrar no Operacional (Leitura, Previsto, Carregar, Fornecer, Automação)'],['ver','👁 Senha do Visualizar','entrar no Visualizar'],['rel','📤 Senha dos Relatórios do dia','enviar os Relatórios do dia da tela inicial'],['gest','📊 Senha da Gestão / Configurações','entrar na Gestão e nas Configurações'],['acao','✏️ Senha de edição e exclusão','editar e apagar registros, carregamentos e cadastros, e restaurar cópia']];
@@ -3185,8 +3186,8 @@ function tCfg(){const c=gCfg(),hj=hojeKey(),tx=vig(c.taxa,hj),txP=vig(c.taxaP||[
     <p class="note">Quando o curral tem 2 ou mais tratos, o total do dia é dividido assim. 1 trato = 100% no Trato 1.</p>
     ${tratosAtivos().map((_,i)=>i+1).filter(n=>n>1).map(n=>{const v=P?P.divisao(n):[];return `<div class="gDiv"><b>${n} tratos</b><div class="gDivIn">${v.map((x,k)=>`<label><small>T${tratosAtivos()[k]}</small><input class="cell" inputmode="decimal" data-div="${n}" value="${String(x).replace('.',',')}"></label>`).join('')}</div><small class="gDivSoma" data-divsoma="${n}">${nf(v.reduce((a,b)=>a+b,0),1)}%</small></div>`;}).join('')}
     <button class="primary" data-g="salvaDiv">Salvar divisão</button></section>
-  <section class="panel gCfgP"><h2>Compensar no último trato</h2>
-    <p class="note">O que for a mais ou a menos nos tratos do dia é ajustado no último trato do curral, para fechar o total do dia. Ex.: total 2.000 (1.000 + 1.000); tratou 1.200 no 1º → o 2º vira 800.</p>
+  <section class="panel gCfgP"><h2>Compensar nos próximos tratos</h2>
+    <p class="note">O que for a mais ou a menos num trato é dividido entre os tratos que faltam do curral, na proporção de cada um, para fechar o total do dia. Ex.: total 3.000 (1.000 + 1.000 + 1.000); tratou 700 no 1º → o 2º e o 3º viram 1.150 cada. Se no 2º for 1.000, o 3º vira 1.300.</p>
     <select id="cfgComp"><option value="1"${c.compensa===false?'':' selected'}>Ligado (recomendado)</option><option value="0"${c.compensa===false?' selected':''}>Desligado</option></select></section>
   <section class="panel gCfgP"><h2>Arredondamento</h2><div class="gForm">${campo({k:'arred',l:'Arredondar o previsto de',suf:'kg',t:'num',v:c.arred,meia:1})}</div>${salvar}</section>`;}
   if(ab==='balanca')h='<div id="cfgBalHost"></div>';
