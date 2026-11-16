@@ -3210,8 +3210,8 @@ function tCfg(){const c=gCfg(),hj=hojeKey(),tx=vig(c.taxa,hj),txP=vig(c.taxaP||[
     <div class="gRelLista">${REL_DIA.map(([k,t,d])=>`<label class="gRelIt"><input type="checkbox" data-reld="${k}"${sel.includes(k)?' checked':''}><span><b>${t}</b><small>${d}</small></span></label>`).join('')}</div></section>`;}
   if(ab==='backup'){const I=window.bkApi?bkApi.info():{};
     h=`<section class="panel gCfgP"><h2>Backup</h2>
-    <p class="note"><b>Automático:</b> todo dia às 2h da manhã, no Google Drive (pasta SISTEMA COMPLETO - CONFINAMENTO › Backups). Ficam os 20 mais novos.<br>
-    <b>Manual:</b> no botão abaixo. Ficam os 10 mais novos.<br>Cada backup tem 2 arquivos: a cópia do sistema (para restaurar) e a planilha geral com tudo separado em abas.<br>
+    <p class="note"><b>Automático:</b> todo dia às 2h da manhã, no Google Drive (pasta FJK - GESTAO DE TRATOS). Ficam os 20 mais novos.<br>
+    <b>Manual:</b> no botão abaixo. Ficam todos.<br>Cada backup guarda o banco de dados em <b>BACKUP BANCO DE DADOS</b> (a cópia do sistema, para restaurar, e a planilha geral com tudo separado em abas) e os códigos do sistema em <b>CODIGOS DO SISTEMA</b>.<br>
     A cada 10 dias os 2 arquivos do automático vão por e-mail para alexandre@grupofjk.com.br.</p>
     <p class="note">${I.ult?'Último backup manual feito por este celular: '+esc(I.ult)+'.':''}${I.pend?' Tem backup esperando sinal de internet.':''}</p>
     <button class="lima" data-g="bkAgora">✋ Fazer backup manual agora</button>
