@@ -696,7 +696,7 @@ function novoPeso(n){if(A.voltaPend){const V=A.voltaPend;A.voltaPend=null;if(A.h
    aguardando: balança parada → guarda o peso inicial
    começou a cair (mais que o mínimo) → descarregando
    parou de cair → registra (inicial − final) e passa para o próximo curral */
-function curralAtual(){try{return (S&&lista()[S.atual])||null;}catch(e){return null;}}
+function curralAtual(){try{const c=(S&&lista()[S.atual])||null;return window.comResto?comResto(c):c;}catch(e){return null;}}   // já tratado neste trato: previsto = o que falta
 /* troca de curral: o peso de agora vira o inicial */
 function novoCurral(manterPeso,semTravar){A.posPausa=false;A.baseFix=false;A.est='aguardando';A.ancV=null;A.ancT=0;A.fpMin=null;A.menor=null;A.base=manterPeso&&A.peso!=null?(A.estavel?A.valEst:A.peso):null;
   if(!semTravar)travarCurral();}
@@ -747,7 +747,7 @@ async function registrarAuto(){
   if(registrando)return;
   if(bloqueado())return;
   if(A.pausa){toast('Está pausado: toque em continuar primeiro');return;}
-  const L=lista(),cur=L[S.atual];
+  const L=lista(),cur=curralAtual();
   if(!cur){toast(L.length?'Trato completo':'Sem previsto neste trato');return;}
   if(A.base==null){toast('Sem peso inicial ainda');return;}
   if(A.peso==null){toast('Sem leitura da balança');return;}
@@ -962,11 +962,11 @@ function aRender(){
   if(!$('aBox')||!$('aBox').dataset.ok)return;
   try{window.pintarCancForn&&pintarCancForn();}catch(e){}
   cfg();
-  const L=lista(),regs=regsAtuais(),cur=L[S.atual];
+  const L=lista(),regs=regsAtuais(),cur=curralAtual();
   $('aData').textContent=(S.dataManual?'⚠ ':'')+diaBR(diaAtivo());
   $('aTrato').value=String(S.tratoSel);
   $('aCur').textContent=cur?cur.nome:(L.length?'Completo':'—');
-  $('aPrev').textContent=cur&&!cur.semPrev?fmt(cur.prev):'—';
+  $('aPrev').textContent=cur&&!cur.semPrev?fmt(cur.prev):'—';{const pl=$('aPrev').previousElementSibling;if(pl&&pl.tagName==='SPAN'){pl.textContent=cur&&cur.jaForn?'Falta':'Previsto';}}
   if(!$('aEscolha').hidden)mostrarAEscolha();
   let tp=0,tf=0;
   const linha=(nome,prev,i)=>{const rs=regs.filter(r=>r.curral===nome),fz=rs.length>0,f=rs.reduce((a,r)=>a+r.forn,0);
@@ -1385,7 +1385,7 @@ async function tagProcessar(epc,forcar){
     const f=filtroForn();if(!f)return;f.extra=f.extra||{};const k=String(S.tratoSel);f.extra[k]=Object.assign({},f.extra[k],{[c]:1});save();
     i=lista().findIndex(x=>x.nome===c);if(i<0){toast(`${c} está inativo`);return;}}
   else if(feito(c,regsAtuais())){
-    const ok=window.confirmaVermelho?await confirmaVermelho(`${c} já foi tratado`,`O ${c} já tem trato no Trato ${S.tratoSel}. Tratar de novo? O que fornecer agora soma no trato deste curral.`,'Sim, tratar de novo','Não'):confirm(`${c} já foi tratado. Tratar de novo?`);
+    const ok=window.confirmaVermelho?await confirmaVermelho(`${c} já foi tratado`,(()=>{const x=window.comResto?comResto(lista().find(y=>y.nome===c)):null;return `O ${c} já tem trato no Trato ${S.tratoSel}${x&&x.jaForn!=null?` (${fmt(x.jaForn)} de ${fmt(x.prevCheio)} kg · falta ${fmt(x.prev)} kg)`:''}. Tratar de novo? O que fornecer agora soma no trato deste curral.`;})(),'Sim, tratar de novo','Não'):confirm(`${c} já foi tratado. Tratar de novo?`);
     if(!ok)return;A.tagRepetir=c;}
   const j=lista().findIndex(x=>x.nome===c);if(j<0)return;
   setAtual(j);$('aEscolha')&&($('aEscolha').hidden=true);novoCurral(true,true);{const pv=pesoVisor();if(pv!=null){A.base=pv;A.baseConf=true;A.baseFix=true;A.baseCur=(curralAtual()||{}).nome||null;}}A.pausa=null;save();   /* leu a tag do curral: chegou nele, já libera (peso inicial = balança exata desse momento) */
