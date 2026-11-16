@@ -1362,7 +1362,7 @@ body.naInicio .topoTxt h1{font-size:clamp(16px,5vw,28px)!important}
 <div class="toast" id="toast" hidden></div>
 <script>
 'use strict';
-const APP_VERSAO='406';
+const APP_VERSAO='408';
 const APP_DATA='19/10/2026';
 const KEY='confinamento-completo-v1';
 const $=id=>document.getElementById(id);
@@ -1620,8 +1620,8 @@ function faltaDia(d){d=d||hojeKey();const regs=HIST.filter(r=>r.dia===d),F=[],ab
     const fechado=regs.some(r=>r.trato===k&&linhaDe(r.curral)===loc)&&!ab.includes(k+'|'+loc);if(!fechado)F.push({trato:k,curral:x.nome,prev:x.prev});});return F;}
 /* trato do dia terminado: nada faltando (ou o que falta é de trato já finalizado) */
 function diaFinalizado(d){d=d||hojeKey();let tem=false;for(let k=1;k<=MAXT;k++)if(lista(k).length)tem=true;return tem&&!faltaDia(d).length;}
-/* Compensar no último trato: o total do dia do curral fica o mesmo. O que foi a mais ou a menos nos tratos
-   anteriores é tirado ou somado no ÚLTIMO trato do curral (arredondado).
+/* Compensar nos próximos tratos: o total do dia do curral fica o mesmo. O que foi a mais ou a menos é dividido
+   entre os tratos que faltam, na proporção do previsto de cada um (arredondado; o último fecha a conta).
    Ex.: total 2.000 em 2 tratos (1.000 + 1.000); tratou 1.200 no 1º → o 2º vira 800. */
 function compensarCurral(c){try{
   const cfgG=gOk()&&typeof gCfg==='function'?gCfg():{};if(cfgG.compensa===false)return null;
@@ -1645,15 +1645,17 @@ function compensarCurral(c){try{
   const T=ks.reduce((a,k)=>a+orig[k],0);
   const real=regs.reduce((a,r)=>a+(+r.forn||0),0);
   const pend=ks.filter(k=>!feitos.has(k)&&!pulou.has(k));if(!pend.length||(!feitos.size&&!pulou.size))return null;
-  /* o ajuste é sempre no ÚLTIMO trato do curral; os do meio ficam como estavam */
+  /* a diferença (a mais ou a menos) é dividida entre TODOS os tratos que faltam, na proporção do previsto de cada um;
+     o último fica com o resto do arredondamento (o total do dia fecha). Se o último já foi feito, não mexe */
   const ult=ks[ks.length-1];if(feitos.has(ult))return null;
-  const meio=pend.filter(k=>k!==ult).reduce((a,k)=>a+orig[k],0);
-  const novo={};pend.filter(k=>k!==ult).forEach(k=>novo[k]=orig[k]);novo[ult]=Math.max(0,arredPrev(T-real-meio));
+  const resta=Math.max(0,T-real),base=pend.reduce((a,k)=>a+orig[k],0),novo={};let soma=0;
+  pend.forEach(k=>{if(k===ult)return;const v=base>0?Math.max(0,arredPrev(resta*orig[k]/base)):0;novo[k]=v;soma+=v;});
+  novo[ult]=Math.max(0,arredPrev(resta-soma));
   let mudou=false;pend.forEach(k=>{if(!S.prev[k])S.prev[k]={};if(S.prev[k][c]!==novo[k]){S.prev[k][c]=novo[k];mudou=true;}});
   O.v[c]=orig;O.set[c]=novo;if(!O.hist)O.hist={};O.hist[c]=((O.hist[c]||[]).concat([novo])).slice(-10);save();
   if(mudou){marcarPrev();const d=real-ks.filter(k=>feitos.has(k)||pulou.has(k)).reduce((a,k)=>a+orig[k],0);
     try{window.diagLog&&diagLog('compensou',{curral:c,total:T,realizado:real,dif:d,novo});}catch(e){}
-    toast(`${c}: último trato (Trato ${ult}) → ${fmt(novo[ult])} kg (${d>0?'+':''}${fmt(d)} kg compensados)`);}
+    toast(`${c}: ${pend.length>1?'tratos que faltam':'último trato'} → ${pend.map(k=>`T${k} ${fmt(novo[k])}`).join(' · ')} kg (${d>0?'+':''}${fmt(d)} kg compensados)`);}
   return novo;}catch(e){return null;}}
 window.compensarCurral=compensarCurral;
 /* currais pulados num trato (sem registro): compensa no último trato, no aparelho dono (ver tratosPulados) */
@@ -1905,11 +1907,11 @@ function render(){try{aplicarRenomesHist();limparPrevRenomes();}catch(e){}
   { // aviso: curral atual já tem trato registrado neste mesmo trato
     const ja=c?regs.filter(x=>x.curral===c.nome):[];const av=$('avisoJa');
     if(ja.length&&!modoVer){const tot=ja.reduce((a,x)=>a+x.forn,0);
-      av.innerHTML=`⚠ <b>${esc(c.nome)}</b> já tem trato registrado no <b>Trato ${S.tratoSel}</b>${ja.length>1?` (${ja.length} registros)`:''}: ${ja.map(x=>horaDe(x)).join(', ')} · ${fmt(tot)} kg.<br>Se registrar de novo, vai somar com o anterior.`;av.hidden=false;}
+      av.innerHTML=`⚠ <b>${esc(c.nome)}</b> já tem trato registrado no <b>Trato ${S.tratoSel}</b>${ja.length>1?` (${ja.length} registros)`:''}: ${ja.map(x=>horaDe(x)).join(', ')} · ${fmt(tot)} kg.<br>Falta <b>${fmt(Math.max(0,(+c.prev||0)-tot))} kg</b> (previsto ${fmt(c.prev)} kg). Se registrar de novo, soma com o anterior.`;av.hidden=false;}
     else av.hidden=true;
   }
   $('curNome').textContent=c?c.nome:(L.length?'Trato completo':'-');
-  $('curPrev').textContent=c?fmt(c.prev):'—';
+  {const cr=comResto(c);$('curPrev').textContent=cr?fmt(cr.prev):'—';$('curPrev').title=cr&&cr.jaForn?`falta · já forneceu ${fmt(cr.jaForn)} de ${fmt(cr.prevCheio)} kg`:'';}
   ajustarNome();
   if(document.activeElement!==$('ini'))$('ini').value=S.ini;
   if(document.activeElement!==$('fim'))$('fim').value=S.fim;
@@ -1972,15 +1974,19 @@ function irTrato(k){if(k<1||k>6)return;$('tratoSel').value=String(k);$('tratoSel
 $('btnProximo').onclick=async()=>{const k=+$('btnProximo').dataset.k;if(!k)return;if(window.perg&&!await perg(`Deseja ir para o ${typeof nomeTrato==='function'?nomeTrato(k):'Trato '+k}?`,'Sai deste trato e abre o próximo.','✓ Sim, ir','Não',true))return;irTrato(k);};
 $('btnAnterior').onclick=async()=>{const k=+$('btnAnterior').dataset.k;if(!k)return;if(window.perg&&!await perg(`Deseja voltar para o ${typeof nomeTrato==='function'?nomeTrato(k):'Trato '+k}?`,'Sai deste trato e abre o anterior.','✓ Sim, voltar','Não',true))return;irTrato(k);};
 
+/* curral que já tem trato neste trato: o previsto vira só o que FALTA (previsto − já fornecido). O último trato continua compensando a diferença do dia */
+function comResto(c){try{if(!c)return c;const ja=regsAtuais().filter(x=>x.curral===c.nome);if(!ja.length)return c;const f=ja.reduce((a,x)=>a+(+x.forn||0),0);
+  return Object.assign({},c,{prev:Math.max(0,(+c.prev||0)-f),prevCheio:c.prev,jaForn:f});}catch(e){return c;}}
+window.comResto=comResto;
 $('btnReg').onclick=async()=>{
   if(bloqueado())return;
-  const L=lista(),c=L[S.atual];const ini=parseFloat(S.ini),fim=parseFloat(S.fim);
+  const L=lista(),c=comResto(L[S.atual]);const ini=parseFloat(S.ini),fim=parseFloat(S.fim);
   if(!c||isNaN(ini)||isNaN(fim)||fim>=ini)return;
   if(window.perg&&!await perg(`Confirmar trato do ${c.nome}?`,`Fornecido: ${fmt(ini-fim)} kg · previsto ${fmt(c.prev)} kg`,'✓ Confirmar trato','Voltar',true))return;
   // mesmo curral já registrado neste trato (aqui ou em outro celular): só lança de novo se confirmar
   const ja=regsAtuais().filter(x=>x.curral===c.nome);
   if(ja.length){const tot=ja.reduce((a,x)=>a+x.forn,0);
-    if(!confirm(`⚠ ${c.nome} já foi tratado no Trato ${S.tratoSel} hoje (${horaDe(ja[0])}, ${fmt(tot)} kg).\n\nLançar MAIS um registro para ele?\nUse só se recarregou o vagão no meio do curral. Os dois somam no realizado.`))return;}
+    if(!confirm(`⚠ ${c.nome} já foi tratado no Trato ${S.tratoSel} hoje (${horaDe(ja[0])}, ${fmt(tot)} kg de ${fmt(c.prevCheio)} kg).\n\nLançar MAIS um registro para ele (faltava ${fmt(c.prev)} kg)?\nOs dois somam no realizado; a diferença do dia vai para o último trato.`))return;}
   $('btnReg').disabled=true;
   const now=new Date();
   const r={ts:now.getTime(),dia:diaAtivo(),trato:S.tratoSel,hora:now.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'}),
@@ -4436,7 +4442,7 @@ if('serviceWorker' in navigator){
   /* o título da tela que repete o último nome da barrinha verde some (o caminho já mostra); contagem (.note) fica */
   const nz=s=>String(s||'').normalize('NFD').replace(/[^a-z0-9]/gi,'').toLowerCase();
   const titDup=()=>{try{const box=$('gBox');if(!box)return;const pn=box.querySelector(':scope>section.panel');if(!pn)return;
-    const h=pn.querySelector(':scope>h2,:scope>.curhead>h2');if(!h||h.classList.contains('gMinzCab')||h.closest('.gMinzCab,.hColCab'))return;
+    const h=pn.querySelector(':scope>h2,:scope>.curhead>h2');if(!h||h.classList.contains('gMinzCab')||h.closest('.gMinzCab,.hColCab')||pn.classList.contains('gMinz')||(GT&&GT.t==='cfg'))return;
     const s=caminho().split(' › '),c=h.cloneNode(true);c.querySelectorAll('.note,button').forEach(x=>x.remove());
     const t=nz(c.textContent),u0=nz(s[s.length-1]),u=u0==='ms'?'materiaseca':u0,dup=!!t&&!!u&&t.includes(u);h.classList.toggle('gTitDup',dup);h.classList.toggle('gTitDupN',dup&&!!h.querySelector('.note,button'));}catch(e){}};
   const pinta=()=>{if(window.semTela)semTela();titDup();const f=document.body.classList.contains('menuFechado');const cm=f?caminho():'';b.classList.toggle('mLongo',cm.split(' › ').length>2);const vt=f&&podeVoltar(cm);b.classList.toggle('mVolta',vt);b.innerHTML=f?`<span>☰ ${esc(cm)}</span><span>◀ voltar</span>`:'▲ esconder menu';};
