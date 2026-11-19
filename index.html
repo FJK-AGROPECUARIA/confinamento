@@ -1362,7 +1362,7 @@ body.naInicio .topoTxt h1{font-size:clamp(16px,5vw,28px)!important}
 <div class="toast" id="toast" hidden></div>
 <script>
 'use strict';
-const APP_VERSAO='414';
+const APP_VERSAO='416';
 const APP_DATA='19/10/2026';
 const KEY='confinamento-completo-v1';
 const $=id=>document.getElementById(id);
@@ -1480,7 +1480,30 @@ async function iniciar(){
   sincronizar();
   checarBackup();
   prepararLeitorOffline();
+  setTimeout(perguntarAparelho,1500);
 }
+
+/* ---------- identificação do aparelho: no primeiro acesso pergunta se é celular ou tablet e o nome da pessoa (depois não pergunta mais).
+   Vai para a nuvem (item 'ap-<código>') e aparece no diário do aparelho, para saber quem é cada código (ex.: 6qx7c5) ---------- */
+function apNome(){const a=S&&S.apInfo;return a&&a.pessoa?`${a.tipo||'Aparelho'} · ${a.pessoa}`:'';}
+function regAparelho(){try{if(!S||!S.apInfo||!S.apInfo.pessoa)return;if(typeof gPut!=='function'||typeof G==='undefined'||!G||!G.it){setTimeout(regAparelho,5000);return;}
+  const uid='ap-'+S.aparelho,o=G.it[uid],a=S.apInfo;if(o&&!o.del&&o.pessoa===a.pessoa&&o.tipoAp===a.tipo)return;
+  gPut({uid,tipo:'aparelho',aparelho:S.aparelho,tipoAp:a.tipo,pessoa:a.pessoa,desde:a.desde||Date.now()});}catch(e){}}
+function perguntarAparelho(){try{if(S.apInfo&&S.apInfo.pessoa){regAparelho();return;}if(document.getElementById('apFundo'))return;
+  const f=document.createElement('div');f.id='apFundo';f.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:10000;display:flex;align-items:center;justify-content:center;padding:16px';
+  f.innerHTML=`<div style="background:#fff;border-radius:16px;max-width:420px;width:100%;padding:20px;border:3px solid #2e7d32;box-shadow:0 10px 40px rgba(0,0,0,.35)">
+    <h3 style="margin:0 0 6px;color:#2e7d32;font-size:1.25rem">Identificar este aparelho</h3>
+    <p style="margin:0 0 14px;color:#33475b;line-height:1.35">Só é perguntado uma vez. Serve para saber quem fez cada trato e cada alteração.</p>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px">
+      <button type="button" data-aptipo="Celular" style="padding:16px;font-size:1.05rem;border-radius:12px;border:2px solid #9aa7b4;background:#fff">Celular</button>
+      <button type="button" data-aptipo="Tablet" style="padding:16px;font-size:1.05rem;border-radius:12px;border:2px solid #9aa7b4;background:#fff">Tablet</button></div>
+    <label for="apPessoa" style="display:block;font-weight:700;color:#11253d;margin-bottom:6px">Nome da pessoa que usa</label>
+    <input type="text" id="apPessoa" autocomplete="off" placeholder="Ex.: João" style="width:100%;box-sizing:border-box;padding:14px;font-size:1.05rem;border-radius:12px;border:2px solid #9aa7b4;margin-bottom:16px">
+    <button type="button" id="apSalvar" style="width:100%;padding:15px;font-size:1.05rem;border-radius:12px;background:#2e7d32;color:#fff;border:0;font-weight:700">Salvar</button></div>`;
+  document.body.appendChild(f);let tipo='';
+  f.querySelectorAll('[data-aptipo]').forEach(b=>b.onclick=()=>{tipo=b.dataset.aptipo;f.querySelectorAll('[data-aptipo]').forEach(x=>{const on=x===b;x.style.background=on?'#2e7d32':'#fff';x.style.color=on?'#fff':'';x.style.borderColor=on?'#2e7d32':'#9aa7b4';});});
+  f.querySelector('#apSalvar').onclick=()=>{const p=f.querySelector('#apPessoa').value.trim();if(!tipo)return toast('Escolha: celular ou tablet');if(p.length<2)return toast('Digite o nome da pessoa');
+    S.apInfo={tipo,pessoa:p,desde:Date.now()};save();f.remove();regAparelho();toast(`Aparelho salvo: ${tipo} · ${p}`);};}catch(e){}}
 
 function toast(t){const el=$('toast');el.textContent=t;el.hidden=false;clearTimeout(toast.t);toast.t=setTimeout(()=>el.hidden=true,2600);}
 /* Lista do trato = currais do cadastro (na ordem) que têm previsto maior que zero nesse trato */
@@ -2287,7 +2310,10 @@ function marcarVoltar(){const b=$('tecVoltar');if(b)b.disabled=!(tecIdx!=null&&t
 function ajustarTotalCurral(nome,v,o,dia){dia=dia||PV.dia;const feitosK=new Set(HIST.filter(r=>r.dia===dia&&r.curral===nome).map(r=>+r.trato)),nt=nTratos(nome,o);
   if(!feitosK.size){distribuir(nome,v,nt,o);return true;}
   const ksN=tratosDoCurral(nome,o,nt);for(let k=1;k<=MAXT;k++)if(!ksN.includes(k)&&!feitosK.has(k)&&o[k])delete o[k][nome];   // trato que saiu (diminuiu a quantidade)
-  const pend=ksN.filter(k=>!feitosK.has(k));if(!pend.length)return false;
+  /* trato que já passou sem este curral (pulado, ex.: T1 zerado e o T2 já feito) não recebe nada: o que falta vai só para os tratos que ainda vêm.
+     Antes ia parte para o T1 (que não é mais feito) e o previsto do dia não mudava (19/11/2026: C-10 digitado 1500 e voltava 850) */
+  const pul=new Set((typeof tratosPulados==='function'?tratosPulados(nome,dia,ksN):[]).map(p=>+p.k));
+  const pend=ksN.filter(k=>!feitosK.has(k)&&!pul.has(k));if(!pend.length)return false;
   const real=HIST.filter(r=>r.dia===dia&&r.curral===nome).reduce((a,r)=>a+(+r.forn||0),0);
   /* o que falta (novo total − já fornecido) é dividido entre os tratos que faltam, pela % de cada trato na configuração;
      o último fica com a sobra do arredondamento */
