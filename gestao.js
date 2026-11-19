@@ -838,6 +838,13 @@ function tLoteForm(t){
     ${novo?'':'<p class="note">Curral e ração mudam pelos botões “Mudar curral” e “Mudar ração” do lote, com a data da mudança.</p>'}
     <button class="primary" data-g="salvaLote" data-id="${t.id||''}">Salvar</button></section>`;
 }
+/* ganho por dia × dias de cocho × peso de saída: digitando dois, o terceiro é calculado (a partir do peso de entrada) */
+function lfTri(q){try{const pe=fn('pesoC')>0?fn('pesoC'):fn('peso'),g=fn('gmd'),d=fn('diasPrev'),a=fn('alvo'),eG=$('gf_gmd'),eD=$('gf_diasPrev'),eA=$('gf_alvo');
+  if(!(pe>0)||!eG||!eD||!eA)return;const pA=v=>{if(ok(v)&&v>0)vSet(eA,Math.round(v*100)/100);},pD=v=>{if(ok(v)&&v>0)eD.value=String(Math.round(v));},pG=v=>{if(ok(v)&&v>0)vSet(eG,Math.round(v*100)/100);};
+  if(q==='gmd'){if(!(g>0))return;if(d>0)pA(pe+g*d);else if(a>pe)pD((a-pe)/g);}
+  else if(q==='diasPrev'){if(!(d>0))return;if(g>0)pA(pe+g*d);else if(a>pe)pG((a-pe)/d);}
+  else if(q==='alvo'){if(!(a>pe))return;if(g>0)pD((a-pe)/g);else if(d>0)pG((a-pe)/d);}
+  else{if(g>0&&d>0)pA(pe+g*d);else if(g>0&&a>pe)pD((a-pe)/g);}}catch(e){}}
 /* editar lote: valor total da compra ↔ preço, e o total com as entradas de animais depois */
 function lfCalc(q){const box=$('gLfTot');if(!box||!$('gf_preco'))return;const l=GT.id?G.it[GT.id]:null,cab=fn('cab'),peso=fn('pesoC')>0?fn('pesoC'):fn('peso'),u=fv('unid')||'arroba',rc=fn('rcC')>0?fn('rcC'):50;
   const base=u==='cab'?cab:u==='kg'?cab*peso:u==='arrV'?cab*peso/30:cab*peso*rc/100/15;
@@ -1461,7 +1468,7 @@ function tEntForm(t){const l=G.it[t.id];GT.entLote=l.uid;const E=t.eid&&G.it[t.e
     <button class="primary" data-g="salvaEntProp" data-id="${l.uid}">Salvar entrada proporcional</button></section>`;
   return `${t.emb?'':voltar()}<section class="panel">${cab}
     <div class="gForm">${[{k:'dia',l:'Data da entrada',t:'dia',v:V('dia',hojeKey()),meia:1},{k:'cab',l:'Quantidade de animais',t:'num',v:V('cab',''),meia:1},
-      {k:'peso',l:'Peso médio individual',t:'num',v:V('peso',''),meia:1},{k:'pesoT',l:'Peso total',t:'num',v:E&&+E.cab>0&&+E.peso>0?Math.round(E.cab*E.peso*100)/100:'',meia:1},
+      {k:'peso',l:'Peso médio individual',suf:'kg',t:'num',v:V('peso',''),meia:1},{k:'pesoT',l:'Peso total',suf:'kg',t:'num',v:E&&+E.cab>0&&+E.peso>0?Math.round(E.cab*E.peso*100)/100:'',meia:1},
       {k:'prA',l:'Preço da compra (@)',t:'rs',v:V('preco',(!l.ent.unid||l.ent.unid==='arroba')&&+l.ent.preco>0?+l.ent.preco:''),meia:1},{k:'rcE',l:'Rendimento na compra',suf:'%',t:'num',v:V('rcC',+l.ent.rcC||50),meia:1},
       {k:'rs',l:'Valor total da compra',t:'rs',v:V('rs',''),ajuda:'Preço da @ × arrobas (peso total × rendimento ÷ 15). Digitando o valor total, o preço da @ é calculado.'},{k:'sexoE',l:'Sexo',t:'sel',op:opSexos(V('sexo',l.sexo)),v:sexoNorm(V('sexo',l.sexo)),meia:1},{k:'catE',l:'Categoria',t:'sel',op:opCats(catNorm(V('cat',l.cat))),v:catNorm(V('cat',l.cat)),meia:1},
       {k:'racaE',l:'Raça',t:'sel',op:[['','Selecione']].concat(gCfg().racas.concat(V('raca',l.raca)&&!gCfg().racas.includes(V('raca',l.raca))?[V('raca',l.raca)]:[]).sort(alfa).map(r=>[r,r])),v:V('raca',l.raca||''),meia:1},{k:'idadeE',l:'Idade',suf:'meses',t:'num',v:V('idade',l.idade||''),meia:1},
@@ -3660,6 +3667,7 @@ $('gBox').addEventListener('input',e=>{
   if(GT.t==='pesForm'&&(t.id==='gf_peso'||t.id==='gf_dia'))calcPes();
   if((GT.t==='entForm'||(GT.t==='entNova'&&GT.sel!=='__novo'&&GT.id))&&/^gf_(cab|peso|pesoT|dia|prA|rcE|rs)$/.test(t.id))calcEnt(t.id.slice(3));
   if((GT.t==='loteForm'||(GT.t==='entNova'&&GT.sel==='__novo'))&&/^gf_(cab|peso|pesoC|unid|preco|rcC|outros|vTotC)$/.test(t.id))lfCalc(t.id.slice(3));
+  if((GT.t==='loteForm'||(GT.t==='entNova'&&GT.sel==='__novo'))&&/^gf_(gmd|diasPrev|alvo|peso|pesoC)$/.test(t.id))lfTri(t.id.slice(3));
   if(GT.t==='saiForm'&&/^gf_(cab|peso|pesoVT|carcT|carcM|arrT|rc|unid|preco|vTot|desc|descV|imp|impP|impOn)$/.test(t.id))calcSai(t.id.slice(3));
   if(GT.t==='saiForm'&&t.closest&&t.closest('#gConjBox'))return conjAtual();
   if(GT.t==='saiForm'&&GT.o!=='morte')vdPrevia();
