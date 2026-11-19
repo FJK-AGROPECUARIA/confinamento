@@ -66,7 +66,7 @@ async function gSync(puxar){
         j.itens.forEach(x=>{if(!x||!x.uid)return;const l=G.it[x.uid];
           if(!l||((+x.ts||0)>(l.ts||0)&&!G.pend.includes(x.uid))){G.it[x.uid]=x;mud=true;}});
         if(mud){gSave();try{aplicarRenomesHist();limparPrevRenomes();}catch(e){}if(!$('viewGest').hidden&&!gEditando())gRenderManter();}
-        recalcUmaVez();
+        window.gPuxouOk=true;recalcUmaVez();
       }
     }
   }finally{gSinc=false;if(typeof statusNuvem==='function')statusNuvem();}
@@ -2281,7 +2281,8 @@ function regraLeitura(){try{if(typeof modoVer!=='undefined'&&modoVer)return;if(!
   [hj,somaDias(hj,1)].forEach(d=>{const hoje=d===hj,g=hoje?null:prevApi.prevGuardado(d);let obj=hoje?S.prev:(g?JSON.parse(JSON.stringify(g)):null),mud=false;
     const temLt=c=>{const lt=G.it[idLeit(d,c)];return !!(lt&&!lt.del);},trat=c=>H.some(r=>r.dia===d&&nAt(r.curral)===nAt(c));
     /* 1) uma vez por dia: tira do previsto o curral sem leitura (que ainda não começou a ser tratado no dia) */
-    const fl='regraleit_'+d;if(obj&&!G.it[fl]){const rem=new Set();
+    /* só depois de puxar os dados da nuvem: aparelho recém-aberto ainda sem as leituras tirava currais com leitura (19/11/2026: C-3 e C-10) */
+    const fl='regraleit_'+d;if(obj&&!G.it[fl]&&window.gPuxouOk&&gTodos('leitura').some(x=>x.dia===d)){const rem=new Set();
       for(let k=1;k<=MX;k++){const m=obj[String(k)];if(!m||typeof m!=='object')continue;Object.keys(m).forEach(c=>{if(temLt(c)||ehLoteNovo(c,d)||trat(c))return;delete m[c];rem.add(c);mud=true;});}
       gPut({uid:fl,tipo:'regraleit',dia:d,rem:[...rem],ts0:Date.now()});}
     /* 2) lote novo sem leitura: leitura automática com a sugestão (% do PV) e previsto */
@@ -4675,6 +4676,9 @@ function salvaEst(id){const ed=id&&G.it[id]&&!G.it[id].del?G.it[id]:null;const m
 function garantirPrevLeituras(){try{if(typeof modoVer!=='undefined'&&modoVer)return 0;if(!S||!S.prev||!window.prevApi)return 0;const hj=hojeKey();let n=0;
   gTodos('leitura').filter(x=>x.dia===hj&&+x.novo>0).forEach(x=>{const c=x.curral,tem=Object.keys(S.prev).some(k=>+((S.prev[k]||{})[c])>0),feito=(typeof HIST!=='undefined'?HIST:[]).some(r=>r.dia===hj&&r.curral===c);
     if(!tem&&(typeof curralAtivo!=='function'||curralAtivo(c))){aplicaPrev(c,+x.novo,S.prev);n++;
+      /* mantém a divisão da leitura por trato (ex.: T1 zerado), em vez da divisão padrão */
+      if(!feito&&Array.isArray(x.split)&&x.split.length>1&&Math.round(x.split.reduce((a,v)=>a+(+v||0),0))===Math.round(+x.novo)){const ks=tratosAtivos().map(Number).slice(0,x.split.length);
+        if(ks.length===x.split.length){Object.keys(S.prev).forEach(k=>{if(S.prev[k])delete S.prev[k][c];});ks.forEach((k,i)=>{const v=Math.round(+x.split[i]||0);if(v>0){S.prev[k]=S.prev[k]||{};S.prev[k][c]=v;}});}}
       /* já tratado hoje (o previsto tinha sumido): o trato feito volta com o previsto que foi usado; o último trato acerta a diferença */
       if(feito){const rs=HIST.filter(r=>r.dia===hj&&r.curral===c),por={};rs.forEach(r=>{por[r.trato]=(por[r.trato]||0)+(+r.prev||0);});
         Object.keys(por).forEach(k=>{if(por[k]>0){S.prev[k]=S.prev[k]||{};S.prev[k][c]=por[k];}});
