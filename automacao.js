@@ -1004,6 +1004,7 @@ window.diagCurva=diagCurva;
 window.diagLog=function(tipo,d){try{if(typeof gPut!=='function'||typeof G==='undefined'||!S)return;
   const dia=typeof diaAtivo==='function'?diaAtivo():new Date().toISOString().slice(0,10),uid='diag-'+dia+'-'+S.aparelho;
   const it=G.it[uid]&&!G.it[uid].del?G.it[uid]:{uid,tipo:'diag',dia,aparelho:S.aparelho,ev:[]};
+  try{if(typeof apNome==='function'&&apNome())it.quem=apNome();}catch(e){}
   const h=new Date();it.ev=(it.ev||[]).concat([Object.assign({t:h.toTimeString().slice(0,8),tipo},d||{})]).slice(-1500);
   it.cfg=(()=>{const c=cfg(),o={};['tol','tempo','minDesc','amarelo','vermelho','continuo','antecipa','filtro'].forEach(k=>o[k]=c[k]);return o;})();
   G.it[uid]=it;clearTimeout(diagT);diagT=setTimeout(()=>{try{gPut(JSON.parse(JSON.stringify(G.it[uid])));}catch(e){}},4000);}catch(e){}};
