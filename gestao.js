@@ -2277,6 +2277,9 @@ function distLoteNovo(c,kg,obj,d){const {n,ks}=trFaltam(c,obj,d);let {rem}=trFal
   const pc=prevApi.divisao(rem.length),ar=prevApi.arredPrev;let resto=ar(kg);for(let k=1;k<=(prevApi.MAXT||8);k++){if(obj[String(k)])delete obj[String(k)][c];}
   rem.forEach((k,i)=>{const v=i===rem.length-1?resto:Math.max(0,ar(kg*pc[i]/100));(obj[String(k)]=obj[String(k)]||{})[c]=v;resto-=v;});return obj;}
 function regraLeitura(){try{if(typeof modoVer!=='undefined'&&modoVer)return;if(!gOk()||!window.prevApi||typeof S==='undefined'||!S)return;
+  /* só depois de receber da nuvem as leituras E os registros de trato: aparelho recém-aberto, sem o trato de ontem, achava que era
+     lote novo e criava leitura automática pela sugestão de %PV (20/11/2026: MILHO 380 kg em vez de 255, APRISCO-DIREITA 200 em vez de 225) */
+  if(!window.gPuxouOk||!window.regPuxouOk)return;
   const hj=hojeKey(),cfg=gCfg(),H=typeof HIST!=='undefined'?HIST:[],MX=prevApi.MAXT||8;
   [hj,somaDias(hj,1)].forEach(d=>{const hoje=d===hj,g=hoje?null:prevApi.prevGuardado(d);let obj=hoje?S.prev:(g?JSON.parse(JSON.stringify(g)):null),mud=false;
     const temLt=c=>{const lt=G.it[idLeit(d,c)];return !!(lt&&!lt.del);},trat=c=>H.some(r=>r.dia===d&&nAt(r.curral)===nAt(c));
