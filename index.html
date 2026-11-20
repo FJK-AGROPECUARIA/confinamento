@@ -1362,7 +1362,7 @@ body.naInicio .topoTxt h1{font-size:clamp(16px,5vw,28px)!important}
 <div class="toast" id="toast" hidden></div>
 <script>
 'use strict';
-const APP_VERSAO='416';
+const APP_VERSAO='417';
 const APP_DATA='19/10/2026';
 const KEY='confinamento-completo-v1';
 const $=id=>document.getElementById(id);
@@ -3128,7 +3128,7 @@ function renderHist(){try{aplicarRenomesHist();}catch(e){}
         if(rs.length){const pv1=prevTratoR(rs);gp+=pv1;gt+=pv1;rs.forEach(r=>{gf+=r.forn||0;});return rs.map(linhaR).join('');}   /* recarga no mesmo trato: o previsto conta uma vez */
         const pv=pk[c];if(+pv>0)gp+=+pv;
         const edP=window.hEdModo&&!modoVer&&dia===hojeKey();
-        return `<tr class="naoTratado"><td class="hora"></td><td class="c">${esc(c)}</td><td>${edP?`<input class="hEdIn num" inputmode="numeric" data-hedprev="${k}|${esc(c)}" value="${hedVal('p',k+'|'+c,+pv>0?Math.round(+pv):'')}" placeholder="—" aria-label="Previsto do ${esc(c)} no Trato ${k}">`:+pv>0?fmt(+pv):'—'}</td><td>—</td><td></td></tr>`;}).join('');
+        return `<tr class="naoTratado"><td class="hora"></td><td class="c">${esc(c)}</td><td>${edP?`<input class="hEdIn num" inputmode="numeric" data-hedprev="${k}|${esc(c)}" value="${hedVal('p',k+'|'+c,+pv>0?Math.round(+pv):'')}" placeholder="—" aria-label="Previsto do ${esc(c)} no Trato ${k}">`:+pv>0?fmt(+pv):'—'}</td><td>${window.hEdModo&&!modoVer?`<input class="hEdIn num${(k+'|'+c) in (window.HEDPEND.n||{})?' hEdMud':''}" inputmode="numeric" data-hedreal="${k}|${esc(c)}" value="${hedVal('n',k+'|'+c,'')}" placeholder="—" aria-label="Lançar realizado do ${esc(c)} no Trato ${k}">`:'—'}</td><td></td></tr>`;}).join('');
       TP+=gp;TF+=gf;TT+=gt;
       return `<tr class="grp"><td colspan="5">${diaBR(dia)} · Trato ${k}</td></tr>`+totHTML(gp,gf,gt?gf-gt:null)+linhas;}).join('');
     /* "Todos os tratos": previsto do dia de cada curral (sem contar a compensação duas vezes), igual ao quadro de cima */
@@ -3159,9 +3159,9 @@ $('tbHist').addEventListener('click',e=>{if(!selModo)return;const tr=e.target.cl
 /* Histórico › Tratos: ✎/✕ só aparecem depois de tocar no botão pequeno "Editar / excluir" no fim da lista */
 window.hEdModo=false;
 /* alterações feitas na linha ficam guardadas aqui e só valem ao tocar em ✓ Aplicar (✕ Cancelar descarta) */
-window.HEDPEND={p:{},r:{}};
+window.HEDPEND={p:{},r:{},n:{}};
 function hedVal(t,k,orig){const P=window.HEDPEND[t];return Object.prototype.hasOwnProperty.call(P,k)?P[k]:orig;}
-function hedN(){return Object.keys(window.HEDPEND.p).length+Object.keys(window.HEDPEND.r).length;}
+function hedN(){const P=window.HEDPEND;return Object.keys(P.p).length+Object.keys(P.r).length+Object.keys(P.n||{}).length;}
 function pintarHEd(){const el=$('hEdFim');if(!el)return;if(modoVer||!HIST.length){el.innerHTML='';return;}
   /* o botão "Editar previsto / realizado" fica junto dos outros (pintarHPv); aqui só a faixa de quando está editando */
   el.innerHTML=window.hEdModo?`<div class="gBatFim gbSel"><span>Mude o <b>previsto</b> (curral ainda não tratado hoje) ou o <b>realizado</b> direto na linha. Só vale ao tocar em <b>✓ Aplicar</b>.</span></div>`:'';}
@@ -3173,7 +3173,7 @@ function hpvPode(m){try{return !modoVer&&!HD.per&&hModo==='T'&&(HD.dia===hojeKey
 /* Dia todo: Alterar previsto (% IMS ou kg/dia), Alterar ordem e Incluir previsto · Todos os tratos / Trato N: Editar previsto / realizado (todos com a senha) */
 function pintarHPv(){const el=$('hPvBtns');if(!el)return;if(window.HPV||modoVer||HD.per||hModo!=='T'){el.innerHTML='';return;}
   if(HD.t>=0){el.innerHTML=window.hEdModo?BTNHED:'<button class="dangerfill" data-hedmodo="1">✎ Editar previsto / realizado</button>';return;}
-  if(window.hEdModo){window.hEdModo=false;window.HEDPEND={p:{},r:{}};}  /* Dia todo é só o total: não edita na linha */
+  if(window.hEdModo){window.hEdModo=false;window.HEDPEND={p:{},r:{},n:{}};}  /* Dia todo é só o total: não edita na linha */
   if(!hpvPode()){el.innerHTML=hpvPode('ordem')?'<button data-hpv="ordem">↕ Alterar ordem</button>':'';return;}
   el.innerHTML='<button class="dangerfill" data-hpv="ims">✎ Editar previsto <small style="font-size:.82em;font-weight:600;white-space:nowrap">(% IMS ou kg/dia)</small></button>'+
     '<button data-hpv="ordem">↕ Alterar ordem</button>';}
@@ -3196,7 +3196,7 @@ document.addEventListener('click',async e=>{const b=e.target.closest('[data-hpv]
 /* botão vermelho: pede a senha 1010 SEMPRE (toda vez que toca) e libera editar/excluir até tocar em Concluir */
 document.addEventListener('click',async e=>{const b=e.target.closest('[data-hedmodo]');if(!b)return;
   if(b.dataset.hedmodo==='1'){if(bloqueado())return;if(!await pedirSenhaAcao('Senha para editar previsto / realizado'))return;}
-  window.hEdModo=b.dataset.hedmodo==='1';window.HEDPEND={p:{},r:{}};renderHist();});
+  window.hEdModo=b.dataset.hedmodo==='1';window.HEDPEND={p:{},r:{},n:{}};renderHist();});
 /* editou o realizado na própria linha */
 /* editou o previsto de um curral ainda não tratado (hoje), direto na linha */
 document.addEventListener('change',e=>{const i=e.target.closest&&e.target.closest('#tbHist [data-hedprev]');if(!i||!window.hEdModo)return;
@@ -3208,7 +3208,7 @@ document.addEventListener('change',e=>{const i=e.target.closest&&e.target.closes
 document.addEventListener('click',async e=>{const b=e.target.closest('[data-hedap]');if(!b||!window.hEdModo)return;
   try{document.activeElement&&document.activeElement.blur&&document.activeElement.blur();}catch(x){}
   await new Promise(r=>setTimeout(r,0));   // deixa o "change" do campo que estava sendo digitado entrar primeiro
-  const P=window.HEDPEND;window.HEDPEND={p:{},r:{}};window.hEdModo=false;
+  const P=window.HEDPEND;window.HEDPEND={p:{},r:{},n:{}};window.hEdModo=false;
   if(b.dataset.hedap!=='ok'){renderHist();toast('Alterações canceladas');return;}
   let nP=0,nR=0,pulou=[],nRed=0;
   /* mudou o previsto de um trato que NÃO é o último ainda por fazer: a diferença vai para os tratos seguintes (ainda não feitos)
@@ -3226,12 +3226,36 @@ document.addEventListener('click',async e=>{const b=e.target.closest('[data-heda
     const base=prox.map(x=>+S.prev[x][c]||0),sb=base.reduce((a,y)=>a+y,0);let resto=dif;
     prox.forEach((x,i)=>{const parte=i===prox.length-1?resto:Math.round(dif*base[i]/sb);const nvx=Math.max(0,base[i]+parte);resto-=(nvx-base[i]);if(setPrev(x,c,nvx))nRed++;});});
   if(nP){marcarPrev();editandoPrev=true;try{render();}finally{editandoPrev=false;}}
-  for(const [uid,v] of Object.entries(P.r)){const r=HIST.find(x=>x.uid===uid);if(!r||v===r.forn)continue;await salvarQtd(uid,v,null);nR++;}
+  let nZ=0,nN=0;const comp=new Set();
+  for(const [uid,v] of Object.entries(P.r)){const r=HIST.find(x=>x.uid===uid);if(!r)continue;
+    if(+v===0){   /* zerou: apaga o registro (aqui e na planilha); o curral volta a ficar por fazer nesse trato */
+      try{window.diagLog&&diagLog('edicao_apagou',{curral:r.curral,trato:r.trato,dia:r.dia,hora:r.hora,forn:r.forn});}catch(x){}
+      try{await dbDelMany([r.id]);}catch(err){toast('Erro ao apagar o registro do '+r.curral);continue;}
+      if(r.enviado){S.apagarNuvem=(S.apagarNuvem||[]).concat(r.uid);save();}HIST=HIST.filter(x=>x!==r);nZ++;if(r.dia===hojeKey())comp.add(r.curral);continue;}
+    if(v===r.forn)continue;await salvarQtd(uid,v,null);nR++;}
+  /* lançou o realizado de um curral que não tinha registro nesse trato (ex.: foi tratado e lançado no curral errado) */
+  {const diaE=intervaloHist()[0],PE=(typeof prevDoDia==='function'&&prevDoDia(diaE))||{};let i=0;
+    for(const [key,v] of Object.entries(P.n||{})){const [k,c]=key.split('|'),q=Math.round(+v||0);if(!(q>0))continue;
+      if(HIST.some(r=>r.dia===diaE&&r.curral===c&&+r.trato===+k))continue;
+      const now=new Date(),ts=now.getTime()+(i++);
+      const r={ts,dia:diaE,trato:+k,hora:now.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'}),curral:c,prev:Math.round(+((PE[k]||PE[String(k)]||{})[c])||0),ini:0,fim:0,forn:q,
+        uid:`${S.aparelho}-${ts}`,enviado:false,origem:'edicao'};
+      try{r.id=await dbAdd(r);}catch(err){toast('Erro ao salvar o realizado do '+c);continue;}
+      HIST.push(r);nN++;if(diaE===hojeKey())comp.add(c);
+      try{window.diagLog&&diagLog('edicao_lancou',{curral:c,trato:+k,dia:diaE,forn:q});}catch(x){}}}
+  comp.forEach(c=>{try{compensarCurral(c);}catch(x){}});
+  if(nZ||nN){render();sincronizar();}
   renderHist();
-  toast(nP||nR?`✓ Aplicado: ${[nP?nP+' previsto(s)':'',nR?nR+' realizado(s)':''].filter(Boolean).join(' e ')}${nRed?' · diferença repassada aos próximos tratos':''}${pulou.length?` · ${pulou.join(', ')} já tratado(s): previsto não mudou`:''}`:'Nada foi alterado');});
+  toast(nP||nR||nZ||nN?`✓ Aplicado: ${[nP?nP+' previsto(s)':'',nR?nR+' realizado(s)':'',nZ?nZ+' apagado(s)':'',nN?nN+' lançado(s)':''].filter(Boolean).join(', ')}${nRed?' · diferença repassada aos próximos tratos':''}${pulou.length?` · ${pulou.join(', ')} já tratado(s): previsto não mudou`:''}`:'Nada foi alterado');});
+/* lançou o realizado num curral sem registro nesse trato */
+document.addEventListener('change',e=>{const i=e.target.closest&&e.target.closest('#tbHist [data-hedreal]');if(!i||!window.hEdModo)return;
+  const key=i.dataset.hedreal,t=i.value.trim(),v=t===''?0:parseNum(t);window.HEDPEND.n=window.HEDPEND.n||{};
+  if(isNaN(v)||v<0||v>30000){toast('Digite uma quantidade válida');i.value=hedVal('n',key,'');return;}
+  if(!(v>0))delete window.HEDPEND.n[key];else window.HEDPEND.n[key]=Math.round(v);i.classList.toggle('hEdMud',key in window.HEDPEND.n);});
 document.addEventListener('change',e=>{const i=e.target.closest&&e.target.closest('#tbHist [data-hedin]');if(!i||!window.hEdModo)return;
-  const r=HIST.find(x=>x.uid===i.dataset.hedin);if(!r)return;const v=parseNum(i.value);
-  if(isNaN(v)||v<=0||v>30000){toast('Digite uma quantidade válida');i.value=hedVal('r',r.uid,Math.round(r.forn));return;}
+  const r=HIST.find(x=>x.uid===i.dataset.hedin);if(!r)return;const t0=i.value.trim(),v=t0===''?0:parseNum(t0);
+  if(v===0){window.HEDPEND.r[r.uid]=0;i.value='0';i.classList.add('hEdMud');toast(`${r.curral}: com 0 o registro deste trato é apagado ao Aplicar`);return;}
+  if(isNaN(v)||v<0||v>30000){toast('Digite uma quantidade válida');i.value=hedVal('r',r.uid,Math.round(r.forn));return;}
   if(v===r.forn)delete window.HEDPEND.r[r.uid];else window.HEDPEND.r[r.uid]=v;i.classList.toggle('hEdMud',r.uid in window.HEDPEND.r);});
 document.addEventListener('click',async e=>{const be=e.target.closest('#tbHist [data-hed]'),bd=e.target.closest('#tbHist [data-hdel]');if(!be&&!bd)return;if(bloqueado())return;
   const r=HIST.find(x=>x.uid===(be||bd).dataset[be?'hed':'hdel']);if(!r)return;
