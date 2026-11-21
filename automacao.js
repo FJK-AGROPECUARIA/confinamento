@@ -278,6 +278,18 @@ function pintarSinal(){const segs=A.ultDado?(Date.now()-A.ultDado)/1000:null;let
   const mini=!A.fonte?(A.statusTipo==='wait'?'🟡 conectando…':A.statusTipo==='err'?'🔴 erro ao conectar':'🔴 desconectada'):cl==='ok'?'🟢 conectada':cl==='ruim'?'🔴 sem peso':'🟡 esperando peso';
   ['aBalMini','acBalMini'].forEach(id=>{const e=$(id);if(!e)return;if(e.textContent!==mini)e.textContent=mini;e.className='balMini '+(cl==='ruim'?'ruim':'');});
   aplicarBalRec();balAlerta(cl,segs);}
+/* ÚLTIMO PONTO: enquanto carrega um produto ou fornece num curral, guarda o último peso bom e quanto já foi
+   (no aparelho a cada leitura; na nuvem a cada 20 s). Se a balança parar no meio (+RANGE, bluetooth), sabe-se até onde foi. */
+function ultPontoAgora(){try{const p=A.peso;if(p==null||!isFinite(p)||p>60000||p<-2000)return null;const ts=Date.now(),hora=new Date().toTimeString().slice(0,8);
+  if(naCargaAuto()){const it=acItem(),B=acB();if(it&&ok(it.ini)&&!ok(it.real)){const f=Math.max(0,Math.round(p-it.ini));return {fase:'carga',hora,ts,dia:hojeKey(),peso:Math.round(p),nome:it.nome,trato:B&&B.trato,ini:Math.round(it.ini),feito:f,prev:ok(it.prev)?Math.round(it.prev):null,falta:ok(it.prev)?Math.round(it.prev-f):null};}return null;}
+  const cur=curralAtual();if(A.est==='descarregando'&&cur&&A.base!=null){const f=Math.max(0,Math.round(A.base-p));return {fase:'trato',hora,ts,dia:hojeKey(),peso:Math.round(p),nome:cur.nome,trato:S.tratoSel,ini:Math.round(A.base),feito:f,prev:ok(cur.prev)?Math.round(cur.prev):null,falta:ok(cur.prev)?Math.round(cur.prev-f):null};}
+  return null;}catch(e){return null;}}
+function ultPontoGravar(){try{const u=ultPontoAgora();if(!u)return;const a=A.ultP;if(a&&a.nome===u.nome&&Math.abs(u.peso-a.peso)>3000&&u.ts-a.ts<3000)return;   // salto absurdo de leitura: ignora
+  A.ultP=u;try{localStorage.setItem('ultPonto',JSON.stringify(u));}catch(e){}
+  const n=A.ultPN;if(typeof gPut==='function'&&typeof G!=='undefined'&&G&&G.it&&(!n||u.nome!==n.nome||(u.ts-n.ts>=20000&&Math.abs(u.peso-n.peso)>=10))){A.ultPN=u;
+    gPut(Object.assign({uid:'ultponto-'+S.aparelho,tipo:'ultponto',aparelho:S.aparelho,quem:typeof apNome==='function'?apNome():''},u));}}catch(e){}}
+function ultPontoTxt(){try{let u=A.ultP;if(!u){try{u=JSON.parse(localStorage.getItem('ultPonto')||'null');}catch(e){}}if(!u||u.dia!==hojeKey()||Date.now()-u.ts>4*3600e3)return '';
+  const f=x=>ok(x)?fmt(x):'—';return `Último sinal às ${u.hora}: ${f(u.peso)} kg no vagão · ${esc(u.nome)}: ${u.fase==='carga'?'carregado':'fornecido'} ${f(u.feito)} kg${ok(u.prev)?` de ${f(u.prev)} kg (faltavam ${f(u.falta)} kg)`:''}`;}catch(e){return '';}}
 /* AVISO GRANDE: batida ou fornecimento aberto na tela e a balança sem sinal (desconectada, reconectando ou sem peso) —
    o que entrar no vagão agora não está sendo contado e a balança pode estar travada (HOLD) */
 function balAlerta(cl,segs){try{
@@ -285,10 +297,10 @@ function balAlerta(cl,segs){try{
   let ab=false;try{ab=!(typeof modoVer!=='undefined'&&modoVer)&&((vis('viewAutoC')&&typeof CG!=='undefined'&&CG&&!!CG.ativa)||(vis('viewAuto')&&!!(window.filtroForn&&filtroForn())));}catch(e){}
   const ruim=ab&&(cl==='ruim'||cl==='desc'||(segs==null&&A.fonte&&Date.now()-(A.tCon||0)>6000));
   let bx=$('balAlerta');if(ruim&&!bx){bx=document.createElement('div');bx.id='balAlerta';bx.setAttribute('role','alert');document.body.appendChild(bx);}
-  if(ruim&&!A.balAlertaAnt){try{navigator.vibrate&&navigator.vibrate([400,200,400]);}catch(e){}try{diagLog('aviso_sem_sinal',{motivo:!A.fonte?'desconectada':A.btReconectando?'reconectando':'sem_peso',hold:!!A.holdApp});}catch(e){}}
+  if(ruim&&!A.balAlertaAnt){try{navigator.vibrate&&navigator.vibrate([400,200,400]);}catch(e){}try{diagLog('aviso_sem_sinal',{motivo:!A.fonte?'desconectada':A.btReconectando?'reconectando':'sem_peso',hold:!!A.holdApp,ult:A.ultP||null});}catch(e){}}
   A.balAlertaAnt=ruim;
   if(bx){bx.hidden=!ruim;if(ruim){const por=!A.fonte?'A balança está DESCONECTADA':A.btReconectando?'Reconectando a balança…':segs==null?'Esperando o peso da balança…':`Sem peso há ${Math.round(segs)} s`;
-    const h=`<b>⚠ BALANÇA SEM SINAL</b><span>${por}</span><em>NÃO coloque produto agora: o tablet não está contando e a balança pode estar travada</em>`;if(bx.innerHTML!==h)bx.innerHTML=h;}}
+    const h=`<b>⚠ BALANÇA SEM SINAL</b><span>${por}</span><em>NÃO coloque produto agora: o tablet não está contando e a balança pode estar travada</em>${(t=>t?`<small class="balUlt">${t}</small>`:'')(ultPontoTxt())}`;if(bx.innerHTML!==h)bx.innerHTML=h;}}
   document.body.classList.toggle('comBalAlerta',ruim);}catch(e){}}
 window.recolherBal=()=>{A.balRec=true;aplicarBalRec();};
 function aplicarBalRec(){[['aBox',$('aBox')&&$('aBox').querySelector(':scope>section')],['acBox',$('acBox')&&$('acBox').querySelector(':scope>section')]].forEach(([_,sec])=>{if(!sec)return;
@@ -645,7 +657,7 @@ function novoPeso(n){if(A.voltaPend){const V=A.voltaPend;A.voltaPend=null;if(A.h
   if(kf>1&&A.brutos.length>1&&!mexendo){const u=A.brutos.slice(-kf).slice().sort((x,y)=>x-y);n=u[Math.floor((u.length-1)/2)];}
   ['aPeso','acPeso'].forEach(i=>{const b=$(i);if(b&&b.style.opacity)b.style.opacity='';});
   if(A.tUlt){const dt=agora-A.tUlt;if(dt>0&&dt<3000)A.dtMed=A.dtMed?A.dtMed*0.8+dt*0.2:dt;}A.tUlt=agora;
-  A.peso=n;A.amostras.push({t:agora,v:n});A.crus=(A.crus||[]).filter(q=>q.t>=agora-12000);A.crus.push({t:agora,v:nCru});A.h45=(A.h45||[]).filter(q=>q.t>=agora-45000);A.h45.push({t:agora,v:nCru});
+  A.peso=n;A.amostras.push({t:agora,v:n});A.crus=(A.crus||[]).filter(q=>q.t>=agora-12000);A.crus.push({t:agora,v:nCru});A.h45=(A.h45||[]).filter(q=>q.t>=agora-45000);A.h45.push({t:agora,v:nCru});ultPontoGravar();
   const ini=agora-c.tempo*1000;A.amostras=A.amostras.filter(a=>a.t>=agora-Math.max(c.tempo*1000,3000)-1500);
   const jan=A.amostras.filter(a=>a.t>=ini);
   const cobre=A.amostras.length&&A.amostras[0].t<=ini+300;
