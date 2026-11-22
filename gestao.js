@@ -2391,10 +2391,12 @@ function dadosGraf(fim){const dias=[];for(let i=gGrafN-1;i>=0;i--)dias.push(soma
   return {dias,todos,linhas};}
 /* quantos dias os gráficos mostram (7, 10 ou 15) */
 var gGrafN=10;
+/* marcar / desmarcar todos: os dois botões sempre no mesmo lugar (não trocam de posição ao tocar) e afastados dos currais */
+const grafTodosBts=D=>D.todos.length>1?`<div class="row gGrafTodos" style="gap:12px;margin:12px 0 14px"><button type="button" class="mini" data-g="grafTodos" data-v="1"${D.todos.every(c=>!gGrafOff.has(c))?' disabled':''}>✓ Marcar todos</button><button type="button" class="mini" data-g="grafTodos" data-v="0"${D.todos.every(c=>gGrafOff.has(c))?' disabled':''}>✕ Desmarcar todos</button></div>`:'';
 /* dias do gráfico: atalhos 7/10/15/30 ou período livre (De … até o dia escolhido), até 90 dias */
-const grafNBts=fim=>{fim=fim||hojeKey();const at=[7,10,15,30],de=somaDias(fim,-(gGrafN-1));
+const grafNBts=(fim,semPer)=>{fim=fim||hojeKey();const at=[7,10,15,30],de=somaDias(fim,-(gGrafN-1));
   return `<div class="row gRelAtalhos gGrafNBts">${at.map(n=>`<button type="button" class="mini${gGrafN===n?' sel':''}" data-g="grafN" data-n="${n}">${n} dias</button>`).join('')}</div>
-  <div class="gPerDatas gGrafPer"><label>Período: de<input type="date" data-grafde value="${de}" max="${fim}" min="${somaDias(fim,-89)}"></label><label>até<input type="date" value="${fim}" disabled></label></div>`;};
+  ${semPer?'':`<div class="gPerDatas gGrafPer"><label>Período: de<input type="date" data-grafde value="${de}" max="${fim}" min="${somaDias(fim,-89)}"></label><label>até<input type="date" value="${fim}" disabled></label></div>`}`;};
 /* filtro de Local dos gráficos: igual ao da Leitura (◀ Local ▶) */
 function grafLocNav(){return typeof selSetas==='function'&&window.LOC_OPS?`<div class="gCoLocNav">${selSetas('Local',LOC_OPS,Math.max(0,LOC_OPS.findIndex(o=>o[0]===gLocG)),'data-g="grafLocP" data-n','data-grafsel')}</div>`:`<div class="gForm gGrafFil">${campo({k:'grafLocF',l:'Local',t:'sel',op:[['T','Todos'],['C','Confinamento'],['P','Pasto']],v:gLocG,meia:1})}</div>`;}
 /* gráfico de % IMS realizado: o que o curral comeu no dia (realizado, em MS) ÷ peso vivo — dia a dia, para acompanhar o consumo */
@@ -2447,7 +2449,7 @@ function tCochoGrafIms(fim){const D=dadosGrafIms(fim);setTimeout(()=>{const t=do
     ${grafLocNav()}
     ${grafNBts(fim)}
     ${rows?`<div class="row compart fz3"><button class="verde" data-g="pdfGraf">📄 PDF</button><button class="verde" data-g="imgGraf">🖼 Foto</button><button class="verde" data-g="xlsGraf">📊 Excel</button></div>`:''}
-    ${D.todos.length>1?`<div class="row gGrafTodos">${D.todos.every(c=>!gGrafOff.has(c))?'<button class="mini" data-g="grafTodos" data-v="0">✕ Desmarcar todos</button>':'<button class="mini" data-g="grafTodos" data-v="1">✓ Marcar todos</button>'}</div>`:''}
+    ${grafTodosBts(D)}
     <div class="gChips">${D.todos.map(c=>`<button data-g="grafCur" data-c="${esc(c)}" class="${gGrafOff.has(c)?'':'sel'}">${esc(c)}</button>`).join('')}</div>
     ${rows?`<div class="tablebox"><table class="gHeat gHeatIms" style="--cw:${cw}ch"><colgroup><col class="cC">${D.dias.map(()=>'<col class="cD">').join('')}<col class="cM"></colgroup><thead><tr><th class="gHc">Local</th>${cab}<th class="gHm">Méd.</th></tr></thead><tbody>${rows}</tbody></table></div>
     <p class="note">% IMS = matéria seca realizada no dia ÷ peso vivo projetado × 100. Verde = subiu mais de 0,05 em relação ao dia anterior · vermelho = desceu mais de 0,05 · cinza = variação menor · ponto = sem trato. Toque num quadro para ver os kg.</p>${linhasImsSVG(D)}`:'<p class="note">Nenhum trato nesse período.</p>'}</section>`;}
@@ -2479,7 +2481,7 @@ function tCochoGraf(t){if(!t._ini){t._ini=1;gGrafOff.clear();}   /* ao abrir o g
     ${grafLocNav()}
     ${grafNBts(fim)}
     ${rows?`<div class="row compart fz3"><button class="verde" data-g="pdfGraf">📄 PDF</button><button class="verde" data-g="imgGraf">🖼 Foto</button><button class="verde" data-g="xlsGraf">📊 Excel</button></div>`:''}
-    ${D.todos.length>1?`<div class="row gGrafTodos">${D.todos.every(c=>!gGrafOff.has(c))?'<button class="mini" data-g="grafTodos" data-v="0">✕ Desmarcar todos</button>':'<button class="mini" data-g="grafTodos" data-v="1">✓ Marcar todos</button>'}</div>`:''}
+    ${grafTodosBts(D)}
     <div class="gChips">${D.todos.map(c=>`<button data-g="grafCur" data-c="${esc(c)}" class="${gGrafOff.has(c)?'':'sel'}">${esc(c)}</button>`).join('')}</div>
     ${rows?`<div class="tablebox"><table class="gHeat" style="--cw:${cw}ch"><colgroup><col class="cC">${D.dias.map(()=>'<col class="cD">').join('')}<col class="cM"></colgroup><thead><tr><th class="gHc">Local</th>${cab}<th class="gHm">Méd.</th></tr></thead><tbody>${rows}</tbody></table></div>
     <div class="gLegNota">${notas.map(x=>{const [bg,fg]=corNota(x.p);return `<span style="background:${bg};color:${fg}">${notaTxt(x.n)}<small>${x.p>0?'+':''}${nf(x.p,0)}%</small></span>`;}).join('')}</div>
@@ -2880,15 +2882,21 @@ function tRels(t){const per=relModo()==='per',dia=(t&&t.dia)||hojeKey(),[ini,fim
   ${bal?'':`<button type="button" class="mini gRelCpr" data-g="ir" data-t="compradores">🤝 Cadastro de compradores</button>
   <p class="note">O relatório de um lote fica dentro do lote: Lotes → escolha o lote → Resultado.</p>`}</section>`;}
 /* tela de um relatório: filtros → botões de exportar → visualização (igual à imagem exportada) */
+/* o mesmo relatório por dia e por período */
+const REL_PAR={tratosC:'tratosPC',tratosJ:'tratosPJ',batidas:'batidasP',relDia:'perLote',grafIms:'grafIms',grafNota:'grafNota',faltRel:'faltRel'};
+const relParDe=(k,m)=>m==='per'?(REL_PAR[k]||null):(Object.keys(REL_PAR).find(x=>REL_PAR[x]===k)||null);
 function tRelTela(t){const k=t.relAb,per=relModo()==='per',dia=t.dia||hojeKey(),[ini,fim]=relFaixa(),it=relLista().find(x=>x[0]===k)||REL_DIA.concat(REL_PER).find(x=>x[0]===k)||[k,k,''],ck=per?ini+'|'+fim:dia;
   if(relVerCache.k!==k+'|'+ck+relGrafSig(k))setTimeout(relVerCarregar,60);
-  const atalho=(n,r)=>`<button type="button" class="mini" data-g="relAtalho" data-n="${n}">${r}</button>`;
-  const datas=k==='comp'?'':per?`<div class="gPerDatas gRelDatas"><label>De<input type="date" id="gRelIni" value="${ini}"></label><label>Até<input type="date" id="gRelFim" value="${fim}"></label></div>
-    <div class="row gRelAtalhos">${atalho(7,'7 dias')}${atalho(15,'15 dias')}${atalho(30,'30 dias')}${atalho('mes','Este mês')}</div>`:navData('gRelDia',dia,'Data');
+  const hj=hojeKey(),nP=fim===hj?difDias(ini,fim)+1:0,mesP=fim===hj&&ini===hj.slice(0,8)+'01';
+  const atalho=(n,r)=>`<button type="button" class="mini${(n==='mes'?mesP:nP===n&&!mesP)?' sel':''}" data-g="relAtalho" data-n="${n}">${r}</button>`;
+  const doisModos=!!(relParDe(k,'per')||relParDe(k,'dia'));
+  const modo=doisModos?`<div class="gRelModo"><button type="button" class="${per?'':'on'}" data-g="relModoT" data-m="dia">📅 Por dia</button><button type="button" class="${per?'on':''}" data-g="relModoT" data-m="per">📆 Por período</button></div>`:'';
+  const datas=k==='comp'?'':per?`<div class="row gRelAtalhos">${atalho(7,'7 dias')}${atalho(15,'15 dias')}${atalho(30,'30 dias')}${atalho('mes','Este mês')}</div>
+    <div class="gPerDatas gRelDatas"><label>De<input type="date" id="gRelIni" value="${ini}"></label><label>Até<input type="date" id="gRelFim" value="${fim}"></label></div>`:navData('gRelDia',dia,'Data');
   const semXls=k==='estoque';
   const abre=REL_ABRE[k]?`<button type="button" class="mini gRelAbre" data-g="ir" data-t="${REL_ABRE[k]}"${per?` data-ini="${ini}" data-fim="${fim}"`:` data-dia="${dia}"`}>abrir a tela completa ›</button>`:'';
   return `<section class="panel"><h2>${esc(it[1])}</h2><p class="note">${esc(it[2])}</p>
-  ${datas}${relGrafSig(k)?relGrafCtl(k,dia):''}
+  ${modo}${datas}${relGrafSig(k)?relGrafCtl(k,per?fim:dia):''}
   <div class="row compart fz3 expTopo gRelExpBts"><button class="verde" data-g="relTelaExp" data-o="pdf">📄 PDF</button><button class="verde" data-g="relTelaExp" data-o="img">🖼 Foto</button>${semXls?'':'<button class="verde" data-g="relTelaExp" data-o="xls">📊 Excel</button>'}</div>
   ${abre}
   <div class="gRelVer" id="gRelVer" title="Toque para ver em tela cheia">${relVerCache.k===k+'|'+ck+relGrafSig(k)?relVerCache.h:'<p class="note">Carregando o relatório…</p>'}</div></section>`;}
@@ -3330,7 +3338,7 @@ function salvaCfg(){const c=JSON.parse(JSON.stringify(gCfg()));const t=fn('taxa'
 /* =====================================================================================
    EVENTOS
    ===================================================================================== */
-const SO_VER=new Set(['imgVenda','imgEnt','coGraf','msFP','msFLimpa','psP','imgPes','pdfPes','xlsPes','arqSel','arqTodos','arqNenhum','evolExp','arqLimpa','cfgSel','relExp','relSel','relVer','relAbre','relTelaExp','relGrafT','relModo','relAtalho','estFilP','estFilLimpa','estIrRel','estVerMov','fornec','pgN','pgP','cfgGrp','perP','cfgAbaP','estInsExp','cbExp','cbRes','cbN','cbSal','cbPer','grafLocP','grafN','cmpModo','lotLocP','hNav','entPer','saiPer','loteTog','lotTodos','curGrp','coLocP','fzLocP','fzFotoVer','fzHN','fzHPdf','fzHImg','resPdf','resImg','resXls','insPdf','insImg','insXls','estPdf','estImg','estXls','estPerE','estOrd','nfVer','fzPdf','fzImgG','fzCur','fzLoc','fzImg','fzXls','fzXlsHist','cfgAba','coLoc','coAbre','coFecha','estPer','evLoc','evolN','imgDia','imgPer','imgComp','imgLote','pdfLote','imgVendas','pdfVendas','xlsVendas','pdfComp','xlsGraf','pdfGraf','racaAdd','racaRm','grafLoc','grafCur','celGraf','imgGraf','filtroLoc','dataPasso','dataHoje','voltar','ir','lote','raiz','compRel','compDia','xlsDia','xlsPer','xlsComp','xlsLote','perAtalho','nota','racAdd','racRm','notaAdd','notaRm','notaPadrao']);
+const SO_VER=new Set(['imgVenda','imgEnt','coGraf','msFP','msFLimpa','psP','imgPes','pdfPes','xlsPes','arqSel','arqTodos','arqNenhum','evolExp','arqLimpa','cfgSel','relExp','relSel','relVer','relAbre','relTelaExp','relGrafT','relModoT','grafTodos','relModo','relAtalho','estFilP','estFilLimpa','estIrRel','estVerMov','fornec','pgN','pgP','cfgGrp','perP','cfgAbaP','estInsExp','cbExp','cbRes','cbN','cbSal','cbPer','grafLocP','grafN','cmpModo','lotLocP','hNav','entPer','saiPer','loteTog','lotTodos','curGrp','coLocP','fzLocP','fzFotoVer','fzHN','fzHPdf','fzHImg','resPdf','resImg','resXls','insPdf','insImg','insXls','estPdf','estImg','estXls','estPerE','estOrd','nfVer','fzPdf','fzImgG','fzCur','fzLoc','fzImg','fzXls','fzXlsHist','cfgAba','coLoc','coAbre','coFecha','estPer','evLoc','evolN','imgDia','imgPer','imgComp','imgLote','pdfLote','imgVendas','pdfVendas','xlsVendas','pdfComp','xlsGraf','pdfGraf','racaAdd','racaRm','grafLoc','grafCur','celGraf','imgGraf','filtroLoc','dataPasso','dataHoje','voltar','ir','lote','raiz','compRel','compDia','xlsDia','xlsPer','xlsComp','xlsLote','perAtalho','nota','racAdd','racRm','notaAdd','notaRm','notaPadrao']);
 /* ---------- apagar: sempre com senha (1010) e só o que ainda não foi usado ---------- */
 const H_=()=>typeof HIST!=='undefined'?HIST:[];
 function racUsoTxt(id){const r=G.it[id];if(!r)return '';const L=gTodos('lote').filter(l=>(l.rac||[]).some(h=>h.r===id)),B=gTodos('carga').filter(c=>c.racao===id||(r.nome&&c.racNome===r.nome));
@@ -3597,6 +3605,7 @@ $('gBox').addEventListener('click',e=>{
     (mud&&window.perg?perg('Cancelar a alteração de matéria seca?','O que foi escolhido não vai ser salvo.','Sim, cancelar','Não, continuar',false):Promise.resolve(true)).then(v=>{if(!v)return;GT.msAberto=false;GT.ins='';GT.msEdit=null;gRender();});return;}
   if(a==='relExp')return relExpEnviar(b.dataset.o);
   if(a==='relTelaExp')return relExpEnviar(b.dataset.o,GT.relAb);
+  if(a==='relModoT'){const m=b.dataset.m==='per'?'per':'dia';if(relModo()===m)return;const nk=relParDe(GT.relAb,m);if(!nk)return;GT.relModo=m;GT.relAb=nk;relVerCache={k:'',h:''};return gRender();}
   if(a==='relAbre'){relVerCache={k:'',h:''};return gIr({t:'relTela',relAb:b.dataset.k,dia:GT.dia,relModo:GT.relModo,rIni:GT.rIni,rFim:GT.rFim});}
   if(a==='relSel'){GT.relSel=!GT.relSel;GT.relAb=null;return gRender();}
   if(a==='relModo'){GT.relModo=b.dataset.m==='per'?'per':'dia';GT.relAb=null;relVerCache={k:'',h:''};return gRender();}
@@ -5377,6 +5386,7 @@ async function relExpGerar(k,dia,fmt,ini,fim){const GT0=GT,gL=gLoc,cap=window.__
   /* gráficos no modo Por período: vão do De ao Até (até 90 dias) */
   if(/^graf(Ims|Nota)$/.test(k)&&relModo()==='per'&&ini&&fim){dia=fim;gGrafN=Math.max(2,Math.min(90,difDias(ini,fim)+1));}
   const espera=async()=>{for(let w=0;w<40&&cap.length===n0;w++)await new Promise(r=>setTimeout(r,150));};
+  const espera2=async n=>{for(let w=0;w<50&&cap.length<n0+n;w++)await new Promise(r=>setTimeout(r,150));};   /* gráficos: espera as linhas e o quadro */
   try{switch(k){
     case 'tratosPC':await window.histExpPer(ini,fim,'curral',fmt);break;
     case 'tratosPJ':await window.histExpPer(ini,fim,'juntos',fmt);break;
@@ -5395,8 +5405,8 @@ async function relExpGerar(k,dia,fmt,ini,fim){const GT0=GT,gL=gLoc,cap=window.__
     case 'indices':await zootExport(fmt,dia,'T');break;
     case 'confBal':GT={t:'cfg',cbDia:dia};await confBatExp(fmt);break;
     case 'confRes':await confResumoPer(fmt,dia,dia);break;
-    case 'grafNota':GT={t:'cochoGraf',dia,o:'nota'};if(!dadosGraf(dia).linhas.length)break;if(gRelGrafT==='l'){if(xls)xlsLinIms();else imagemLinIms(pdf);break;}if(xls)xlsGraf();else imagemGraf(pdf);break;
-    case 'grafIms':GT={t:'cochoGraf',dia,o:'ims'};if(!dadosGrafIms(dia).linhas.length)break;if(gRelGrafT==='l'){if(xls)xlsLinIms();else imagemLinIms(pdf);break;}if(xls)xlsGrafIms();else imagemGrafIms(pdf);break;
+    case 'grafNota':GT={t:'cochoGraf',dia,o:'nota'};if(!dadosGraf(dia).linhas.length)break;if(xls){xlsGraf();break;}imagemLinIms(pdf);await espera2(1);GT={t:'cochoGraf',dia,o:'nota'};imagemGraf(pdf);await espera2(2);break;
+    case 'grafIms':GT={t:'cochoGraf',dia,o:'ims'};if(!dadosGrafIms(dia).linhas.length)break;if(xls){xlsGrafIms();break;}imagemLinIms(pdf);await espera2(1);GT={t:'cochoGraf',dia,o:'ims'};imagemGrafIms(pdf);await espera2(2);break;
     case 'saltos':await saltosPer(fmt,dia,dia);break;
     case 'confResP':await confResumoPer(fmt,ini,fim);break;
     case 'saltosP':await saltosPer(fmt,ini,fim);break;
@@ -5413,11 +5423,10 @@ async function relExpGerar(k,dia,fmt,ini,fim){const GT0=GT,gL=gLoc,cap=window.__
 var relVerSeq=0,relVerCache={k:"",h:""};
 /* gráficos de notas e %IMS nos relatórios: tipo (quadro ou linhas), dias, local e currais mudam a imagem (entram na chave do cache) */
 var gRelGrafT='q';
-const relGrafSig=k=>/^graf(Ims|Nota)$/.test(k||'')?`|${gGrafN}|${gLocG}|${gRelGrafT}|${[...gGrafOff].sort().join(',')}`:'';
-function relGrafCtl(k,dia){const D=(k==='grafIms'?dadosGrafIms:dadosGraf)(dia),L=gRelGrafT==='l';
-  return `<div class="gRelGrafCtl"><div class="gRelModo"><button type="button" class="${L?'':'on'}" data-g="relGrafT" data-v="q">▦ Quadro</button><button type="button" class="${L?'on':''}" data-g="relGrafT" data-v="l">📈 Linhas</button></div>
-    ${relModo()==='per'?'':grafNBts(dia)}${grafLocNav()}
-    ${D.todos.length>1?`<div class="row gGrafTodos">${D.todos.every(c=>!gGrafOff.has(c))?'<button class="mini" data-g="grafTodos" data-v="0">✕ Desmarcar todos</button>':'<button class="mini" data-g="grafTodos" data-v="1">✓ Marcar todos</button>'}</div>`:''}
+const relGrafSig=k=>/^graf(Ims|Nota)$/.test(k||'')?`|${gGrafN}|${gLocG}|${[...gGrafOff].sort().join(',')}`:'';
+function relGrafCtl(k,dia){const D=(k==='grafIms'?dadosGrafIms:dadosGraf)(dia);
+  return `<div class="gRelGrafCtl">${relModo()==='per'?'':`<p class="gRelRot">Dias até a data</p>${grafNBts(dia,true)}`}${grafLocNav()}
+    ${grafTodosBts(D)}
     <div class="gChips">${D.todos.map(c=>`<button data-g="grafCur" data-c="${esc(c)}" class="${gGrafOff.has(c)?'':'sel'}">${esc(c)}</button>`).join('')}</div></div>`;}
 async function relVerCarregar(){const box=document.getElementById('gRelVer');if(!box||!GT||(GT.t!=='rels'&&GT.t!=='relTela'&&!relBal())||!GT.relAb)return;
   const k=GT.relAb,dia=GT.dia||hojeKey(),per=relModo()==='per',[ini,fim]=relFaixa(),ck=per?ini+'|'+fim:dia,seq=++relVerSeq;
