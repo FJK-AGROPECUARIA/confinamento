@@ -2432,7 +2432,7 @@ function imagemLinIms(pdf){const fim=GT.dia,O=linOpc(),D=O.D,h=linhasImsSVG(D,O)
   const L=D.linhas.filter(o=>o.cel.some(Boolean)),svg=m[0].replace('<svg ','<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="680" font-family="Arial" ').replace(/<title>[^<]*<\/title>/g,'');
   const img=new Image();img.onload=()=>{const W=1320,top=96,lgH=Math.ceil(L.length/5)*34+20,H=top+680+lgH+20,cv=document.createElement('canvas');cv.width=W;cv.height=H;const x=cv.getContext('2d');
     x.fillStyle='#fff';x.fillRect(0,0,W,H);x.fillStyle='#11253d';x.fillRect(0,0,W,72);x.fillStyle='#a7bc09';x.fillRect(0,72,W,5);
-    x.fillStyle='#fff';x.font='bold 28px Arial';x.fillText(`${O.tit} · ${gGrafN} dias`,20,36);x.fillStyle='#c8dd1e';x.font='bold 17px Arial';x.fillText(`${dB(D.dias[0])} a ${dB(D.dias[D.dias.length-1])} · Gestão de Tratos · FJK`,20,62);
+    x.fillStyle='#fff';x.font='bold 28px Arial';x.fillText(`${O.tit} · ${D.dias.length} dias`,20,36);x.fillStyle='#c8dd1e';x.font='bold 17px Arial';x.fillText(`${dB(D.dias[0])} a ${dB(D.dias[D.dias.length-1])} · Gestão de Tratos · FJK`,20,62);
     x.drawImage(img,20,top);let lx=30,ly=top+700;L.forEach((o,k)=>{if(k&&k%5===0){lx=30;ly+=34;}x.fillStyle=COR_LIN[k%COR_LIN.length];x.fillRect(lx,ly-6,26,6);x.fillStyle='#11253d';x.font='bold 18px Arial';x.fillText(o.c.replace(/^P-/,''),lx+34,ly);lx+=250;});
     cv.toBlob(async b=>{const n=`Grafico de linhas ${O.arq} ${dB(fim).replace(/\//g,'-')}`;try{if(pdf)return await compartilharArquivo(await pngsParaPdf([b]),n+'.pdf','application/pdf');await compartilharArquivo(b,n+'.png','image/png');}catch(e){toast(pdf?'Não consegui gerar o PDF':'Não consegui gerar a imagem');}},'image/png');};
   img.onerror=()=>toast('Não consegui gerar a imagem');img.src='data:image/svg+xml;charset=utf-8,'+encodeURIComponent(svg);}
@@ -2897,7 +2897,7 @@ function tRelTela(t){const k=t.relAb,per=relModo()==='per',dia=t.dia||hojeKey(),
   const abre=REL_ABRE[k]?`<button type="button" class="mini gRelAbre" data-g="ir" data-t="${REL_ABRE[k]}"${per?` data-ini="${ini}" data-fim="${fim}"`:` data-dia="${dia}"`}>abrir a tela completa ›</button>`:'';
   return `<section class="panel"><h2>${esc(it[1])}</h2><p class="note">${esc(it[2])}</p>
   ${modo}${datas}${relGrafSig(k)?relGrafCtl(k,per?fim:dia):''}
-  <div class="row compart fz3 expTopo gRelExpBts"><button class="verde" data-g="relTelaExp" data-o="pdf">📄 PDF</button><button class="verde" data-g="relTelaExp" data-o="img">🖼 Foto</button>${semXls?'':'<button class="verde" data-g="relTelaExp" data-o="xls">📊 Excel</button>'}</div>
+  ${relGrafSig(k)?'':`<div class="row compart fz3 expTopo gRelExpBts"><button class="verde" data-g="relTelaExp" data-o="pdf">📄 PDF</button><button class="verde" data-g="relTelaExp" data-o="img">🖼 Foto</button>${semXls?'':'<button class="verde" data-g="relTelaExp" data-o="xls">📊 Excel</button>'}</div>`}
   ${abre}
   <div class="gRelVer" id="gRelVer" title="Toque para ver em tela cheia">${relVerCache.k===k+'|'+ck+relGrafSig(k)?relVerCache.h:'<p class="note">Carregando o relatório…</p>'}</div></section>`;}
 function linhasDia(dia){const X=gCtx();return X.L.map(l=>({l,x:diaLote(l,dia,X)})).filter(o=>o.x).sort((a,b)=>porCurral(a.l,b.l));}
@@ -3338,7 +3338,7 @@ function salvaCfg(){const c=JSON.parse(JSON.stringify(gCfg()));const t=fn('taxa'
 /* =====================================================================================
    EVENTOS
    ===================================================================================== */
-const SO_VER=new Set(['imgVenda','imgEnt','coGraf','msFP','msFLimpa','psP','imgPes','pdfPes','xlsPes','arqSel','arqTodos','arqNenhum','evolExp','arqLimpa','cfgSel','relExp','relSel','relVer','relAbre','relTelaExp','relGrafT','relModoT','grafTodos','relModo','relAtalho','estFilP','estFilLimpa','estIrRel','estVerMov','fornec','pgN','pgP','cfgGrp','perP','cfgAbaP','estInsExp','cbExp','cbRes','cbN','cbSal','cbPer','grafLocP','grafN','cmpModo','lotLocP','hNav','entPer','saiPer','loteTog','lotTodos','curGrp','coLocP','fzLocP','fzFotoVer','fzHN','fzHPdf','fzHImg','resPdf','resImg','resXls','insPdf','insImg','insXls','estPdf','estImg','estXls','estPerE','estOrd','nfVer','fzPdf','fzImgG','fzCur','fzLoc','fzImg','fzXls','fzXlsHist','cfgAba','coLoc','coAbre','coFecha','estPer','evLoc','evolN','imgDia','imgPer','imgComp','imgLote','pdfLote','imgVendas','pdfVendas','xlsVendas','pdfComp','xlsGraf','pdfGraf','racaAdd','racaRm','grafLoc','grafCur','celGraf','imgGraf','filtroLoc','dataPasso','dataHoje','voltar','ir','lote','raiz','compRel','compDia','xlsDia','xlsPer','xlsComp','xlsLote','perAtalho','nota','racAdd','racRm','notaAdd','notaRm','notaPadrao']);
+const SO_VER=new Set(['imgVenda','imgEnt','coGraf','msFP','msFLimpa','psP','imgPes','pdfPes','xlsPes','arqSel','arqTodos','arqNenhum','evolExp','arqLimpa','cfgSel','relExp','relSel','relVer','relAbre','relTelaExp','relGrafT','relModoT','grafTodos','relGrafExp','relModo','relAtalho','estFilP','estFilLimpa','estIrRel','estVerMov','fornec','pgN','pgP','cfgGrp','perP','cfgAbaP','estInsExp','cbExp','cbRes','cbN','cbSal','cbPer','grafLocP','grafN','cmpModo','lotLocP','hNav','entPer','saiPer','loteTog','lotTodos','curGrp','coLocP','fzLocP','fzFotoVer','fzHN','fzHPdf','fzHImg','resPdf','resImg','resXls','insPdf','insImg','insXls','estPdf','estImg','estXls','estPerE','estOrd','nfVer','fzPdf','fzImgG','fzCur','fzLoc','fzImg','fzXls','fzXlsHist','cfgAba','coLoc','coAbre','coFecha','estPer','evLoc','evolN','imgDia','imgPer','imgComp','imgLote','pdfLote','imgVendas','pdfVendas','xlsVendas','pdfComp','xlsGraf','pdfGraf','racaAdd','racaRm','grafLoc','grafCur','celGraf','imgGraf','filtroLoc','dataPasso','dataHoje','voltar','ir','lote','raiz','compRel','compDia','xlsDia','xlsPer','xlsComp','xlsLote','perAtalho','nota','racAdd','racRm','notaAdd','notaRm','notaPadrao']);
 /* ---------- apagar: sempre com senha (1010) e só o que ainda não foi usado ---------- */
 const H_=()=>typeof HIST!=='undefined'?HIST:[];
 function racUsoTxt(id){const r=G.it[id];if(!r)return '';const L=gTodos('lote').filter(l=>(l.rac||[]).some(h=>h.r===id)),B=gTodos('carga').filter(c=>c.racao===id||(r.nome&&c.racNome===r.nome));
@@ -3605,6 +3605,7 @@ $('gBox').addEventListener('click',e=>{
     (mud&&window.perg?perg('Cancelar a alteração de matéria seca?','O que foi escolhido não vai ser salvo.','Sim, cancelar','Não, continuar',false):Promise.resolve(true)).then(v=>{if(!v)return;GT.msAberto=false;GT.ins='';GT.msEdit=null;gRender();});return;}
   if(a==='relExp')return relExpEnviar(b.dataset.o);
   if(a==='relTelaExp')return relExpEnviar(b.dataset.o,GT.relAb);
+  if(a==='relGrafExp')return relGrafExp(b.dataset.p,b.dataset.o);
   if(a==='relModoT'){const m=b.dataset.m==='per'?'per':'dia';if(relModo()===m)return;const nk=relParDe(GT.relAb,m);if(!nk)return;GT.relModo=m;GT.relAb=nk;relVerCache={k:'',h:''};return gRender();}
   if(a==='relAbre'){relVerCache={k:'',h:''};return gIr({t:'relTela',relAb:b.dataset.k,dia:GT.dia,relModo:GT.relModo,rIni:GT.rIni,rFim:GT.rFim});}
   if(a==='relSel'){GT.relSel=!GT.relSel;GT.relAb=null;return gRender();}
@@ -5437,7 +5438,10 @@ async function relVerCarregar(){const box=document.getElementById('gRelVer');if(
   const cap=[];window.__capArq=cap;const t0=window.toast;window.toast=()=>{};let F=[];
   try{await relExpGerar(k,dia,'img',ini,fim);F=cap.slice();}finally{window.__capArq=null;window.toast=t0;}
   const b2=document.getElementById('gRelVer');if(!b2||seq!==relVerSeq||GT.relAb!==k)return;
-  const h=F.length?F.map(f=>`<img src="${URL.createObjectURL(f)}" alt="${esc(f.name)}">`).join(''):(per?'<p class="note">Sem dados nesse período.</p>':'<p class="note">Sem dados nessa data.</p>');
+  const grf=relGrafSig(k)&&GT.t==='relTela',bts=p=>`<div class="row compart fz3 expTopo"><button class="verde" data-g="relGrafExp" data-p="${p}" data-o="pdf">📄 PDF</button><button class="verde" data-g="relGrafExp" data-p="${p}" data-o="img">🖼 Foto</button><button class="verde" data-g="relGrafExp" data-p="${p}" data-o="xls">📊 Excel</button></div>`;
+  if(grf)F.sort((a,b)=>(/linhas/i.test(b.name)?1:0)-(/linhas/i.test(a.name)?1:0));   /* linhas primeiro, quadro depois */
+  const h=F.length&&grf?F.map(f=>{const lin=/linhas/i.test(f.name);return `<div class="gRelGrafBloco"><h3 class="gSubT">${lin?'📈 Gráfico de linhas':'▦ Quadro por dia'}</h3>${bts(lin?'lin':'quad')}<img src="${URL.createObjectURL(f)}" alt="${esc(f.name)}"></div>`;}).join('')
+    :F.length?F.map(f=>`<img src="${URL.createObjectURL(f)}" alt="${esc(f.name)}">`).join(''):(per?'<p class="note">Sem dados nesse período.</p>':'<p class="note">Sem dados nessa data.</p>');
   relVerCache={k:k+'|'+ck+relGrafSig(k),h};b2.innerHTML=h;}
 window.relVerCarregar=relVerCarregar;
 /* tocou na imagem do relatório: abre em tela cheia, só para ver (aproxima com dois dedos ou dois toques; ◀ Voltar fecha) */
@@ -5460,6 +5464,14 @@ function verImagens(srcs){if(!srcs.length)return;const f=document.createElement(
   area.addEventListener('click',e=>{if(!e.target.closest('img')){fecha();return;}const r=area.getBoundingClientRect();aplica(z>1.2?1:2.5,e.clientX-r.left,e.clientY-r.top);});}
 window.verImagens=verImagens;
 document.addEventListener('click',e=>{const im=e.target.closest('#gRelVer img');if(!im)return;verImagens([...document.querySelectorAll('#gRelVer img')].map(x=>x.src));});
+/* exportar só um dos gráficos (linhas ou quadro) com os filtros da tela */
+function relGrafExp(p,fmt){const k=GT.relAb,ims=k==='grafIms',per=relModo()==='per',[ini,fim]=relFaixa(),dia=per?fim:(GT.dia||hojeKey()),G0=GT,n0=gGrafN,pdf=fmt==='pdf',xls=fmt==='xls';
+  if(per)gGrafN=Math.max(2,Math.min(90,difDias(ini,fim)+1));
+  GT={t:'cochoGraf',dia,o:ims?'ims':'nota'};
+  try{if(!(ims?dadosGrafIms:dadosGraf)(dia).linhas.length)return toast('Nada para mostrar');
+    if(p==='lin'){if(xls)xlsLinIms();else imagemLinIms(pdf);}
+    else{if(xls)(ims?xlsGrafIms:xlsGraf)();else (ims?imagemGrafIms:imagemGraf)(pdf);}}
+  finally{GT=G0;gGrafN=n0;}}
 let relExpRodando=false;
 async function relExpEnviar(fmt,so){if(relExpRodando)return;const dia=GT.dia||hojeKey(),sel=so?[so]:relExpSel(),[ini,fim]=relFaixa(),LST=relLista();
   if(!sel.length)return toast('Marque pelo menos um relatório');
