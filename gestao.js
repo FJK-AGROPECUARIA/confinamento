@@ -2392,7 +2392,7 @@ function dadosGraf(fim){const dias=[];for(let i=gGrafN-1;i>=0;i--)dias.push(soma
 /* quantos dias os gráficos mostram (7, 10 ou 15) */
 var gGrafN=10;
 /* marcar / desmarcar todos: os dois botões sempre no mesmo lugar (não trocam de posição ao tocar) e afastados dos currais */
-const grafTodosBts=D=>D.todos.length>1?`<div class="row gGrafTodos" style="gap:12px;margin:12px 0 14px"><button type="button" class="mini" data-g="grafTodos" data-v="1"${D.todos.every(c=>!gGrafOff.has(c))?' disabled':''}>✓ Marcar todos</button><button type="button" class="mini" data-g="grafTodos" data-v="0"${D.todos.every(c=>gGrafOff.has(c))?' disabled':''}>✕ Desmarcar todos</button></div>`:'';
+const grafTodosBts=D=>D.todos.length>1?`<div class="row gGrafTodos" style="gap:12px;margin:12px 0 14px"><button type="button" class="mini gTodosOn" data-g="grafTodos" data-v="1"${D.todos.every(c=>!gGrafOff.has(c))?' disabled':''}>✓ Marcar todos</button><button type="button" class="mini gTodosOff" data-g="grafTodos" data-v="0"${D.todos.every(c=>gGrafOff.has(c))?' disabled':''}>✕ Desmarcar todos</button></div>`:'';
 /* dias do gráfico: atalhos 7/10/15/30 ou período livre (De … até o dia escolhido), até 90 dias */
 const grafNBts=(fim,semPer)=>{fim=fim||hojeKey();const at=[7,10,15,30],de=somaDias(fim,-(gGrafN-1));
   return `<div class="row gRelAtalhos gGrafNBts">${at.map(n=>`<button type="button" class="mini${gGrafN===n?' sel':''}" data-g="grafN" data-n="${n}">${n} dias</button>`).join('')}</div>
