@@ -3080,6 +3080,10 @@ function msStatus(){const hj=hojeKey(),H=typeof HIST!=='undefined'?HIST:[],P=(ty
   const pend=porT.reduce((a,x)=>a+x.falta,0);
   if(feitoHoje.length&&pend)return {bloq:true,pend,porT};
   const dia=feitoHoje.length?somaDias(hj,1):hj,leit=gTodos('leitura').some(l=>l.dia===dia);return {bloq:false,dia,leit,amanha:dia!==hj};}
+/* a última alteração de MS de um produto pode ser editada enquanto nenhum trato foi registrado a partir do dia em que ela vale */
+function msUltEditavel(uid){try{const i=G.it[uid];const h=i&&Array.isArray(i.msHist)?i.msHist:[];if(!h.length)return null;
+  const u=h.slice().sort((a,b)=>(a.dia||'').localeCompare(b.dia||'')||(a.ts||0)-(b.ts||0)).pop();if(!u||!u.dia||!(u.ts>0))return null;
+  const H=typeof HIST!=='undefined'?HIST:[];if(H.some(r=>(r.dia||'')>=u.dia))return null;return u;}catch(e){return null;}}
 function msAvisoHTML(){const m=msStatus();
   if(m.bloq)return `<div class="gMsAviso bloq">⛔ Existem currais pendentes para finalizar o trato do dia:<br>${m.porT.filter(x=>x.falta).map(x=>`<b>Trato ${x.k}</b>: faltam ${x.falta} de ${x.tot} curral(is)`).join(' · ')}.<br>A matéria seca só pode ser alterada após a finalização de todos os tratos do dia (e antes da leitura do dia seguinte).</div>`;
   return `<div class="gMsAviso${m.leit?' atencao':''}">${m.amanha?'✓ Tratos de hoje finalizados. ':''}A nova MS vale a partir de <b>${dB(m.dia)}</b>${m.amanha?' (amanhã)':' (hoje)'}: leitura, previsto, rações e carregamentos desse dia em diante. Os dias anteriores ficam como estão.${m.leit?`<br>⚠ A leitura de ${dB(m.dia)} já foi feita com a MS antiga: depois de alterar, refaça a leitura para recalcular o previsto.`:''}</div>`;}
@@ -3091,32 +3095,42 @@ function tInsMS(t){const I=gTodos('insumo').sort(porNome),H0=msHistTodos(),sel=(
     ${typeof selSetas==='function'?`<div class="gCoLocNav">${selSetas('Insumo',IO,Math.max(0,IO.findIndex(o=>o[0]===(F.ins||''))),'data-g="msFP" data-n','data-msfsel="1"')}</div>`:''}
     ${filtra?'<button class="mini" data-g="msFLimpa">Limpar filtros</button>':''}
     <div class="row compart fz3 gHistExp" style="margin-top:10px"><button class="verde" data-g="msExp" data-f="pdf">📄 PDF</button><button class="verde" data-g="msExp" data-f="img">🖼 Foto</button><button class="verde" data-g="msExp" data-f="xls">📊 Excel</button></div>`;
-  let vis=0;const linhas=H.map(x=>{const v=(!sel||x.uid===sel)&&(filtra||vis<7);if(v)vis++;return `<tr data-msh="${esc(x.uid||'')}"${v?'':' hidden'}><td>${dB(x.dia)}${x.hora?`<small>${esc(x.hora)}</small>`:''}</td><td class="c">${esc(x.nome)}</td><td>${x.ini?'inicial':pc(+x.de,1)}</td><td><b>${pc(+x.para,1)}</b></td></tr>`;}).join('');
+  let vis=0;const linhas=H.map(x=>{const v=(!sel||x.uid===sel)&&(filtra||vis<7);if(v)vis++;const ed=!x.ini&&!(typeof modoVer!=='undefined'&&modoVer)&&(u=>u&&u.ts===x.ts)(msUltEditavel(x.uid));return `<tr data-msh="${esc(x.uid||'')}"${v?'':' hidden'}><td>${dB(x.dia)}${x.hora?`<small>${esc(x.hora)}</small>`:''}</td><td class="c">${esc(x.nome)}</td><td>${x.ini?'inicial':pc(+x.de,1)}</td><td><b>${pc(+x.para,1)}</b>${ed?`<button class="mini" style="margin-left:6px" data-g="msEdita" data-id="${esc(x.uid)}" aria-label="Editar a última alteração de ${esc(x.nome)}">✎ Editar</button>`:''}</td></tr>`;}).join('');
   if(!GT.msAberto)return `${t&&t.t==='ms'?'':voltar()}<section class="panel"><h2>💧 Matéria seca</h2>
     <button class="primary" data-g="msAbre">💧 Alterar matéria seca</button></section>
     <section class="panel"><h2 id="gMsHTit">Últimas alterações</h2>${filtrosMS}
     <div class="tablebox"${H.length?'':' hidden'}><table class="gTab"><thead><tr><th>A partir de</th><th>Produto</th><th>De</th><th>Para</th></tr></thead><tbody>${linhas}</tbody></table></div>
     <p class="note"${H.length?' hidden':''}>${filtra?'Nenhuma alteração nesse filtro.':'Nenhuma alteração de matéria seca ainda.'}</p>${!filtra&&H.length>7?`<p class="note">Mostrando as 7 últimas — use os filtros para ver as outras.</p>`:''}</section>`;
-  return `${t&&t.t==='ms'?'':voltar()}<section class="panel"><h2>💧 Alterar matéria seca</h2>
-    <p class="note">Escolha o produto e digite a nova % de MS.</p>
+  const E=GT.msEdit&&GT.msEdit.uid===sel?msUltEditavel(sel):null;if(GT.msEdit&&!E)GT.msEdit=null;
+  return `${t&&t.t==='ms'?'':voltar()}<section class="panel"><h2>💧 ${E?'Editar a última alteração de matéria seca':'Alterar matéria seca'}</h2>
+    <p class="note">${E?`Alteração de ${dB(E.dia)}: de <b>${pc(+E.de,1)}</b> para <b>${pc(+E.para,1)}</b>. Ainda não houve trato com essa MS, por isso ela pode ser corrigida. Digite a % de MS correta (digitando ${pc(+E.de,1)}, a alteração é desfeita).`:'Escolha o produto e digite a nova % de MS.'}</p>
     <label>Produto<select id="gMsIns" onchange="msFiltrar(this.value)">
       <option value=""${sel?'':' selected'} disabled>Escolha o produto</option>${I.map(i=>`<option value="${i.uid}"${i.uid===sel?' selected':''} data-ms="${nf(+i.ms,1)}">${esc(i.nome)}</option>`).join('')}</select></label>
     <div class="gMsLinha"><div><span>MS atual</span><b id="gMsAtual">${iS?pc(+iS.ms,1):'—'}</b></div>
       <label>Nova MS (%)<input type="text" inputmode="decimal" id="gMsNova" placeholder="ex.: 35,5"></label></div>
-    ${msAvisoHTML()}
-    <button class="primary" data-g="salvaMS"${msStatus().bloq?' disabled':''}>Alterar matéria seca</button><button class="danger" data-g="msCancela">✕ Cancelar</button></section>
+    ${E?'':msAvisoHTML()}
+    <button class="primary" data-g="salvaMS"${!E&&msStatus().bloq?' disabled':''}>${E?'Salvar a correção':'Alterar matéria seca'}</button><button class="danger" data-g="msCancela">✕ Cancelar</button></section>
     <section class="panel"><h2 id="gMsHTit">${iS?'Últimas alterações · '+esc(iS.nome):'Últimas alterações'}</h2>
     <div class="tablebox"${H.length?'':' hidden'}><table class="gTab"><thead><tr><th>A partir de</th><th>Produto</th><th>De</th><th>Para</th></tr></thead><tbody>${linhas}</tbody></table></div>
     <p class="note" id="gMsVazio"${H.some(x=>!sel||x.uid===sel)?' hidden':''}>Nenhuma alteração de matéria seca${iS?' desse produto':''} ainda.</p></section>`;}
 /* escolheu o produto: mostra a MS atual e só as alterações dele */
-window.msFiltrar=uid=>{const i=G.it[uid];if(GT&&(GT.t==='ms'||GT.t==='insMS'))GT.ins=uid;
+window.msFiltrar=uid=>{const i=G.it[uid];if(GT&&GT.msEdit&&GT.msEdit.uid!==uid){GT.msEdit=null;GT.ins=uid;return gRender();}if(GT&&(GT.t==='ms'||GT.t==='insMS'))GT.ins=uid;
   const a=document.getElementById('gMsAtual');if(a)a.textContent=i?pc(+i.ms,1):'—';
   const t=document.getElementById('gMsHTit');if(t)t.textContent='Últimas alterações'+(i?' · '+i.nome:'');let n=0;
   document.querySelectorAll('#gBox tr[data-msh]').forEach(r=>{const v=(!uid||r.dataset.msh===uid)&&n<7;r.hidden=!v;if(v)n++;});
   const tb=document.querySelector('#gBox tr[data-msh]');if(tb)tb.closest('.tablebox').hidden=!n;
   const z=document.getElementById('gMsVazio');if(z){z.hidden=!!n;z.textContent='Nenhuma alteração de matéria seca'+(i?' desse produto':'')+' ainda.';}
   const nv=document.getElementById('gMsNova');if(nv){nv.value='';nv.focus();}};
-function salvaMS(){const st_=msStatus();if(st_.bloq)return toast('Termine todos os tratos de hoje antes de alterar a MS');const sel=document.getElementById('gMsIns'),i=sel&&G.it[sel.value];if(!i)return toast('Escolha o produto');
+function salvaMS(){
+  if(GT.msEdit){const sel0=document.getElementById('gMsIns'),i0=sel0&&G.it[sel0.value],E=i0&&GT.msEdit.uid===i0.uid?msUltEditavel(i0.uid):null;
+    if(!E){GT.msEdit=null;toast('Essa alteração não pode mais ser editada: já houve trato com essa MS');return gRender();}
+    const v=Math.round(gNum(document.getElementById('gMsNova').value)*10)/10;if(!(v>0&&v<=100))return toast('A MS deve ficar entre 1 e 100%');
+    const x=JSON.parse(JSON.stringify(i0)),h=x.msHist,k=h.findIndex(e=>e.ts===E.ts&&e.dia===E.dia);if(k<0)return toast('Alteração não encontrada');
+    let msg;if(Math.abs(v-(+E.de))<1e-9){h.splice(k,1);x.ms=+E.de;const u=h.slice().sort((a,b)=>(a.dia||'').localeCompare(b.dia||'')||(a.ts||0)-(b.ts||0)).pop();
+        x.msAnt=u?+u.de:null;x.msDia=u?u.dia:null;msg=`${i0.nome}: alteração de ${dB(E.dia)} desfeita · MS volta a ${pc(+E.de,1)}`;}
+    else{h[k]=Object.assign({},h[k],{para:v,editado:Date.now()});x.ms=v;msg=`${i0.nome}: alteração de ${dB(E.dia)} corrigida · ${pc(+E.de,1)} → ${pc(v,1)}`;}
+    gPut(x);const nAj=ajustarLeiturasMS();toast(msg+(nAj?` · leitura e previsto ajustados em ${nAj} curral(is)`:''));GT.msEdit=null;GT.ins=i0.uid;GT.msAberto=false;return gRender();}
+  const st_=msStatus();if(st_.bloq)return toast('Termine todos os tratos de hoje antes de alterar a MS');const sel=document.getElementById('gMsIns'),i=sel&&G.it[sel.value];if(!i)return toast('Escolha o produto');
   const v=Math.round(gNum(document.getElementById('gMsNova').value)*10)/10;if(!(v>0&&v<=100))return toast('A MS deve ficar entre 1 e 100%');
   if(Math.abs(v-(+i.ms))<1e-9)return toast('Essa já é a MS atual de '+i.nome);
   const x=JSON.parse(JSON.stringify(i)),d=new Date(),hist=Array.isArray(x.msHist)?x.msHist:(x.msDia&&x.msAnt!=null?[{dia:x.msDia,ts:0,de:+x.msAnt,para:+x.ms}]:[]);
@@ -3557,9 +3571,10 @@ $('gBox').addEventListener('click',e=>{
   if(a==='apagaRac'){const r=G.it[id];if(racUsoTxt(id))return toast('Esta ração já foi usada: não pode apagar.');if(!confirm(`Deseja realmente apagar a ração ${r.nome}?`))return;gDel(id);GT.itens=null;return gVoltar();}
   if(a==='salvaIns')return salvaIns(id);
   if(a==='salvaMS')return salvaMS();
-  if(a==='msAbre'){GT.msAberto=true;return gRender();}
+  if(a==='msAbre'){GT.msAberto=true;GT.msEdit=null;return gRender();}
+  if(a==='msEdita'){const id=b.dataset.id;if(!msUltEditavel(id))return toast('Essa alteração não pode mais ser editada: já houve trato com essa MS');GT.msAberto=true;GT.ins=id;GT.msEdit={uid:id};return gRender();}
   if(a==='msCancela'){const nv=document.getElementById('gMsNova'),sl=document.getElementById('gMsIns'),mud=(nv&&nv.value.trim())||(sl&&sl.value);
-    (mud&&window.perg?perg('Cancelar a alteração de matéria seca?','O que foi escolhido não vai ser salvo.','Sim, cancelar','Não, continuar',false):Promise.resolve(true)).then(v=>{if(!v)return;GT.msAberto=false;GT.ins='';gRender();});return;}
+    (mud&&window.perg?perg('Cancelar a alteração de matéria seca?','O que foi escolhido não vai ser salvo.','Sim, cancelar','Não, continuar',false):Promise.resolve(true)).then(v=>{if(!v)return;GT.msAberto=false;GT.ins='';GT.msEdit=null;gRender();});return;}
   if(a==='relExp')return relExpEnviar(b.dataset.o);
   if(a==='relSel'){GT.relSel=!GT.relSel;GT.relAb=null;return gRender();}
   if(a==='relModo'){GT.relModo=b.dataset.m==='per'?'per':'dia';GT.relAb=null;relVerCache={k:'',h:''};return gRender();}
