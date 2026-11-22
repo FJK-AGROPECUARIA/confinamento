@@ -2885,17 +2885,17 @@ function tRels(t){const per=relModo()==='per',dia=(t&&t.dia)||hojeKey(),[ini,fim
 /* o mesmo relatório por dia e por período */
 const REL_PAR={tratosC:'tratosPC',tratosJ:'tratosPJ',batidas:'batidasP',relDia:'perLote',grafIms:'grafIms',grafNota:'grafNota',faltRel:'faltRel'};
 const relParDe=(k,m)=>m==='per'?(REL_PAR[k]||null):(Object.keys(REL_PAR).find(x=>REL_PAR[x]===k)||null);
-function tRelTela(t){const k=t.relAb,per=relModo()==='per',dia=t.dia||hojeKey(),[ini,fim]=relFaixa(),it=relLista().find(x=>x[0]===k)||REL_DIA.concat(REL_PER).find(x=>x[0]===k)||[k,k,''],ck=per?ini+'|'+fim:dia;
+function tRelTela(t){if(/^graf(Ims|Nota)$/.test(t.relAb||'')&&t.relModo!=='per')t.relModo='per';const k=t.relAb,per=relModo()==='per',dia=t.dia||hojeKey(),[ini,fim]=relFaixa(),it=relLista().find(x=>x[0]===k)||REL_DIA.concat(REL_PER).find(x=>x[0]===k)||[k,k,''],ck=per?ini+'|'+fim:dia;
   if(relVerCache.k!==k+'|'+ck+relGrafSig(k))setTimeout(relVerCarregar,60);
   const hj=hojeKey(),nP=fim===hj?difDias(ini,fim)+1:0,mesP=fim===hj&&ini===hj.slice(0,8)+'01';
   const atalho=(n,r)=>`<button type="button" class="mini${(n==='mes'?mesP:nP===n&&!mesP)?' sel':''}" data-g="relAtalho" data-n="${n}">${r}</button>`;
-  const doisModos=!!(relParDe(k,'per')||relParDe(k,'dia'));
+  const graf=!!relGrafSig(k),doisModos=!graf&&!!(relParDe(k,'per')||relParDe(k,'dia'));
   const modo=doisModos?`<div class="gRelModo"><button type="button" class="${per?'':'on'}" data-g="relModoT" data-m="dia">📅 Por dia</button><button type="button" class="${per?'on':''}" data-g="relModoT" data-m="per">📆 Por período</button></div>`:'';
-  const datas=k==='comp'?'':per?`<div class="row gRelAtalhos">${atalho(7,'7 dias')}${atalho(15,'15 dias')}${atalho(30,'30 dias')}${atalho('mes','Este mês')}</div>
+  const datas=k==='comp'?'':per?`<div class="row gRelAtalhos">${atalho(7,'7 dias')}${atalho(15,'15 dias')}${atalho(30,'30 dias')}${graf?'':atalho('mes','Este mês')}</div>
     <div class="gPerDatas gRelDatas"><label>De<input type="date" id="gRelIni" value="${ini}"></label><label>Até<input type="date" id="gRelFim" value="${fim}"></label></div>`:navData('gRelDia',dia,'Data');
   const semXls=k==='estoque';
   const abre=REL_ABRE[k]?`<button type="button" class="mini gRelAbre" data-g="ir" data-t="${REL_ABRE[k]}"${per?` data-ini="${ini}" data-fim="${fim}"`:` data-dia="${dia}"`}>abrir a tela completa ›</button>`:'';
-  return `<section class="panel"><h2>${esc(it[1])}</h2><p class="note">${esc(it[2])}</p>
+  return `<section class="panel"><h2>${esc(it[1])}</h2>
   ${modo}${datas}${relGrafSig(k)?relGrafCtl(k,per?fim:dia):''}
   ${relGrafSig(k)?'':`<div class="row compart fz3 expTopo gRelExpBts"><button class="verde" data-g="relTelaExp" data-o="pdf">📄 PDF</button><button class="verde" data-g="relTelaExp" data-o="img">🖼 Foto</button>${semXls?'':'<button class="verde" data-g="relTelaExp" data-o="xls">📊 Excel</button>'}</div>`}
   ${abre}
@@ -3607,7 +3607,7 @@ $('gBox').addEventListener('click',e=>{
   if(a==='relTelaExp')return relExpEnviar(b.dataset.o,GT.relAb);
   if(a==='relGrafExp')return relGrafExp(b.dataset.p,b.dataset.o);
   if(a==='relModoT'){const m=b.dataset.m==='per'?'per':'dia';if(relModo()===m)return;const nk=relParDe(GT.relAb,m);if(!nk)return;GT.relModo=m;GT.relAb=nk;relVerCache={k:'',h:''};return gRender();}
-  if(a==='relAbre'){relVerCache={k:'',h:''};return gIr({t:'relTela',relAb:b.dataset.k,dia:GT.dia,relModo:GT.relModo,rIni:GT.rIni,rFim:GT.rFim});}
+  if(a==='relAbre'){relVerCache={k:'',h:''};const k=b.dataset.k,gr=/^graf(Ims|Nota)$/.test(k);return gIr({t:'relTela',relAb:k,dia:GT.dia,relModo:gr?'per':GT.relModo,rIni:GT.rIni,rFim:GT.rFim});}   /* gráficos: sempre por período */
   if(a==='relSel'){GT.relSel=!GT.relSel;GT.relAb=null;return gRender();}
   if(a==='relModo'){GT.relModo=b.dataset.m==='per'?'per':'dia';GT.relAb=null;relVerCache={k:'',h:''};return gRender();}
   if(a==='relAtalho'){const hj=hojeKey(),n=b.dataset.n;GT.rFim=hj;GT.rIni=n==='mes'?hj.slice(0,8)+'01':somaDias(hj,-(+n-1));relVerCache={k:'',h:''};return gRender();}
