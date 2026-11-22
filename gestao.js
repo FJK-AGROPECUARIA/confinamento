@@ -2405,7 +2405,9 @@ function dadosGrafIms(fim){const dias=[];for(let i=gGrafN-1;i>=0;i--)dias.push(s
   const todos=[...set].filter(c=>(gLocG==='T'||linhaDe(c)===gLocG)&&(typeof curralAtivo!=='function'||curralAtivo(c))).sort(alfa);   // só currais ativos
   const linhas=todos.filter(c=>!gGrafOff.has(c)).map(c=>{let ant=NaN;const cel=dias.map(d=>{const kg=ix.get(d+'|'+c)||0,bi=kg?baseIms(c,d):0,im=kg&&bi?kg/bi:NaN;
       if(!ok(im))return null;const ch=ok(ant)&&ant>0?(im-ant)/ant*100:0,dif=ok(ant)?Math.round(im*100)/100-Math.round(ant*100)/100:0;ant=im;return {im,kg,ch,dif};});
-    const v=cel.filter(Boolean),med=v.length?v.reduce((a,x)=>a+x.im,0)/v.length:NaN;return {c,cel,med};});
+    const v=cel.filter(Boolean),med=v.length?v.reduce((a,x)=>a+x.im,0)/v.length:NaN;
+    /* dias sem trato com animais no curral (antes de hoje): no gráfico de linhas contam como 0 */
+    const zero=dias.map((d,i)=>!cel[i]&&d<hojeKey()&&baseIms(c,d)>0);return {c,cel,med,zero};});
   return {dias,todos,linhas};}
 const gImsTxt=v=>nf(v,2);
 /* gráfico de %IMS: só duas cores — subiu do dia anterior = verde claro, baixou = vermelho claro (igual ou 1º dia = sem cor) */
@@ -2417,7 +2419,7 @@ const COR_LIN=['#2e7d32','#1565c0','#c62828','#ef6c00','#6a1b9a','#00838f','#ad1
 /* opções do gráfico de linhas: %IMS (o='ims') ou notas de cocho */
 const linOpc=()=>GT.o==='ims'?{D:dadosGrafIms(GT.dia),val:x=>x.im,fmt:gImsTxt,eixo:v=>nf(v,2),tit:'%IMS por dia',arq:'IMS',nota:'Um curral com %IMS muito diferente (ex.: MANGUEIRA) achata as outras linhas: desmarque ele para ver melhor.'}
   :{D:dadosGraf(GT.dia),val:x=>+x.nota,fmt:notaTxt,eixo:v=>nf(v,1),tit:'Notas de cocho por dia',arq:'notas',nota:'Nota de cada leitura de cocho por dia.'};
-function linhasImsSVG(D,O){O=O||linOpc();const val=O.val;const L=D.linhas.filter(o=>o.cel.some(Boolean));if(!L.length)return '';
+function linhasImsSVG(D,O){O=O||linOpc();const val=O.val;const L=D.linhas.filter(o=>o.cel.some(Boolean)).map(o=>o.zero&&O.arq==='IMS'?Object.assign({},o,{cel:o.cel.map((x,i)=>x||(o.zero[i]?{im:0,kg:0,dif:0}:null))}):o);if(!L.length)return '';
   const vs=L.flatMap(o=>o.cel.filter(Boolean).map(val)).filter(v=>ok(v));if(!vs.length)return '';let mn=Math.min(...vs),mx=Math.max(...vs);if(mx-mn<0.2){mn-=0.1;mx+=0.1;}const pad=(mx-mn)*0.08,neg=mn<0;mn=neg?mn-pad:Math.max(0,mn-pad);mx+=pad;
   const W=640,H=340,E=70,Dt=24,T=16,B=46,n=D.dias.length,xw=(W-E-Dt)/Math.max(1,n-1),X=i=>E+(n>1?i*xw:(W-E-Dt)/2),Y=v=>T+(H-T-B)*(1-(v-mn)/(mx-mn||1));
   let g='';for(let k=0;k<=4;k++){const v=mn+(mx-mn)*k/4,y=Y(v);g+=`<line x1="${E}" x2="${W-Dt}" y1="${y}" y2="${y}" stroke="#e3e8e3"/><text x="${E-8}" y="${y+6}" text-anchor="end" font-size="19" fill="#6b7a6b">${O.eixo(v)}</text>`;}
