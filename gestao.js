@@ -3112,7 +3112,7 @@ function tInsMS(t){const I=gTodos('insumo').sort(porNome),H0=msHistTodos(),sel=(
     <label>Produto<select id="gMsIns" onchange="msFiltrar(this.value)">
       <option value=""${sel?'':' selected'} disabled>Escolha o produto</option>${I.map(i=>`<option value="${i.uid}"${i.uid===sel?' selected':''} data-ms="${nf(+i.ms,1)}">${esc(i.nome)}</option>`).join('')}</select></label>
     <div class="gMsLinha"><div><span>MS atual</span><b id="gMsAtual">${iS?pc(+iS.ms,1):'—'}</b></div>
-      <label>Nova MS (%)<input type="text" inputmode="decimal" id="gMsNova" placeholder="ex.: 35,5"></label></div>
+      <label>Nova MS (%)<input type="text" inputmode="none" readonly data-tecg="ms" data-kg="ms" autocomplete="off" id="gMsNova" placeholder="ex.: 35,50"></label></div>
     ${E?'':msAvisoHTML()}
     <button class="primary" data-g="salvaMS"${!E&&msStatus().bloq?' disabled':''}>${E?'Salvar a correção':'Alterar matéria seca'}</button><button class="danger" data-g="msCancela">✕ Cancelar</button></section>
     <section class="panel"><h2 id="gMsHTit">${iS?'Últimas alterações · '+esc(iS.nome):'Últimas alterações'}</h2>
@@ -3129,14 +3129,14 @@ window.msFiltrar=uid=>{const i=G.it[uid];if(GT&&GT.msEdit&&GT.msEdit.uid!==uid){
 function salvaMS(){
   if(GT.msEdit){const sel0=document.getElementById('gMsIns'),i0=sel0&&G.it[sel0.value],E=i0&&GT.msEdit.uid===i0.uid?msUltEditavel(i0.uid):null;
     if(!E){GT.msEdit=null;toast('Essa alteração não pode mais ser editada: já houve trato com essa MS');return gRender();}
-    const v=Math.round(gNum(document.getElementById('gMsNova').value)*10)/10;if(!(v>0&&v<=100))return toast('A MS deve ficar entre 1 e 100%');
+    const v=Math.round(gNum(document.getElementById('gMsNova').value)*100)/100;if(!(v>0&&v<=100))return toast('A MS deve ficar entre 1 e 100%');
     const x=JSON.parse(JSON.stringify(i0)),h=x.msHist,k=h.findIndex(e=>e.ts===E.ts&&e.dia===E.dia);if(k<0)return toast('Alteração não encontrada');
     let msg;if(Math.abs(v-(+E.de))<1e-9){h.splice(k,1);x.ms=+E.de;const u=h.slice().sort((a,b)=>(a.dia||'').localeCompare(b.dia||'')||(a.ts||0)-(b.ts||0)).pop();
         x.msAnt=u?+u.de:null;x.msDia=u?u.dia:null;msg=`${i0.nome}: alteração de ${dB(E.dia)} desfeita · MS volta a ${pc(+E.de,1)}`;}
     else{h[k]=Object.assign({},h[k],{para:v,editado:Date.now()});x.ms=v;msg=`${i0.nome}: alteração de ${dB(E.dia)} corrigida · ${pc(+E.de,1)} → ${pc(v,1)}`;}
     gPut(x);const nAj=ajustarLeiturasMS();toast(msg+(nAj?` · leitura e previsto ajustados em ${nAj} curral(is)`:''));GT.msEdit=null;GT.ins=i0.uid;GT.msAberto=false;return gRender();}
   const st_=msStatus();if(st_.bloq)return toast('Termine todos os tratos de hoje antes de alterar a MS');const sel=document.getElementById('gMsIns'),i=sel&&G.it[sel.value];if(!i)return toast('Escolha o produto');
-  const v=Math.round(gNum(document.getElementById('gMsNova').value)*10)/10;if(!(v>0&&v<=100))return toast('A MS deve ficar entre 1 e 100%');
+  const v=Math.round(gNum(document.getElementById('gMsNova').value)*100)/100;if(!(v>0&&v<=100))return toast('A MS deve ficar entre 1 e 100%');
   if(Math.abs(v-(+i.ms))<1e-9)return toast('Essa já é a MS atual de '+i.nome);
   const x=JSON.parse(JSON.stringify(i)),d=new Date(),hist=Array.isArray(x.msHist)?x.msHist:(x.msDia&&x.msAnt!=null?[{dia:x.msDia,ts:0,de:+x.msAnt,para:+x.ms}]:[]);
   hist.push({dia:st_.dia,ts:Date.now(),hora:String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0'),de:+i.ms,para:v});
