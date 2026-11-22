@@ -403,7 +403,10 @@ button.gGest{background:#11253d;border-color:#11253d;color:#fff}
 #gBox[data-tela=relTela] .gCoLocNav{margin:0 0 6px!important}
 #gBox[data-tela=relTela] .gGrafTodos{margin:0 0 6px!important}
 #gBox[data-tela=relTela] .gChips{gap:6px;margin:0 0 8px!important}
-#gBox[data-tela=relTela] .gChips button{padding:6px 11px!important}
+/* currais nos filtros dos relatórios: quadros alinhados em 3 colunas (como na avaliação de fezes); nome grande quebra em duas linhas */
+#gBox[data-tela=relTela] .gChips{display:grid!important;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px!important}
+#gBox[data-tela=relTela] .gChips button{padding:10px 4px!important;border-radius:12px!important;font-weight:800;font-size:.9rem!important;line-height:1.15;white-space:normal;overflow-wrap:anywhere;min-height:46px;background:#fff;border:2px solid #d5dde5}
+#gBox[data-tela=relTela] .gChips button.sel{background:var(--lima-claro)!important;border-color:var(--lima)!important}
 #gBox[data-tela=relTela] .expTopo{margin:0 0 8px!important}
 #gBox[data-tela=relTela] .gRelAbre{margin:0 0 8px!important}
 #gBox[data-tela=relTela] .gRelGrafBloco{margin:0 0 14px}#gBox[data-tela=relTela] .gRelGrafBloco h3{margin:0 0 6px}#gBox[data-tela=relTela] .gRelGrafBloco img{display:block;width:100%;margin-top:6px}.gRelModo button{padding:12px 6px;font-weight:800;border:2px solid #2e7d32;background:#fff;color:#2e7d32;border-radius:12px}.gRelModo button.on{background:#2e7d32;color:#fff}.gRelDatas{display:grid;grid-template-columns:1fr 1fr;gap:10px}.gRelAtalhos{margin-top:8px;flex-wrap:wrap}.gRelCpr{display:block;margin:12px 0 0}.gRelSelBt{width:100%;margin:10px 0 0;background:#fff;border:2px solid #2e7d32;color:#2e7d32;font-weight:800}.gRelSelBt.on{background:#2e7d32;color:#fff}.gRelVerBt{width:100%;text-align:left;background:#fff;align-items:center}.gRelVerBt i{margin-left:auto;font-style:normal;color:#2e7d32;font-weight:800}.gRelBloco.ab .gRelVerBt{border-color:#2e7d32;background:#eef6e9}.gRelVer{margin:6px 0 4px}.gRelVer img{display:block;width:100%;height:auto;border:1px solid var(--line);border-radius:8px;margin-bottom:6px}.gRelBloco .gRelAbre{display:block;margin:0 0 6px auto}
@@ -1388,7 +1391,7 @@ body.naInicio .topoTxt h1{font-size:clamp(16px,5vw,28px)!important}
 <div class="toast" id="toast" hidden></div>
 <script>
 'use strict';
-const APP_VERSAO='441';
+const APP_VERSAO='442';
 const APP_DATA='19/10/2026';
 const KEY='confinamento-completo-v1';
 const $=id=>document.getElementById(id);
