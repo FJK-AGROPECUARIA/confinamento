@@ -2889,14 +2889,14 @@ function tRels(t){const per=relModo()==='per',dia=(t&&t.dia)||hojeKey(),[ini,fim
 /* o mesmo relatório por dia e por período */
 const REL_PAR={tratosC:'tratosPC',tratosJ:'tratosPJ',batidas:'batidasP',relDia:'perLote',grafIms:'grafIms',grafNota:'grafNota',faltRel:'faltRel'};
 const relParDe=(k,m)=>m==='per'?(REL_PAR[k]||null):(Object.keys(REL_PAR).find(x=>REL_PAR[x]===k)||null);
-function tRelTela(t){{const k0=t.relAb||'';if(REL_SO_PER.has(k0))t.relModo='per';else if(REL_SO_DIA.has(k0)||REL_SEM_DATA.has(k0))t.relModo='dia';}const k=t.relAb,per=relModo()==='per',dia=t.dia||hojeKey(),[ini,fim]=relFaixa(),it=relLista().find(x=>x[0]===k)||REL_DIA.concat(REL_PER).find(x=>x[0]===k)||[k,k,''],ck=per?ini+'|'+fim:dia;
+function tRelTela(t){{const k0=t.relAb||'';if(REL_SO_PER.has(k0))t.relModo='per';else if(REL_SO_DIA.has(k0)||REL_SEM_DATA.has(k0))t.relModo='dia';}const k=t.relAb,per=relModo()==='per',dia=t.dia||hojeKey(),[ini,fim]=relFaixa(),it=relLista().find(x=>x[0]===k)||REL_DIA.concat(REL_PER).find(x=>x[0]===k)||[k,k,''],ck=per?ini+'|'+fim+(GT&&GT.faltTodos&&k==='faltRel'?'|T':''):dia;
   if(relVerCache.k!==k+'|'+ck+relGrafSig(k))setTimeout(relVerCarregar,60);
   const hj=hojeKey(),nP=fim===hj?difDias(ini,fim)+1:0,mesP=fim===hj&&ini===hj.slice(0,8)+'01';
-  const atalho=(n,r)=>`<button type="button" class="mini${(n==='mes'?mesP:nP===n&&!mesP)?' sel':''}" data-g="relAtalho" data-n="${n}">${r}</button>`;
+  const tds=k==='faltRel'&&!!t.faltTodos,atalho=(n,r)=>`<button type="button" class="mini${!tds&&(n==='mes'?mesP:nP===n&&!mesP)?' sel':''}" data-g="relAtalho" data-n="${n}">${r}</button>`;
   const graf=!!relGrafSig(k),fixo=REL_SO_PER.has(k)||REL_SO_DIA.has(k)||REL_SEM_DATA.has(k),doisModos=!fixo&&!!(relParDe(k,'per')||relParDe(k,'dia'));
   const modo=doisModos?`<div class="gRelModo"><button type="button" class="${per?'':'on'}" data-g="relModoT" data-m="dia">📅 Por dia</button><button type="button" class="${per?'on':''}" data-g="relModoT" data-m="per">📆 Por período</button></div>`:'';
   const hojeAt=/^(tratosP[CJ]|batidasP)$/.test(k)?atalho(1,'Hoje'):'';   /* tratos e carregamentos: atalho para ver só hoje */
-  const datas=REL_SEM_DATA.has(k)?'':per?`<div class="row gRelAtalhos">${hojeAt}${atalho(7,'7 dias')}${atalho(15,'15 dias')}${atalho(30,'30 dias')}${atalho('mes','Este mês')}</div>
+  const datas=REL_SEM_DATA.has(k)?'':per?`<div class="row gRelAtalhos">${hojeAt}${atalho(7,'7 dias')}${atalho(15,'15 dias')}${atalho(30,'30 dias')}${atalho('mes','Este mês')}${k==='faltRel'?`<button type="button" class="mini${tds?' sel':''}" data-g="relAtalho" data-n="todos">Todos</button>`:''}</div>
     <div class="gPerDatas gRelDatas"><label>De<input type="date" id="gRelIni" value="${ini}"></label><label>Até<input type="date" id="gRelFim" value="${fim}"></label></div>`:navData('gRelDia',dia,'Data');
   const semXls=k==='estoque';
   const abre=REL_ABRE[k]?`<button type="button" class="mini gRelAbre" data-g="ir" data-t="${REL_ABRE[k]}"${per?` data-ini="${ini}" data-fim="${fim}"`:` data-dia="${dia}"`}>abrir a tela completa ›</button>`:'';
@@ -3615,7 +3615,8 @@ $('gBox').addEventListener('click',e=>{
   if(a==='relAbre'){relVerCache={k:'',h:''};const k=b.dataset.k;return gIr({t:'relTela',relAb:k,dia:GT.dia,relModo:REL_SO_PER.has(k)?'per':'dia',rIni:GT.rIni,rFim:GT.rFim});}   /* cada relatório abre com o tipo de data dele (os de dia ou período abrem por dia) */
   if(a==='relSel'){GT.relSel=!GT.relSel;GT.relAb=null;return gRender();}
   if(a==='relModo'){GT.relModo=b.dataset.m==='per'?'per':'dia';GT.relAb=null;relVerCache={k:'',h:''};return gRender();}
-  if(a==='relAtalho'){const hj=hojeKey(),n=b.dataset.n;GT.rFim=hj;GT.rIni=n==='mes'?hj.slice(0,8)+'01':somaDias(hj,-(+n-1));relVerCache={k:'',h:''};return gRender();}
+  if(a==='relAtalho'&&b.dataset.n==='todos'){GT.faltTodos=true;relVerCache={k:'',h:''};return gRender();}   /* animais faltantes: todos, sem período */
+  if(a==='relAtalho'){GT.faltTodos=false;const hj=hojeKey(),n=b.dataset.n;GT.rFim=hj;GT.rIni=n==='mes'?hj.slice(0,8)+'01':somaDias(hj,-(+n-1));relVerCache={k:'',h:''};return gRender();}
   if(a==='relVer'){GT.relAb=GT.relAb===b.dataset.k?null:b.dataset.k;relVerCache={k:'',h:''};const k=GT.relAb;gRender();
     if(k){const el=document.querySelector(`.gRelVerBt[data-k="${k}"]`);if(el)window.scrollTo({top:Math.max(0,el.getBoundingClientRect().top+scrollY-90),behavior:'smooth'});}return;}
   if(a==='resPdf')return resPdf();
@@ -3774,7 +3775,7 @@ $('gBox').addEventListener('change',e=>{
   if(t.id==='gCoDia'){GT.sel={};GT.base={};GT.dia=t.value||hojeKey();gRenderCom({dia:GT.dia});}
   if(t.id==='gDiaDia'){gRenderCom({dia:t.value||hojeKey()});}
   if(t.id==='gRelDia'){gRenderCom({dia:t.value||hojeKey()});}
-  if(t.id==='gRelIni'||t.id==='gRelFim'){if(!t.value)return;GT[t.id==='gRelIni'?'rIni':'rFim']=t.value;relVerCache={k:'',h:''};return gRender();}
+  if(t.id==='gRelIni'||t.id==='gRelFim'){if(!t.value)return;GT.faltTodos=false;GT[t.id==='gRelIni'?'rIni':'rFim']=t.value;relVerCache={k:'',h:''};return gRender();}
   if(t.id==='gResDia'){gRenderCom({dia:t.value||hojeKey()});}
   if(t.id==='gRefDia'||t.id==='gGrafDia'){gRenderCom({dia:t.value||hojeKey()});}
   if(GT.t==='apartForm'&&(t.matches('[data-ap]')||/^gAp/.test(t.id))){apLer();apPrevia();}
@@ -5401,7 +5402,7 @@ async function relExpGerar(k,dia,fmt,ini,fim){const GT0=GT,gL=gLoc,cap=window.__
     case 'perLote':GT={t:'periodo',ini,fim};if(!periodoDados(ini,fim).lotes.length)break;if(xls){await xlsPer();break;}window.__expPdf=pdf;await imgPer();break;
     case 'estMov':GT={t:'estoque',perE:-1,perEDia:hojeKey(),perEDe:ini,perEAte:fim,tipoE:'',prodE:'',fornE:''};await estExp(fmt);break;
     case 'vendas':GT={t:'vendas',vF:{ini,fim,por:'cpr'}};if(!vendasFiltradas(GT.vF).length)break;if(xls){await xlsVendas();break;}window.__expPdf=pdf;await imgVendas();break;
-    case 'faltRel':{const pf=relModo()==='per',n=faltRelExp(pf?ini:'',pf?fim:'','T');if(!n)break;await histExp(fmt);break;}
+    case 'faltRel':{const pf=relModo()==='per'&&!(GT&&GT.faltTodos),n=faltRelExp(pf?ini:'',pf?fim:'','T');if(!n)break;await histExp(fmt);break;}
     case 'pesagens':GT={t:'pesagens',pF:{ini,fim,loc:'T',cur:'',desde:'ent'}};if(!pesagensFiltradas(GT.pF).length)break;if(xls){await xlsPesagens();break;}window.__expPdf=pdf;await imgPesagens();break;
     case 'comp':GT={t:'comp',compEnc:false};if(xls){await xlsComp();break;}window.__expPdf=pdf;await imgComp();break;
     case 'tratosJ':await window.histExpDia(dia,'juntos',fmt);break;
@@ -5438,7 +5439,7 @@ function relGrafCtl(k,dia){const D=(k==='grafIms'?dadosGrafIms:dadosGraf)(dia);
     ${grafTodosBts(D)}
     <div class="gChips">${D.todos.map(c=>`<button data-g="grafCur" data-c="${esc(c)}" class="${gGrafOff.has(c)?'':'sel'}">${esc(c)}</button>`).join('')}</div></div>`;}
 async function relVerCarregar(){const box=document.getElementById('gRelVer');if(!box||!GT||(GT.t!=='rels'&&GT.t!=='relTela'&&!relBal())||!GT.relAb)return;
-  const k=GT.relAb,dia=GT.dia||hojeKey(),per=relModo()==='per',[ini,fim]=relFaixa(),ck=per?ini+'|'+fim:dia,seq=++relVerSeq;
+  const k=GT.relAb,dia=GT.dia||hojeKey(),per=relModo()==='per',[ini,fim]=relFaixa(),ck=per?ini+'|'+fim+(GT&&GT.faltTodos&&k==='faltRel'?'|T':''):dia,seq=++relVerSeq;
   while(window.__capArq)await new Promise(r=>setTimeout(r,200));
   const cap=[];window.__capArq=cap;const t0=window.toast;window.toast=()=>{};let F=[];
   try{await relExpGerar(k,dia,'img',ini,fim);F=cap.slice();}finally{window.__capArq=null;window.toast=t0;}
