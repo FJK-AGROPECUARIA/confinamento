@@ -2896,7 +2896,7 @@ function tRelTela(t){{const k0=t.relAb||'';if(REL_SO_PER.has(k0))t.relModo='per'
   const graf=!!relGrafSig(k),fixo=REL_SO_PER.has(k)||REL_SO_DIA.has(k)||REL_SEM_DATA.has(k),doisModos=!fixo&&!!(relParDe(k,'per')||relParDe(k,'dia'));
   const modo=doisModos?`<div class="gRelModo"><button type="button" class="${per?'':'on'}" data-g="relModoT" data-m="dia">📅 Por dia</button><button type="button" class="${per?'on':''}" data-g="relModoT" data-m="per">📆 Por período</button></div>`:'';
   const hojeAt=/^(tratosP[CJ]|batidasP)$/.test(k)?atalho(1,'Hoje'):'';   /* tratos e carregamentos: atalho para ver só hoje */
-  const datas=REL_SEM_DATA.has(k)?'':per?`<div class="row gRelAtalhos">${hojeAt}${atalho(7,'7 dias')}${atalho(15,'15 dias')}${atalho(30,'30 dias')}${REL_SO_PER.has(k)?'':atalho('mes','Este mês')}</div>
+  const datas=REL_SEM_DATA.has(k)?'':per?`<div class="row gRelAtalhos">${hojeAt}${atalho(7,'7 dias')}${atalho(15,'15 dias')}${atalho(30,'30 dias')}${atalho('mes','Este mês')}</div>
     <div class="gPerDatas gRelDatas"><label>De<input type="date" id="gRelIni" value="${ini}"></label><label>Até<input type="date" id="gRelFim" value="${fim}"></label></div>`:navData('gRelDia',dia,'Data');
   const semXls=k==='estoque';
   const abre=REL_ABRE[k]?`<button type="button" class="mini gRelAbre" data-g="ir" data-t="${REL_ABRE[k]}"${per?` data-ini="${ini}" data-fim="${fim}"`:` data-dia="${dia}"`}>abrir a tela completa ›</button>`:'';
