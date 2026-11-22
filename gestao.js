@@ -2854,12 +2854,12 @@ function relFaixa(){const hj=hojeKey(),b=GT.rFim||hj,a=GT.rIni||somaDias(b,-6);r
 function relExpSel(){const ks=new Set(relLista().map(x=>x[0]));return relExpSel0().filter(x=>ks.has(x));}
 function relExpSel0(){const per=relModo()==='per',k=relSelK();if(window.__relExpVer&&window.__relExpVer[k])return window.__relExpVer[k];const c=gCfg();return Array.isArray(c[k])?c[k]:relBal()?relLista().map(x=>x[0]):(per?['tratosPC','perLote']:['tratosC','indices','estoque']);}
 function tRels(t){const per=relModo()==='per',dia=(t&&t.dia)||hojeKey(),[ini,fim]=relFaixa(),sel=relExpSel(),selM=!!(t&&t.relSel),ab=t&&t.relAb,LST=relLista(),ck=per?ini+'|'+fim:dia;
-  if(ab&&!selM&&relVerCache.k!==ab+'|'+ck)setTimeout(relVerCarregar,60);
+  if(ab&&!selM&&relVerCache.k!==ab+'|'+ck+relGrafSig(ab))setTimeout(relVerCarregar,60);
   const abre=k=>REL_ABRE[k]?`<button type="button" class="mini gRelAbre" data-g="ir" data-t="${REL_ABRE[k]}"${per?` data-ini="${ini}" data-fim="${fim}"`:` data-dia="${dia}"`}>abrir a tela completa ›</button>`:'';
   const grpT=(k,ix)=>{if(relBal()||typeof REL_GRP==='undefined')return '';const g=REL_GRP[k],gA=ix?REL_GRP[LST[ix-1][0]]:null;return g&&g!==gA?`<h3 class="gRelGrp">${g}</h3>`:'';};
   const lista=selM?LST.map(([k,tt,d],ix)=>grpT(k,ix)+`<label class="gRelIt"><input type="checkbox" data-relx="${k}"${sel.includes(k)?' checked':''}><span><b>${tt}</b><small>${d}</small></span></label>`).join('')
     :LST.map(([k,tt,d],ix)=>grpT(k,ix)+`<div class="gRelBloco${ab===k?' ab':''}"><button type="button" class="gRelIt gRelVerBt" data-g="relVer" data-k="${k}"><span><b>${tt}</b><small>${ab===k?'toque para fechar':d}</small></span><i>${ab===k?'▲':'▼'}</i></button>
-      ${ab===k?`<div class="gRelVer" id="gRelVer" title="Toque para ver em tela cheia">${relVerCache.k===k+'|'+ck?relVerCache.h:'<p class="note">Carregando o relatório…</p>'}</div>`:''}</div>`).join('');
+      ${ab===k&&relGrafSig(k)?relGrafCtl(k,dia):''}${ab===k?`<div class="gRelVer" id="gRelVer" title="Toque para ver em tela cheia">${relVerCache.k===k+'|'+ck+relGrafSig(k)?relVerCache.h:'<p class="note">Carregando o relatório…</p>'}</div>`:''}</div>`).join('');
   const atalho=(n,r)=>`<button type="button" class="mini" data-g="relAtalho" data-n="${n}">${r}</button>`;
   const bal=relBal();
   return `<section class="panel"><h2>${bal?'Conferência da balança':'Relatórios'}</h2>${bal?'<p class="note">Relatórios para conferir a balança e o vagão: o que entrou, o que saiu e o que sobrou, e onde a balança sobe ou desce sem carregar.</p>':''}
@@ -3366,6 +3366,7 @@ $('gBox').addEventListener('click',e=>{
     gPut(Object.assign({},l,{cmpFix:m==='dig'?{m,pr,rc:rcF}:{m,rc:rcF}}));toast('Base da compra fixada: '+CMP_NOME[m]+(m!=='lanc'?' · rendimento '+pc(rcF,2):''));const y=window.scrollY;gRender();window.scrollTo({top:y});return;}
   if(a==='cmpModo'){GT.cmp=['venda','lanc','dig'].includes(b.dataset.o)?b.dataset.o:'venda';return gRender();}
   if(a==='grafN'){gGrafN=+b.dataset.n||10;return gRender();}
+  if(a==='relGrafT'){gRelGrafT=b.dataset.v==='l'?'l':'q';return gRender();}
   if(a==='grafLocP'){const L=['T','C','P'];const i=Math.max(0,L.indexOf(gLocG||'T'));gLocG=L[Math.max(0,Math.min(2,i+(+b.dataset.n||0)))];return gRender();}
   if(a==='coLocP'){const L=['T','C','P'];let i=Math.max(0,L.indexOf(GT.coLoc||'T'));document.querySelectorAll('#gBox .gCocho').forEach(el=>{const x=el.querySelector('input[data-kg]'),c=el.dataset.c;if(x&&GT.sel&&GT.sel[c]&&x.value)GT.sel[c].kg=gNum(x.value);});GT.coLoc=L[Math.max(0,Math.min(2,i+(+b.dataset.n)))];return gRender();}
   if(a==='coLoc'){document.querySelectorAll('#gBox .gCocho').forEach(el=>{const i=el.querySelector('input[data-kg]'),c=el.dataset.c;if(i&&GT.sel&&GT.sel[c]&&i.value)GT.sel[c].kg=gNum(i.value);});GT.coLoc=b.dataset.l;return gRender();}
@@ -3407,7 +3408,7 @@ $('gBox').addEventListener('click',e=>{
   if(a==='grafLoc'){gLocG=b.dataset.l;return gRender();}
   if(a==='grafCur'){const c=b.dataset.c;if(gGrafOff.has(c))gGrafOff.delete(c);else gGrafOff.add(c);return gRender();}
   if(a==='imgLinIms')return imagemLinIms();if(a==='pdfLinIms')return imagemLinIms(true);if(a==='xlsLinIms')return xlsLinIms();
-  if(a==='grafTodos'){if(b.dataset.v==='0')(GT.o==='ims'?dadosGrafIms:dadosGraf)(GT.dia||hojeKey()).todos.forEach(c=>gGrafOff.add(c));else gGrafOff.clear();return gRender();}
+  if(a==='grafTodos'){if(b.dataset.v==='0')(GT.o==='ims'||(GT.t!=='cochoGraf'&&GT.relAb==='grafIms')?dadosGrafIms:dadosGraf)(GT.dia||hojeKey()).todos.forEach(c=>gGrafOff.add(c));else gGrafOff.clear();return gRender();}
   if(a==='imgGraf')return GT.o==='ims'?imagemGrafIms():imagemGraf();
   if(a==='pdfGraf')return GT.o==='ims'?imagemGrafIms(true):imagemGraf(true);
   if(a==='celGraf'&&GT.o==='ims'){const c=b.dataset.c,d=b.dataset.d,kg=gIndice().get(d+'|'+c)||0,bi=kg?baseIms(c,d):0;return toast(kg?`${c} · ${dB(d).slice(0,5)}: ${nf(kg)} kg realizado · ${bi?pc(kg/bi,2)+' IMS':'sem peso'}`:`${c} · ${dB(d).slice(0,5)}: sem trato`);}
@@ -5370,8 +5371,8 @@ async function relExpGerar(k,dia,fmt,ini,fim){const GT0=GT,gL=gLoc,cap=window.__
     case 'indices':await zootExport(fmt,dia,'T');break;
     case 'confBal':GT={t:'cfg',cbDia:dia};await confBatExp(fmt);break;
     case 'confRes':await confResumoPer(fmt,dia,dia);break;
-    case 'grafNota':GT={t:'cochoGraf',dia,o:'nota'};if(!dadosGraf(dia).linhas.length)break;if(xls)xlsGraf();else imagemGraf(pdf);break;
-    case 'grafIms':GT={t:'cochoGraf',dia,o:'ims'};if(!dadosGrafIms(dia).linhas.length)break;if(xls)xlsGrafIms();else imagemGrafIms(pdf);break;
+    case 'grafNota':GT={t:'cochoGraf',dia,o:'nota'};if(!dadosGraf(dia).linhas.length)break;if(gRelGrafT==='l'){if(xls)xlsLinIms();else imagemLinIms(pdf);break;}if(xls)xlsGraf();else imagemGraf(pdf);break;
+    case 'grafIms':GT={t:'cochoGraf',dia,o:'ims'};if(!dadosGrafIms(dia).linhas.length)break;if(gRelGrafT==='l'){if(xls)xlsLinIms();else imagemLinIms(pdf);break;}if(xls)xlsGrafIms();else imagemGrafIms(pdf);break;
     case 'saltos':await saltosPer(fmt,dia,dia);break;
     case 'confResP':await confResumoPer(fmt,ini,fim);break;
     case 'saltosP':await saltosPer(fmt,ini,fim);break;
@@ -5386,6 +5387,14 @@ async function relExpGerar(k,dia,fmt,ini,fim){const GT0=GT,gL=gLoc,cap=window.__
   return cap.length>n0;}
 /* ver o relatório na tela: gera a imagem (igual à exportada) e mostra embaixo do nome */
 var relVerSeq=0,relVerCache={k:"",h:""};
+/* gráficos de notas e %IMS nos relatórios: tipo (quadro ou linhas), dias, local e currais mudam a imagem (entram na chave do cache) */
+var gRelGrafT='q';
+const relGrafSig=k=>/^graf(Ims|Nota)$/.test(k||'')?`|${gGrafN}|${gLocG}|${gRelGrafT}|${[...gGrafOff].sort().join(',')}`:'';
+function relGrafCtl(k,dia){const D=(k==='grafIms'?dadosGrafIms:dadosGraf)(dia),L=gRelGrafT==='l';
+  return `<div class="gRelGrafCtl"><div class="gRelModo"><button type="button" class="${L?'':'on'}" data-g="relGrafT" data-v="q">▦ Quadro</button><button type="button" class="${L?'on':''}" data-g="relGrafT" data-v="l">📈 Linhas</button></div>
+    ${grafNBts()}${grafLocNav()}
+    ${D.todos.length>1?`<div class="row gGrafTodos">${D.todos.every(c=>!gGrafOff.has(c))?'<button class="mini" data-g="grafTodos" data-v="0">✕ Desmarcar todos</button>':'<button class="mini" data-g="grafTodos" data-v="1">✓ Marcar todos</button>'}</div>`:''}
+    <div class="gChips">${D.todos.map(c=>`<button data-g="grafCur" data-c="${esc(c)}" class="${gGrafOff.has(c)?'':'sel'}">${esc(c)}</button>`).join('')}</div></div>`;}
 async function relVerCarregar(){const box=document.getElementById('gRelVer');if(!box||!GT||(GT.t!=='rels'&&!relBal())||!GT.relAb)return;
   const k=GT.relAb,dia=GT.dia||hojeKey(),per=relModo()==='per',[ini,fim]=relFaixa(),ck=per?ini+'|'+fim:dia,seq=++relVerSeq;
   while(window.__capArq)await new Promise(r=>setTimeout(r,200));
@@ -5393,7 +5402,7 @@ async function relVerCarregar(){const box=document.getElementById('gRelVer');if(
   try{await relExpGerar(k,dia,'img',ini,fim);F=cap.slice();}finally{window.__capArq=null;window.toast=t0;}
   const b2=document.getElementById('gRelVer');if(!b2||seq!==relVerSeq||GT.relAb!==k)return;
   const h=F.length?F.map(f=>`<img src="${URL.createObjectURL(f)}" alt="${esc(f.name)}">`).join(''):(per?'<p class="note">Sem dados nesse período.</p>':'<p class="note">Sem dados nessa data.</p>');
-  relVerCache={k:k+'|'+ck,h};b2.innerHTML=h;}
+  relVerCache={k:k+'|'+ck+relGrafSig(k),h};b2.innerHTML=h;}
 window.relVerCarregar=relVerCarregar;
 /* tocou na imagem do relatório: abre em tela cheia, só para ver (aproxima com dois dedos ou dois toques; ◀ Voltar fecha) */
 function verImagens(srcs){if(!srcs.length)return;const f=document.createElement('div');f.className='zoomFundo';
