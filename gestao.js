@@ -5386,6 +5386,7 @@ async function relExpGerar(k,dia,fmt,ini,fim){const GT0=GT,gL=gLoc,cap=window.__
   /* gráficos no modo Por período: vão do De ao Até (até 90 dias) */
   if(/^graf(Ims|Nota)$/.test(k)&&relModo()==='per'&&ini&&fim){dia=fim;gGrafN=Math.max(2,Math.min(90,difDias(ini,fim)+1));}
   const espera=async()=>{for(let w=0;w<40&&cap.length===n0;w++)await new Promise(r=>setTimeout(r,150));};
+  let pula=false;
   const espera2=async n=>{for(let w=0;w<50&&cap.length<n0+n;w++)await new Promise(r=>setTimeout(r,150));};   /* gráficos: espera as linhas e o quadro */
   try{switch(k){
     case 'tratosPC':await window.histExpPer(ini,fim,'curral',fmt);break;
@@ -5405,8 +5406,10 @@ async function relExpGerar(k,dia,fmt,ini,fim){const GT0=GT,gL=gLoc,cap=window.__
     case 'indices':await zootExport(fmt,dia,'T');break;
     case 'confBal':GT={t:'cfg',cbDia:dia};await confBatExp(fmt);break;
     case 'confRes':await confResumoPer(fmt,dia,dia);break;
-    case 'grafNota':GT={t:'cochoGraf',dia,o:'nota'};if(!dadosGraf(dia).linhas.length)break;if(xls){xlsGraf();break;}imagemLinIms(pdf);await espera2(1);GT={t:'cochoGraf',dia,o:'nota'};imagemGraf(pdf);await espera2(2);break;
-    case 'grafIms':GT={t:'cochoGraf',dia,o:'ims'};if(!dadosGrafIms(dia).linhas.length)break;if(xls){xlsGrafIms();break;}imagemLinIms(pdf);await espera2(1);GT={t:'cochoGraf',dia,o:'ims'};imagemGrafIms(pdf);await espera2(2);break;
+    /* gráficos: a tela dos gráficos só é usada no instante de montar a imagem e volta logo (enquanto a imagem fica pronta, a pessoa pode mexer nos filtros sem perder o que marcou) */
+    case 'grafNota':case 'grafIms':{const ims=k==='grafIms',G1={t:'cochoGraf',dia,o:ims?'ims':'nota'};if(!(ims?dadosGrafIms:dadosGraf)(dia).linhas.length){pula=true;break;}
+      GT=G1;if(xls){try{ims?xlsGrafIms():xlsGraf();}finally{GT=GT0;}break;}
+      try{imagemLinIms(pdf);}finally{GT=GT0;}await espera2(1);GT=G1;try{ims?imagemGrafIms(pdf):imagemGraf(pdf);}finally{GT=GT0;}await espera2(2);break;}
     case 'saltos':await saltosPer(fmt,dia,dia);break;
     case 'confResP':await confResumoPer(fmt,ini,fim);break;
     case 'saltosP':await saltosPer(fmt,ini,fim);break;
@@ -5415,7 +5418,7 @@ async function relExpGerar(k,dia,fmt,ini,fim){const GT0=GT,gL=gLoc,cap=window.__
     case 'estoque':if(xls)break;await estCardsPdf(dia,fmt);break;
     case 'lotes':gLoc='T';await lotesExp(pdf?'lotesPdf':img?'lotesImg':'lotesXls',false);break;
     case 'insumos':await insExp(fmt);break;}
-    await espera();}
+    if(!pula)await espera();}
   catch(e){console.error(e);}
   finally{GT=GT0;gLoc=gL;gGrafN=gN0;window.__expPdf=false;}
   return cap.length>n0;}
