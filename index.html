@@ -646,7 +646,9 @@ input[type=date]::-webkit-calendar-picker-indicator{margin-left:2px;padding:0}
 .gMedCadIt{display:flex;align-items:center;gap:6px;padding:8px 0;border-bottom:1px solid var(--line)}.gMedCadIt>span{flex:1;font-weight:700}.gMedCadIt input{flex:1;min-width:0}.gMedCadIt .mini{margin:0!important;width:auto!important}
 .gMedChips{display:flex;flex-wrap:wrap;gap:6px;margin:0 0 8px}.gMedChip{display:inline-flex!important;align-items:center;gap:6px;width:auto!important;padding:7px 12px;border:2px solid var(--line);border-radius:99px;background:#fff;font-size:.92rem;font-weight:700;text-transform:none!important;letter-spacing:0!important;color:var(--fg)!important;cursor:pointer;margin:0!important}
 .gMedChip input{width:18px;height:18px;margin:0;accent-color:#2e6b30}.gMedChip:has(input:checked){border-color:#2e6b30;background:#e8f5e9}.gMedOutro{border-style:dashed}.gChips button{padding:7px 12px;font-size:.82rem;border-radius:99px}
-.gRelRot{margin:10px 0 4px;font-size:.8rem;font-weight:700;color:var(--muted)}.gChips button.sel{background:var(--lima-claro);border-color:var(--lima)}
+.gRelRot{margin:10px 0 4px;font-size:.8rem;font-weight:700;color:var(--muted)}
+/* marcar todos sempre verde · desmarcar todos sempre vermelho (apagado quando não se aplica) */
+#gBox .gGrafTodos .gTodosOn{background:#2e7d32!important;border-color:#2e7d32!important;color:#fff!important}#gBox .gGrafTodos .gTodosOff{background:#d32f2f!important;border-color:#d32f2f!important;color:#fff!important}#gBox .gGrafTodos button:disabled{opacity:.45}.gChips button.sel{background:var(--lima-claro);border-color:var(--lima)}
 .gHeat{border-collapse:collapse;font-size:.85rem;table-layout:fixed;width:100%;max-width:100%}
 .gHeat td{border:1px solid var(--surface)!important;border-radius:6px}
 .gHeat td,.gHeat th{overflow:hidden;white-space:nowrap}
@@ -1386,7 +1388,7 @@ body.naInicio .topoTxt h1{font-size:clamp(16px,5vw,28px)!important}
 <div class="toast" id="toast" hidden></div>
 <script>
 'use strict';
-const APP_VERSAO='435';
+const APP_VERSAO='436';
 const APP_DATA='19/10/2026';
 const KEY='confinamento-completo-v1';
 const $=id=>document.getElementById(id);
