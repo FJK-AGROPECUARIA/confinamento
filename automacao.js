@@ -235,8 +235,12 @@ function ligar(){
   $('aTrato').onchange=e=>{if(A.est==='descarregando'&&!confirm('Está fornecendo num curral. Trocar de trato mesmo assim?')){e.target.value=String(S.tratoSel);return;}
     $('tratoSel').value=e.target.value;$('tratoSel').dispatchEvent(new Event('change'));novoCurral(true);aRender();};
   $('aTrocar').onclick=()=>{const e=$('aEscolha');e.hidden=!e.hidden;if(!e.hidden)mostrarAEscolha();};
-  $('aEscolha').addEventListener('click',ev=>{const b=ev.target.closest('button[data-i]');if(!b)return;
+  $('aEscolha').addEventListener('click',async ev=>{const b=ev.target.closest('button[data-i]');if(!b)return;
     if(A.est==='descarregando'&&!confirm('Está fornecendo. Trocar de curral mesmo assim?'))return;
+    /* curral já tratado neste trato: pergunta se faz o complemento (o que fornecer agora soma no trato dele) */
+    const x=lista()[+b.dataset.i];if(x&&feito(x.nome,regsAtuais())){const y=window.comResto?comResto(x):null;
+      const ok=window.confirmaVermelho?await confirmaVermelho(`${x.nome} já foi tratado`,`O ${x.nome} já tem trato no Trato ${S.tratoSel}${y&&y.jaForn!=null?` (${fmt(y.jaForn)} de ${fmt(y.prevCheio)} kg · falta ${fmt(y.prev)} kg)`:''}. Fazer complemento? O que fornecer agora soma no trato deste curral.`,'Sim, fazer complemento','Não'):confirm(`${x.nome} já foi tratado. Fazer complemento?`);
+      if(!ok)return;A.tagRepetir=x.nome;}
     setAtual(+b.dataset.i);save();$('aEscolha').hidden=true;novoCurral(true);render();aRender();});
   /* peso final = balança EXATA no toque em "Registrar trato" (tomada de força desligada); o que variar depois, até confirmar, não conta */
   $('aReg').onclick=async()=>{const cur=curralAtual();const fimT=pesoVisor();A.fimToque=fimT!=null?{v:fimT,ts:Date.now(),cur:cur?cur.nome:null}:null;
@@ -1388,7 +1392,7 @@ async function tagProcessar(epc,forcar){
   const c=forcar==='__nenhum'?null:(forcar||curralDaTag(epc));TG.ultCur=c||'sem curral';pintarTag();
   const ff=filtroForn();if(window.abaAtual!=='auto'||!ff)return;   // só no Fornecer da automação (no manual a tag não faz nada)
   const L=lista(),cur=L[S.atual];
-  if(cur&&c===cur.nome)return;   // já está neste curral
+  if(cur&&c===cur.nome&&!(A.est!=='descarregando'&&feito(c,regsAtuais())))return;   // já está neste curral (se ele já foi tratado e não está fornecendo, segue para perguntar se trata de novo)
   if(A.est==='descarregando'&&cur){await registrarAuto();}   // passou para outro curral: fecha o que estava fornecendo
   if(!c){pintarTag();return;}   // tag sem curral (fim de linha): só finaliza
   let i=lista().findIndex(x=>x.nome===c);
