@@ -2391,7 +2391,10 @@ function dadosGraf(fim){const dias=[];for(let i=gGrafN-1;i>=0;i--)dias.push(soma
   return {dias,todos,linhas};}
 /* quantos dias os gráficos mostram (7, 10 ou 15) */
 var gGrafN=10;
-const grafNBts=()=>`<div class="row gRelAtalhos gGrafNBts">${[7,10,15].map(n=>`<button type="button" class="mini${gGrafN===n?' sel':''}" data-g="grafN" data-n="${n}">${n} dias</button>`).join('')}</div>`;
+/* dias do gráfico: atalhos 7/10/15/30 ou período livre (De … até o dia escolhido), até 90 dias */
+const grafNBts=fim=>{fim=fim||hojeKey();const at=[7,10,15,30],de=somaDias(fim,-(gGrafN-1));
+  return `<div class="row gRelAtalhos gGrafNBts">${at.map(n=>`<button type="button" class="mini${gGrafN===n?' sel':''}" data-g="grafN" data-n="${n}">${n} dias</button>`).join('')}</div>
+  <div class="gPerDatas gGrafPer"><label>Período: de<input type="date" data-grafde value="${de}" max="${fim}" min="${somaDias(fim,-89)}"></label><label>até<input type="date" value="${fim}" disabled></label></div>`;};
 /* filtro de Local dos gráficos: igual ao da Leitura (◀ Local ▶) */
 function grafLocNav(){return typeof selSetas==='function'&&window.LOC_OPS?`<div class="gCoLocNav">${selSetas('Local',LOC_OPS,Math.max(0,LOC_OPS.findIndex(o=>o[0]===gLocG)),'data-g="grafLocP" data-n','data-grafsel')}</div>`:`<div class="gForm gGrafFil">${campo({k:'grafLocF',l:'Local',t:'sel',op:[['T','Todos'],['C','Confinamento'],['P','Pasto']],v:gLocG,meia:1})}</div>`;}
 /* gráfico de % IMS realizado: o que o curral comeu no dia (realizado, em MS) ÷ peso vivo — dia a dia, para acompanhar o consumo */
@@ -2442,7 +2445,7 @@ function tCochoGrafIms(fim){const D=dadosGrafIms(fim);setTimeout(()=>{const t=do
   return `${voltar('Leitura de cocho')}<section class="panel"><h2>Gráfico de %IMS · ${gGrafN} dias</h2>
     ${navData('gGrafDia',fim,'Até o dia')}
     ${grafLocNav()}
-    ${grafNBts()}
+    ${grafNBts(fim)}
     ${rows?`<div class="row compart fz3"><button class="verde" data-g="pdfGraf">📄 PDF</button><button class="verde" data-g="imgGraf">🖼 Foto</button><button class="verde" data-g="xlsGraf">📊 Excel</button></div>`:''}
     ${D.todos.length>1?`<div class="row gGrafTodos">${D.todos.every(c=>!gGrafOff.has(c))?'<button class="mini" data-g="grafTodos" data-v="0">✕ Desmarcar todos</button>':'<button class="mini" data-g="grafTodos" data-v="1">✓ Marcar todos</button>'}</div>`:''}
     <div class="gChips">${D.todos.map(c=>`<button data-g="grafCur" data-c="${esc(c)}" class="${gGrafOff.has(c)?'':'sel'}">${esc(c)}</button>`).join('')}</div>
@@ -2474,7 +2477,7 @@ function tCochoGraf(t){if(!t._ini){t._ini=1;gGrafOff.clear();}   /* ao abrir o g
   return `${voltar('Leitura de cocho')}<section class="panel"><h2>Gráfico de notas · ${gGrafN} dias</h2>
     ${navData('gGrafDia',fim,'Até o dia')}
     ${grafLocNav()}
-    ${grafNBts()}
+    ${grafNBts(fim)}
     ${rows?`<div class="row compart fz3"><button class="verde" data-g="pdfGraf">📄 PDF</button><button class="verde" data-g="imgGraf">🖼 Foto</button><button class="verde" data-g="xlsGraf">📊 Excel</button></div>`:''}
     ${D.todos.length>1?`<div class="row gGrafTodos">${D.todos.every(c=>!gGrafOff.has(c))?'<button class="mini" data-g="grafTodos" data-v="0">✕ Desmarcar todos</button>':'<button class="mini" data-g="grafTodos" data-v="1">✓ Marcar todos</button>'}</div>`:''}
     <div class="gChips">${D.todos.map(c=>`<button data-g="grafCur" data-c="${esc(c)}" class="${gGrafOff.has(c)?'':'sel'}">${esc(c)}</button>`).join('')}</div>
@@ -2831,7 +2834,9 @@ const REL_PER=[
   ['tratosPC','Tratos do período por curral','soma de cada curral no período (previsto, realizado e diferença)'],
   ['tratosPJ','Tratos do período dia a dia','todos os tratos de cada dia do período'],
   ['batidasP','Carregamentos do vagão','carregamentos do período com os insumos e o total'],
+  ['grafNota','Gráfico de notas','notas da leitura de cocho de cada curral, dia a dia no período (até 90 dias)'],
   ['perLote','Consumo e custo por lote','MN, MS/cab/dia, % IMS e custo de cada lote; insumos usados'],
+  ['grafIms','Gráfico de %IMS','% IMS realizado de cada curral, dia a dia no período (até 90 dias)'],
   ['comp','Comparativo de lotes','todos os lotes lado a lado (não depende da data)'],
   ['estMov','Estoque · movimentações','entradas, saídas e consumo de cada produto no período'],
   ['vendas','Vendas por comprador','vendas do período: preço, rendimento e R$/cab'],
@@ -3724,6 +3729,7 @@ $('gBox').addEventListener('change',e=>{
   if(t.matches&&t.matches('select[data-estf]')){GT[t.dataset.estf]=t.value;GT.pgEP=1;return gRender();}
   if(['gf_perF','gf_tipoF','gf_prodF','gf_fornF'].includes(t.id)){const k={gf_perF:'perE',gf_tipoF:'tipoE',gf_prodF:'prodE',gf_fornF:'fornE'}[t.id];const v=k==='perE'?+t.value:t.value.trim();if(GT[k]===v)return;GT[k]=v;GT.pgEP=1;gMinAb.add('estRel');return gRender();}
   if(t.id==='gf_grafLocF'){gLocG=t.value;return gRender();}
+  if(t.matches&&t.matches('input[data-grafde]')){const fim=t.max||hojeKey();if(!t.value)return;gGrafN=Math.max(2,Math.min(90,difDias(t.value,fim)+1));return gRender();}
   if(t.matches&&t.matches('select[data-grafsel]')){gLocG=t.value;return gRender();}
   if(t.id==='gf_rForn'||t.id==='gf_rIns'){GT[t.id==='gf_rForn'?'rForn':'rIns']=t.value;GT.pgRP=1;return gRender();}
   if(t.matches&&t.matches('select[data-persel]')){GT.pgEP=GT.pgIP=GT.pgRP=1;GT[t.dataset.persel]=+t.value;return gRender();}
@@ -5307,10 +5313,10 @@ const REL_DIA=[
   ['tratosC','Tratos do dia por curral','soma do dia por curral, com % PV'],
   ['batidas','Carregamentos do vagão','carregamentos do dia com os insumos e o total'],
   ['grafNota','Gráfico de notas','notas da leitura de cocho de cada curral (últimos 7, 10 ou 15 dias, como escolhido no gráfico)'],
-  ['grafIms','Gráfico de %IMS','% IMS realizado de cada curral (últimos 7, 10 ou 15 dias, como escolhido no gráfico)'],
   ['fezes','Escore de fezes','avaliações do dia'],
   ['resumo','Resumo do dia','o resumo da Gestão (cabeças, consumo, custo, alertas)'],
   ['indices','Índices do dia','MN, MS, % PV e custo por curral'],
+  ['grafIms','Gráfico de %IMS','% IMS realizado de cada curral (últimos 7, 10 ou 15 dias, como escolhido no gráfico)'],
   ['relDia','Relatório do dia por lote','consumo e custo de cada lote e insumos usados'],
   ['lotes','Lotes ativos','lista dos lotes com custo, venda e previsão de abate'],
   ['faltRel','Animais faltantes','todos os animais faltantes: origem, data, pesos, custo separado e situação (pendente / achados)'],
@@ -5318,7 +5324,7 @@ const REL_DIA=[
   ['insumos','Insumos','preço e estoque de cada insumo']];
 /* títulos dos grupos na lista de Relatórios (juntando os do mesmo assunto) */
 const REL_GRP={tratosJ:'🐂 Tratos',tratosC:'🐂 Tratos',batidas:'🐂 Tratos',tratosPC:'🐂 Tratos',tratosPJ:'🐂 Tratos',batidasP:'🐂 Tratos',
-  grafNota:'🔍 Leitura de cocho e fezes',grafIms:'🔍 Leitura de cocho e fezes',fezes:'🔍 Leitura de cocho e fezes',
+  grafNota:'🔍 Leitura de cocho e fezes',grafIms:'📊 Consumo, índices e lotes',fezes:'🔍 Leitura de cocho e fezes',
   resumo:'📊 Consumo, índices e lotes',indices:'📊 Consumo, índices e lotes',relDia:'📊 Consumo, índices e lotes',lotes:'📊 Consumo, índices e lotes',perLote:'📊 Consumo, índices e lotes',comp:'📊 Consumo, índices e lotes',
   estoque:'📦 Estoque e insumos',insumos:'📦 Estoque e insumos',estMov:'📦 Estoque e insumos',vendas:'💰 Vendas',pesagens:'📊 Consumo, índices e lotes',faltRel:'📊 Consumo, índices e lotes'};
 function relDiaFmt(){const f=gCfg().relDiaFmt;return f==='img'||f==='xls'?f:'pdf';}   /* formato do botão 📤 Relatórios do dia (Config. › Relatórios) */
@@ -5351,7 +5357,9 @@ async function relDiaGerar(k,dia){const GT0=GT,gL=gLoc;
     case 'insumos':return await insExp('pdf');}}
   finally{GT=GT0;gLoc=gL;window.__expPdf=false;}}
 /* Gestão › Relatórios: gera um relatório marcado no formato escolhido (pdf, img ou xls) e espera o arquivo sair */
-async function relExpGerar(k,dia,fmt,ini,fim){const GT0=GT,gL=gLoc,cap=window.__capArq,n0=cap.length,pdf=fmt==='pdf',img=fmt==='img',xls=fmt==='xls';
+async function relExpGerar(k,dia,fmt,ini,fim){const GT0=GT,gL=gLoc,cap=window.__capArq,n0=cap.length,pdf=fmt==='pdf',img=fmt==='img',xls=fmt==='xls',gN0=gGrafN;
+  /* gráficos no modo Por período: vão do De ao Até (até 90 dias) */
+  if(/^graf(Ims|Nota)$/.test(k)&&relModo()==='per'&&ini&&fim){dia=fim;gGrafN=Math.max(2,Math.min(90,difDias(ini,fim)+1));}
   const espera=async()=>{for(let w=0;w<40&&cap.length===n0;w++)await new Promise(r=>setTimeout(r,150));};
   try{switch(k){
     case 'tratosPC':await window.histExpPer(ini,fim,'curral',fmt);break;
@@ -5383,7 +5391,7 @@ async function relExpGerar(k,dia,fmt,ini,fim){const GT0=GT,gL=gLoc,cap=window.__
     case 'insumos':await insExp(fmt);break;}
     await espera();}
   catch(e){console.error(e);}
-  finally{GT=GT0;gLoc=gL;window.__expPdf=false;}
+  finally{GT=GT0;gLoc=gL;gGrafN=gN0;window.__expPdf=false;}
   return cap.length>n0;}
 /* ver o relatório na tela: gera a imagem (igual à exportada) e mostra embaixo do nome */
 var relVerSeq=0,relVerCache={k:"",h:""};
@@ -5392,7 +5400,7 @@ var gRelGrafT='q';
 const relGrafSig=k=>/^graf(Ims|Nota)$/.test(k||'')?`|${gGrafN}|${gLocG}|${gRelGrafT}|${[...gGrafOff].sort().join(',')}`:'';
 function relGrafCtl(k,dia){const D=(k==='grafIms'?dadosGrafIms:dadosGraf)(dia),L=gRelGrafT==='l';
   return `<div class="gRelGrafCtl"><div class="gRelModo"><button type="button" class="${L?'':'on'}" data-g="relGrafT" data-v="q">▦ Quadro</button><button type="button" class="${L?'on':''}" data-g="relGrafT" data-v="l">📈 Linhas</button></div>
-    ${grafNBts()}${grafLocNav()}
+    ${relModo()==='per'?'':grafNBts(dia)}${grafLocNav()}
     ${D.todos.length>1?`<div class="row gGrafTodos">${D.todos.every(c=>!gGrafOff.has(c))?'<button class="mini" data-g="grafTodos" data-v="0">✕ Desmarcar todos</button>':'<button class="mini" data-g="grafTodos" data-v="1">✓ Marcar todos</button>'}</div>`:''}
     <div class="gChips">${D.todos.map(c=>`<button data-g="grafCur" data-c="${esc(c)}" class="${gGrafOff.has(c)?'':'sel'}">${esc(c)}</button>`).join('')}</div></div>`;}
 async function relVerCarregar(){const box=document.getElementById('gRelVer');if(!box||!GT||(GT.t!=='rels'&&!relBal())||!GT.relAb)return;
