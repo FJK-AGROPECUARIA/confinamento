@@ -2895,7 +2895,7 @@ function tRelTela(t){{const k0=t.relAb||'';if(REL_SO_PER.has(k0))t.relModo='per'
   const tds=k==='faltRel'&&!!t.faltTodos,atalho=(n,r)=>`<button type="button" class="mini${!tds&&(n==='mes'?mesP:nP===n&&!mesP)?' sel':''}" data-g="relAtalho" data-n="${n}">${r}</button>`;
   const graf=!!relGrafSig(k),fixo=REL_SO_PER.has(k)||REL_SO_DIA.has(k)||REL_SEM_DATA.has(k),doisModos=!fixo&&!!(relParDe(k,'per')||relParDe(k,'dia'));
   const modo=doisModos?`<div class="gRelModo"><button type="button" class="${per?'':'on'}" data-g="relModoT" data-m="dia">📅 Por dia</button><button type="button" class="${per?'on':''}" data-g="relModoT" data-m="per">📆 Por período</button></div>`:'';
-  const hojeAt=/^(tratosP[CJ]|batidasP)$/.test(k)?atalho(1,'Hoje'):'';   /* tratos e carregamentos: atalho para ver só hoje */
+  const hojeAt=atalho(1,'Hoje');   /* atalhos em sequência: Hoje · 7 · 15 · 30 dias · Este mês */
   const datas=REL_SEM_DATA.has(k)?'':per?`<div class="row gRelAtalhos">${hojeAt}${atalho(7,'7 dias')}${atalho(15,'15 dias')}${atalho(30,'30 dias')}${atalho('mes','Este mês')}${k==='faltRel'?`<button type="button" class="mini${tds?' sel':''}" data-g="relAtalho" data-n="todos">Todos</button>`:''}</div>
     <div class="gPerDatas gRelDatas"><label>De<input type="date" id="gRelIni" value="${ini}"></label><label>Até<input type="date" id="gRelFim" value="${fim}"></label></div>`:navData('gRelDia',dia,'Data');
   const semXls=k==='estoque';
