@@ -581,7 +581,7 @@ function tHome(t){
     const pz=pesagensDe(l),ult=pz.length?pz[pz.length-1].dia:l.ent.dia,d2=difDias(ult,hj);
     /* peso de saída e dias de cocho: ficam nos Abates previstos (logo abaixo do resumo), não repetem aqui */});
   gTodos('insumo').forEach(i=>{if(!ok(precoIns(i,hj)))alertas.push(['bad',`Insumo ${i.nome} sem preço`,'insumos']);});
-  const lista=(arr)=>arr.map(([k,v])=>`<div><span>${esc(k)}</span><b class="num">${nf(v)} cab</b></div>`).join('');
+  const lista=(arr)=>arr.map(([k,v])=>`<div><span style="white-space:nowrap">${esc(k)}</span><b class="num">${nf(v)}</b></div>`).join('');   /* categoria e raça numa linha só (sem "cab") */
   const ABT=AH.map(l=>({l,a:projAbate(l,true)})).filter(o=>o.a).sort((x,y)=>x.a.dia.localeCompare(y.a.dia)||(x.l.nome||'').localeCompare(y.l.nome||'')),
     AB=ABT.filter(o=>o.a.dia<=somaDias(hj,60)),ABM=ABT.filter(o=>o.a.dia>somaDias(hj,60));   // sempre do que falta menos para o que falta mais
   window.resDados={dia,dd,A:A.length,cab,pesoM,tem,ms,cabO,cabMs,pvP,cus,mn,cr,co,mcd,mmn,mms,mcus,msan,mcr,mco,vendas,mortes,locs,porSexo,porRaca,porCat,lidos:lidos.length,Cs:Cs.length,notas,bat:bat.length,bp,br,ins,
