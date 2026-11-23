@@ -1391,7 +1391,7 @@ body.naInicio .topoTxt h1{font-size:clamp(16px,5vw,28px)!important}
 <div class="toast" id="toast" hidden></div>
 <script>
 'use strict';
-const APP_VERSAO='447';
+const APP_VERSAO='448';
 const APP_DATA='19/10/2026';
 const KEY='confinamento-completo-v1';
 const $=id=>document.getElementById(id);
@@ -1541,7 +1541,10 @@ function lista(k){const m=(S.prev&&S.prev[String(k||S.tratoSel)])||{};const f=k?
   const ex=(!k&&f&&f.extra&&f.extra[String(S.tratoSel)])||{};  // curral sem previsto liberado pela tag ("fornecer mesmo assim")
   return S.cadastro.filter(n=>curralAtivo(n)&&((typeof m[n]==='number'&&m[n]>0&&(!f||(linhaDe(n)===f.local&&(!f.rac||(window.racaoDoCurral&&racaoDoCurral(n)===f.rac)))))||ex[n])).map(n=>typeof m[n]==='number'&&m[n]>0?{nome:n,prev:m[n]}:{nome:n,prev:0,semPrev:true});}
 /* Fornecer: antes de abrir, escolhe Local (confinamento/pasto), Ração e Trato; a lista mostra só esses currais */
-function filtroForn(){if(typeof modoVer!=='undefined'&&modoVer)return (typeof avFiltro!=='undefined'&&avFiltro)||null;const f=S&&S.forn;return f&&f.ativo?f:null;} // aberto continua (até no dia seguinte) até finalizar ou abrir outro
+function filtroForn(){if(typeof modoVer!=='undefined'&&modoVer)return (typeof avFiltro!=='undefined'&&avFiltro)||null;const f=S&&S.forn;
+  /* fornecimento aberto num dia não passa para o dia seguinte: na virada do dia ele é fechado neste aparelho */
+  if(f&&f.ativo&&f.dia&&f.dia<hojeKey()){f.ativo=false;try{save();}catch(e){}}
+  return f&&f.ativo?f:null;} // aberto continua até finalizar, abrir outro ou virar o dia
 /* ================= Previsto por dia · nº de tratos por curral · divisão em % =================
    S.prev = previsto de HOJE (o que o Tratar usa e vai para a nuvem).
    Cada dia fica guardado na Gestão (item 'prev-AAAA-MM-DD') para consultar depois; o de AMANHÃ fica lá até virar o dia. */
@@ -4181,6 +4184,8 @@ async function continuarForn(d,tela){tela=tela||window.abaAtual;
   try{await Promise.race([puxarRegistros(true),new Promise(r=>setTimeout(r,4000))]);}catch(e){}
   const loc=d.local||linhaDe(d.curral||''),rac=d.local?(d.rac||''):((window.racaoDoCurral&&d.curral&&racaoDoCurral(d.curral))||'');
   S.forn={ativo:true,ts0:+d.fts0||Date.now(),dia:hojeKey(),local:loc,rac,trato:+d.trato,deAp:d.ap,contTs:Date.now()};FS.fim='';
+  /* aviso guardado na nuvem para o aparelho de onde veio: mesmo que ele esteja desligado ou sem internet agora, ao abrir ele fecha o fornecimento dele */
+  try{if(typeof gPut==='function'&&d.ap)gPut({uid:'tomado-'+d.ap,tipo:'tomado',ap:d.ap,por:S.aparelho,local:loc,trato:+d.trato,dia:hojeKey(),ts:Date.now()});}catch(e){}
   if(+S.tratoSel!==+d.trato){S.tratoSel=+d.trato;$('tratoSel').value=String(d.trato);if($('aTrato'))$('aTrato').value=String(d.trato);}
   const L=lista(),regs=regsAtuais(),meio=d.curral&&+d.ini>0&&!feito(d.curral,regs)?L.findIndex(x=>x.nome===d.curral):-1;
   setAtual(meio>=0?meio:Math.max(0,L.findIndex(x=>!feito(x.nome,regs))));
@@ -4217,7 +4222,12 @@ document.addEventListener('click',async e=>{const b=e.target.closest('[data-fcon
   window.fContAndando=true;document.querySelectorAll('[data-fcont]').forEach(x=>{if(x!==b)x.disabled=true;});b.style.pointerEvents='none';b.textContent='⏳ Abrindo o fornecimento…';
   continuarForn(d).catch(()=>{}).finally(()=>{window.fContAndando=false;try{mostrarFornecimento();}catch(e){}});});
 /* o aparelho original: se outro continuou o fornecimento dele, fecha o dele */
-async function fVerTomado(){try{const f=filtroForn();if(!f||modoVer||!navigator.onLine||!apiUrl())return;
+async function fVerTomado(){try{const f=filtroForn();if(!f||modoVer)return;
+  /* 1º: o aviso guardado na nuvem (chega mesmo que este aparelho estivesse desligado quando o outro continuou) */
+  const tk=typeof G!=='undefined'&&G.it&&G.it['tomado-'+S.aparelho];
+  if(tk&&!tk.del&&tk.por!==S.aparelho&&tk.local===f.local&&+tk.trato===+f.trato&&(+tk.ts||0)>(+f.contTs||+f.ts0||0)&&!(window.autoDescarregando&&autoDescarregando())){
+    S.forn=Object.assign({},f,{ativo:false});save();render();mostrarFornecimento();toast('Este fornecimento foi continuado em outro aparelho. Ele foi fechado aqui.');return;}
+  if(!navigator.onLine||!apiUrl())return;
   const j=await (await fetch(apiUrl()+'?acao=aovivo',{cache:'no-store'})).json();if(!j||!j.ok)return;
   const t=Object.entries(j.dados||{}).find(([ap,d])=>ap!==S.aparelho&&d&&d.deAp===S.aparelho&&d.local===f.local&&+d.trato===+f.trato&&(+d.contTs||0)>(f.contTs||0)&&!d.fimForn);
   if(!t||filtroForn()!==f)return;if(window.autoDescarregando&&autoDescarregando())return;
