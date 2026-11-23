@@ -571,7 +571,7 @@ function tHome(t){
   const porSexo=conta(l=>sexoTxt(l.sexo)),porRaca=conta(l=>l.raca),porCat=conta(l=>catNorm(l.cat));
   /* operação do dia */
   const Cs=cochoCurrais(dia).filter(c=>RL==='T'||linhaDe(c)===RL),lidos=Cs.filter(c=>{const x=G.it[idLeit(dia,c)];return x&&!x.del;}),notas=lidos.map(c=>G.it[idLeit(dia,c)].nota);
-  const bat=gTodos('carga').filter(c=>c.dia===dia),bp=bat.reduce((a,c)=>a+c.itens.reduce((s,x)=>s+x.prev,0),0),br=bat.reduce((a,c)=>a+c.itens.reduce((s,x)=>s+(+x.real||0),0),0);
+  const bat=gTodos('carga').filter(c=>c.dia===dia&&(RL==='T'||c.local===RL)),bp=bat.reduce((a,c)=>a+c.itens.reduce((s,x)=>s+x.prev,0),0),br=bat.reduce((a,c)=>a+c.itens.reduce((s,x)=>s+(+x.real||0),0),0);
   /* alertas (sempre sobre hoje) */
   const alertas=[],AH=lotesAtivos().filter(l=>noLoc(l,hj));
   /* leitura de cocho: só do dia escolhido no filtro (com o filtro Local); se todas foram feitas, não aparece */
