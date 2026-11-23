@@ -1391,7 +1391,7 @@ body.naInicio .topoTxt h1{font-size:clamp(16px,5vw,28px)!important}
 <div class="toast" id="toast" hidden></div>
 <script>
 'use strict';
-const APP_VERSAO='443';
+const APP_VERSAO='445';
 const APP_DATA='19/10/2026';
 const KEY='confinamento-completo-v1';
 const $=id=>document.getElementById(id);
@@ -4421,7 +4421,7 @@ let atualizarPend=false;
 /* ---------- Visualizar: só ver, filtrar e exportar. Tudo que altera fica travado ---------- */
 const VER_VIEWS='#viewGest,#viewPrev,#viewHist,#viewTrato,#viewCarga,#viewAuto,#viewAutoC';
 const VER_FILTRO='.gRelExpL,.gRelModo,.gRelDatas,.gRelAtalhos,#gRelIni,#gRelFim,.hNavUm,.gNavData,.hColCab,.zHistCab,.gPagNav,.gPagSel,.gMinzCab,.gCfgGrpCab,.fz3,.expTopo,.lotesExp,#hModo,.hModo,.dPer,.dPerCampos,.dLinha,.gCoLocNav,.zLocNav,.gPerDatas,#hPerBox,.aoVivo,.avBarra,.gGrpCab,#subGest,.gLotesAbre,.gBaseOp>summary,#gf_rForn,#gf_rIns,.gHojeTop,#gf_grafLocF,#gf_perF,#gf_tipoF,#gf_prodF,#gf_fornF,.gEstFil .gSug,#fzHCur,#gVenIni,#gVenFim,#gVenCpr,#gVenPor,.mdDatas,#gf_mdQ,#gf_mdDe,#gf_mdAte,#gPsIni,#gPsFim,#gMsDe,#gMsAte';
-const VER_OK_G=new Set(['coGraf','coTratos','msFP','msFLimpa','medLimpa','fzCur','cmpModo','coAbre','coFecha','voltar','raiz','ir','lote','dataPasso','dataHoje','filtroLoc','lotLocP','loteTog','lotTodos','curGrp','coLocP','fzLocP','perP','pgN','pgP','cfgGrp','estOrd','estPer','estPerE','estFilP','estFilLimpa','estTodas','medSfP','medExp','msExp','resFilP','histExp','histExp','estIrRel','estVerMov','evolN','evLoc','grafCur','grafLoc','celGraf','perAtalho','fzHN','fzFotoVer','nfVer','compRel','compDia','cbExp','estInsExp']);
+const VER_OK_G=new Set(['coGraf','coTratos','msFP','msFLimpa','medLimpa','fzCur','cmpModo','coAbre','coFecha','voltar','raiz','ir','lote','dataPasso','dataHoje','filtroLoc','lotLocP','resLocP','loteTog','lotTodos','curGrp','coLocP','fzLocP','perP','pgN','pgP','cfgGrp','estOrd','estPer','estPerE','estFilP','estFilLimpa','estTodas','medSfP','medExp','msExp','resFilP','histExp','histExp','estIrRel','estVerMov','evolN','evLoc','grafCur','grafLoc','celGraf','perAtalho','fzHN','fzFotoVer','nfVer','compRel','compDia','cbExp','estInsExp']);
 const VER_NAO_G=new Set(['senhaTurno','ntLoc','nota','msAbre','libLeit','baseDia','baseM']);
 function verPermite(el){const sb=el.closest('.gDataBox');if(sb){const s=sb.querySelector('select');if(s)return !s.disabled;}const g=el.closest('[data-g]');
   if(g){const a=g.dataset.g;if(VER_NAO_G.has(a))return false;if(a==='ir')return !/Form$/.test(g.dataset.t||'');
