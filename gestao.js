@@ -546,9 +546,11 @@ function svgEvol(pts){if(!pts.length)return '<p class="note">Sem dias nesse per�
 function evolMostrar(i){const p=GT.evPts&&GT.evPts[i];if(!p)return;const c=$('gEvCursor');if(c){c.setAttribute('x1',GT.evXs[i]);c.setAttribute('x2',GT.evXs[i]);c.setAttribute('visibility','visible');}
   $('gEvLeit').innerHTML=`<b>${dB(p.d).slice(0,5)}</b> · MS/cab <b>${ok(p.ims)?nf(p.ims,2)+' kg':'—'}</b> · <b>${pc(p.pv,2)}</b> IMS · <b>${nf(p.peso)} kg</b>${ok(p.mn)?` · MN ${nf(p.mn,1)} kg`:''}`;}
 /* ---------- resumo ---------- */
+var gResLoc='T';   /* filtro do resumo: T todos · C confinamento · P pasto */
 function tHome(t){
-  const hj=hojeKey(),dia=(t&&t.dia)||hj,dd=dB(dia).slice(0,5),X=gCtx();GT.dia=dia;
-  const A=gTodos('lote').filter(l=>cabPres(l,dia)>0).sort(porCurral),cabD=l=>cabEm(l,dia)||cabPres(l,dia);
+  const hj=hojeKey(),dia=(t&&t.dia)||hj,dd=dB(dia).slice(0,5),X0=gCtx(),RL=gResLoc,noLoc=(l,d)=>RL==='T'||linhaDe(curralEm(l,d))===RL;GT.dia=dia;
+  const X=RL==='T'?X0:Object.assign({},X0,{L:X0.L.filter(l=>noLoc(l,dia))});
+  const A=gTodos('lote').filter(l=>cabPres(l,dia)>0&&noLoc(l,dia)).sort(porCurral),cabD=l=>cabEm(l,dia)||cabPres(l,dia);
   /* dia */
   let cab=0,mn=0,ms=0,cr=0,co=0,pvP=0,cabO=0,cabMs=0;const ins={};
   /* MS/cab e % IMS: só os lotes que têm MS no dia (sem MS não puxa a média para baixo) */
@@ -568,11 +570,12 @@ function tHome(t){
   if(locs.length>1){const c=locs.reduce((a,o)=>a+o.cab,0);locs.push({n:'Total',tot:true,lotes:locs.reduce((a,o)=>a+o.lotes,0),mac:locs.reduce((a,o)=>a+o.mac,0),fem:locs.reduce((a,o)=>a+o.fem,0),cab:c,peso:c?locs.reduce((a,o)=>a+o.cab*(o.peso||0),0)/c:NaN});}
   const porSexo=conta(l=>sexoTxt(l.sexo)),porRaca=conta(l=>l.raca),porCat=conta(l=>catNorm(l.cat));
   /* operação do dia */
-  const Cs=cochoCurrais(dia),lidos=Cs.filter(c=>{const x=G.it[idLeit(dia,c)];return x&&!x.del;}),notas=lidos.map(c=>G.it[idLeit(dia,c)].nota);
+  const Cs=cochoCurrais(dia).filter(c=>RL==='T'||linhaDe(c)===RL),lidos=Cs.filter(c=>{const x=G.it[idLeit(dia,c)];return x&&!x.del;}),notas=lidos.map(c=>G.it[idLeit(dia,c)].nota);
   const bat=gTodos('carga').filter(c=>c.dia===dia),bp=bat.reduce((a,c)=>a+c.itens.reduce((s,x)=>s+x.prev,0),0),br=bat.reduce((a,c)=>a+c.itens.reduce((s,x)=>s+(+x.real||0),0),0);
   /* alertas (sempre sobre hoje) */
-  const alertas=[],AH=lotesAtivos();
-  const semLeit=cochoCurrais(hj).filter(c=>!G.it[idLeit(hj,c)]);if(semLeit.length)alertas.push(['warn',`Leitura de cocho de hoje faltando: ${semLeit.join(', ')}`,'cocho']);
+  const alertas=[],AH=lotesAtivos().filter(l=>noLoc(l,hj));
+  /* leitura de cocho: só do dia escolhido no filtro (com o filtro Local); se todas foram feitas, não aparece */
+  const semLeit=Cs.filter(c=>{const x=G.it[idLeit(dia,c)];return !x||x.del;});if(semLeit.length)alertas.push(['warn',`Leitura de cocho ${dia===hj?'de hoje':'de '+dd} faltando: ${semLeit.join(', ')}`,'cocho']);
   AH.forEach(l=>{const cu=curralEm(l,hj),ln=cu?`${cu} · ${l.nome}`:l.nome;   // curral na frente: o nome do lote sozinho não diz onde está
     if(!racaoEm(l,hj))alertas.push(['bad',`${ln}: sem ração escolhida`,'lote',l.uid]);
     const pz=pesagensDe(l),ult=pz.length?pz[pz.length-1].dia:l.ent.dia,d2=difDias(ult,hj);
@@ -593,6 +596,7 @@ function tHome(t){
     <p class="note">Pesos em kg por cabeça. Previsão pelo peso desejado (com a meta de ganho por dia) ou pelos dias de cocho do lote. Faltam negativo = já passou da data. Toque no lote para abrir.</p>`):'';
   return `<section class="panel"><h2>Resumo do dia</h2>
     ${navData('gResDia',dia,'Data')}
+    ${typeof selSetas==='function'&&window.LOC_OPS?`<div class="gCoLocNav">${selSetas('Local',LOC_OPS,Math.max(0,LOC_OPS.findIndex(o=>o[0]===RL)),'data-g="resLocP" data-n','data-reslsel')}</div>`:''}
     ${A.length?`<div class="row compart fz3 lotesExp"><button class="verde" data-g="resPdf">📄 PDF</button><button class="verde" data-g="resImg">🖼 Foto</button><button class="verde" data-g="resXls">📊 Excel</button></div>`:''}
     <div class="stat gStat3">${st('Lotes ativos',nf(A.length))}${st('Cabeças',nf(cab))}${st('Peso médio',nf(pesoM)+' kg')}
       ${st('MS/cab',tem?nf(ms/(cabMs||NaN),2)+' kg':'—')}${st('% IMS',tem?pc(pvP?ms/pvP*100:NaN,2):'—')}${st('Custo/cab',tem?rs(cus/cabO):'—')}</div>
@@ -3345,7 +3349,7 @@ function salvaCfg(){const c=JSON.parse(JSON.stringify(gCfg()));const t=fn('taxa'
 /* =====================================================================================
    EVENTOS
    ===================================================================================== */
-const SO_VER=new Set(['imgVenda','imgEnt','coGraf','msFP','msFLimpa','psP','imgPes','pdfPes','xlsPes','arqSel','arqTodos','arqNenhum','evolExp','arqLimpa','cfgSel','relExp','relSel','relVer','relAbre','relTelaExp','relGrafT','relModoT','grafTodos','relGrafExp','relModo','relAtalho','estFilP','estFilLimpa','estIrRel','estVerMov','fornec','pgN','pgP','cfgGrp','perP','cfgAbaP','estInsExp','cbExp','cbRes','cbN','cbSal','cbPer','grafLocP','grafN','cmpModo','lotLocP','hNav','entPer','saiPer','loteTog','lotTodos','curGrp','coLocP','fzLocP','fzFotoVer','fzHN','fzHPdf','fzHImg','resPdf','resImg','resXls','insPdf','insImg','insXls','estPdf','estImg','estXls','estPerE','estOrd','nfVer','fzPdf','fzImgG','fzCur','fzLoc','fzImg','fzXls','fzXlsHist','cfgAba','coLoc','coAbre','coFecha','estPer','evLoc','evolN','imgDia','imgPer','imgComp','imgLote','pdfLote','imgVendas','pdfVendas','xlsVendas','pdfComp','xlsGraf','pdfGraf','racaAdd','racaRm','grafLoc','grafCur','celGraf','imgGraf','filtroLoc','dataPasso','dataHoje','voltar','ir','lote','raiz','compRel','compDia','xlsDia','xlsPer','xlsComp','xlsLote','perAtalho','nota','racAdd','racRm','notaAdd','notaRm','notaPadrao']);
+const SO_VER=new Set(['imgVenda','imgEnt','coGraf','msFP','msFLimpa','psP','imgPes','pdfPes','xlsPes','arqSel','arqTodos','arqNenhum','evolExp','arqLimpa','cfgSel','relExp','relSel','relVer','relAbre','relTelaExp','relGrafT','relModoT','grafTodos','relGrafExp','resLocP','relModo','relAtalho','estFilP','estFilLimpa','estIrRel','estVerMov','fornec','pgN','pgP','cfgGrp','perP','cfgAbaP','estInsExp','cbExp','cbRes','cbN','cbSal','cbPer','grafLocP','grafN','cmpModo','lotLocP','hNav','entPer','saiPer','loteTog','lotTodos','curGrp','coLocP','fzLocP','fzFotoVer','fzHN','fzHPdf','fzHImg','resPdf','resImg','resXls','insPdf','insImg','insXls','estPdf','estImg','estXls','estPerE','estOrd','nfVer','fzPdf','fzImgG','fzCur','fzLoc','fzImg','fzXls','fzXlsHist','cfgAba','coLoc','coAbre','coFecha','estPer','evLoc','evolN','imgDia','imgPer','imgComp','imgLote','pdfLote','imgVendas','pdfVendas','xlsVendas','pdfComp','xlsGraf','pdfGraf','racaAdd','racaRm','grafLoc','grafCur','celGraf','imgGraf','filtroLoc','dataPasso','dataHoje','voltar','ir','lote','raiz','compRel','compDia','xlsDia','xlsPer','xlsComp','xlsLote','perAtalho','nota','racAdd','racRm','notaAdd','notaRm','notaPadrao']);
 /* ---------- apagar: sempre com senha (1010) e só o que ainda não foi usado ---------- */
 const H_=()=>typeof HIST!=='undefined'?HIST:[];
 function racUsoTxt(id){const r=G.it[id];if(!r)return '';const L=gTodos('lote').filter(l=>(l.rac||[]).some(h=>h.r===id)),B=gTodos('carga').filter(c=>c.racao===id||(r.nome&&c.racNome===r.nome));
@@ -3383,6 +3387,7 @@ $('gBox').addEventListener('click',e=>{
     (window.confirmaVermelho?confirmaVermelho(`Tirar a ${t.toLowerCase()}?`,k==='gest'?'Qualquer pessoa com o aplicativo vai poder entrar na Gestão e nas Configurações sem senha.':k==='trato'?'Qualquer pessoa vai poder entrar no Operacional sem senha.':'Editar e apagar não vão mais pedir senha.','Sim, tirar','Não'):Promise.resolve(confirm('Tirar a senha?'))).then(x=>{if(!x)return;senhaGrava(k,'');toast('Senha tirada');gRender();});return;}
   if(a==='resFilP'){const i=Math.max(0,RES_OPS.findIndex(o=>o[0]===gResFil)),j=Math.max(0,Math.min(RES_OPS.length-1,i+(+b.dataset.n)));gResFil=RES_OPS[j][0];return gRender();}
   if(a==='lotCurP'){const O=[['','']].concat([...document.querySelectorAll('select[data-lotcsel] option')].slice(1).map(o=>[o.value])),i=Math.max(0,O.findIndex(o=>o[0]===gLotCur)),j=Math.max(0,Math.min(O.length-1,i+(+b.dataset.n)));gLotCur=O[j][0];return gRender();}
+  if(a==='resLocP'){const L=['T','C','P'];let i=Math.max(0,L.indexOf(gResLoc));gResLoc=L[Math.max(0,Math.min(2,i+(+b.dataset.n)))];return gRender();}
   if(a==='lotLocP'){const L=['T','C','P'];let i=Math.max(0,L.indexOf(gLoc));gLoc=L[Math.max(0,Math.min(2,i+(+b.dataset.n)))];return gRender();}
   if(a==='resCons'){if(typeof bloqueado==='function'&&bloqueado())return;const l=G.it[id];if(!l)return;const c=JSON.parse(JSON.stringify(l)),d=b.dataset.v==='0';if(!!c.resDesc===d)return;c.resDesc=d;gPut(c);
     toast(d?'Resultado desconsiderado (fica em vermelho)':'Resultado considerado');const y=window.scrollY;gRender();window.scrollTo({top:y});return;}
@@ -3772,6 +3777,7 @@ $('gBox').addEventListener('change',e=>{
   if(t.matches&&t.matches('select[data-lotcsel]')){gLotCur=t.value;return gRender();}
   if(t.matches&&t.matches('select[data-resfsel]')){gResFil=t.value;return gRender();}
   if(t.matches&&t.matches('select[data-lotlsel]')){gLoc=t.value;return gRender();}
+  if(t.matches&&t.matches('select[data-reslsel]')){gResLoc=t.value;return gRender();}
   if(t.matches&&t.matches('select[data-colsel]')){document.querySelectorAll('#gBox .gCocho').forEach(el=>{const i=el.querySelector('input[data-kg]'),c=el.dataset.c;if(i&&GT.sel&&GT.sel[c]&&i.value)GT.sel[c].kg=gNum(i.value);});GT.coLoc=t.value;return gRender();}
   if(t.id==='gCbDia'){GT.cbDia=t.value||hojeKey();const y=window.scrollY;gRender();window.scrollTo({top:y});return;}
   if(t.id==='gCoDia'){GT.sel={};GT.base={};GT.dia=t.value||hojeKey();gRenderCom({dia:GT.dia});}
