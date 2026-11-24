@@ -686,7 +686,7 @@ function tLotes(t){
   const noPer=l=>{const f=fimLote(l)||'';return (!gArqIni||f>=gArqIni)&&(!gArqFim||f<=gArqFim);};   // arquivados: data do fechamento dentro do período
   const todosL=gTodos('lote').filter(noLocal).filter(l=>!gLotCur||curDe(l)===gLotCur).filter(l=>!t.enc||gResFil==='T'||(gResFil==='N')===resDesc(l)),lista=(t.enc?todosL.filter(l=>!ativo(l)&&noPer(l)).sort((a,b)=>(fimLote(b)||'').localeCompare(fimLote(a)||'')||porNome(a,b)):todosL.filter(ativo).sort(porCurral));
   const navCur=typeof selSetas==='function'?`<div class="gCoLocNav">${selSetas('Curral',curOps,Math.max(0,curOps.findIndex(o=>o[0]===gLotCur)),'data-g="lotCurP" data-n','data-lotcsel')}</div>${t.enc?`<div class="gCoLocNav">${selSetas('Relatório',RES_OPS,Math.max(0,RES_OPS.findIndex(o=>o[0]===gResFil)),'data-g="resFilP" data-n','data-resfsel')}</div>`:''}`:'';
-  const cards=lista.map(l=>{const fim=fimLote(l),ref=fim&&fim<hj?fim:hj,cab=cabPres(l,ref),r=racaoEm(l,ref),c=curralEm(l,ref),m=mediaLote(l,X);
+  const cards=lista.map(l=>{const fim=fimLote(l),ref=fim&&fim<hj?fim:hj,cab=fim&&fim<hj?cabPres(l,ref):cabEm(l,ref),r=racaoEm(l,ref),c=curralEm(l,ref),m=mediaLote(l,X);
     const sub=[sexoTxt(l.sexo),l.raca,catNorm(l.cat)].filter(Boolean).join(' · ');
     const ab=gLotAb.has(l.uid);
     if(t.enc)return `<div class="gLote gLoteV gLoteMin gLoteArq${gArqSel&&gArqDesm.has(l.uid)?' gArqFora':''}${resDesc(l)?' gResDescL':''}"><div class="gLoteTopo">${gArqSel?`<label class="gArqChk"><input type="checkbox" data-arqchk="${l.uid}"${gArqDesm.has(l.uid)?'':' checked'}></label>`:''}<div class="gLoteSeloAb">${seloCurral(c)}<div class="gFechDt">🔒 Finalizado em <b>${fim?dB(fim):'—'}</b></div>${resBts(l,true)}<button type="button" class="lima gLoteAbrir" data-g="lote" data-id="${l.uid}">Abrir lote ›</button></div>
@@ -3710,6 +3710,10 @@ function trAuto(t){try{if(t.classList&&t.classList.contains('gRs'))mascaraRs(t);
   if(R[id])vendaLiga(k=>$('gf_'+M[k]),null,R[id]);}catch(e){}}
 $('gBox').addEventListener('input',e=>{if(GT.t==='faltaNova'){const c=fn('nCab');if(c>0){if(e.target.id==='gf_nPeso'&&$('gf_nPesoT'))$('gf_nPesoT').value=fn('nPeso')>0?vIn(Math.round(fn('nPeso')*c*100)/100):'';if(e.target.id==='gf_nPesoT'&&$('gf_nPeso'))$('gf_nPeso').value=fn('nPesoT')>0?vIn(Math.round(fn('nPesoT')/c*100)/100):'';}fnPrevia();}if(GT.t==='transfForm'){trAuto(e.target);trPrevia();}if(GT.t==='fechaForm'){fcAuto(e.target);fcLer();fcPrevia();}});
 $('gBox').addEventListener('change',e=>{if(GT.t==='fechaForm'){fcLer();fcPrevia();}});
+/* animais faltantes (saída/venda e apartação): peso médio ↔ peso total pela quantidade que faltou */
+$('gBox').addEventListener('input',e=>{const m=/^(gf_v|gAp)(falta|fpeso|fpesoT)$/.exec(e.target&&e.target.id||'');if(!m)return;const P=m[1],el=k=>document.getElementById(P+k),c=gNum((el('falta')||{}).value);if(!(c>0))return;
+  const put=(k,v)=>{const x=el(k);if(x&&ok(v)&&v>0)vSet(x,Math.round(v*100)/100);};
+  if(m[2]==='fpesoT'){const t=gNum(el('fpesoT').value);if(t>0)put('fpeso',t/c);}else{const pm=gNum((el('fpeso')||{}).value);if(pm>0)put('fpesoT',pm*c);}});
 $('gBox').addEventListener('change',e=>{if(e.target.id==='gf_simLote'&&GT.t==='simul'){GT.id=e.target.value;GT.pre=0;gRender();}if(e.target.id==='gf_tpV')tpVAplica();if(e.target.id==='gf_simTpV'&&GT.t==='simul'){GT.tpV=e.target.value;simLer();const c=$('gf_simVRc');if(c)c.closest('.gCampo').hidden=GT.tpV==='vivo';}});
 function hSet(k,v){if(k==='per')GT.per=+v;else if(k==='tip')GT.fTip=v;else if(k==='loc'){GT.fl=v;GT.fc='';}else GT.fc=v;}
 $('gBox').addEventListener('change',e=>{if(e.target&&e.target.id==='gf_enTipo'){GT.enTipo=e.target.value;gRender();return;}});
