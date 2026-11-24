@@ -3114,17 +3114,17 @@ function msStatus(){const hj=hojeKey(),H=typeof HIST!=='undefined'?HIST:[],P=(ty
   /* conta trato por trato só os currais que estão naquele trato (mesma regra do Fornecer) */
   const ks=(typeof tratosAtivos==='function'?tratosAtivos():[1,2]).map(Number),ativo=c=>typeof curralAtivo!=='function'||curralAtivo(c);
   const porT=ks.map(k=>{const m=P[String(k)]||{};const cs=(S.cadastro||[]).filter(c=>ativo(c)&&typeof m[c]==='number'&&m[c]>0);
-    const falta=cs.filter(c=>!feitoHoje.some(r=>+r.trato===k&&r.curral===c)).length;return {k,tot:cs.length,falta};}).filter(x=>x.tot);
-  const pend=porT.reduce((a,x)=>a+x.falta,0);
-  if(feitoHoje.length&&pend)return {bloq:true,pend,porT};
-  const dia=feitoHoje.length?somaDias(hj,1):hj,leit=gTodos('leitura').some(l=>l.dia===dia);return {bloq:false,dia,leit,amanha:dia!==hj};}
+    const fc=cs.filter(c=>!feitoHoje.some(r=>+r.trato===k&&r.curral===c));return {k,tot:cs.length,falta:fc.length,fc};}).filter(x=>x.tot);
+  const pend=feitoHoje.length?porT.reduce((a,x)=>a+x.falta,0):0;
+  /* com trato de hoje em andamento (currais pendentes) a alteração é aceita, mas só vale a partir de amanhã */
+  const dia=feitoHoje.length?somaDias(hj,1):hj,leit=gTodos('leitura').some(l=>l.dia===dia);return {bloq:false,dia,leit,amanha:dia!==hj,pend,porT};}
 /* a última alteração de MS de um produto pode ser editada enquanto nenhum trato foi registrado a partir do dia em que ela vale */
 function msUltEditavel(uid){try{const i=G.it[uid];const h=i&&Array.isArray(i.msHist)?i.msHist:[];if(!h.length)return null;
   const u=h.slice().sort((a,b)=>(a.dia||'').localeCompare(b.dia||'')||(a.ts||0)-(b.ts||0)).pop();if(!u||!u.dia||!(u.ts>0))return null;
   const H=typeof HIST!=='undefined'?HIST:[];if(H.some(r=>(r.dia||'')>=u.dia))return null;return u;}catch(e){return null;}}
 function msAvisoHTML(){const m=msStatus();
-  if(m.bloq)return `<div class="gMsAviso bloq">⛔ Existem currais pendentes para finalizar o trato do dia:<br>${m.porT.filter(x=>x.falta).map(x=>`<b>Trato ${x.k}</b>: faltam ${x.falta} de ${x.tot} curral(is)`).join(' · ')}.<br>A matéria seca só pode ser alterada após a finalização de todos os tratos do dia (e antes da leitura do dia seguinte).</div>`;
-  return `<div class="gMsAviso${m.leit?' atencao':''}">${m.amanha?'✓ Tratos de hoje finalizados. ':''}A nova MS vale a partir de <b>${dB(m.dia)}</b>${m.amanha?' (amanhã)':' (hoje)'}: leitura, previsto, rações e carregamentos desse dia em diante. Os dias anteriores ficam como estão.${m.leit?`<br>⚠ A leitura de ${dB(m.dia)} já foi feita com a MS antiga: depois de alterar, refaça a leitura para recalcular o previsto.`:''}</div>`;}
+  const pen=m.pend?`⚠ Ainda há currais pendentes no trato de hoje: ${m.porT.filter(x=>x.falta).map(x=>`<b>Trato ${x.k}</b>: ${x.fc.join(', ')}`).join(' · ')}. Os tratos restantes de hoje seguem com a MS atual.<br>`:'';
+  return `<div class="gMsAviso${m.leit||m.pend?' atencao':''}">${pen}${m.amanha&&!m.pend?'✓ Tratos de hoje finalizados. ':''}A nova MS vale a partir de <b>${dB(m.dia)}</b>${m.amanha?' (amanhã)':' (hoje)'}: leitura, previsto, rações e carregamentos desse dia em diante. Os dias anteriores ficam como estão.${m.leit?`<br>⚠ A leitura de ${dB(m.dia)} já foi feita com a MS antiga: depois de alterar, refaça a leitura para recalcular o previsto.`:''}</div>`;}
 function tInsMS(t){const I=gTodos('insumo').sort(porNome),H0=msHistTodos(),sel=(t&&t.ins)||'',iS=sel&&G.it[sel];
   /* filtros do histórico (tela inicial): data De/Até e insumo */
   const F=GT.msF=GT.msF||{de:'',ate:'',ins:''},filtra=!GT.msAberto&&(F.de||F.ate||F.ins),H=GT.msAberto?H0:H0.filter(x=>(!F.de||x.dia>=F.de)&&(!F.ate||x.dia<=F.ate)&&(!F.ins||x.uid===F.ins));
@@ -3147,7 +3147,7 @@ function tInsMS(t){const I=gTodos('insumo').sort(porNome),H0=msHistTodos(),sel=(
     <div class="gMsLinha"><div><span>MS atual</span><b id="gMsAtual">${iS?pc(+iS.ms,1):'—'}</b></div>
       <label>Nova MS (%)<input type="text" inputmode="none" readonly data-tecg="ms" data-kg="ms" autocomplete="off" id="gMsNova" placeholder="ex.: 35,50"></label></div>
     ${E?'':msAvisoHTML()}
-    <button class="primary" data-g="salvaMS"${!E&&msStatus().bloq?' disabled':''}>${E?'Salvar a correção':'Alterar matéria seca'}</button><button class="danger" data-g="msCancela">✕ Cancelar</button></section>
+    <button class="primary" data-g="salvaMS">${E?'Salvar a correção':'Alterar matéria seca'}</button><button class="danger" data-g="msCancela">✕ Cancelar</button></section>
     <section class="panel"><h2 id="gMsHTit">${iS?'Últimas alterações · '+esc(iS.nome):'Últimas alterações'}</h2>
     <div class="tablebox"${H.length?'':' hidden'}><style>#gBox .gMsTab{width:100%;table-layout:auto}#gBox .gMsTab th,#gBox .gMsTab td{text-align:center!important;padding:8px 4px;white-space:normal}#gBox .gMsTab td:first-child{white-space:nowrap}#gBox .gMsTab td small{display:block;margin:2px 0 0!important;font-size:.8em;opacity:.75}#gBox .gMsTab td:nth-child(2){font-size:.85em;line-height:1.2;word-break:normal}#gBox .gMsTab td:nth-child(3),#gBox .gMsTab td:nth-child(4){white-space:nowrap}#gBox .gMsTab td button.mini{display:block;margin:6px auto 0;padding:4px 8px}</style><table class="gTab gMsTab"><thead><tr><th>A partir de</th><th>Produto</th><th>De</th><th>Para</th></tr></thead><tbody>${linhas}</tbody></table></div>
     <p class="note" id="gMsVazio"${H.some(x=>!sel||x.uid===sel)?' hidden':''}>Nenhuma alteração de matéria seca${iS?' desse produto':''} ainda.</p></section>`;}
@@ -3168,7 +3168,7 @@ function salvaMS(){
         x.msAnt=u?+u.de:null;x.msDia=u?u.dia:null;msg=`${i0.nome}: alteração de ${dB(E.dia)} desfeita · MS volta a ${pc(+E.de,1)}`;}
     else{h[k]=Object.assign({},h[k],{para:v,editado:Date.now()});x.ms=v;msg=`${i0.nome}: alteração de ${dB(E.dia)} corrigida · ${pc(+E.de,1)} → ${pc(v,1)}`;}
     gPut(x);const nAj=ajustarLeiturasMS();toast(msg+(nAj?` · leitura e previsto ajustados em ${nAj} curral(is)`:''));GT.msEdit=null;GT.ins=i0.uid;GT.msAberto=false;return gRender();}
-  const st_=msStatus();if(st_.bloq)return toast('Termine todos os tratos de hoje antes de alterar a MS');const sel=document.getElementById('gMsIns'),i=sel&&G.it[sel.value];if(!i)return toast('Escolha o produto');
+  const st_=msStatus();const sel=document.getElementById('gMsIns'),i=sel&&G.it[sel.value];if(!i)return toast('Escolha o produto');
   const v=Math.round(gNum(document.getElementById('gMsNova').value)*100)/100;if(!(v>0&&v<=100))return toast('A MS deve ficar entre 1 e 100%');
   if(Math.abs(v-(+i.ms))<1e-9)return toast('Essa já é a MS atual de '+i.nome);
   const x=JSON.parse(JSON.stringify(i)),d=new Date(),hist=Array.isArray(x.msHist)?x.msHist:(x.msDia&&x.msAnt!=null?[{dia:x.msDia,ts:0,de:+x.msAnt,para:+x.ms}]:[]);
