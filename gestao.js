@@ -4762,6 +4762,10 @@ function garantirPrevLeituras(){try{if(typeof modoVer!=='undefined'&&modoVer)ret
         try{const T=+x.novo,ks=Object.keys(S.prev).map(Number).filter(k=>+((S.prev[k]||{})[c])>0).sort((a,b)=>a-b),ult=ks[ks.length-1];
           if(ult&&!por[ult]){const outros=ks.filter(k=>k!==ult).reduce((a,k)=>a+(+S.prev[k][c]),0),real=rs.reduce((a,r)=>a+(+r.forn||0),0),prevFeito=Object.values(por).reduce((a,b)=>a+b,0);
             S.prev[ult][c]=Math.max(0,arredPrev(T-outros-(real-prevFeito)));}}catch(e){}}}});
+  /* leitura de hoje com 0 kg (sem trato neste dia): o curral sai dos tratos ainda não feitos, mesmo que outro aparelho tenha devolvido o previsto antigo */
+  gTodos('leitura').filter(x=>x.dia===hj&&!x.del&&x.semTrato).forEach(x=>{const c=x.curral,feitos=new Set((typeof HIST!=='undefined'?HIST:[]).filter(r=>r.dia===hj&&r.curral===c).map(r=>+r.trato));
+    Object.keys(S.prev).forEach(k=>{const m=S.prev[k];if(!feitos.has(+k)&&m&&c in m){delete m[c];n++;}});
+    try{if(S.prevOrig&&S.prevOrig.v){delete S.prevOrig.v[c];delete S.prevOrig.set[c];}}catch(e){}});
   if(n){marcarPrev();if(typeof render==='function')render();}return n;}catch(e){return 0;}}
 setInterval(garantirPrevLeituras,20000);setTimeout(garantirPrevLeituras,6000);
 /* ---------- compensação garantida: terminou um trato e o último trato do curral ainda está com o previsto original?
