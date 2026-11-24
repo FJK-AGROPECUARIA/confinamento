@@ -4751,6 +4751,8 @@ function salvaEst(id){const ed=id&&G.it[id]&&!G.it[id].del?G.it[id]:null;const m
 /* segurança: toda leitura de hoje tem que ter previsto. Se o curral ficou sem previsto (ex.: outro aparelho sobrescreveu) e ainda não foi tratado hoje, refaz pelo kg da leitura */
 function garantirPrevLeituras(){try{if(typeof modoVer!=='undefined'&&modoVer)return 0;if(!S||!S.prev||!window.prevApi)return 0;const hj=hojeKey();let n=0;
   gTodos('leitura').filter(x=>x.dia===hj&&+x.novo>0).forEach(x=>{const c=x.curral,tem=Object.keys(S.prev).some(k=>+((S.prev[k]||{})[c])>0),feito=(typeof HIST!=='undefined'?HIST:[]).some(r=>r.dia===hj&&r.curral===c);
+    /* vale o que foi enviado por último: se o previsto que veio de outro aparelho é mais novo que esta leitura, não refaz (ex.: a leitura mudou para 0 kg em outro celular e esta cópia ainda está atrasada) */
+    if(!tem&&+x.ts>0&&+S.prevPuxadoTs>+x.ts)return;
     if(!tem&&(typeof curralAtivo!=='function'||curralAtivo(c))){aplicaPrev(c,+x.novo,S.prev);n++;
       /* mantém a divisão da leitura por trato (ex.: T1 zerado), em vez da divisão padrão */
       if(!feito&&Array.isArray(x.split)&&x.split.length>1&&Math.round(x.split.reduce((a,v)=>a+(+v||0),0))===Math.round(+x.novo)){const ks=tratosAtivos().map(Number).slice(0,x.split.length);
