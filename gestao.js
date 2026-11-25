@@ -398,6 +398,14 @@ const SEXOS=[['','Selecione'],['M','Macho'],['F','Fêmea']];
 const CATS_PADRAO=['Bezerros machos','Garrotes','Boi gordo','Bezerras fêmeas','Novilhas','Vacas'];
 const CAT_PLURAL={'Bezerro':'Bezerros machos','Bezerro macho':'Bezerros machos','Bezerros macho':'Bezerros machos','Garrote':'Garrotes','Boi':'Boi gordo','Bois':'Boi gordo','Bezerra':'Bezerras fêmeas','Bezerra fêmea':'Bezerras fêmeas','Bezerras fêmea':'Bezerras fêmeas','Novilha':'Novilhas','Vaca':'Vacas','Touro':'Touros'};
 const catNorm=c=>CAT_PLURAL[c]||(c||'');
+/* categoria × sexo: escolhido o sexo, a lista de categorias mostra só as daquele sexo (categoria sem sexo definido aparece nos dois) */
+const catSexo=c=>{const s=String(c||'').toLowerCase();if(/f[êe]mea|novilh|vaca|bezerra/.test(s))return 'F';if(/macho|garrote|boi|touro|bezerro/.test(s))return 'M';return '';};
+function catFiltra(sx,cs){if(!sx||!cs)return;const v=sexoNorm(sx.value),cod=v==='M'||v==='F'?v:'';
+  [...cs.options].forEach(o=>{const k=catSexo(o.value);o.hidden=!!(o.value&&cod&&k&&k!==cod);});
+  const at=cs.options[cs.selectedIndex];if(at&&at.hidden){cs.value='';cs.dispatchEvent(new Event('change',{bubbles:true}));}}
+const catPar=el=>{const m=/^gf_(sexo|cat)(E?)$/.exec(el&&el.id||'');if(!m)return null;return [document.getElementById('gf_sexo'+m[2]),document.getElementById('gf_cat'+m[2])];};
+document.addEventListener('change',e=>{if(!/^gf_sexoE?$/.test(e.target&&e.target.id||''))return;const p=catPar(e.target);if(p)catFiltra(p[0],p[1]);});
+['pointerdown','mousedown','touchstart','focusin','click'].forEach(t=>document.addEventListener(t,e=>{const el=e.target&&e.target.closest&&e.target.closest('select,.gDataBox');const s=el&&(el.tagName==='SELECT'?el:el.querySelector('select'));if(!s||!/^gf_catE?$/.test(s.id))return;const p=catPar(s);if(p)catFiltra(p[0],p[1]);},true));
 const opCats=atual=>[['','Selecione']].concat(gCfg().cats.map(c=>[c,c])).concat(atual&&!gCfg().cats.includes(atual)?[[atual,atual]]:[]);
 const SISTEMAS=[['Confinamento','🏠 Confinamento'],['Pasto com suplementação','🌿 Pasto']];
 const tipoDoSistema=v=>v==='Pasto com suplementação'?'P':'C';
