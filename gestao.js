@@ -2376,7 +2376,8 @@ function salvaCocho(so){
   GT.sel={};GT.base={};GT.coAberto={};GT.coTr={};window.scrollTo({top:0,behavior:'smooth'});toast(`${n} leitura(s) salva(s) · previsto ${hoje?'de hoje':'de amanhã'} ${ap?`mudou em ${ap} curral(is)`:'já estava com esses valores'}${rm?` · ${rm} apagada(s)`:''}`);gRender();
 }
 function aplicaPrev(c,total,obj){obj=obj||S.prev;const antes=JSON.stringify([1,2,3,4,5,6].map(k=>(obj[k]||{})[c]));
-  prevApi.distribuir(c,total,prevApi.nTratos(c,obj),obj);return JSON.stringify([1,2,3,4,5,6].map(k=>(obj[k]||{})[c]))!==antes;}
+  const hj=hojeKey();if(obj===S.prev&&typeof ajustarTotalCurral==='function'&&!(typeof HIST!=='undefined'?HIST:[]).some(r=>r.dia===hj&&r.curral===c)){ajustarTotalCurral(c,total,obj,hj);}   /* hoje: respeita os tratos que já passaram */
+  else prevApi.distribuir(c,total,prevApi.nTratos(c,obj),obj);return JSON.stringify([1,2,3,4,5,6].map(k=>(obj[k]||{})[c]))!==antes;}
 /* % IMS: kg de matéria natural do curral para um % de IMS (peso projetado do lote × cabeças ÷ %MS da ração) */
 function baseIms(c,dia){const L=gTodos('lote').filter(l=>curralEm(l,dia)===c&&cabPres(l,dia)>0);let b=0,tem=false;
   L.forEach(l=>{const r=racaoEm(l,dia),cp=r&&compRacao(r,dia);if(!cp||!(cp.ms>0))return;b+=cabPres(l,dia)*pesoEm(l,dia)/100/(cp.ms/100);tem=true;});return tem?b:null;}
