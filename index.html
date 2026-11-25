@@ -1391,7 +1391,7 @@ body.naInicio .topoTxt h1{font-size:clamp(16px,5vw,28px)!important}
 <div class="toast" id="toast" hidden></div>
 <script>
 'use strict';
-const APP_VERSAO='454';
+const APP_VERSAO='455';
 const APP_DATA='19/10/2026';
 const KEY='confinamento-completo-v1';
 const $=id=>document.getElementById(id);
@@ -2340,7 +2340,8 @@ function marcarVoltar(){const b=$('tecVoltar');if(b)b.disabled=!(tecIdx!=null&&t
 /* novo total do dia do curral (digitado no Todos ou calculado pelo % IMS):
    nenhum trato feito → divide pelos tratos; já tem trato feito → os feitos não mudam e o que falta é dividido entre os tratos que faltam (pela %) */
 function ajustarTotalCurral(nome,v,o,dia){dia=dia||PV.dia;const feitosK=new Set(HIST.filter(r=>r.dia===dia&&r.curral===nome).map(r=>+r.trato)),nt=nTratos(nome,o);
-  if(!feitosK.size){distribuir(nome,v,nt,o);return true;}
+  /* curral ainda sem trato hoje, mas com tratos que já passaram (ex.: curral novo às 18h, T1 e T2 já feitos): o total vai todo para os tratos que ainda vêm (25/11/2026: C-1 digitado 300 e voltava 70) */
+  if(!feitosK.size&&!((typeof tratosPulados==='function'?tratosPulados(nome,dia,tratosDoCurral(nome,o,nt)):[]).length)){distribuir(nome,v,nt,o);return true;}
   const ksN=tratosDoCurral(nome,o,nt);for(let k=1;k<=MAXT;k++)if(!ksN.includes(k)&&!feitosK.has(k)&&o[k])delete o[k][nome];   // trato que saiu (diminuiu a quantidade)
   /* trato que já passou sem este curral (pulado, ex.: T1 zerado e o T2 já feito) não recebe nada: o que falta vai só para os tratos que ainda vêm.
      Antes ia parte para o T1 (que não é mais feito) e o previsto do dia não mudava (19/11/2026: C-10 digitado 1500 e voltava 850) */
