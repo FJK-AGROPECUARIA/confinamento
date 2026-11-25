@@ -4363,7 +4363,7 @@ document.addEventListener('click',async e=>{const b=e.target.closest('[data-g="m
     const d0=d<desde?d:desde;[velho,para,x.de].filter(Boolean).forEach(c=>recalcCurral(c,d0));toast('Mudança alterada');GT={t:'currais'};gCurAb.add('M');gRender();window.scrollTo({top:0});}},true);
 /* ordem de trato: a mesma do "↕ Alterar ordem" do Previsto (S.cadastro). Muda aqui ou lá, vale para os dois.
    Só lista os currais em uso; os outros ficam no mesmo lugar do cadastro */
-function curOrdLista(){return (S.cadastro||[]).filter(n=>typeof curralAtivo!=='function'||curralAtivo(n));}
+function curOrdLista(){const am=somaDias(hojeKey(),1);return (S.cadastro||[]).filter(n=>typeof curralAtivo!=='function'||curralAtivo(n)||curralAtivo(n,am));}   /* em uso hoje ou a partir de amanhã (lote que entra/muda amanhã) */
 function tCurOrd(t){if(!t.ord)t.ord=curOrdLista();const L=t.ord,mud=JSON.stringify(L)!==JSON.stringify(curOrdLista());
   const loc=n=>linhaDe(n)==='P'?'🌿 Pasto':'Confinamento';
   return `<section class="panel"><h2>↕ Ordem de trato</h2><p class="note">Toque em ▲ ▼ para mudar a ordem em que os currais aparecem no Previsto, no Carregar e no Fornecer. É a mesma ordem do "↕ Alterar ordem" do Previsto: mudar aqui ou lá vale para os dois.</p>
