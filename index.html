@@ -1391,7 +1391,7 @@ body.naInicio .topoTxt h1{font-size:clamp(16px,5vw,28px)!important}
 <div class="toast" id="toast" hidden></div>
 <script>
 'use strict';
-const APP_VERSAO='458';
+const APP_VERSAO='459';
 const APP_DATA='19/10/2026';
 const KEY='confinamento-completo-v1';
 const $=id=>document.getElementById(id);
@@ -2164,7 +2164,7 @@ function renderPrev(){
       :`<td class="num pvReal">${rl!=null?fmt(rl):''}</td><td class="num ${rl!=null&&pvN?classeDesv(rl-pvN,pvN):''}">${rl!=null&&pvN?sgn(rl-pvN):''}</td>`):'';
     /* Trato N: só os currais que têm esse trato (previsto, já tratado ou quantidade de tratos do curral) */
     const foraDoTrato=PV.t>0&&!PV.per&&!(pvN>0||v==='?'||rl!=null||(()=>{try{const pos=tratosAtivos().map(Number).indexOf(+PV.t)+1;return pos>0&&nTratos(c,o)>=pos;}catch(e){return true;}})());
-    const ocultar=!curralAtivo(c)||(linhaSel!=='T'&&linhaDe(c)!==linhaSel)||foraDoTrato||(emOrd&&cLote&&!cLote.has(c)&&!(pvN>0)&&rl==null);
+    const ocultar=!curralAtivo(c,PV.per?null:PV.dia)||(linhaSel!=='T'&&linhaDe(c)!==linhaSel)||foraDoTrato||(emOrd&&cLote&&!cLote.has(c)&&!(pvN>0)&&rl==null);
     const nome=`<td class="c" style="cursor:default">${esc_}</td>`;
     const eI=edM&&PV.ed?PV.ed[c]:null,kgEd=eI?(eI.tipo==='kg'?eI.val:(window.gMnIms&&gMnIms(c,eI.val,PV.dia)!=null?arredPrev(gMnIms(c,eI.val,PV.dia)):null)):undefined;
     const cel=`<td><input class="cell${v==='?'?' duv':''}${tr?' feito':''}${eI?(eI.tipo==='kg'?' mudou':' calc'):''}" type="text" readonly tabindex="-1" inputmode="none" data-n="${i}" value="${esc(eI?valPrev(kgEd):valPrev(typeof v==='number'?(v||null):v))}" placeholder="—" aria-label="Previsto ${esc_}"${ed&&!tr?'':' disabled'}${tr?' title="Já tratado: não muda mais"':''}></td>`;
@@ -2295,10 +2295,11 @@ function snapTratos(c,o){const r={};for(let k=1;k<=MAXT;k++){const v=(o[k]||{})[
 function infoCurral(n){try{const it=gOk()&&G.it.currais;return (it&&!it.del&&it.v&&it.v[n])||{};}catch(e){return {};}}
 /* curral sem animais hoje (sem lote ou lote com 0 cab) também conta como inativo: não aparece na leitura, previsto, trato nem carregamento */
 let _cgM={t:0,d:'',s:null};
-function curralComGado(n){try{if(!gOk()||typeof cochoCurrais!=='function'||typeof gTodos!=='function')return true;const hj=hojeKey(),ag=Date.now();
+/* d: dia a conferir (padrão hoje). Ex.: leitura de amanhã de um curral cujo lote só entra amanhã */
+function curralComGado(n,d){try{if(!gOk()||typeof cochoCurrais!=='function'||typeof gTodos!=='function')return true;const hj=d||hojeKey(),ag=Date.now();
   if(!_cgM.s||_cgM.d!==hj||ag-_cgM.t>1500){const L=gTodos('lote');_cgM={t:ag,d:hj,s:L.length?new Set(cochoCurrais(hj)):null};}
   return !_cgM.s||_cgM.s.has(n);}catch(e){return true;}}
-const curralAtivo=n=>infoCurral(n).inativo!==true&&curralComGado(n);
+const curralAtivo=(n,d)=>infoCurral(n).inativo!==true&&curralComGado(n,d);
 const linhaDe=n=>{const t=infoCurral(n).tipo;if(t==='C'||t==='P')return t;return /^C-/.test(n)?'C':/^P-/.test(n)?'P':'O';};
 /* nome da ração (dieta) do curral no dia do histórico; sem lote/ração cadastrada, mostra o local */
 function dietaDe(n){try{const d=(typeof intervaloHist==='function'?intervaloHist()[0]:null)||hojeKey();
@@ -3136,7 +3137,7 @@ function renderHist(){try{aplicarRenomesHist();}catch(e){}
   $('hN').textContent=regs.length?`${regs.length} registro(s)`:'';
   if(!HD.per&&HD.t===-1&&PDC){selModo=false;const [pa]=intervaloHist(),L=totaisPorCurral(regs),mp=new Map(L.map(x=>[x.curral,x]));
     const ord=c=>{const i=S.cadastro.indexOf(c);return i<0?999:i;},ltZ=c=>{try{const x=G.it[idLeit(pa,c)];return !!(x&&!x.del&&x.semTrato);}catch(e){return false;}},   /* leitura feita com 0 kg = sem trato neste dia (não é falta de leitura) */
-      cand=pa>=hojeKey()&&typeof cochoCurrais==='function'&&gOk()?(()=>{try{return cochoCurrais(pa).filter(c=>curralAtivo(c)&&!(PDC[c]>0)&&!mp.has(c)&&(localSel==='T'||linhaDe(c)===localSel));}catch(e){return [];}})():[],
+      cand=pa>=hojeKey()&&typeof cochoCurrais==='function'&&gOk()?(()=>{try{return cochoCurrais(pa).filter(c=>curralAtivo(c,pa)&&!(PDC[c]>0)&&!mp.has(c)&&(localSel==='T'||linhaDe(c)===localSel));}catch(e){return [];}})():[],
       semL=new Set(cand.filter(c=>!ltZ(c))),semT=new Set(cand.filter(ltZ)),
       cs=[...new Set(Object.keys(PDC).concat(L.map(x=>x.curral),[...semL],[...semT]))].sort((a,b)=>ord(a)-ord(b)||alfa(a,b));
     let TP=0,TF=0;const lin=cs.map(c=>{const pv=PDC[c]||0,x=mp.get(c),fo=x?x.forn:0;TP+=pv;TF+=fo;const dif=fo-pv;
