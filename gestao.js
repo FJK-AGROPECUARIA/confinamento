@@ -243,12 +243,12 @@ function diaLoteH(l,d,X){const T=tcMapa(X),os=(T.out.get(l.uid)||[]).filter(s=>s
 const tcLeva=s=>s&&s.cst?(+s.cst.compra||0)+(+s.cst.outros||0):0;
 function resumoLote(l,ate){
   const X=gCtx(),ini=iniH(l,X),fim=ate||fimLote(l)||hojeKey();
-  const r={dias:0,cabDias:0,cabOpDias:0,mn:0,ms:0,custoR:0,custoOp:0,pvS:0,pvN:0,semPreco:0,semReg:0};
+  const r={dias:0,cabDias:0,cabOpDias:0,mn:0,ms:0,custoR:0,custoOp:0,pvS:0,pvN:0,semPreco:0,semReg:0,diasL:0,semRegL:0};   /* diasL/semRegL: só do período do próprio lote (entrada → saída) */
   if(ini>fim)return r;
   for(let d=ini,i=0;d<=fim&&i<4000;d=somaDias(d,1),i++){const x=diaLoteH(l,d,X);if(!x)continue;r.dias++;r.cabDias+=x.cab;r.cabOpDias+=x.cabOp;r.mn+=x.mn;if(ok(x.peso))r.pesoCD=(r.pesoCD||0)+x.cab*x.peso;
     /* médias de consumo: só os dias que têm trato (e MS, para as contas de MS) — hoje antes do trato não puxa a média para baixo */
     if(x.mn>0){r.cabDiasMN=(r.cabDiasMN||0)+x.cab;if(ok(x.ms)){r.cabDiasMS=(r.cabDiasMS||0)+x.cab;if(ok(x.peso))r.pesoCDMS=(r.pesoCDMS||0)+x.cab*x.peso;}}
-    if(ok(x.ms))r.ms+=x.ms;if(ok(x.custoR))r.custoR+=x.custoR;else if(x.mn>0)r.semPreco++;r.custoOp+=x.custoOp;if(!x.tem)r.semReg++;
+    if(ok(x.ms))r.ms+=x.ms;if(ok(x.custoR))r.custoR+=x.custoR;else if(x.mn>0)r.semPreco++;r.custoOp+=x.custoOp;if(!x.tem)r.semReg++;if(d>=l.ent.dia){r.diasL++;if(!x.tem)r.semRegL++;}
     if(ok(x.pv)&&x.mn>0){r.pvS+=x.pv;r.pvN++;}}
   return r;
 }
@@ -482,7 +482,7 @@ function calcLote0(l){
   const arrPV=cabP?ganhoV/30:NaN;
   const cabRet=trs.filter(s=>s.retirada).reduce((a,s)=>a+(+s.cab||0),0);
   return {fim,ate,R,vendas,faltas,fOut,aps,trs,cabT,cabRet,trOut,trazido,cabTV,recInt,resInt,trazVI,resVd:vendas.reduce((a,s)=>a+(ok(resSai(s))?resSai(s):0),0),nVdR:vendas.filter(s=>ok(resSai(s))).length,apart,cabA,kgA,pesoA:cabA?kgA/cabA:NaN,mortes,cabE,pesoE,compra:compraL,outros:outrosL,cabV,cabVA:vendas.filter(s=>arrobaVenda(s)>0).reduce((a,s)=>a+(+s.cab||0),0),arrV,receita,pesoV,ganhoV,cabDiasV,cabP,alim,op,prod,custo,arrProd,
-    dias:difDias(iniH(l,null),ate),cabAt:cabAtual(l),msCab:R.cabDiasMS?R.ms/R.cabDiasMS:NaN,mnCab:R.cabDiasMN?R.mn/R.cabDiasMN:NaN,pv:R.pesoCDMS>0?R.ms/R.pesoCDMS*100:(R.pvN?R.pvS/R.pvN:NaN),pesoMed:R.pesoCD>0?R.pesoCD/R.cabDias:NaN,   // IMS % PV = MS/dia ÷ peso vivo médio (ponderado por cabeças-dia), mesma base do MS/dia
+    dias:difDias(l.ent.dia,ate),cabAt:cabAtual(l),msCab:R.cabDiasMS?R.ms/R.cabDiasMS:NaN,mnCab:R.cabDiasMN?R.mn/R.cabDiasMN:NaN,pv:R.pesoCDMS>0?R.ms/R.pesoCDMS*100:(R.pvN?R.pvS/R.pvN:NaN),pesoMed:R.pesoCD>0?R.pesoCD/R.cabDias:NaN,   // IMS % PV = MS/dia ÷ peso vivo médio (ponderado por cabeças-dia), mesma base do MS/dia
     
     gmdV:cabDiasV?ganhoV/cabDiasV:NaN,custoArr:prod/arrProd,conv:R.cabDiasMS&&ganhoV>0?(R.ms/R.cabDiasMS)/(ganhoV/cabDiasV):NaN,   // CA = MS/dia ÷ GMD
     lucro:fimN?receita+resInt-custo-perd:NaN,perd,sumCusto,custoMortes:sd.filter(s=>s.mot==='morte').reduce((a,s)=>a+(+s.custo||0),0),custoCabDia:(alimB+opB)/R.cabDias,
@@ -2655,7 +2655,7 @@ function canvasLote(l,C){
   /* 1. animais */
   bloco('1','Animais e desempenhos','ponderado pelas datas de entrada e saída');
   tiles([{r:'ENTRADAS',v:nf(cabE)+' cab'},AP?{r:'APARTADOS',v:nf(C.cabA)+' cab'}:C.proj?{r:C.sim?'SIMULADOS':'PROJETADOS HOJE',v:nf(C.cabV)+' cab',s:C.sim?'venda pelo peso digitado':'saída pelo peso projetado'}:{r:'VENDIDOS',v:nf(C.cabV)+' cab',s:C.cabT?`${nf(C.cabT)} transferido${C.cabT>1?'s':''}`:''},
-    {r:'MORTES',v:nf(C.mortes),s:`${pc(C.mortPct,2)} de mortalidade`+(C.faltas?` · ${nf(C.faltas)} animais faltantes`:''),barra:C.mortes||C.faltas?VM:LI},{r:'PERÍODO',v:nf(C.dias)+' dias',s:`${dB(l.ent.dia).slice(0,5)} a ${dB(C.ate).slice(0,5)}`},{r:'DIAS DE CONSUMO',v:nf(Math.max(0,(C.R.dias||0)-(C.R.semReg||0)))+' dias',s:'dias com trato lançado'}],5);y-=22;   // desempenho colado nos animais
+    {r:'MORTES',v:nf(C.mortes),s:`${pc(C.mortPct,2)} de mortalidade`+(C.faltas?` · ${nf(C.faltas)} animais faltantes`:''),barra:C.mortes||C.faltas?VM:LI},{r:'PERÍODO',v:nf(C.dias)+' dias',s:`${dB(l.ent.dia).slice(0,5)} a ${dB(C.ate).slice(0,5)}`},{r:'DIAS DE CONSUMO',v:nf(Math.max(0,(C.R.diasL||0)-(C.R.semRegL||0)))+' dias',s:'dias com trato lançado'}],5);y-=22;   // desempenho colado nos animais
   /* 2. desempenho */
   const pSai=ok(C.ganhoV)&&C.cabP?C.pesoE+C.ganhoV/C.cabP:NaN;
   const gCab=C.cabP&&ok(C.ganhoV)?C.ganhoV/C.cabP:NaN,T_=(r,v,s)=>({r,v,s});
@@ -2741,7 +2741,7 @@ function canvasLotePais(l,C){const P=canvasLote(l,C),E=P.__esc||2,W=P.width,H=P.
   c.drawImage(P,0,y1,W,hL1,0,hdr+12*E,W,hL1);c.drawImage(P,0,cut,W,hR,W+G,hdr+8*E,W,hR);
   c.fillStyle='#d2dae2';c.fillRect(W+G/2-E,hdr+16*E,2*E,TH-hdr-32*E);
   /* gráfico do consumo de MS/dia (kg/cab) dia a dia (1º ao último dia de trato) no espaço livre embaixo da eficiência */
-  const gy=hdr+12*E+hL1+10*E,gh=Math.min(TH-gy-24*E,480*E);if(gh>160*E){const fim=C.ate||fimLote(l)||hojeKey(),X_=gCtx(),pts=dadosEvol(l,fim,Math.max(1,difDias(iniH(l,X_),fim)+1)).filter(p=>diaLoteH(l,p.d,X_)).map(p=>({d:p.d,ims:ok(p.ims)&&p.ims>0?p.ims:0,tr:ok(p.ims)&&p.ims>0})),nTr=pts.filter(p=>p.tr).length;   // dias sem trato entram como zero (mesma base do quadro MS/dia)
+  const gy=hdr+12*E+hL1+10*E,gh=Math.min(TH-gy-24*E,480*E);if(gh>160*E){const fim=C.ate||fimLote(l)||hojeKey(),X_=gCtx(),pts=dadosEvol(l,fim,Math.max(1,difDias(l.ent.dia,fim)+1)).filter(p=>diaLoteH(l,p.d,X_)).map(p=>({d:p.d,ims:ok(p.ims)&&p.ims>0?p.ims:0,tr:ok(p.ims)&&p.ims>0})),nTr=pts.filter(p=>p.tr).length;   // dias sem trato entram como zero (mesma base do quadro MS/dia)
     const M=36*E,x0=M+52*E,x1=W-M-10*E,yT=gy+64*E,yB=gy+gh-40*E,F='-apple-system,"Segoe UI",Roboto,Arial,sans-serif',t=(s,x,y,p,z,cor,al)=>{c.font=`${p} ${z*E}px ${F}`;c.fillStyle=cor;c.textAlign=al||'left';c.textBaseline='middle';c.fillText(s,x,y);};
     c.fillStyle='#f3f6f9';c.beginPath();c.roundRect?c.roundRect(M,gy,W-2*M,gh,14*E):c.rect(M,gy,W-2*M,gh);c.fill();
     t('Evolução do consumo de MS/dia',M+18*E,gy+24*E,'800',20,'#11253d');t('kg de matéria seca por cabeça · dias sem trato lançado contam como zero',M+18*E,gy+46*E,'500',13,'#5d6b7a');
