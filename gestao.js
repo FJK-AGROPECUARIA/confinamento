@@ -1695,6 +1695,11 @@ function tRacCur(t){const A=window.curraisApi,hj=hojeKey(),loc=t.loc||'T';if(!A)
 /* ---------- Mudar animais de curral: o lote inteiro vai para outro curral e leva tudo (custos, pesagens, histórico) ---------- */
 /* lotes do curral de origem: todos já marcados (move tudo); desmarque para mover só um */
 /* data da mudança: a escolhida na tela; ao abrir, amanhã se os tratos de hoje já foram todos finalizados */
+/* curral que já teve trato no dia: a mudança não pode valer nesse dia (o trato fica com o lote que estava lá), só a partir do dia seguinte */
+const mcTratou=(d,...cs)=>cs.find(c=>c&&(typeof HIST!=='undefined'?HIST:[]).some(r=>r.dia===d&&r.curral===c))||'';
+document.addEventListener('change',e=>{const id=e.target&&e.target.id;if(id!=='gf_mcO'&&id!=='gf_mcD'&&id!=='gf_mcDia')return;const di=$('gf_mcDia');if(!di||!di.value)return;
+  const tc=mcTratou(di.value,($('gf_mcO')||{}).value,($('gf_mcD')||{}).value);if(!tc)return;const nd=somaDias(di.value,1);if(nd>somaDias(hojeKey(),1))return;
+  di.value=nd;{const sp=di.parentElement&&di.parentElement.querySelector("span");if(sp){sp.textContent=dB(nd);sp.classList.remove("vazio");}}di.dispatchEvent(new Event('change',{bubbles:true}));toast(`O ${tc} já teve trato nesse dia: a mudança passa a valer a partir de ${dB(nd)}`);});
 const mcDia=()=>(($('gf_mcDia')||{}).value)||GT.mcD0||hojeKey();
 function mcLotesHTML(o){if(!o)return '';const ls=lotesNoCur(o,mcDia());if(!ls.length)return '<p class="note">Nenhum lote nesse curral.</p>';
   return `<label>Lotes que vão mudar</label>${ls.map(l=>`<label style="display:flex;align-items:center;gap:8px;padding:6px 0;font-weight:600"><input type="checkbox" data-mclote="${l.uid}" checked style="width:20px;height:20px"> ${esc(l.nome)} · ${nf(cabAtual(l))} cab${sexoTxt(l.sexo)?' · '+esc(sexoTxt(l.sexo)):''}</label>`).join('')}${ls.length>1?'<p class="note">Todos marcados: o curral inteiro muda. Desmarque o lote que deve ficar.</p>':''}`;}
@@ -3554,6 +3559,7 @@ $('gBox').addEventListener('click',e=>{
     let n=0;cs.forEach(c=>lotesNoCur(c,hojeKey()).forEach(l0=>{const l=JSON.parse(JSON.stringify(l0));if(d<l.ent.dia)return;l.rac=l.rac||[];setHist(l.rac,d,{r});gPut(l);n++;}));
     toast(`Ração mudada em ${cs.length} curral(is) · ${n} lote(s)`);return gVoltar();}
   if(a==='salvaMudCur'){const o=fv('mcO'),de=fv('mcD'),d=fv('mcDia');if(!o||!de||!d)return toast('Escolha a origem, o destino e a data');if(o===de)return toast('O destino é o mesmo curral');if(d>somaDias(hojeKey(),1))return toast('A data pode ser no máximo amanhã');
+    {const tc=mcTratou(d,o,de);if(tc)return toast(`O ${tc} já teve trato em ${dB(d)}: a mudança só pode valer a partir de ${dB(somaDias(d,1))}`);}
     const todos=lotesNoCur(o,d);if(!todos.length)return toast('Nenhum lote nesse curral nessa data');
     const mk=[...document.querySelectorAll('[data-mclote]')];const ls=mk.length?todos.filter(l=>mk.some(c=>c.checked&&c.dataset.mclote===l.uid)):todos;if(!ls.length)return toast('Marque pelo menos um lote');const ant=ls.find(l=>d<l.ent.dia);if(ant)return toast(`A data é antes da entrada do ${ant.nome}`);
     const jn=fv('mcJ');if(jn&&jn!=='nao'){if(ls.length!==1)return toast('Para juntar, marque só um lote de origem');const B=G.it[jn];if(!B)return toast('Lote do destino não encontrado');
