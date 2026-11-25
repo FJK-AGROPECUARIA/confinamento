@@ -1981,7 +1981,7 @@ async function libLeitura(){const hj=hojeKey(),F=window.prevApi&&prevApi.faltaDi
   if(F.length&&!confirm(`Liberar a leitura de amanhã sem registrar:\n${F.map(x=>`• Trato ${x.trato} · ${x.curral}`).join('\n')}\n\nEsses tratos continuam podendo ser registrados depois.`))return;
   gPut({uid:'libleit_'+hj,tipo:'libleit',dia:hj,falta:F.map(x=>x.trato+'|'+x.curral),ts0:Date.now()});toast('Leitura de amanhã liberada');gRender();}
 function tCocho(t){
-  const lc=GT.coLoc||'T',dia=t.dia||hojeKey(),ont=somaDias(dia,-1),ix=gIndice(),cfg=gCfg(),CsT=cochoCurrais(dia).filter(c=>typeof curralAtivo!=='function'||curralAtivo(c)),Cs=CsT.filter(c=>lc==='T'||linhaDe(c)===lc),hoje=dia===hojeKey(),pode=leitPode(dia),amanha=dia===somaDias(hojeKey(),1);
+  const lc=GT.coLoc||'T',dia=t.dia||hojeKey(),ont=somaDias(dia,-1),ix=gIndice(),cfg=gCfg(),CsT=cochoCurrais(dia).filter(c=>typeof curralAtivo!=='function'||curralAtivo(c,dia)),Cs=CsT.filter(c=>lc==='T'||linhaDe(c)===lc),hoje=dia===hojeKey(),pode=leitPode(dia),amanha=dia===somaDias(hojeKey(),1);
   const notas=cfg.notas.slice().sort((a,b)=>a.n-b.n);
   GT.dia=dia;GT.sel=GT.sel||{};
   const rows=Cs.map(c=>{const L=gTodos('lote').filter(l=>curralEm(l,dia)===c&&cabPres(l,dia)>0);
@@ -2336,7 +2336,7 @@ function regraLeitura(){try{if(typeof modoVer!=='undefined'&&modoVer)return;if(!
       for(let k=1;k<=MX;k++){const m=obj[String(k)];if(!m||typeof m!=='object')continue;Object.keys(m).forEach(c=>{if(temLt(c)||ehLoteNovo(c,d)||trat(c))return;delete m[c];rem.add(c);mud=true;});}
       gPut({uid:fl,tipo:'regraleit',dia:d,rem:[...rem],ts0:Date.now()});}
     /* 2) lote novo sem leitura: leitura automática com a sugestão (% do PV) e previsto */
-    cochoCurrais(d).forEach(c=>{if(typeof curralAtivo==='function'&&!curralAtivo(c))return;if(G.it[idLeit(d,c)]||!ehLoteNovo(c,d)||trat(c))return;
+    cochoCurrais(d).forEach(c=>{if(typeof curralAtivo==='function'&&!curralAtivo(c,d))return;if(G.it[idLeit(d,c)]||!ehLoteNovo(c,d)||trat(c))return;
       /* todos os tratos do dia já foram feitos (ex.: pasto com 1 trato já feito): não entra hoje — a sugestão vai para o dia seguinte */
       if(hoje&&!trFaltam(c,obj||{},d).rem.length)return;
       const s=sugLoteNovo(c,d);if(!(s>0))return;const kg=arred(s,cfg.arred);
@@ -2405,7 +2405,7 @@ function salvaCocho(so){
     gPut({uid:idLeit(dia,c),tipo:'leitura',dia,curral:c,nota,ims,hora:new Date().toTimeString().slice(0,5),pct:cn?cn.p:0,base:+el.dataset.base||0,baseM:bs.m,baseDia:bs.m==='dia'?bs.d:null,novo:ok(kg)?kg:null,msF:+el.dataset.msf||1,split:sp||null});n++;
     if(ok(kg)&&kg>0){const antes=JSON.stringify(Object.keys(obj).map(k=>(obj[k]||{})[c]));aplicaPrev(c,kg,obj);if(sp)coTrAplica(c,obj,sp,dia);if(JSON.stringify(Object.keys(obj).map(k=>(obj[k]||{})[c]))!==antes)ap++;}});
   /* botão geral: salva tudo — também reaplica no previsto as leituras já salvas (currais recolhidos) */
-  let nSalvas=0;if(!so){gTodos('leitura').forEach(lt=>{if(lt.dia!==dia||lt.del)return;const c=nAt(lt.curral);if(feitosC.has(c)||leitTravada(dia,c))return;if(typeof curralAtivo==='function'&&!curralAtivo(c))return;
+  let nSalvas=0;if(!so){gTodos('leitura').forEach(lt=>{if(lt.dia!==dia||lt.del)return;const c=nAt(lt.curral);if(feitosC.has(c)||leitTravada(dia,c))return;if(typeof curralAtivo==='function'&&!curralAtivo(c,dia))return;
     nSalvas++;if(ok(+lt.novo)&&+lt.novo>0){const antes=JSON.stringify(Object.keys(obj).map(k=>(obj[k]||{})[c]));aplicaPrev(c,+lt.novo,obj);if(Array.isArray(lt.split))coTrAplica(c,obj,lt.split,dia);if(JSON.stringify(Object.keys(obj).map(k=>(obj[k]||{})[c]))!==antes)ap++;}});}
   if(!so&&(n||nSalvas)){if(ap){if(hoje){marcarPrev();if(typeof render==='function')render();}else prevApi.guardarPrevDia(dia,obj);}
     GT.sel={};GT.base={};GT.coAberto={};GT.coTr={};window.scrollTo({top:0,behavior:'smooth'});
