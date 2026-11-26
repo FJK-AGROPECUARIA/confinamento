@@ -3640,9 +3640,11 @@ $('gBox').addEventListener('click',e=>{
   if(a==='baseDia'){GT.base=GT.base||{};GT.base[b.dataset.c]={m:'dia',d:b.dataset.d};if(GT.sel&&GT.sel[b.dataset.c])delete GT.sel[b.dataset.c].kg;const y=window.scrollY;gRender();window.scrollTo({top:y});return;}
   if(a==='repDia'){const c=b.dataset.c,d=b.dataset.d,dia=GT.dia||hojeKey();if(leitTravada(dia,c))return;const ix=gIndice(),kgd=histCur(c,d,dia,ix).kg;if(!kgd)return;
     /* mesma matéria seca daquele dia, convertida para a MS da ração de hoje */
-    const fx=fatorMS(c,d,dia),kg=Math.round(kgd*(ok(fx)?fx:1)),card=b.closest('.gCocho'),base=card?+card.dataset.base:0,N=gCfg().notas;
+    /* prioridade: o % de IMS daquele dia, aplicado aos animais de agora (entrou ou saiu gado, o kg acompanha); sem lote/ração para o % → mesma matéria seca daquele dia */
+    const h=histCur(c,d,dia,ix),im=h.kg&&h.bi?Math.round(h.kg/h.bi*100)/100:NaN,kgIms=ok(im)&&window.gMnIms?gMnIms(c,im,dia):null;
+    const fx=fatorMS(c,d,dia),kg=kgIms!=null&&kgIms>0?arred(kgIms,gCfg().arred):Math.round(kgd*(ok(fx)?fx:1)),card=b.closest('.gCocho'),base=card?+card.dataset.base:0,N=gCfg().notas;
     let best=null;if(base>0)N.forEach(o=>{const v=base*(1+o.p/100);if(!best||Math.abs(v-kg)<Math.abs(best.v-kg))best={n:o.n,v};});
-    GT.sel=GT.sel||{};if(GT.sel[c]&&GT.sel[c].rep===d){delete GT.sel[c];}else GT.sel[c]={n:best?best.n:null,kg,ims:null,rep:d};
+    GT.sel=GT.sel||{};if(GT.sel[c]&&GT.sel[c].rep===d){delete GT.sel[c];}else GT.sel[c]={n:best?best.n:null,kg,ims:kgIms!=null&&kgIms>0?im:null,rep:d};
     const y=window.scrollY;gRender();window.scrollTo({top:y});return;}
   if(a==='nota'){const c=b.dataset.c,n=+b.dataset.n;if(leitTravada(GT.dia||hojeKey(),c))return;GT.sel=GT.sel||{};GT.sel[c]=b.classList.contains('sel')?{n:null}:{n};const y=window.scrollY;gRender();window.scrollTo({top:y});return;}  // tocou de novo na mesma nota: desmarca
   if(a==='coTratos'){const c=b.dataset.c;GT.coTr=GT.coTr||{};if(GT.coTr[c])delete GT.coTr[c];else{const lt=G.it[idLeit(GT.dia,c)],al=coTrAlvo(c);GT.coTr[c]=lt&&!lt.del&&Array.isArray(lt.split)&&Math.round(lt.split.reduce((x,v)=>x+v,0))===al?{alvo:al,kg:lt.split.slice()}:{};}const y=window.scrollY;gRender();window.scrollTo({top:y});return;}
