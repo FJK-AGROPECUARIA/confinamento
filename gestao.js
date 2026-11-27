@@ -5524,8 +5524,8 @@ function efDados(k,ini,fim){const dias=[];let a=ini;while(a<=fim&&dias.length<90
       const ky=r.dia+'|'+c+'|'+r.trato,g=G1.get(ky)||{d:r.dia,c,ts:Infinity,p:0,r:0};if((+r.ts||0)<g.ts){g.ts=+r.ts||0;g.p=+r.prev||0;}g.r+=+r.forn||0;G1.set(ky,g);});   /* complemento do mesmo trato: previsto do 1º registro, realizado somado */
     G1.forEach(g=>{soma(g.c,g.d,g.p,g.r);soma('Total',g.d,g.p,g.r);});}
   const todos=['Total'].concat([...M.keys()].filter(x=>x!=='Total').sort(k==='efForn'?alfa:(a,b)=>a.localeCompare(b,'pt-BR')));
-  const linhas=todos.filter(c=>M.has(c)&&!EF_OFF[k].has(c)).map(c=>{const m=M.get(c);let P=0,E=0;const cel=dias.map(d=>{const x=m.get(d);if(!x)return null;P+=x.p;E+=x.e;return {im:efAcerto(x.p,x.e),p:x.p,r:x.r};});return {c,cel,med:efAcerto(P,E)};});
-  return {dias,todos:todos.filter(c=>M.has(c)),linhas};}
+  const linhas=todos.filter(c=>M.has(c)&&!EF_OFF[k].has(c)).map(c=>{const m=M.get(c);let P=0,E=0;const cel=dias.map(d=>{const x=m.get(d);if(!x)return null;P+=x.p;E+=x.e;return {im:efAcerto(x.p,x.e),p:x.p,r:x.r,e:x.e};});return {c,cel,med:efAcerto(P,E)};});
+  return {dias,todos:todos.filter(c=>c!=='Total'&&M.has(c)),linhas};}   /* o total do gráfico é a soma do que está marcado */
 const efTit=k=>k==='efFab'?'Eficiência de fabricação':'Eficiência de fornecimento';
 const efO=k=>({val:x=>x.im,fmt:v=>nf(v,1)+'%',eixo:v=>nf(v,0)+'%',tit:efTit(k)+' por dia',arq:'efic',nota:''});
 function efCtl(k,ini,fim){const D=efDados(k,ini,fim),off=EF_OFF[k];
@@ -5534,14 +5534,26 @@ function efCtl(k,ini,fim){const D=efDados(k,ini,fim),off=EF_OFF[k];
     <p class="note">Acerto = 100% − erro em relação ao previsto, para mais ou para menos (errar 3% dá 97%). ${k==='efFab'?'Cada insumo de cada carregamento conta pelo seu previsto.':'Cada trato de cada curral conta pelo seu previsto; o complemento entra no mesmo trato.'}</p></div>`;}
 document.addEventListener('click',e=>{const b=e.target.closest('#gBox [data-g="efCur"],#gBox [data-g="efTodos"]');if(!b||!GT||!/^ef(Fab|Forn)$/.test(GT.relAb||''))return;e.preventDefault();e.stopPropagation();const k=GT.relAb,off=EF_OFF[k];
   if(b.dataset.g==='efCur'){const c=b.dataset.c;off.has(c)?off.delete(c):off.add(c);}else{const [ini,fim]=relFaixa();if(b.dataset.v==='0')efDados(k,ini,fim).todos.forEach(c=>off.add(c));else off.clear();}gRender();},true);
-async function imgEfic(k,ini,fim,pdf){const D=efDados(k,ini,fim),O=efO(k),L=D.linhas.filter(o=>o.cel.some(Boolean));if(!L.length)return;
-  const h=linhasImsSVG(D,O),m=h.match(/<svg[\s\S]*<\/svg>/);if(!m)return;const svg=m[0].replace('<svg ','<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="680" font-family="Arial" ').replace(/<title>[^<]*<\/title>/g,'');
-  await new Promise(fimOk=>{const img=new Image();img.onload=()=>{const W=1320,top=96,lgH=Math.ceil(L.length/4)*34+20,H=top+680+lgH+20,cv=document.createElement('canvas');cv.width=W;cv.height=H;const x=cv.getContext('2d');
-    x.fillStyle='#fff';x.fillRect(0,0,W,H);x.fillStyle='#11253d';x.fillRect(0,0,W,72);x.fillStyle='#a7bc09';x.fillRect(0,72,W,5);
-    x.fillStyle='#fff';x.font='bold 28px Arial';x.fillText(`${efTit(k)} (acerto %) · ${gLocG==='C'?'Confinamento':gLocG==='P'?'Pasto':'Todos os locais'}`,20,36);x.fillStyle='#c8dd1e';x.font='bold 17px Arial';x.fillText(`${dB(D.dias[0])} a ${dB(D.dias[D.dias.length-1])} · Gestão de Tratos · FJK`,20,62);
-    x.drawImage(img,20,top);let lx=30,ly=top+700;L.forEach((o,i)=>{if(i&&i%4===0){lx=30;ly+=34;}x.fillStyle=COR_LIN[i%COR_LIN.length];x.fillRect(lx,ly-6,26,6);x.fillStyle='#11253d';x.font='bold 18px Arial';x.fillText(`${o.c.replace(/^P-/,'')} · ${ok(o.med)?nf(o.med,1)+'%':'—'}`,lx+34,ly);lx+=320;});
-    cv.toBlob(async b=>{const n=`${efTit(k)} ${dB(D.dias[0]).replace(/\//g,'-')} a ${dB(D.dias[D.dias.length-1]).replace(/\//g,'-')}`;try{if(pdf)await compartilharArquivo(await pngsParaPdf([b]),n+'.pdf','application/pdf');else await compartilharArquivo(b,n+'.png','image/png');}catch(e){toast(pdf?'Não consegui gerar o PDF':'Não consegui gerar a imagem');}fimOk();},'image/png');};
-    img.onerror=()=>{toast('Não consegui gerar a imagem');fimOk();};img.src='data:image/svg+xml;charset=utf-8,'+encodeURIComponent(svg);});}
+/* barras: acerto % de cada dia (soma do que está marcado) e acerto do período de cada curral/insumo — verde ≥ 97%, amarelo 93–97%, vermelho < 93% */
+const efCor=v=>v>=97?'#2e7d32':v>=93?'#f9a825':'#c62828';
+function efBarras(x,X0,Y0,W,H,rot,val,tit){const n=val.length,ok_=val.filter(v=>ok(v));x.fillStyle='#11253d';x.font='bold 22px Arial';x.fillText(tit,X0,Y0-14);if(!ok_.length)return;
+  let mn=Math.min(...ok_);mn=Math.max(0,Math.min(90,Math.floor((mn-3)/5)*5));const mx=100,E=58,B=54,T=24,ih=H-B-T,Y=v=>Y0+T+ih*(1-(v-mn)/(mx-mn||1));
+  x.font='16px Arial';x.textAlign='right';for(let k=0;k<=4;k++){const v=mn+(mx-mn)*k/4,y=Y(v);x.strokeStyle='#e3e8e3';x.beginPath();x.moveTo(X0+E,y);x.lineTo(X0+W,y);x.stroke();x.fillStyle='#6b7a6b';x.fillText(nf(v,0)+'%',X0+E-8,y+5);}
+  const cw=(W-E)/Math.max(1,n),bw=Math.min(70,cw*0.7);x.textAlign='center';
+  val.forEach((v,i)=>{const cx=X0+E+cw*i+cw/2;if(ok(v)){const y=Y(Math.max(mn,v));x.fillStyle=efCor(v);x.fillRect(cx-bw/2,y,bw,Y0+T+ih-y);x.fillStyle='#11253d';x.font=`bold ${n>20?12:15}px Arial`;x.fillText(nf(v,1),cx,y-6);}
+    x.fillStyle='#11253d';x.font=`${n>20?12:15}px Arial`;const r=String(rot[i]);if(n>12){x.save();x.translate(cx,Y0+T+ih+12);x.rotate(-Math.PI/4);x.textAlign='right';x.fillText(r,0,0);x.restore();}else x.fillText(r,cx,Y0+T+ih+24);});
+  x.textAlign='left';}
+async function imgEfic(k,ini,fim,pdf){const D=efDados(k,ini,fim),L=D.linhas.filter(o=>o.c!=='Total'&&o.cel.some(Boolean));if(!L.length)return;
+  const dv=D.dias.map((d,i)=>{let P=0,E=0;L.forEach(o=>{const x=o.cel[i];if(x){P+=x.p;E+=x.e;}});return efAcerto(P,E);});
+  const it=L.slice().sort((a,b)=>(b.med||0)-(a.med||0));let PT=0,ET=0;L.forEach(o=>o.cel.forEach(x=>{if(x){PT+=x.p;ET+=x.e;}}));const tot=efAcerto(PT,ET);
+  const W=1320,H=96+60+520+70+520+40,cv=document.createElement('canvas');cv.width=W;cv.height=H;const x=cv.getContext('2d');
+  x.fillStyle='#fff';x.fillRect(0,0,W,H);x.fillStyle='#11253d';x.fillRect(0,0,W,72);x.fillStyle='#a7bc09';x.fillRect(0,72,W,5);
+  x.fillStyle='#fff';x.font='bold 28px Arial';x.fillText(`${efTit(k)} (acerto %) · ${gLocG==='C'?'Confinamento':gLocG==='P'?'Pasto':'Todos os locais'}`,20,36);x.fillStyle='#c8dd1e';x.font='bold 17px Arial';x.fillText(`${dB(D.dias[0])} a ${dB(D.dias[D.dias.length-1])} · Gestão de Tratos · FJK`,20,62);
+  x.fillStyle='#11253d';x.font='bold 24px Arial';x.fillText(`Acerto do período: ${ok(tot)?nf(tot,1)+'%':'—'}`,20,118);x.font='16px Arial';x.fillStyle='#6b7a6b';x.fillText(`${L.length===D.todos.filter(c=>c!=='Total').length?'Todos':L.map(o=>o.c).join(', ').slice(0,90)} · verde ≥ 97% · amarelo 93–97% · vermelho < 93%`,20,144);
+  efBarras(x,20,196,W-40,520,D.dias.map(d=>d.slice(8)+'/'+d.slice(5,7)),dv,'Acerto por dia');
+  efBarras(x,20,196+520+70,W-40,520,it.map(o=>o.c.replace(/^P-/,'')),it.map(o=>o.med),k==='efFab'?'Acerto no período por insumo':'Acerto no período por curral');
+  const b=await new Promise(ok_=>cv.toBlob(ok_,'image/png')),n=`${efTit(k)} ${dB(D.dias[0]).replace(/\//g,'-')} a ${dB(D.dias[D.dias.length-1]).replace(/\//g,'-')}`;
+  try{if(pdf)await compartilharArquivo(await pngsParaPdf([b]),n+'.pdf','application/pdf');else await compartilharArquivo(b,n+'.png','image/png');}catch(e){toast(pdf?'Não consegui gerar o PDF':'Não consegui gerar a imagem');}}
 function xlsEfic(k,ini,fim){const D=efDados(k,ini,fim),L=D.linhas.filter(o=>o.cel.some(Boolean));if(!L.length)return;const cab=[k==='efFab'?'Insumo':'Curral'].concat(D.dias.map(d=>dB(d).slice(0,5)),['Período']);
   const tab=f=>L.map(o=>[xc(o.c)].concat(o.cel.map(x=>x?xc(f(x),f===efFx.ac?'dec':'int'):xc('')),[xc(f===efFx.ac?o.med:o.cel.filter(Boolean).reduce((a,x)=>a+f(x),0),f===efFx.ac?'dec':'int')]));
   gExcel(`${efTit(k)} ${dB(D.dias[0]).replace(/\//g,'-')} a ${dB(D.dias[D.dias.length-1]).replace(/\//g,'-')}`,[['Acerto %',cab,tab(efFx.ac),[18].concat(D.dias.map(()=>8),[9])],['Previsto kg',cab,tab(efFx.p),[18].concat(D.dias.map(()=>9),[11])],['Realizado kg',cab,tab(efFx.r),[18].concat(D.dias.map(()=>9),[11])]]);}
