@@ -2897,6 +2897,8 @@ const REL_PER=[
   ['tratosPC','Tratos do período por curral','soma de cada curral no período (previsto, realizado e diferença)'],
   ['tratosPJ','Tratos do período dia a dia','todos os tratos de cada dia do período'],
   ['batidasP','Carregamentos do vagão','carregamentos do período com os insumos e o total'],
+  ['efFab','Eficiência de fabricação','acerto do carregado em relação ao previsto, dia a dia: total e cada insumo'],
+  ['efForn','Eficiência de fornecimento','acerto do fornecido em relação ao previsto, dia a dia: total e cada curral'],
   ['grafNota','Gráfico de notas','notas da leitura de cocho de cada curral, dia a dia no período (até 90 dias)'],
   ['perLote','Consumo e custo por lote','MN, MS/cab/dia, % IMS e custo de cada lote; insumos usados'],
   ['grafIms','Gráfico de %IMS','% IMS realizado de cada curral, dia a dia no período (até 90 dias)'],
@@ -2922,9 +2924,9 @@ function relFaixa(){const hj=hojeKey(),b=GT.rFim||hj,a=GT.rIni||somaDias(b,-6);r
 function relExpSel(){const ks=new Set(relLista().map(x=>x[0]));return relExpSel0().filter(x=>ks.has(x));}
 function relExpSel0(){const per=relModo()==='per',k=relSelK();if(window.__relExpVer&&window.__relExpVer[k])return window.__relExpVer[k];const c=gCfg();return Array.isArray(c[k])?c[k]:relBal()?relLista().map(x=>x[0]):(per?['tratosPC','perLote']:['tratosC','indices','estoque']);}
 /* lista de relatórios (fora da seleção): todos juntos, cada um abre com os filtros que precisa */
-const REL_LISTA=['tratosPJ','tratosPC','batidasP','grafNota','fezes','resumo','indices','grafIms','perLote','lotes','comp','pesagens','faltRel','estoque','insumos','estMov','vendas'];
+const REL_LISTA=['tratosPJ','tratosPC','batidasP','efFab','efForn','grafNota','fezes','resumo','indices','grafIms','perLote','lotes','comp','pesagens','faltRel','estoque','insumos','estMov','vendas'];
 /* datas de cada relatório: só por período · só por dia · sem data (o resto: por dia ou por período) */
-const REL_SO_PER=new Set(['tratosPJ','tratosPC','batidasP','grafIms','grafNota','faltRel','perLote','pesagens','vendas','estMov']),REL_SO_DIA=new Set(['resumo','indices','fezes','estoque']),REL_SEM_DATA=new Set(['lotes','insumos','comp']);
+const REL_SO_PER=new Set(['tratosPJ','tratosPC','batidasP','efFab','efForn','grafIms','grafNota','faltRel','perLote','pesagens','vendas','estMov']),REL_SO_DIA=new Set(['resumo','indices','fezes','estoque']),REL_SEM_DATA=new Set(['lotes','insumos','comp']);
 function tRels(t){const per=relModo()==='per',dia=(t&&t.dia)||hojeKey(),[ini,fim]=relFaixa(),sel=relExpSel(),selM=!!(t&&t.relSel),ab=t&&t.relAb,bal0=relBal(),LST=!selM&&!bal0?REL_LISTA.map(k=>REL_DIA.concat(REL_PER).find(x=>x[0]===k)).filter(Boolean):relLista(),ck=per?ini+'|'+fim:dia;
   if(ab&&!selM&&relBal()&&relVerCache.k!==ab+'|'+ck+relGrafSig(ab))setTimeout(relVerCarregar,60);
   const abre=k=>REL_ABRE[k]?`<button type="button" class="mini gRelAbre" data-g="ir" data-t="${REL_ABRE[k]}"${per?` data-ini="${ini}" data-fim="${fim}"`:` data-dia="${dia}"`}>abrir a tela completa ›</button>`:'';
@@ -2962,8 +2964,8 @@ function tRelTela(t){{const k0=t.relAb||'';if(REL_SO_PER.has(k0))t.relModo='per'
   const semXls=k==='estoque';
   const abre=REL_ABRE[k]?`<button type="button" class="mini gRelAbre" data-g="ir" data-t="${REL_ABRE[k]}"${per?` data-ini="${ini}" data-fim="${fim}"`:` data-dia="${dia}"`}>abrir a tela completa ›</button>`:'';
   return `<section class="panel"><h2>${esc(it[1])}</h2>
-  ${modo}${datas}${relGrafSig(k)?relGrafCtl(k,per?fim:dia):''}
-  ${relGrafSig(k)?'':`<div class="row compart fz3 expTopo gRelExpBts"><button class="verde" data-g="relTelaExp" data-o="pdf">📄 PDF</button><button class="verde" data-g="relTelaExp" data-o="img">🖼 Foto</button>${semXls?'':'<button class="verde" data-g="relTelaExp" data-o="xls">📊 Excel</button>'}</div>`}
+  ${modo}${datas}${/^ef(Fab|Forn)$/.test(k)?efCtl(k,ini,fim):relGrafSig(k)?relGrafCtl(k,per?fim:dia):''}
+  ${relGrafSig(k)&&!/^ef(Fab|Forn)$/.test(k)?'':`<div class="row compart fz3 expTopo gRelExpBts"><button class="verde" data-g="relTelaExp" data-o="pdf">📄 PDF</button><button class="verde" data-g="relTelaExp" data-o="img">🖼 Foto</button>${semXls?'':'<button class="verde" data-g="relTelaExp" data-o="xls">📊 Excel</button>'}</div>`}
   ${abre}
   <div class="gRelVer" id="gRelVer" title="Toque para ver em tela cheia">${relVerCache.k===k+'|'+ck+relGrafSig(k)?relVerCache.h:'<p class="note">Carregando o relatório…</p>'}</div></section>`;}
 function linhasDia(dia){const X=gCtx();return X.L.map(l=>({l,x:diaLote(l,dia,X)})).filter(o=>o.x).sort((a,b)=>porCurral(a.l,b.l));}
@@ -5431,7 +5433,7 @@ const REL_DIA=[
   ['estoque','Estoque','os quadros coloridos de cada produto (saldo, finaliza em, consumo, mínimo)'],
   ['insumos','Insumos','preço e estoque de cada insumo']];
 /* títulos dos grupos na lista de Relatórios (juntando os do mesmo assunto) */
-const REL_GRP={tratosJ:'🐂 Tratos',tratosC:'🐂 Tratos',batidas:'🐂 Tratos',tratosPC:'🐂 Tratos',tratosPJ:'🐂 Tratos',batidasP:'🐂 Tratos',
+const REL_GRP={tratosJ:'🐂 Tratos',tratosC:'🐂 Tratos',batidas:'🐂 Tratos',tratosPC:'🐂 Tratos',tratosPJ:'🐂 Tratos',batidasP:'🐂 Tratos',efFab:'🐂 Tratos',efForn:'🐂 Tratos',
   grafNota:'🔍 Leitura de cocho e fezes',grafIms:'📊 Consumo, índices e lotes',fezes:'🔍 Leitura de cocho e fezes',
   resumo:'📊 Consumo, índices e lotes',indices:'📊 Consumo, índices e lotes',relDia:'📊 Consumo, índices e lotes',lotes:'📊 Consumo, índices e lotes',perLote:'📊 Consumo, índices e lotes',comp:'📊 Consumo, índices e lotes',
   estoque:'📦 Estoque e insumos',insumos:'📦 Estoque e insumos',estMov:'📦 Estoque e insumos',vendas:'💰 Vendas',pesagens:'📊 Consumo, índices e lotes',faltRel:'📊 Consumo, índices e lotes'};
@@ -5474,6 +5476,7 @@ async function relExpGerar(k,dia,fmt,ini,fim){const GT0=GT,gL=gLoc,cap=window.__
   try{switch(k){
     case 'tratosPC':await window.histExpPer(ini,fim,'curral',fmt);break;
     case 'tratosPJ':await window.histExpPer(ini,fim,'juntos',fmt);break;
+    case 'efFab':case 'efForn':{if(!(ini&&fim))break;if(xls){xlsEfic(k,ini,fim);break;}await imgEfic(k,ini,fim,pdf);break;}
     case 'batidasP':{const L=batidasLista(ini,fim,'T',0);if(!L.length)break;const rot=ini===fim?diaBR(ini):diaBR(ini)+' a '+diaBR(fim);if(xls){await window.xlsBatidas(L,rot);break;}window.__expPdf=pdf;await window.imgBatidas(L,rot,'juntas');break;}
     case 'perLote':GT={t:'periodo',ini,fim};if(!periodoDados(ini,fim).lotes.length)break;if(xls){await xlsPer();break;}window.__expPdf=pdf;await imgPer();break;
     case 'estMov':GT={t:'estoque',perE:-1,perEDia:hojeKey(),perEDe:ini,perEAte:fim,tipoE:'',prodE:'',fornE:''};await estExp(fmt);break;
@@ -5509,7 +5512,40 @@ async function relExpGerar(k,dia,fmt,ini,fim){const GT0=GT,gL=gLoc,cap=window.__
 var relVerSeq=0,relVerCache={k:"",h:""};
 /* gráficos de notas e %IMS nos relatórios: tipo (quadro ou linhas), dias, local e currais mudam a imagem (entram na chave do cache) */
 var gRelGrafT='q';
-const relGrafSig=k=>/^graf(Ims|Nota)$/.test(k||'')?`|${gGrafN}|${gLocG}|${[...gGrafOff].sort().join(',')}`:'';
+const relGrafSig=k=>/^graf(Ims|Nota)$/.test(k||'')?`|${gGrafN}|${gLocG}|${[...gGrafOff].sort().join(',')}`:/^ef(Fab|Forn)$/.test(k||'')?`|${gLocG}|${[...EF_OFF[k]].sort().join(',')}`:'';
+/* ---------- eficiência de fabricação (carregamentos) e de fornecimento (tratos) ----------
+   acerto do dia = 100% − (Σ |realizado − previsto| ÷ Σ previsto); errar 3% para mais ou para menos dá 97% */
+const EF_OFF={efFab:new Set(),efForn:new Set()};
+const efAcerto=(p,e)=>p>0?Math.max(0,100-e/p*100):NaN;
+function efDados(k,ini,fim){const dias=[];let a=ini;while(a<=fim&&dias.length<90){dias.push(a);a=somaDias(a,1);}const M=new Map(),T={};   /* M: linha → dia → {p,e,r} */
+  const soma=(lin,d,p,r)=>{if(!(p>0))return;const m=M.get(lin)||new Map();M.set(lin,m);const x=m.get(d)||{p:0,e:0,r:0};x.p+=p;x.e+=Math.abs(r-p);x.r+=r;m.set(d,x);};
+  if(k==='efFab'){(window.batidasLista?batidasLista(dias[0],dias[dias.length-1],gLocG,0):[]).forEach(c=>(c.itens||[]).forEach(it=>{const p=+it.prev||0,r=+it.real||0;if(!(p>0))return;soma(it.nome||'?',c.dia,p,r);soma('Total',c.dia,p,r);}));}
+  else{const G1=new Map();(typeof HIST!=='undefined'?HIST:[]).forEach(r=>{if(r.dia<dias[0]||r.dia>dias[dias.length-1])return;const c=nAt(r.curral);if(gLocG!=='T'&&linhaDe(c)!==gLocG)return;
+      const ky=r.dia+'|'+c+'|'+r.trato,g=G1.get(ky)||{d:r.dia,c,ts:Infinity,p:0,r:0};if((+r.ts||0)<g.ts){g.ts=+r.ts||0;g.p=+r.prev||0;}g.r+=+r.forn||0;G1.set(ky,g);});   /* complemento do mesmo trato: previsto do 1º registro, realizado somado */
+    G1.forEach(g=>{soma(g.c,g.d,g.p,g.r);soma('Total',g.d,g.p,g.r);});}
+  const todos=['Total'].concat([...M.keys()].filter(x=>x!=='Total').sort(k==='efForn'?alfa:(a,b)=>a.localeCompare(b,'pt-BR')));
+  const linhas=todos.filter(c=>M.has(c)&&!EF_OFF[k].has(c)).map(c=>{const m=M.get(c);let P=0,E=0;const cel=dias.map(d=>{const x=m.get(d);if(!x)return null;P+=x.p;E+=x.e;return {im:efAcerto(x.p,x.e),p:x.p,r:x.r};});return {c,cel,med:efAcerto(P,E)};});
+  return {dias,todos:todos.filter(c=>M.has(c)),linhas};}
+const efTit=k=>k==='efFab'?'Eficiência de fabricação':'Eficiência de fornecimento';
+const efO=k=>({val:x=>x.im,fmt:v=>nf(v,1)+'%',eixo:v=>nf(v,0)+'%',tit:efTit(k)+' por dia',arq:'efic',nota:''});
+function efCtl(k,ini,fim){const D=efDados(k,ini,fim),off=EF_OFF[k];
+  return `<div class="gRelGrafCtl">${grafLocNav()}${D.todos.length>1?`<div class="row gGrafTodos" style="gap:12px;margin:12px 0 14px"><button type="button" class="mini gTodosOn" data-g="efTodos" data-v="1"${D.todos.every(c=>!off.has(c))?' disabled':''}>✓ Marcar todos</button><button type="button" class="mini gTodosOff" data-g="efTodos" data-v="0"${D.todos.every(c=>off.has(c))?' disabled':''}>✕ Desmarcar todos</button></div>`:''}
+    <div class="gChips">${D.todos.map(c=>`<button data-g="efCur" data-c="${esc(c)}" class="${off.has(c)?'':'sel'}">${esc(c)}</button>`).join('')}</div>
+    <p class="note">Acerto = 100% − erro em relação ao previsto, para mais ou para menos (errar 3% dá 97%). ${k==='efFab'?'Cada insumo de cada carregamento conta pelo seu previsto.':'Cada trato de cada curral conta pelo seu previsto; o complemento entra no mesmo trato.'}</p></div>`;}
+document.addEventListener('click',e=>{const b=e.target.closest('#gBox [data-g="efCur"],#gBox [data-g="efTodos"]');if(!b||!GT||!/^ef(Fab|Forn)$/.test(GT.relAb||''))return;e.preventDefault();e.stopPropagation();const k=GT.relAb,off=EF_OFF[k];
+  if(b.dataset.g==='efCur'){const c=b.dataset.c;off.has(c)?off.delete(c):off.add(c);}else{const [ini,fim]=relFaixa();if(b.dataset.v==='0')efDados(k,ini,fim).todos.forEach(c=>off.add(c));else off.clear();}gRender();},true);
+async function imgEfic(k,ini,fim,pdf){const D=efDados(k,ini,fim),O=efO(k),L=D.linhas.filter(o=>o.cel.some(Boolean));if(!L.length)return;
+  const h=linhasImsSVG(D,O),m=h.match(/<svg[\s\S]*<\/svg>/);if(!m)return;const svg=m[0].replace('<svg ','<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="680" font-family="Arial" ').replace(/<title>[^<]*<\/title>/g,'');
+  await new Promise(fimOk=>{const img=new Image();img.onload=()=>{const W=1320,top=96,lgH=Math.ceil(L.length/4)*34+20,H=top+680+lgH+20,cv=document.createElement('canvas');cv.width=W;cv.height=H;const x=cv.getContext('2d');
+    x.fillStyle='#fff';x.fillRect(0,0,W,H);x.fillStyle='#11253d';x.fillRect(0,0,W,72);x.fillStyle='#a7bc09';x.fillRect(0,72,W,5);
+    x.fillStyle='#fff';x.font='bold 28px Arial';x.fillText(`${efTit(k)} (acerto %) · ${gLocG==='C'?'Confinamento':gLocG==='P'?'Pasto':'Todos os locais'}`,20,36);x.fillStyle='#c8dd1e';x.font='bold 17px Arial';x.fillText(`${dB(D.dias[0])} a ${dB(D.dias[D.dias.length-1])} · Gestão de Tratos · FJK`,20,62);
+    x.drawImage(img,20,top);let lx=30,ly=top+700;L.forEach((o,i)=>{if(i&&i%4===0){lx=30;ly+=34;}x.fillStyle=COR_LIN[i%COR_LIN.length];x.fillRect(lx,ly-6,26,6);x.fillStyle='#11253d';x.font='bold 18px Arial';x.fillText(`${o.c.replace(/^P-/,'')} · ${ok(o.med)?nf(o.med,1)+'%':'—'}`,lx+34,ly);lx+=320;});
+    cv.toBlob(async b=>{const n=`${efTit(k)} ${dB(D.dias[0]).replace(/\//g,'-')} a ${dB(D.dias[D.dias.length-1]).replace(/\//g,'-')}`;try{if(pdf)await compartilharArquivo(await pngsParaPdf([b]),n+'.pdf','application/pdf');else await compartilharArquivo(b,n+'.png','image/png');}catch(e){toast(pdf?'Não consegui gerar o PDF':'Não consegui gerar a imagem');}fimOk();},'image/png');};
+    img.onerror=()=>{toast('Não consegui gerar a imagem');fimOk();};img.src='data:image/svg+xml;charset=utf-8,'+encodeURIComponent(svg);});}
+function xlsEfic(k,ini,fim){const D=efDados(k,ini,fim),L=D.linhas.filter(o=>o.cel.some(Boolean));if(!L.length)return;const cab=[k==='efFab'?'Insumo':'Curral'].concat(D.dias.map(d=>dB(d).slice(0,5)),['Período']);
+  const tab=f=>L.map(o=>[xc(o.c)].concat(o.cel.map(x=>x?xc(f(x),f===efFx.ac?'dec':'int'):xc('')),[xc(f===efFx.ac?o.med:o.cel.filter(Boolean).reduce((a,x)=>a+f(x),0),f===efFx.ac?'dec':'int')]));
+  gExcel(`${efTit(k)} ${dB(D.dias[0]).replace(/\//g,'-')} a ${dB(D.dias[D.dias.length-1]).replace(/\//g,'-')}`,[['Acerto %',cab,tab(efFx.ac),[18].concat(D.dias.map(()=>8),[9])],['Previsto kg',cab,tab(efFx.p),[18].concat(D.dias.map(()=>9),[11])],['Realizado kg',cab,tab(efFx.r),[18].concat(D.dias.map(()=>9),[11])]]);}
+const efFx={ac:x=>x.im,p:x=>Math.round(x.p),r:x=>Math.round(x.r)};
 function relGrafCtl(k,dia){const D=(k==='grafIms'?dadosGrafIms:dadosGraf)(dia);
   return `<div class="gRelGrafCtl">${relModo()==='per'?'':`<p class="gRelRot">Dias até a data</p>${grafNBts(dia,true)}`}${grafLocNav()}
     ${grafTodosBts(D)}
@@ -5520,7 +5556,7 @@ async function relVerCarregar(){const box=document.getElementById('gRelVer');if(
   const cap=[];window.__capArq=cap;const t0=window.toast;window.toast=()=>{};let F=[];
   try{await relExpGerar(k,dia,'img',ini,fim);F=cap.slice();}finally{window.__capArq=null;window.toast=t0;}
   const b2=document.getElementById('gRelVer');if(!b2||seq!==relVerSeq||GT.relAb!==k)return;
-  const grf=relGrafSig(k)&&GT.t==='relTela',bts=p=>`<div class="row compart fz3 expTopo"><button class="verde" data-g="relGrafExp" data-p="${p}" data-o="pdf">📄 PDF</button><button class="verde" data-g="relGrafExp" data-p="${p}" data-o="img">🖼 Foto</button><button class="verde" data-g="relGrafExp" data-p="${p}" data-o="xls">📊 Excel</button></div>`;
+  const grf=relGrafSig(k)&&!/^ef(Fab|Forn)$/.test(k)&&GT.t==='relTela',bts=p=>`<div class="row compart fz3 expTopo"><button class="verde" data-g="relGrafExp" data-p="${p}" data-o="pdf">📄 PDF</button><button class="verde" data-g="relGrafExp" data-p="${p}" data-o="img">🖼 Foto</button><button class="verde" data-g="relGrafExp" data-p="${p}" data-o="xls">📊 Excel</button></div>`;
   if(grf)F.sort((a,b)=>(/linhas/i.test(b.name)?1:0)-(/linhas/i.test(a.name)?1:0));   /* linhas primeiro, quadro depois */
   const h=F.length&&grf?F.map(f=>{const lin=/linhas/i.test(f.name);return `<div class="gRelGrafBloco"><h3 class="gSubT">${lin?'📈 Gráfico de linhas':'▦ Quadro por dia'}</h3>${bts(lin?'lin':'quad')}<img src="${URL.createObjectURL(f)}" alt="${esc(f.name)}"></div>`;}).join('')
     :F.length?F.map(f=>`<img src="${URL.createObjectURL(f)}" alt="${esc(f.name)}">`).join(''):(per?'<p class="note">Sem dados nesse período.</p>':'<p class="note">Sem dados nessa data.</p>');
