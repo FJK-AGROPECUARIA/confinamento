@@ -5519,7 +5519,7 @@ const EF_OFF={efFab:new Set(),efForn:new Set()};
 const efAcerto=(p,e)=>p>0?Math.max(0,100-e/p*100):NaN;
 function efDados(k,ini,fim){const dias=[];let a=ini;while(a<=fim&&dias.length<90){dias.push(a);a=somaDias(a,1);}const M=new Map(),T={};   /* M: linha → dia → {p,e,r} */
   const soma=(lin,d,p,r)=>{if(!(p>0))return;const m=M.get(lin)||new Map();M.set(lin,m);const x=m.get(d)||{p:0,e:0,r:0};x.p+=p;x.e+=Math.abs(r-p);x.r+=r;m.set(d,x);};
-  if(k==='efFab'){(window.batidasLista?batidasLista(dias[0],dias[dias.length-1],gLocG,0):[]).forEach(c=>(c.itens||[]).forEach(it=>{const p=+it.prev||0,r=+it.real||0;if(!(p>0))return;soma(it.nome||'?',c.dia,p,r);soma('Total',c.dia,p,r);}));}
+  if(k==='efFab'){(window.batidasLista?batidasLista(dias[0],dias[dias.length-1],gLocG,0):[]).forEach(c=>{if(!c.tsF)return;(c.itens||[]).forEach(it=>{if(it.real==null||it.real==='')return;const p=+it.prev||0,r=+it.real||0;if(!(p>0))return;soma(it.nome||'?',c.dia,p,r);soma('Total',c.dia,p,r);});});}   /* só carregamento finalizado e insumo com o carregado registrado */
   else{const G1=new Map();(typeof HIST!=='undefined'?HIST:[]).forEach(r=>{if(r.dia<dias[0]||r.dia>dias[dias.length-1])return;const c=nAt(r.curral);if(gLocG!=='T'&&linhaDe(c)!==gLocG)return;
       const ky=r.dia+'|'+c+'|'+r.trato,g=G1.get(ky)||{d:r.dia,c,ts:Infinity,p:0,r:0};if((+r.ts||0)<g.ts){g.ts=+r.ts||0;g.p=+r.prev||0;}g.r+=+r.forn||0;G1.set(ky,g);});   /* complemento do mesmo trato: previsto do 1º registro, realizado somado */
     G1.forEach(g=>{soma(g.c,g.d,g.p,g.r);soma('Total',g.d,g.p,g.r);});}
