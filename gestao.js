@@ -2319,7 +2319,11 @@ function ehLoteNovo(c,dia){const ont=somaDias(dia,-1),L=gTodos('lote'),H=typeof 
   const nv=L.filter(l=>l.ent&&(l.ent.dia===dia||l.ent.dia===ont)&&curralEm(l,dia)===c&&cabPres(l,dia)>0);if(!nv.length)return false;
   const e0=nv.reduce((a,l)=>l.ent.dia<a?l.ent.dia:a,dia),antes=somaDias(e0,-1);
   if(L.some(l=>curralEm(l,antes)===c&&cabPres(l,antes)>0))return false;
-  if(e0===ont&&H.some(r=>r.dia===ont&&nAt(r.curral)===nAt(c)))return false;return true;}
+  if(e0===ont&&H.some(r=>r.dia===ont&&nAt(r.curral)===nAt(c)))return false;
+  /* entrou hoje e a pergunta é sobre amanhã: só vale (leitura automática de amanhã) depois que o trato de hoje terminar sem ter tratado esse curral;
+     se teve trato no dia da entrada, a leitura do dia seguinte é manual (26/11/2026: C-8 e MODULO-6 ganharam leitura automática de 27/11 às 06:16) */
+  if(e0===ont&&ont>=hojeKey()&&!(window.prevApi&&prevApi.diaFinalizado&&prevApi.diaFinalizado(ont)))return false;
+  return true;}
 /* quantos tratos para o lote novo: o da Config/histórico do curral; se não tiver, o mais comum entre os currais do mesmo local no último dia com trato */
 function nTrLoteNovo(c,obj){const H0=typeof HIST!=='undefined'?HIST:[],tem=(typeof ntMapa==='function'&&+ntMapa()[c]>=1)||[1,2,3,4,5,6,7,8].some(k=>+((obj[k]||{})[c])>0)||H0.some(r=>nAt(r.curral)===nAt(c)&&r.dia<hojeKey());
   if(tem)return prevApi.nTratos(c,obj);let n=0;try{const lc=typeof linhaDe==='function'?linhaDe(c):'',H1=H0.filter(r=>r.dia<hojeKey()),Hl=H1.filter(r=>!lc||linhaDe(r.curral)===lc),H=Hl.length?Hl:H1;
